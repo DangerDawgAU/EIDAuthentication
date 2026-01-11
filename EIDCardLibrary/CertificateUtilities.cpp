@@ -246,7 +246,23 @@ BOOL AskForCard(LPWSTR szReader, DWORD ReaderLength,LPWSTR szCard,DWORD CardLeng
 										&hSC );
 		if ( SCARD_S_SUCCESS != lReturn )
 		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Failed SCardReleaseContext 0x%08X",lReturn);
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Failed SCardEstablishContext 0x%08X",lReturn);
+
+			// Provide user-friendly error message for common cases
+			if (lReturn == SCARD_E_NO_SERVICE)
+			{
+				MessageBox(NULL,
+					L"The Smart Card service is not running.\n\n"
+					L"This typically means:\n"
+					L"1. No smart card reader is installed on this system\n"
+					L"2. The Smart Card service is disabled\n\n"
+					L"To use EID Authentication, you need:\n"
+					L"- A physical smart card reader, OR\n"
+					L"- A virtual smart card (requires TPM)\n\n"
+					L"Run InstallVirtualSmartCard.ps1 (as Administrator) to create a virtual smart card if your system has TPM.",
+					L"Smart Card Service Not Available",
+					MB_ICONERROR | MB_OK);
+			}
 			__leave;
 		}
 

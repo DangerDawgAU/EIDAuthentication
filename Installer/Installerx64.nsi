@@ -14,9 +14,10 @@
   OutFile "EIDInstallx64.exe"
 
   ;Default installation folder
-  ;XXX: Are we using SYSDIR for a reason?
-  InstallDir "$SYSDIR"
-  
+  InstallDir "$PROGRAMFILES64\EID Authentication"
+
+  ;Get installation folder from registry if available
+  InstallDirRegKey HKLM "Software\EIDAuthentication" "InstallPath"
 
   ;Request application privileges for Windows Vista
   RequestExecutionLevel admin
@@ -50,30 +51,50 @@
 Section "Core" SecCore
   SectionIn RO
 
+  ; Create installation directory
   SetOutPath "$INSTDIR"
-  
-  ;ADD YOUR OWN FILES HERE...
-  ${DisableX64FSRedirection}
+
+  ; Install files to Program Files
   FILE "..\x64\Release\EIDAuthenticationPackage.dll"
   FILE "..\x64\Release\EIDCredentialProvider.dll"
   FILE "..\x64\Release\EIDPasswordChangeNotification.dll"
   FILE "..\x64\Release\EIDConfigurationWizard.exe"
 
-  CreateShortcut "$DESKTOP\EID Authentication Configuration.lnk" "$INSTDIR\EIDConfigurationWizard.exe.exe"
+  ; Copy DLLs to System32 (required for LSA and Credential Provider)
+  ${DisableX64FSRedirection}
+  CopyFiles "$INSTDIR\EIDAuthenticationPackage.dll" "$SYSDIR\EIDAuthenticationPackage.dll"
+  CopyFiles "$INSTDIR\EIDCredentialProvider.dll" "$SYSDIR\EIDCredentialProvider.dll"
+  CopyFiles "$INSTDIR\EIDPasswordChangeNotification.dll" "$SYSDIR\EIDPasswordChangeNotification.dll"
 
-  ;Create uninstaller
-  WriteUninstaller "$SYSDIR\EIDUninstall.exe"
+  ; Create desktop shortcut pointing to Program Files
+  CreateShortcut "$DESKTOP\EID Authentication Configuration.lnk" "$INSTDIR\EIDConfigurationWizard.exe"
 
-  ;Uninstall info
+  ; Create uninstaller in installation directory
+  WriteUninstaller "$INSTDIR\EIDUninstall.exe"
+
+  ; Write installation path to registry
   SetRegView 64
+  WriteRegStr HKLM "Software\EIDAuthentication" "InstallPath" "$INSTDIR"
 
+  ; Uninstall info
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "DisplayName" "EID Authentication"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "UninstallString" "$WINDIR\SYSWOW64\EIDUninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "UninstallString" "$INSTDIR\EIDUninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "InstallLocation" "$INSTDIR"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "Publisher" "EID Authentication"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "NoModify" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "NoRepair" 1
 
-  ExecWait 'rundll32.exe EIDAuthenticationPackage.dll,DllRegister'
- 
+  ; Register authentication package (from System32)
+  ExecWait 'rundll32.exe "$SYSDIR\EIDAuthenticationPackage.dll",DllRegister'
+
+  ; Enable and start Smart Card services (required for smart card functionality)
+  DetailPrint "Configuring Smart Card services..."
+  nsExec::ExecToLog 'sc config SCardSvr start= demand'
+  nsExec::ExecToLog 'sc config ScDeviceEnum start= demand'
+  nsExec::ExecToLog 'net start SCardSvr'
+  nsExec::ExecToLog 'net start ScDeviceEnum'
+
   SetPluginUnload manual
-
   SetRebootFlag true
 
 SectionEnd
@@ -101,22 +122,59 @@ SectionEnd
 
 Section "Uninstall"
 
-
-  Delete /REBOOTOK "$SYSDIR\EIDUninstall.exe"
-  SetRegView 64
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication"
-
+  ; Unregister all components first (from System32)
   ${DisableX64FSRedirection}
-  ExecWait 'rundll32.exe EIDAuthenticationPackage.dll,DllUnRegister'
+  ExecWait 'rundll32.exe "$SYSDIR\EIDAuthenticationPackage.dll",DllUnRegister'
 
+  ; Delete desktop shortcut
+  Delete "$DESKTOP\EID Authentication Configuration.lnk"
+
+  ; Delete System32 files (LSA-locked, require reboot)
   Delete /REBOOTOK "$SYSDIR\EIDAuthenticationPackage.dll"
   Delete /REBOOTOK "$SYSDIR\EIDCredentialProvider.dll"
   Delete /REBOOTOK "$SYSDIR\EIDPasswordChangeNotification.dll"
-  Delete /REBOOTOK "$SYSDIR\EIDConfigurationWizard.exe"
 
+  ; Delete Program Files installation
+  Delete "$INSTDIR\EIDAuthenticationPackage.dll"
+  Delete "$INSTDIR\EIDCredentialProvider.dll"
+  Delete "$INSTDIR\EIDPasswordChangeNotification.dll"
+  Delete "$INSTDIR\EIDConfigurationWizard.exe"
+  Delete "$INSTDIR\EIDUninstall.exe"
+
+  ; Remove installation directory
+  RMDir "$INSTDIR"
+
+  ; Remove registry keys
+  SetRegView 64
+
+  ; Remove installation path registry
+  DeleteRegKey HKLM "Software\EIDAuthentication"
+
+  ; Remove Credential Provider registry keys
+  DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\Credential Providers\{B4866A0A-DB08-4835-A26F-414B46F3244C}"
+  DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\Credential Provider Filters\{B4866A0A-DB08-4835-A26F-414B46F3244C}"
+  DeleteRegKey HKCR "CLSID\{B4866A0A-DB08-4835-A26F-414B46F3244C}"
+
+  ; Remove Configuration Wizard registry keys
+  DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ControlPanel\NameSpace\{F5D846B4-14B0-11DE-B23C-27A355D89593}"
+  DeleteRegKey HKCR "CLSID\{F5D846B4-14B0-11DE-B23C-27A355D89593}"
+
+  ; Remove WMI Autologger for EIDCredentialProvider
+  DeleteRegKey HKLM "SYSTEM\CurrentControlSet\Control\WMI\Autologger\EIDCredentialProvider"
+
+  ; Remove crash dump configuration for lsass.exe
+  DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\lsass.exe"
+
+  ; Remove smart card removal policy keys (if any exist)
+  DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\SmartCardRemovalPolicy"
+
+  ; Remove uninstall information
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication"
 
   SetPluginUnload manual
   SetRebootFlag true
+
+  MessageBox MB_OK "EID Authentication has been uninstalled. Please reboot your computer to complete the removal."
 
 SectionEnd
 
@@ -128,13 +186,22 @@ Function .onInit
     Abort
   ${EndIf}
 
+  ; Check if already installed via registry
+  SetRegView 64
+  ReadRegStr $0 HKLM "Software\EIDAuthentication" "InstallPath"
+  StrCmp $0 "" CheckInstallEnd 0
 
-  ${DisableX64FSRedirection}
-  IfFileExists "$SYSDIR\EIDAuthenticationPackage.dll" CheckInstallNotOk CheckInstallEnd
-  CheckInstallNotOk:
-    MessageBox MB_OK "Please uninstall first !"
+  ; Installation found - ask user to uninstall first
+  MessageBox MB_YESNO "EID Authentication is already installed at:$\n$0$\n$\nDo you want to uninstall it first?" IDYES DoUninstall IDNO AbortInstall
+
+  DoUninstall:
+    ; Read uninstaller path
+    ReadRegStr $1 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "UninstallString"
+    ExecWait '$1'
+    Goto CheckInstallEnd
+
+  AbortInstall:
     Abort
- 
+
   CheckInstallEnd:
-  ${EnableX64FSRedirection}
 FunctionEnd
