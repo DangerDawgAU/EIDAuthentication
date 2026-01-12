@@ -59,6 +59,7 @@ Section "Core" SecCore
   FILE "..\x64\Release\EIDCredentialProvider.dll"
   FILE "..\x64\Release\EIDPasswordChangeNotification.dll"
   FILE "..\x64\Release\EIDConfigurationWizard.exe"
+  FILE "CleanupCertificates.ps1"
 
   ; Copy DLLs to System32 (required for LSA and Credential Provider)
   ${DisableX64FSRedirection}
@@ -126,6 +127,10 @@ Section "Uninstall"
   ${DisableX64FSRedirection}
   ExecWait 'rundll32.exe "$SYSDIR\EIDAuthenticationPackage.dll",DllUnRegister'
 
+  ; Remove certificates created by the software
+  DetailPrint "Removing certificates..."
+  nsExec::ExecToLog 'powershell -ExecutionPolicy Bypass -File "$INSTDIR\CleanupCertificates.ps1"'
+
   ; Delete desktop shortcut
   Delete "$DESKTOP\EID Authentication Configuration.lnk"
 
@@ -139,6 +144,7 @@ Section "Uninstall"
   Delete "$INSTDIR\EIDCredentialProvider.dll"
   Delete "$INSTDIR\EIDPasswordChangeNotification.dll"
   Delete "$INSTDIR\EIDConfigurationWizard.exe"
+  Delete "$INSTDIR\CleanupCertificates.ps1"
   Delete "$INSTDIR\EIDUninstall.exe"
 
   ; Remove installation directory

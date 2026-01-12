@@ -20,7 +20,6 @@
 
 #include "EIDTest.h"
 #include "CSmartCardNotifierTest.h"
-//#include "CWinBioNotifierTest.h"
 #include "CompleteTokenTest.h"
 #include "CompleteProfileTest.h"
 #include "GPOTest.h"
@@ -336,9 +335,7 @@ INT_PTR CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDM_UNREG_WIZ:
 			EIDConfigurationWizardDllUnRegister();
 			break;
-		case IDM_ONLINE_OK:
-			menu_Wizard_CommunicateTestOK();
-			break;
+		// IDM_ONLINE_OK removed - internet reporting functionality disabled
 		case IDM_UTIL_LIST:
 			menu_UTIL_ListCertificates();
 			break;

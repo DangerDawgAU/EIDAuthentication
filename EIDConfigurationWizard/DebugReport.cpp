@@ -11,7 +11,7 @@
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/Package.h"
 #include "../EIDCardLibrary/Tracing.h"
-#include "../EIDCardLibrary/OnlineDatabase.h"
+// OnlineDatabase.h removed - internet reporting functionality disabled
 #include "../EIDCardLibrary/EIDAuthenticateVersion.h"
 
 #include "../EIDCardLibrary/CContainer.h"
@@ -442,45 +442,4 @@ VOID CreateReport(PTSTR szNamedPipeName)
 	}
 }
 
-BOOL SendReport(DWORD dwErrorCode, PTSTR szEmail, PCCERT_CONTEXT pCertContext)
-{
-	DWORD dwRetVal;
-	UINT uRetVal;
-	TCHAR lpTempPathBuffer[MAX_PATH];
-	TCHAR szTempFileName[MAX_PATH] = TEXT("");
-	
-	BOOL fReturn = FALSE;
-	__try
-	{
-		// create a unique temp file
-		// we need to use a temp file to communicate between the elevated process and this one
-		// we can also use a pipe.
-		dwRetVal = GetTempPath(MAX_PATH, lpTempPathBuffer);
-		if (dwRetVal > MAX_PATH || (dwRetVal == 0))
-		{
-			__leave;
-		}
-		uRetVal = GetTempFileName(lpTempPathBuffer, TEXT("EIDAUTHENTICATE"), 0, szTempFileName);
-		if (uRetVal == 0)
-		{
-			__leave;
-		}
-		if (!CreateDebugReport(szTempFileName))
-		{
-			__leave;
-		}
-		if (!CommunicateTestNotOK(dwErrorCode, szEmail, szTempFileName,pCertContext))
-		{
-			__leave;
-		}
-		fReturn = TRUE;
-	}
-	__finally
-	{
-		if (_tcslen(szTempFileName) > 0)
-		{
-			DeleteFile(szTempFileName);
-		}
-	}
-	return fReturn;
-}
+// SendReport function removed - internet reporting functionality disabled

@@ -4,7 +4,7 @@
 
 **Original Author:** Vincent Le Toux (2009)
 **Current Maintainer:** @andrysky (GitHub fork from uberlinuxguy)
-**License:** GNU LGPL v2.1
+**License:** GNU GPL v3
 **Purpose:** Smart card authentication for Windows standalone/local accounts
 **Source:** Clone from SourceForge (https://sourceforge.net/projects/eidauthenticate/)
 
@@ -433,28 +433,24 @@ Enable/disable via:
 
 #### 8. Documentation Issues
 
+**Complete:**
+- [README.md](README.md) - Comprehensive 362-line overview
+- [BUILD.md](BUILD.md) - Complete build instructions
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Deployment guide
+- [notes.md](notes.md) - 1,137 lines of technical documentation
+
 **Incomplete:**
-- [README.md](README.md) - Basic only
 - Binary Word docs ([Documentation/Logon Process.docx](Documentation/Logon Process.docx)) - not VCS-friendly
-- Doxygen configured but not built ([Documentation/Doxyfile](Documentation/Doxyfile))
 
 **Missing:**
 - Architecture diagrams
-- Deployment guide
-- Troubleshooting guide
-- Certificate requirements
+- Certificate requirements documentation
 - API documentation
-
-**Outdated:**
-- [How to compile.txt](How to compile.txt) - Dead download links
-- References Windows SDK v1.0
 
 **Actions:**
 - Convert .docx to Markdown
-- Generate Doxygen HTML
 - Create architecture diagrams
 - Document certificate requirements
-- Write deployment guide
 
 ---
 
@@ -562,14 +558,13 @@ This is **security-critical software** running in lsass.exe.
 - [ ] Create integration test suite
 
 #### 2.4 Documentation
+- [x] Write deployment guide (DEPLOYMENT.md created)
+- [x] Create build guide (BUILD.md created)
+- [x] Create troubleshooting guide (included in README.md)
 - [ ] Convert [Documentation/Logon Process.docx](Documentation/Logon Process.docx) to Markdown
 - [ ] Convert [Documentation/Wizard.docx](Documentation/Wizard.docx) to Markdown
-- [ ] Generate Doxygen documentation
 - [ ] Create architecture diagrams
-- [ ] Write deployment guide
 - [ ] Document certificate requirements
-- [ ] Update [How to compile.txt](How to compile.txt)
-- [ ] Create troubleshooting guide
 
 ### Phase 3: Enhancement (Long-Term)
 
@@ -754,11 +749,11 @@ EIDAuthentication is a **professionally designed, security-critical Windows auth
 - No automated testing
 
 **Refactoring Priority:**
-1. Clean up legacy code (XP, WiX)
+1. Clean up legacy code (XP, WiX) ✅ DONE
 2. Security audit (critical before major changes)
 3. Modernize C++ (smart pointers, RAII)
 4. Improve testing (automation, CI/CD)
-5. Better documentation (Markdown, Doxygen)
+5. Better documentation (Markdown) ✅ DONE
 
 The project is a **good candidate for systematic refactoring** while maintaining functionality. The architecture is sound; it just needs modernization and cleanup.
 
@@ -1129,9 +1124,32 @@ This module is blocked from loading into the Local Security Authority.
 
 ---
 
+## 2026-01-11: License Update
+
+**Changed license from LGPL v2.1 to GPL v3**
+
+### Changes Made:
+
+- **LICENSE file:** Replaced LGPL v2.1 text with GPL v3 (downloaded from gnu.org)
+- **README.md:** Updated license badge and License section
+- **notes.md:** Updated license metadata
+
+### Rationale:
+
+- GPL v3 is the latest version of the GNU General Public License
+- Provides stronger copyleft protection
+- Better compatibility with modern open source ecosystem
+- Clearer patent protection clauses
+- Updated to address contemporary software distribution methods
+
+**Note:** This is a significant license change. The original project was LGPL v2.1. Users of this fork should be aware of the GPL v3 requirements, particularly around distribution and source code availability.
+
+---
+
 *Last Updated: 2026-01-11*
 *Analysis Agent ID: afce5c0*
 *Build tested with: Visual Studio 2025 (v18.1.1), Platform Toolset v145*
+*License: GNU GPL v3 (changed from LGPL v2.1)*
 *Phase 1.1 Completed: Windows XP legacy code completely removed*
 *Runtime Testing: All executables verified working with smart card reader*
 *NSIS Installer: Built successfully with complete uninstaller and Smart Card service auto-start (699 KB)*

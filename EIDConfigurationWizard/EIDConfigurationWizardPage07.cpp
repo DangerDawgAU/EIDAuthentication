@@ -3,7 +3,7 @@
 
 #include "../EIDCardLibrary/CContainer.h"
 #include "../EIDCardLibrary/CContainerHolderFactory.h"
-#include "../EIDCardLibrary/OnlineDatabase.h"
+// OnlineDatabase.h removed - internet reporting functionality disabled
 #include "CContainerHolder.h"
 #include "global.h"
 #include "EIDConfigurationWizard.h"
@@ -33,7 +33,7 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, WPARAM wPara
 		case WM_INITDIALOG:
 			if (!IsElevated())
 			{
-				Button_SetElevationRequiredState(GetDlgItem(hWnd,IDC_07SENDREPORT),TRUE);
+				// Button_SetElevationRequiredState removed - internet reporting disabled
 			}
 			{
 				HMODULE hDll = LoadLibrary(TEXT("imageres.dll") );
@@ -67,41 +67,7 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, WPARAM wPara
 					break;
 			}
 			break;
-		case WM_COMMAND:
-			wmId    = LOWORD(wParam);
-			wmEvent = HIWORD(wParam);
-			// Analyse les s�lections de menu�:
-			switch (wmId)
-			{	
-				case IDC_07SENDREPORT:
-					{
-						TCHAR szEmail[256];
-						GetWindowText(GetDlgItem(hWnd,IDC_07EMAIL),szEmail,ARRAYSIZE(szEmail));
-						CContainerHolderTest* MyTest = pCredentialList->GetContainerHolderAt(dwCurrentCredential);
-						CContainer* container = MyTest->GetContainer();
-						SetCursor(LoadCursor(NULL,MAKEINTRESOURCE(IDC_WAIT)));
-						BOOL fReturn = SendReport(dwWizardError, szEmail, container->GetCertificate());
-						SetCursor(LoadCursor(NULL,MAKEINTRESOURCE(IDC_ARROW)));
-						if (!fReturn)
-						{
-							if (GetLastError() == SPAPI_E_MACHINE_UNAVAILABLE || GetLastError() == ERROR_INTERNAL_ERROR)
-							{
-								MessageBox(hWnd,GetAdvancedErrorMessage(),TEXT("Error"),0);
-							}
-							else
-							{
-								MessageBoxWin32Ex(GetLastError(), hWnd);
-							}
-						}
-						else
-						{
-							//success !
-							MessageBoxWin32Ex(0, hWnd);
-						}
-					}
-					break;
-			}
-			break;
+		// WM_COMMAND handler removed - internet reporting button (IDC_07SENDREPORT) disabled
 		
 	}
 	return FALSE;

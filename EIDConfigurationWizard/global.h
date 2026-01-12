@@ -21,5 +21,5 @@ BOOL DialogForceSmartCardLogonPolicy();
 BOOL DialogRemovePolicy();
 BOOL CreateDebugReport(PTSTR szLogFile);
 VOID CreateReport(PTSTR szNamedPipeName);
-BOOL SendReport(DWORD dwErrorCode, PTSTR szEmail, PCCERT_CONTEXT pCertContext);
+// SendReport removed - internet reporting functionality disabled
 VOID SetIcon(HWND hWnd);

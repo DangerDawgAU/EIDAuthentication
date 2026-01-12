@@ -6,7 +6,7 @@
 #include "global.h"
 #include "EIDConfigurationWizard.h"
 #include "../EIDCardLibrary/GPO.h"
-#include "../EIDCardLibrary/OnlineDatabase.h"
+// OnlineDatabase.h removed - internet reporting functionality disabled
 // from previous step
 // credentials
 extern CContainerHolderFactory<CContainerHolderTest> *pCredentialList;
@@ -40,35 +40,7 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, WPARAM wParam, 
 			}
 		}
 		break;
-	case WM_COMMAND:
-		// Analyse les s�lections de menu�:
-		switch (LOWORD(wParam))
-		{	
-		case IDC_06UPDATEDATABASE:
-			{
-				SetCursor(LoadCursor(NULL,MAKEINTRESOURCE(IDC_WAIT)));
-				BOOL fReturn = CommunicateTestOK();
-				SetCursor(LoadCursor(NULL,MAKEINTRESOURCE(IDC_ARROW)));
-				if (!fReturn)
-				{
-					if (GetLastError() == SPAPI_E_MACHINE_UNAVAILABLE || GetLastError() == ERROR_INTERNAL_ERROR)
-					{
-						MessageBox(hWnd,GetAdvancedErrorMessage(),TEXT("Error"),0);
-					}
-					else
-					{
-						MessageBoxWin32Ex(GetLastError(), hWnd);
-					}
-				}
-				else
-				{
-					// success !
-					MessageBoxWin32Ex(0, hWnd);
-				}
-			}
-			break;
-		}
-		break;
+	// WM_COMMAND handler removed - internet reporting button (IDC_06UPDATEDATABASE) disabled
 	case WM_NOTIFY :
 			LPNMHDR pnmh = (LPNMHDR)lParam;
 			switch(pnmh->code)

@@ -7,10 +7,9 @@
 #include "EIDConfigurationWizard.h"
 #include "../EIDCardLibrary/CertificateUtilities.h"
 #include "../EIDCardLibrary/Tracing.h"
-#include "../EIDCardLibrary/OnlineDatabase.h"
+// OnlineDatabase.h removed - internet reporting functionality disabled
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/Package.h"
-#include "../EIDCardLibrary/OnlineDatabase.h"
 
 void CheckIfCardHasADriver(HWND hWnd)
 {
@@ -84,10 +83,7 @@ void CheckIfCardHasADriver(HWND hWnd)
 					TCHAR szMessage[356];
 					LoadString(g_hinst,IDS_CHECKDRIVERONLINE,szMessageFormat,ARRAYSIZE(szMessageFormat));
 					_stprintf_s(szMessage, ARRAYSIZE(szMessage), szMessageFormat, szATR);
-					if (IDOK == MessageBox(hWnd,szMessage,L"",MB_OKCANCEL|MB_DEFBUTTON1))
-					{
-						OpenBrowserOnDatabase(pbAtr, dwAtrSize, NULL);
-					}
+					// Online database lookup removed - internet functionality disabled
 				}
 			}
 			__finally
@@ -241,17 +237,7 @@ INT_PTR CALLBACK	WndProc_02ENABLE(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				{
 					PNMLINK pNMLink = (PNMLINK)lParam;
 					LITEM item = pNMLink->item;
-					if (wcscmp(item.szID, L"idDatabase") == 0)
-					{
-						if (!OpenBrowserOnDatabase())
-						{
-							LONG lReturn = GetLastError();
-							if (lReturn != SCARD_W_CANCELLED_BY_USER)
-							{
-								MessageBoxWin32Ex(lReturn, hWnd);
-							}
-						}
-					}
+					// Online database link removed - internet functionality disabled
 					/*if ((((LPNMHDR)lParam)->hwndFrom == GetDlgItem(hWnd,IDC_SYSLINKHELP)) && (item.iLink == 0))
 					{
 						ShellExecute(NULL, L"open", item.szUrl, NULL, NULL, SW_SHOW);
