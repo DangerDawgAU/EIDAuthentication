@@ -33,7 +33,8 @@
 #include "StoredCredentialManagementTest.h"
 #include "SmartCardModuleTest.h"
 #include "EIDSecuritySupportProviderTest.h"
-#include "OnlineDatabaseTest.h"
+// Online database functionality removed - no longer needed
+// #include "OnlineDatabaseTest.h"
 #include "../EIDCardLibrary/Registration.h"
 
 #ifdef UNICODE

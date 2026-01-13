@@ -79,14 +79,14 @@ cd Installer
 
 | Component | Type | Description |
 |-----------|------|-------------|
-| **EIDAuthenticationPackage** | LSA Package | Core authentication logic, integrates with LSASS |
-| **EIDCredentialProvider** | Credential Provider v2 | Login screen UI and credential gathering |
+| **EIDAuthenticationPackage** | LSA Package DLL | Core authentication logic, integrates with LSASS |
+| **EIDCredentialProvider** | Credential Provider v2 DLL | Login screen UI and credential gathering |
 | **EIDPasswordChangeNotification** | Password Filter DLL | Synchronizes password changes with smart card |
-| **EIDConfigurationWizard** | GUI Application | User-facing tool for smart card enrollment |
-| **EIDConfigurationWizardElevated** | Elevated Helper | UAC elevation helper for admin tasks |
-| **EIDLogManager** | Diagnostic Tool | Enable/disable event tracing |
-| **EIDCardLibrary** | Static Library | Shared smart card and crypto utilities |
-| **EIDTest** | Test Suite | Component unit tests |
+| **EIDConfigurationWizard** | C++ GUI Application | User-facing tool for smart card enrollment |
+| **EIDConfigurationWizardElevated** | C++ Elevated Helper | UAC elevation helper for admin tasks |
+| **EIDLogManager** | C++ Diagnostic Tool | Enable/disable event tracing |
+| **EIDCardLibrary** | C++ Static Library | Shared smart card and crypto utilities |
+| **EIDTest** | C++ Test Suite | Component unit tests |
 
 ### Installation Layout
 

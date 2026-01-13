@@ -206,7 +206,6 @@
     <ClCompile Include="EIDTestUtil.cpp" />
     <ClCompile Include="GPOTest.cpp" />
     <ClCompile Include="LSAFunctionSubstitute.cpp" />
-    <ClCompile Include="OnlineDatabaseTest.cpp" />
     <ClCompile Include="PackageTest.cpp" />
     <ClCompile Include="SmartCardModuleTest.cpp" />
     <ClCompile Include="stdafx.cpp">
