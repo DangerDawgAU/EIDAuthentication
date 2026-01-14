@@ -492,7 +492,7 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 			return STATUS_INVALID_PARAMETER_3;
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Remap Logon from %d",pUnlockLogon->Logon.UserName.Buffer);
-		pUnlockLogon->Logon.UserName.Buffer = PWSTR((ULONG_PTR)( pUnlockLogon) + (PUCHAR) pUnlockLogon->Logon.UserName.Buffer);
+		pUnlockLogon->Logon.UserName.Buffer = PWSTR((ULONG_PTR)( pUnlockLogon) + (ULONG_PTR) pUnlockLogon->Logon.UserName.Buffer);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Remap Logon to %d",pUnlockLogon->Logon.UserName.Buffer);
 	}
 	if ((pUnlockLogon->Logon.LogonDomainName.Buffer) != NULL)
@@ -508,7 +508,7 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 			return STATUS_INVALID_PARAMETER_3;
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Remap LogonDomainName from %d",pUnlockLogon->Logon.LogonDomainName.Buffer);
-		pUnlockLogon->Logon.LogonDomainName.Buffer = PWSTR((ULONG_PTR)( pUnlockLogon) + (PUCHAR) pUnlockLogon->Logon.LogonDomainName.Buffer);
+		pUnlockLogon->Logon.LogonDomainName.Buffer = PWSTR((ULONG_PTR)( pUnlockLogon) + (ULONG_PTR) pUnlockLogon->Logon.LogonDomainName.Buffer);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Remap LogonDomainName to %d",pUnlockLogon->Logon.LogonDomainName.Buffer);
 	}
 	if ((pUnlockLogon->Logon.Pin.Buffer) != NULL)
@@ -524,7 +524,7 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 			return STATUS_INVALID_PARAMETER_3;
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Remap Pin from %d",pUnlockLogon->Logon.Pin.Buffer);
-		pUnlockLogon->Logon.Pin.Buffer = PWSTR((ULONG_PTR)( pUnlockLogon) + (PUCHAR) pUnlockLogon->Logon.Pin.Buffer);
+		pUnlockLogon->Logon.Pin.Buffer = PWSTR((ULONG_PTR)( pUnlockLogon) + (ULONG_PTR) pUnlockLogon->Logon.Pin.Buffer);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Remap Pin to %d",pUnlockLogon->Logon.Pin.Buffer);
 	}
 	if ((pUnlockLogon->Logon.CspData) != NULL)
@@ -535,7 +535,7 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 			return STATUS_INVALID_PARAMETER_3;
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Remap CSPData from %d",pUnlockLogon->Logon.CspData);
-		pUnlockLogon->Logon.CspData = PUCHAR( (PBYTE)pUnlockLogon + (DWORD) pUnlockLogon->Logon.CspData);
+		pUnlockLogon->Logon.CspData = PUCHAR( (PBYTE)pUnlockLogon + (ULONG_PTR) pUnlockLogon->Logon.CspData);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Remap CSPData to %d",pUnlockLogon->Logon.CspData);
 	}
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Leave");
