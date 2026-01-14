@@ -471,6 +471,19 @@ HRESULT CallAuthPackage(LPCWSTR username ,LPWSTR * szAuthPackageValue, PULONG sz
 
 // change pointer according ClientAuthenticationBase : the struct is a copy
 // so pointer are invalid
+// Helper function to safely check buffer bounds without integer overflow
+// Returns TRUE if offset + length would exceed limit or if addition overflows
+static BOOL SafeCheckBufferOverflow(ULONG_PTR offset, ULONG length, ULONG limit)
+{
+	// Check if addition would overflow
+	if (offset > MAXULONG_PTR - length)
+	{
+		return TRUE; // Overflow detected
+	}
+	// Safe to add - check bounds
+	return (offset + length > limit);
+}
+
 NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAuthenticationBase, ULONG AuthenticationInformationLength)
 {
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Diff %d %d",(PUCHAR) pUnlockLogon, (PUCHAR) ClientAuthenticationBase);
@@ -481,12 +494,13 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 	}
 	if ((pUnlockLogon->Logon.UserName.Buffer) != NULL)
 	{
-		if ((ULONG_PTR)(pUnlockLogon->Logon.UserName.Buffer) + pUnlockLogon->Logon.UserName.MaximumLength > AuthenticationInformationLength)
+		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.UserName.Buffer);
+		if (SafeCheckBufferOverflow(offset, pUnlockLogon->Logon.UserName.MaximumLength, AuthenticationInformationLength))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"UserName Overflow1");
 			return STATUS_INVALID_PARAMETER_3;
 		}
-		if ((ULONG_PTR)(pUnlockLogon->Logon.UserName.Buffer) + pUnlockLogon->Logon.UserName.Length > AuthenticationInformationLength)
+		if (SafeCheckBufferOverflow(offset, pUnlockLogon->Logon.UserName.Length, AuthenticationInformationLength))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"UserName Overflow2");
 			return STATUS_INVALID_PARAMETER_3;
@@ -497,12 +511,13 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 	}
 	if ((pUnlockLogon->Logon.LogonDomainName.Buffer) != NULL)
 	{
-		if ((ULONG_PTR)(pUnlockLogon->Logon.LogonDomainName.Buffer) + pUnlockLogon->Logon.LogonDomainName.MaximumLength > AuthenticationInformationLength)
+		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.LogonDomainName.Buffer);
+		if (SafeCheckBufferOverflow(offset, pUnlockLogon->Logon.LogonDomainName.MaximumLength, AuthenticationInformationLength))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"LogonDomainName Overflow1");
 			return STATUS_INVALID_PARAMETER_3;
 		}
-		if ((ULONG_PTR)(pUnlockLogon->Logon.LogonDomainName.Buffer) + pUnlockLogon->Logon.LogonDomainName.Length > AuthenticationInformationLength)
+		if (SafeCheckBufferOverflow(offset, pUnlockLogon->Logon.LogonDomainName.Length, AuthenticationInformationLength))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"LogonDomainName Overflow2");
 			return STATUS_INVALID_PARAMETER_3;
@@ -513,12 +528,13 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 	}
 	if ((pUnlockLogon->Logon.Pin.Buffer) != NULL)
 	{
-		if ((ULONG_PTR)(pUnlockLogon->Logon.Pin.Buffer) + pUnlockLogon->Logon.Pin.MaximumLength > AuthenticationInformationLength)
+		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.Pin.Buffer);
+		if (SafeCheckBufferOverflow(offset, pUnlockLogon->Logon.Pin.MaximumLength, AuthenticationInformationLength))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Pin Overflow1");
 			return STATUS_INVALID_PARAMETER_3;
 		}
-		if ((ULONG_PTR)(pUnlockLogon->Logon.Pin.Buffer) + pUnlockLogon->Logon.Pin.Length > AuthenticationInformationLength)
+		if (SafeCheckBufferOverflow(offset, pUnlockLogon->Logon.Pin.Length, AuthenticationInformationLength))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Pin Overflow2");
 			return STATUS_INVALID_PARAMETER_3;
@@ -529,7 +545,8 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 	}
 	if ((pUnlockLogon->Logon.CspData) != NULL)
 	{
-		if ((ULONG_PTR)(pUnlockLogon->Logon.CspData) + pUnlockLogon->Logon.CspDataLength > AuthenticationInformationLength)
+		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.CspData);
+		if (SafeCheckBufferOverflow(offset, pUnlockLogon->Logon.CspDataLength, AuthenticationInformationLength))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CspData Overflow");
 			return STATUS_INVALID_PARAMETER_3;
