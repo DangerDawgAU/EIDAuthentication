@@ -436,7 +436,11 @@ PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSi
 	__finally
 	{
 		if (!pReturn && pRequest)
+		{
+			// Securely zero PIN and other sensitive data before freeing
+			SecureZeroMemory(pRequest, dwTotalSize);
 			EIDFree(pRequest);
+		}
 		if (szUserName)
 			EIDFree(szUserName);
 	}

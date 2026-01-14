@@ -470,11 +470,20 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 		if (hHash)
 			CryptDestroyHash(hHash);
 		if (pSymetricKey)
+		{
+			SecureZeroMemory(pSymetricKey, usSymetricKeySize);
 			EIDFree(pSymetricKey);
+		}
 		if (pEncryptedPassword)
+		{
+			SecureZeroMemory(pEncryptedPassword, usEncryptedPasswordSize);
 			EIDFree(pEncryptedPassword);
+		}
 		if (pbSecret)
+		{
+			SecureZeroMemory(pbSecret, usSecretSize);
 			EIDFree(pbSecret);
+		}
 		if (hSymetricKey)
 			CryptDestroyKey(hSymetricKey);
 		if (hKey)
@@ -1482,14 +1491,17 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 	{
 		if (!fReturn)
 		{
-			if (*pszPassword) 
+			if (*pszPassword)
 			{
+				SecureZeroMemory(*pszPassword, wcslen(*pszPassword) * sizeof(WCHAR));
 				EIDFree(*pszPassword);
 				*pszPassword = NULL;
 			}
 		}
 		if (pEidPrivateData)
 		{
+			// Zero entire structure including password data
+			SecureZeroMemory(pEidPrivateData, sizeof(EID_PRIVATE_DATA) + pEidPrivateData->dwCertificatSize + pEidPrivateData->dwSymetricKeySize + pEidPrivateData->dwPasswordSize);
 			EIDFree(pEidPrivateData);
 		}
 		if (hKey)
@@ -1637,8 +1649,9 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 		{
 			if (pszPassword)
 			{
-				if (*pszPassword) 
+				if (*pszPassword)
 				{
+					SecureZeroMemory(*pszPassword, wcslen(*pszPassword) * sizeof(WCHAR));
 					EIDFree(*pszPassword);
 					*pszPassword = NULL;
 				}
@@ -1646,6 +1659,8 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 		}
 		if (pEidPrivateData)
 		{
+			// Zero entire structure including password data
+			SecureZeroMemory(pEidPrivateData, sizeof(EID_PRIVATE_DATA) + pEidPrivateData->dwCertificatSize + pEidPrivateData->dwSymetricKeySize + pEidPrivateData->dwPasswordSize);
 			EIDFree(pEidPrivateData);
 		}
 		if (pKeyProvInfo)
