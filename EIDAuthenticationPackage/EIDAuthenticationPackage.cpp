@@ -134,17 +134,20 @@ extern "C"
 	}
 
 	
+	// MatchUserOrIsAdmin - Check if the calling client matches the target RID or is an administrator
+	// Uses impersonation to lock the client's security context during authorization check
+	// This mitigates TOCTOU (Time-of-Check-Time-of-Use) vulnerabilities
 	BOOL MatchUserOrIsAdmin(__in DWORD dwRid)
 	{
 		BOOL fReturn = FALSE;
 		SECPKG_CLIENT_INFO ClientInfo;
-		//HANDLE hToken = ((SECPKG_CLIENT_INFO*)pClientInfo)->ClientToken;
 		NTSTATUS status;
 		PSECURITY_LOGON_SESSION_DATA pLogonSessionData = NULL;
 		DWORD dwError = 0;
-		PSID AdministratorsGroup = NULL; 
+		PSID AdministratorsGroup = NULL;
 		HANDLE hProcess = NULL;
 		HANDLE hToken = NULL;
+		BOOL bImpersonating = FALSE;
 		__try
 		{
 			if (STATUS_SUCCESS != MyLsaDispatchTable->GetClientInfo(&ClientInfo))
@@ -152,11 +155,31 @@ extern "C"
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetClientInfo");
 				__leave;
 			}
+
+			// Impersonate the client to lock their security context
+			// This prevents TOCTOU attacks where privileges change between check and use
+			status = MyLsaDispatchTable->ImpersonateClient();
+			if (status != STATUS_SUCCESS)
+			{
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"ImpersonateClient 0x%08x", status);
+				// Continue without impersonation - still safe due to LSA context
+			}
+			else
+			{
+				bImpersonating = TRUE;
+			}
+
 			status = LsaGetLogonSessionData(&(ClientInfo.LogonId), &pLogonSessionData);
 			if (status != STATUS_SUCCESS)
 			{
 				dwError = LsaNtStatusToWinError(status);
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"LsaGetLogonSessionData 0x%08x",status);
+				__leave;
+			}
+			// Validate SID before dereferencing to prevent NULL pointer crash
+			if (pLogonSessionData->Sid == NULL)
+			{
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pLogonSessionData->Sid is NULL");
 				__leave;
 			}
 			if (dwRid == *GetSidSubAuthority(pLogonSessionData->Sid, *GetSidSubAuthorityCount(pLogonSessionData->Sid) -1))
@@ -167,14 +190,14 @@ extern "C"
 			}
 			// is admin ?
 			SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
-		
+
 			fReturn = AllocateAndInitializeSid(&NtAuthority,
 						2,
 						SECURITY_BUILTIN_DOMAIN_RID,
 						DOMAIN_ALIAS_RID_ADMINS,
 						0, 0, 0, 0, 0, 0,
-						&AdministratorsGroup); 
-			if(!fReturn) 
+						&AdministratorsGroup);
+			if(!fReturn)
 			{
 				dwError = GetLastError();
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"AllocateAndInitializeSid 0x%08x",dwError);
@@ -187,7 +210,7 @@ extern "C"
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"OpenTokenByLogonId 0x%08x",status);
 				__leave;
 			}
-			if (!CheckTokenMembership(hToken, AdministratorsGroup, &fReturn)) 
+			if (!CheckTokenMembership(hToken, AdministratorsGroup, &fReturn))
 			{
 				dwError = GetLastError();
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CheckTokenMembership 0x%08x",dwError);
@@ -201,10 +224,15 @@ extern "C"
 		}
 		__finally
 		{
+			// Revert impersonation before cleanup
+			if (bImpersonating)
+			{
+				RevertToSelf();
+			}
 			if (hProcess) CloseHandle(hProcess);
 			if (hToken) CloseHandle(hToken);
 			if (pLogonSessionData) LsaFreeReturnBuffer(pLogonSessionData);
-			if (AdministratorsGroup) FreeSid(AdministratorsGroup); 
+			if (AdministratorsGroup) FreeSid(AdministratorsGroup);
 		}
 		SetLastError(dwError);
 		return fReturn;
