@@ -702,7 +702,7 @@ extern "C"
 			// default output : the PIN given to LSA (not crypted)
 			*pResultingPin = pwzPin;
 			// try to know if the PIN was crypted (Vista & later)
-			hModule = LoadLibrary(TEXT("Advapi32.dll"));
+			hModule = EIDLoadSystemLibrary(TEXT("Advapi32.dll"));
 			if (hModule == NULL)
 			{
 				__leave;
@@ -835,18 +835,18 @@ extern "C"
 
 			pCertContext = GetCertificateFromCspInfo(pSmartCardCspInfo);
 			if (!pCertContext) {
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to create certificate from logon info");
+				EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"Smart card logon failed: Unable to get certificate from CSP info");
 				return STATUS_LOGON_FAILURE;
 			}
-			
+
 			// username = username on certificate
 			if (!manager->GetUsernameFromCertContext(pCertContext, &szUserName, &dwRid))
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetUsernameFromCertContext 0x%08x",GetLastError());
+				EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"Smart card logon failed: Could not get username from certificate (0x%08x)", GetLastError());
 				return STATUS_LOGON_FAILURE;
 			}
 			if (!szUserName) {
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Username from cert null");
+				EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"Smart card logon failed: NULL username from certificate");
 				return STATUS_LOGON_FAILURE;
 			}
 			*AccountName = LsaInitializeUnicodeStringFromWideString(szUserName);
@@ -855,7 +855,7 @@ extern "C"
 			// AccountName is known !
 			if (!IsTrustedCertificate(pCertContext))
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Untrusted certificate 0x%08x",GetLastError());
+				EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"Smart card logon failed for user '%s': Untrusted certificate (0x%08x)", szUserName, GetLastError());
 				return STATUS_LOGON_FAILURE;
 			}
 			
@@ -885,23 +885,29 @@ extern "C"
 				MyLsaDispatchTable->FreeLsaHeap(MyTokenInformation);
 				switch(dwError)
 				{
-					case NTE_BAD_KEYSET_PARAM:	
+					case NTE_BAD_KEYSET_PARAM:
 					case NTE_BAD_PUBLIC_KEY:
 					case NTE_BAD_KEYSET:
+						EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"Smart card logon failed for user '%wZ': No keyset", *AccountName);
 						return STATUS_SMARTCARD_NO_KEYSET;
 					case SCARD_W_WRONG_CHV:
+						EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"Smart card logon failed for user '%wZ': Wrong PIN", *AccountName);
 						*SubStatus = 0xFFFFFFFF;
 						return STATUS_SMARTCARD_WRONG_PIN;
 					case SCARD_W_CHV_BLOCKED:
+						EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"Smart card logon failed for user '%wZ': Card blocked (too many PIN attempts)", *AccountName);
 						return STATUS_SMARTCARD_CARD_BLOCKED;
 					case NTE_SILENT_CONTEXT:
+						EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"Smart card logon failed for user '%wZ': Silent context error", *AccountName);
 						return STATUS_SMARTCARD_SILENT_CONTEXT;
 					case SCARD_W_CARD_NOT_AUTHENTICATED:
+						EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"Smart card logon failed for user '%wZ': Card not authenticated", *AccountName);
 						return STATUS_SMARTCARD_CARD_NOT_AUTHENTICATED;
 					default:
+						EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"Smart card logon failed for user '%wZ': I/O error (0x%08x)", *AccountName, dwError);
 						return STATUS_SMARTCARD_IO_ERROR;
 				}
-				
+
 			}
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"RetrieveStoredCredential OK");
 
@@ -953,6 +959,8 @@ extern "C"
 			}
 			Status = STATUS_SUCCESS;
 
+			// Log successful authentication
+			EIDSecurityAudit(SECURITY_AUDIT_SUCCESS, L"Smart card logon succeeded for user '%wZ'", *AccountName);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Success !!");
 			return Status;
 		}

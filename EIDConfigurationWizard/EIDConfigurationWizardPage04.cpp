@@ -9,6 +9,7 @@
 #include "../EIDCardLibrary/GPO.h"
 #include "../EIDCardLibrary/CContainer.h"
 #include "../EIDCardLibrary/CContainerHolderFactory.h"
+#include "../EIDCardLibrary/EIDCardLibrary.h"
 
 #include "CContainerHolder.h"
 
@@ -264,8 +265,8 @@ BOOL InitListViewCheckIcon(HWND hWndListView)
     ImageList_SetBkColor(hLarge, GetSysColor(COLOR_WINDOW));
 	ImageList_SetBkColor(hSmall, GetSysColor(COLOR_WINDOW));
 
-	// Add an icon to each image list.  
-	HMODULE hDll = LoadLibrary(TEXT("imageres.dll") );
+	// Add an icon to each image list.
+	HMODULE hDll = EIDLoadSystemLibrary(TEXT("imageres.dll"));
 	//Check if hIcon is valid
 	if (hDll)
 	{
@@ -313,7 +314,7 @@ HICON LoadModIcon(int Num)
 	HICON hCertNOK = NULL, hNOK = NULL;
 	__try
 	{
-		hDll2 = LoadLibrary(TEXT("imageres.dll") );
+		hDll2 = EIDLoadSystemLibrary(TEXT("imageres.dll"));
 		if (!hDll2) __leave;
 		hResInfo = FindResource(hDll2,MAKEINTRESOURCE(Num),RT_GROUP_ICON);
 		if (!hResInfo) __leave;
@@ -358,19 +359,19 @@ BOOL InitListViewListIcon(HWND hWndListView)
     ImageList_SetBkColor(hLarge, GetSysColor(COLOR_WINDOW));
 	ImageList_SetBkColor(hSmall, GetSysColor(COLOR_WINDOW));
 
-	// Add an icon to each image list.  
-	HMODULE hDll = LoadLibrary(TEXT("certmgr.dll") );
+	// Add an icon to each image list.
+	HMODULE hDll = EIDLoadSystemLibrary(TEXT("certmgr.dll"));
 	if (hDll)
 	{
 		//Check if hIcon is valid
 		HICON hIcon = LoadIcon(hDll, MAKEINTRESOURCE(218));
-		ImageList_AddIcon(hLarge, hIcon ); 
-		ImageList_AddIcon(hSmall, hIcon ); 
-		
-		DestroyIcon(hIcon ); 
+		ImageList_AddIcon(hLarge, hIcon );
+		ImageList_AddIcon(hSmall, hIcon );
+
+		DestroyIcon(hIcon );
 		FreeLibrary(hDll);
 	}
-	hDll = LoadLibrary(TEXT("imageres.dll") );
+	hDll = EIDLoadSystemLibrary(TEXT("imageres.dll"));
 	if (hDll)
 	{
 		HICON hIcon = MiniIcon(LoadModIcon(105));

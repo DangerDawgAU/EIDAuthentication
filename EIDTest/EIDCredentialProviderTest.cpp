@@ -390,7 +390,7 @@ BOOL AuthenticateWithSSPI(PTSTR szPrincipal, PTSTR szPassword, PTSTR szSSP)
 				
 				if (packetnum == 1 && _tcscmp(szSSP,TEXT("Negotiate")) == 0)
 				{
-					// on essaie de vérifier la négotiation
+					// on essaie de vï¿½rifier la nï¿½gotiation
 					if (strcmp((PCHAR)bufC2S,("NTLMSSP")) == 0)
 					{
 						MessageBox(hMainWnd,TEXT("Only NTLM SSP availale"),TEXT("test"),0);
@@ -701,7 +701,7 @@ void menu_ResetPasswordWizard()
 	{
 		__try
 		{
-			keymgrDll = LoadLibrary(TEXT("keymgr.dll"));
+			keymgrDll = EIDLoadSystemLibrary(TEXT("keymgr.dll"));
 			if (!keymgrDll)
 			{
 				__leave;

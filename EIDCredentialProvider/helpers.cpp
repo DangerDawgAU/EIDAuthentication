@@ -319,7 +319,7 @@ static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT messa
 							NetApiBufferFree(pbBuffer);
 							__try
 							{
-								keymgrDll = LoadLibrary(TEXT("keymgr.dll"));
+								keymgrDll = EIDLoadSystemLibrary(TEXT("keymgr.dll"));
 								if (!keymgrDll)
 								{
 									__leave;

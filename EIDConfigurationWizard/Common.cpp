@@ -4,6 +4,7 @@
 
 #include "../EIDCardLibrary/GPO.h"
 #include "../EIDCardLibrary/Tracing.h"
+#include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "EIDConfigurationWizard.h"
 
 extern HINSTANCE g_hinst;
@@ -25,7 +26,7 @@ VOID CenterWindow(HWND hWnd)
 
 VOID SetIcon(HWND hWnd)
 {
-	HMODULE hDll = LoadLibrary(TEXT("imageres.dll") );
+	HMODULE hDll = EIDLoadSystemLibrary(TEXT("imageres.dll"));
 	if (hDll)
 	{
 		HANDLE hbicon = LoadImage(hDll, MAKEINTRESOURCE(58),IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), 0);

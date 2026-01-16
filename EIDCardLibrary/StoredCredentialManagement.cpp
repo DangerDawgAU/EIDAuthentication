@@ -33,6 +33,7 @@
 
 #include "EidCardLibrary.h"
 #include "Tracing.h"
+#include "CertificateValidation.h"
 
 #define CREDENTIALPROVIDER MS_ENH_RSA_AES_PROV
 #define CREDENTIALKEYLENGTH 256
@@ -978,6 +979,13 @@ BOOL CStoredCredentialManager::GetResponseFromCryptedChallenge(__in PBYTE pChall
 			__leave;
 		}
 		dwKeySpec = pProvInfo->dwKeySpec;
+		// Security: Validate CSP provider before loading
+		if (!IsAllowedCSPProvider(pProvInfo->pwszProvName))
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"CSP provider '%s' not allowed", pProvInfo->pwszProvName);
+			dwError = ERROR_ACCESS_DENIED;
+			__leave;
+		}
 		if (!CryptAcquireCertificatePrivateKey(pCertContext,CRYPT_ACQUIRE_SILENT_FLAG | CRYPT_ACQUIRE_USE_PROV_INFO_FLAG,NULL,&hProv,&dwKeySpec,&fCallerFreeProv))
 		{
 			dwError = GetLastError();
@@ -2147,7 +2155,7 @@ SamIFree_SAMPR_USER_INFO_BUFFER MySamIFree;
 
 NTSTATUS LoadSamSrv()
 {
-	samsrvDll = LoadLibrary(TEXT("samsrv.dll"));
+	samsrvDll = EIDLoadSystemLibrary(TEXT("samsrv.dll"));
 	if (!samsrvDll)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"LoadSam failed 0x%08x",GetLastError());

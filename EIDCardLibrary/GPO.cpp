@@ -39,7 +39,7 @@ typedef struct _GPOInfo
 	LPCTSTR Value;
 } GPOInfo;
 
-GPOInfo MyGPOInfo[] = 
+GPOInfo MyGPOInfo[] =
 {
   {szMainGPOKey, _T("AllowSignatureOnlyKeys") },
   {szMainGPOKey, _T("AllowCertificatesWithNoEKU") },
@@ -54,7 +54,8 @@ GPOInfo MyGPOInfo[] =
   {szMainGPOKey, _T("FilterDuplicateCertificates") },
   {szMainGPOKey, _T("ForceReadingAllCertificates") },
   {szForceGPOKey, _T("scforceoption") },
-  {szRemoveGPOKey, _T("scremoveoption") }
+  {szRemoveGPOKey, _T("scremoveoption") },
+  {szMainGPOKey, _T("EnforceCSPWhitelist") }  // Security: block CSPs not in whitelist
 };
 
 DWORD GetPolicyValue( GPOPolicy Policy)

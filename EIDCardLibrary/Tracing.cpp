@@ -378,3 +378,54 @@ BOOL StopLogging()
 	SetLastError(err);
 	return fReturn;
 }
+
+// Security audit logging - provides visibility into security-relevant events
+// Logs to ETW with security-specific formatting for SIEM/security monitoring tools
+void EIDSecurityAuditEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR dwAuditType, PCWSTR szFormat,...)
+{
+	WCHAR Buffer[512];
+	WCHAR AuditBuffer[600];
+	int ret;
+	va_list ap;
+	LPCWSTR pwszAuditPrefix;
+
+	if (bFirst)
+	{
+		EIDCardLibraryTracingRegister();
+	}
+
+	// Determine audit type prefix for easy filtering
+	switch (dwAuditType)
+	{
+	case 0:  // SECURITY_AUDIT_SUCCESS
+		pwszAuditPrefix = L"[SECURITY-AUDIT-SUCCESS]";
+		break;
+	case 1:  // SECURITY_AUDIT_FAILURE
+		pwszAuditPrefix = L"[SECURITY-AUDIT-FAILURE]";
+		break;
+	case 2:  // SECURITY_AUDIT_WARNING
+		pwszAuditPrefix = L"[SECURITY-AUDIT-WARNING]";
+		break;
+	default:
+		pwszAuditPrefix = L"[SECURITY-AUDIT]";
+		break;
+	}
+
+	va_start(ap, szFormat);
+	ret = _vsnwprintf_s(Buffer, ARRAYSIZE(Buffer), _TRUNCATE, szFormat, ap);
+	va_end(ap);
+	if (ret < 0) return;
+
+	// Format with security audit prefix and location info
+	swprintf_s(AuditBuffer, ARRAYSIZE(AuditBuffer), L"%s %S:%d - %s", pwszAuditPrefix, szFunction, dwLine, Buffer);
+
+#ifdef _DEBUG
+	OutputDebugString(AuditBuffer);
+	OutputDebugString(L"\r\n");
+#endif
+
+	// Log security audits at ERROR level to ensure they are captured
+	// Failures are logged at CRITICAL level for highest visibility
+	UCHAR dwLevel = (dwAuditType == 1) ? WINEVENT_LEVEL_CRITICAL : WINEVENT_LEVEL_ERROR;
+	EventWriteString(hPub, dwLevel, 0, AuditBuffer);
+}

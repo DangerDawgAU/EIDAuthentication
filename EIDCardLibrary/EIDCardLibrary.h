@@ -38,6 +38,10 @@ VOID EIDImpersonate();
 VOID EIDRevertToSelf();
 BOOL EIDIsComponentInLSAContext();
 
+// Secure DLL loading - prevents DLL hijacking by using full system paths
+// Use this instead of LoadLibrary for system DLLs
+HMODULE EIDLoadSystemLibrary(LPCTSTR szDllName);
+
 typedef enum _EID_INTERACTIVE_LOGON_SUBMIT_TYPE
 {
 	EID_INTERACTIVE_LOGON_SUBMIT_TYPE_VANILLIA = 13, //KerbCertificateLogon = 13

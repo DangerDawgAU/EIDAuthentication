@@ -34,6 +34,7 @@ enum GPOPolicy
   ForceReadingAllCertificates,
   scforceoption,
   scremoveoption,
+  EnforceCSPWhitelist,  // Security: block CSP providers not in whitelist
 } ;
 
 

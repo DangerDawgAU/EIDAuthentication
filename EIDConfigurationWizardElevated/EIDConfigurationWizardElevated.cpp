@@ -1,8 +1,38 @@
 #include <windows.h>
 #include <tchar.h>
+#include <strsafe.h>
 #include "EIDConfigurationWizardElevated.h"
 
 HINSTANCE g_hinst;
+
+// Secure DLL loading function - prevents DLL hijacking attacks
+static HMODULE LoadSystemLibrarySafe(LPCTSTR szDllName)
+{
+	TCHAR szFullPath[MAX_PATH];
+	UINT uLen;
+
+	if (szDllName == NULL || _tcschr(szDllName, TEXT('\\')) != NULL || _tcschr(szDllName, TEXT('/')) != NULL)
+	{
+		SetLastError(ERROR_INVALID_PARAMETER);
+		return NULL;
+	}
+
+	uLen = GetSystemDirectory(szFullPath, ARRAYSIZE(szFullPath));
+	if (uLen == 0 || uLen >= ARRAYSIZE(szFullPath))
+	{
+		SetLastError(ERROR_BUFFER_OVERFLOW);
+		return NULL;
+	}
+
+	if (FAILED(StringCchCat(szFullPath, ARRAYSIZE(szFullPath), TEXT("\\"))) ||
+		FAILED(StringCchCat(szFullPath, ARRAYSIZE(szFullPath), szDllName)))
+	{
+		SetLastError(ERROR_BUFFER_OVERFLOW);
+		return NULL;
+	}
+
+	return LoadLibrary(szFullPath);
+}
 INT_PTR CALLBACK	WndProc_RemovePolicy(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK	WndProc_ForcePolicy(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -46,7 +76,7 @@ VOID CenterWindow(HWND hWnd)
 
 VOID SetIcon(HWND hWnd)
 {
-	HMODULE hDll = LoadLibrary(TEXT("imageres.dll") );
+	HMODULE hDll = LoadSystemLibrarySafe(TEXT("imageres.dll"));
 	if (hDll)
 	{
 		HANDLE hbicon = LoadImage(hDll, MAKEINTRESOURCE(58),IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), 0);

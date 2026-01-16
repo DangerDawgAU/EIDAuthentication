@@ -181,6 +181,41 @@ BOOL EIDIsComponentInLSAContext()
 {
 	return (MyImpersonate != NULL);
 }
+
+// Secure DLL loading function - prevents DLL hijacking attacks
+// by constructing full paths to system DLLs instead of relying on search order
+HMODULE EIDLoadSystemLibrary(LPCTSTR szDllName)
+{
+	TCHAR szFullPath[MAX_PATH];
+	UINT uLen;
+
+	// Validate input - DLL name should not contain path separators
+	if (szDllName == NULL || _tcschr(szDllName, TEXT('\\')) != NULL || _tcschr(szDllName, TEXT('/')) != NULL)
+	{
+		SetLastError(ERROR_INVALID_PARAMETER);
+		return NULL;
+	}
+
+	// Get System32 directory
+	uLen = GetSystemDirectory(szFullPath, ARRAYSIZE(szFullPath));
+	if (uLen == 0 || uLen >= ARRAYSIZE(szFullPath))
+	{
+		SetLastError(ERROR_BUFFER_OVERFLOW);
+		return NULL;
+	}
+
+	// Construct full path: System32\DllName
+	if (FAILED(StringCchCat(szFullPath, ARRAYSIZE(szFullPath), TEXT("\\"))) ||
+		FAILED(StringCchCat(szFullPath, ARRAYSIZE(szFullPath), szDllName)))
+	{
+		SetLastError(ERROR_BUFFER_OVERFLOW);
+		return NULL;
+	}
+
+	// Load from the explicit full path
+	return LoadLibrary(szFullPath);
+}
+
 //
 // This function copies the length of pwz and the pointer pwz into the UNICODE_STRING structure
 // This function is intended for serializing a credential in GetSerialization only.

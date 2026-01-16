@@ -321,7 +321,7 @@ HRESULT CEIDProvider::GetFieldDescriptorAt(
 					(*ppcpfd)->pszLabel = NULL;
 					(*ppcpfd)->dwFieldID = s_rgCredProvFieldDescriptors[dwIndex].dwFieldID;
 					(*ppcpfd)->cpft = s_rgCredProvFieldDescriptors[dwIndex].cpft;
-					HINSTANCE Handle = LoadLibrary(TEXT("SmartcardCredentialProvider.dll"));
+					HINSTANCE Handle = EIDLoadSystemLibrary(TEXT("SmartcardCredentialProvider.dll"));
 					if (Handle)
 					{
 						DWORD dwMessageLen = 256;

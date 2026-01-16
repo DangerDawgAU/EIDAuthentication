@@ -2,6 +2,7 @@
 #include <tchar.h>
 #include "../EIDCardLibrary/CContainer.h"
 #include "../EIDCardLibrary/CContainerHolderFactory.h"
+#include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "CContainerHolder.h"
 #include "global.h"
 #include "EIDConfigurationWizard.h"
@@ -30,10 +31,10 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, WPARAM wParam, 
 		}*/
 		
 		{
-			HMODULE hDll = LoadLibrary(TEXT("imageres.dll") );
+			HMODULE hDll = EIDLoadSystemLibrary(TEXT("imageres.dll"));
 			if (hDll)
 			{
-				HICON hIcon = LoadIcon(hDll, MAKEINTRESOURCE(106)); 
+				HICON hIcon = LoadIcon(hDll, MAKEINTRESOURCE(106));
 				SendMessage(GetDlgItem(hWnd,IDC_06SHIELD),STM_SETIMAGE,IMAGE_ICON, (LPARAM) hIcon);
 				DestroyIcon(hIcon);
 				FreeLibrary(hDll);

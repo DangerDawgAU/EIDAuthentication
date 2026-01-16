@@ -25,6 +25,7 @@
 #include <unknwn.h>
 #include "../EIDCardLibrary/guid.h"
 #include "../EIDCardLibrary/GPO.h"
+#include "../EIDCardLibrary/EIDCardLibrary.h"
 
 #include <CodeAnalysis/warnings.h>
 #pragma warning(push)
@@ -194,7 +195,7 @@ HRESULT CMessageCredential::GetStringValue(
 			{
 				MessageId = 1;
 			}
-			HINSTANCE Handle = LoadLibrary(TEXT("SmartcardCredentialProvider.dll"));
+			HINSTANCE Handle = EIDLoadSystemLibrary(TEXT("SmartcardCredentialProvider.dll"));
 			if (Handle)
 			{
 				DWORD dwMessageLen = 256;

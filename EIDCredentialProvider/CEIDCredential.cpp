@@ -108,7 +108,7 @@ HRESULT CEIDCredential::Initialize()
     }
 	if (SUCCEEDED(hr))
     {
-        HINSTANCE Handle = LoadLibrary(TEXT("SmartcardCredentialProvider.dll"));
+        HINSTANCE Handle = EIDLoadSystemLibrary(TEXT("SmartcardCredentialProvider.dll"));
 		WCHAR Message[256] = L"";
 		if (Handle)
 		{
@@ -705,7 +705,7 @@ HRESULT CEIDCredential::ReportResult(
 		PWSTR Error = NULL;
 		if (ntsStatus == STATUS_SMARTCARD_WRONG_PIN && ntsSubstatus != 0xFFFFFFFF)
 		{
-			HINSTANCE Handle = LoadLibrary(TEXT("SmartcardCredentialProvider.dll"));
+			HINSTANCE Handle = EIDLoadSystemLibrary(TEXT("SmartcardCredentialProvider.dll"));
 			WCHAR Message[256] = L"%d retries";
 			WCHAR MessageFormatted[256];
 			if (Handle)

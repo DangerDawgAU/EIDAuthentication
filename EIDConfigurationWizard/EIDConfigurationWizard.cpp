@@ -205,7 +205,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	psh.hIcon = NULL;
 	psh.pszCaption = MAKEINTRESOURCE(IDS_CAPTION);
 
-	HMODULE hDll = LoadLibrary(TEXT("imageres.dll") );
+	HMODULE hDll = EIDLoadSystemLibrary(TEXT("imageres.dll"));
 	if (hDll)
 	{
 		psh.hIcon = LoadIcon(hDll, MAKEINTRESOURCE(58));

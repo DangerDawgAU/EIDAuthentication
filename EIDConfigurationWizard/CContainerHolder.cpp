@@ -8,6 +8,7 @@
 #include "../EIDCardLibrary/GPO.h"
 #include "../EIDCardLibrary/CertificateValidation.h"
 #include "../EIDCardLibrary/StoredCredentialManagement.h"
+#include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "CContainerHolder.h"
 
 #define CHECK_FAILED 0
@@ -54,7 +55,7 @@ BOOL GetTrustErrorMessage(DWORD dwError, PTSTR szName, DWORD dwSize)
 	{
 		dwResourceId = 3294;
 	}
-	HINSTANCE Handle = LoadLibrary(TEXT("cryptui.dll"));
+	HINSTANCE Handle = EIDLoadSystemLibrary(TEXT("cryptui.dll"));
 	if (Handle)
 	{
 		LoadStringW(Handle, dwResourceId, szName, dwSize);
@@ -62,7 +63,7 @@ BOOL GetTrustErrorMessage(DWORD dwError, PTSTR szName, DWORD dwSize)
 	}
 	else
 	{
-		swprintf_s(szName, dwSize, L"Unknow Error");
+		swprintf_s(szName, dwSize, L"Unknown Error");
 	}
 	return fReturn;
 } 

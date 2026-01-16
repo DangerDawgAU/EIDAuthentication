@@ -67,3 +67,14 @@ LONG EIDExceptionHandlerDebug( PEXCEPTION_POINTERS pExceptPtrs, BOOL fMustCrash 
 
 BOOL StartLogging();
 BOOL StopLogging();
+
+// Security audit logging for security-relevant events
+// These events are logged with elevated visibility for security monitoring
+#define SECURITY_AUDIT_SUCCESS    0
+#define SECURITY_AUDIT_FAILURE    1
+#define SECURITY_AUDIT_WARNING    2
+
+#define EIDSecurityAudit(dwAuditType, ...) \
+	EIDSecurityAuditEx(__FILE__,__LINE__,__FUNCTION__, dwAuditType, __VA_ARGS__);
+
+void EIDSecurityAuditEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction, UCHAR dwAuditType, PCWSTR szFormat,...);

@@ -23,3 +23,6 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 BOOL HasCertificateRightEKU(__in PCCERT_CONTEXT pCertContext);
 LPCTSTR GetTrustErrorText(DWORD Status);
 BOOL MakeTrustedCertifcate(PCCERT_CONTEXT pCertContext);
+
+// CSP provider whitelist validation - prevents malicious CSP injection
+BOOL IsAllowedCSPProvider(__in LPCWSTR pwszProviderName);

@@ -3,6 +3,7 @@
 
 #include "../EIDCardLibrary/CContainer.h"
 #include "../EIDCardLibrary/CContainerHolderFactory.h"
+#include "../EIDCardLibrary/EIDCardLibrary.h"
 // OnlineDatabase.h removed - internet reporting functionality disabled
 #include "CContainerHolder.h"
 #include "global.h"
@@ -36,10 +37,10 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, WPARAM wPara
 				// Button_SetElevationRequiredState removed - internet reporting disabled
 			}
 			{
-				HMODULE hDll = LoadLibrary(TEXT("imageres.dll") );
+				HMODULE hDll = EIDLoadSystemLibrary(TEXT("imageres.dll"));
 				if (hDll)
 				{
-					HICON hIcon = LoadIcon(hDll, MAKEINTRESOURCE(105)); 
+					HICON hIcon = LoadIcon(hDll, MAKEINTRESOURCE(105));
 					SendMessage(GetDlgItem(hWnd,IDC_07SHIELD),STM_SETIMAGE,IMAGE_ICON, (LPARAM) hIcon);
 					DestroyIcon(hIcon);
 					FreeLibrary(hDll);
