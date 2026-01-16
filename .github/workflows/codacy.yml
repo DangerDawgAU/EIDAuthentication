@@ -50,7 +50,7 @@ jobs:
 
       # Build the solution before analysis
       - name: Build solution
-        run: msbuild EIDCredentialProvider.sln /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v145 /p:GenerateFullPaths=true
+        run: msbuild EIDCredentialProvider.sln /p:Configuration=Release /p:Platform=x64 /p:GenerateFullPaths=true
 
       # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
       - name: Run Codacy Analysis CLI
