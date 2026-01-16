@@ -42,6 +42,12 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      # Install Windows SDK for smart card headers (cardmod.h)
+      - name: Install Windows SDK
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-version: latest
+
       # Retarget solution to v143 (available in VS 2022 Enterprise on runner)
       - name: Retarget solution to v143
         run: |
