@@ -46,7 +46,7 @@ jobs:
       - name: Install Visual Studio build tools
         uses: microsoft/setup-msbuild@v2
         with:
-          vs-version: '17.x'
+          vs-version: '17'
 
       # Build the solution before analysis
       - name: Build solution
