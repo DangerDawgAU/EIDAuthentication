@@ -37,16 +37,22 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
+      # Setup MSBuild
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      # Build the solution for CodeQL to trace
+      - name: Build solution
+        run: msbuild EIDCredentialProvider.sln /p:Configuration=Release /p:Platform=x64
+        continue-on-error: true
+
       # Perform CodeQL analysis
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{ matrix.language }}"
-          output: sarif-results
 
       # Upload results to GitHub Security
       - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_dir: sarif-results
         if: always()
