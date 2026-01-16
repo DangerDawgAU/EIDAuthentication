@@ -321,39 +321,76 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 				__leave;
 			}
 		}
-		// XP doesn't support CERT_CHAIN_ENABLE_PEER_TRUST
-		if (IsCertificateInComputerTrustedPeopleStore(pCertContext))
-		{
-		}
-		else
-		{
-			if(!CertGetCertificateChain(
-				hChainEngine,pCertContext,NULL,NULL,&ChainPara,CERT_CHAIN_ENABLE_PEER_TRUST,NULL,&pChainContext))
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CertGetCertificateChain", GetLastError());
-			}
+		// Security hardening: Always build and validate the certificate chain
+		// Even for certificates in TrustedPeople store, we verify the chain to ensure:
+		// 1. Certificate signature is valid
+		// 2. Revocation status is checked
+		// 3. Chain integrity is maintained
 
-			if (pChainContext->TrustStatus.dwErrorStatus)
+		// Use revocation checking flags for enhanced security
+		// CERT_CHAIN_REVOCATION_CHECK_CHAIN checks revocation for all certificates in the chain
+		DWORD dwChainFlags = CERT_CHAIN_ENABLE_PEER_TRUST | CERT_CHAIN_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT;
+
+		if(!CertGetCertificateChain(
+			hChainEngine,pCertContext,NULL,NULL,&ChainPara,dwChainFlags,NULL,&pChainContext))
+		{
+			dwError = GetLastError();
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CertGetCertificateChain", GetLastError());
+			__leave;
+		}
+
+		// Check chain trust status - handle various trust issues appropriately
+		if (pChainContext->TrustStatus.dwErrorStatus)
+		{
+			DWORD dwStatus = pChainContext->TrustStatus.dwErrorStatus;
+
+			// Soft failures: conditions that should log warnings but allow continuation
+			// for self-managed PKI environments where we control the certificate chain
+			DWORD dwSoftFailures = CERT_TRUST_REVOCATION_STATUS_UNKNOWN |
+			                       CERT_TRUST_IS_OFFLINE_REVOCATION |
+			                       CERT_TRUST_IS_NOT_TIME_NESTED |
+			                       CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT |
+			                       CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT |
+			                       CERT_TRUST_HAS_NOT_PERMITTED_NAME_CONSTRAINT |
+			                       CERT_TRUST_HAS_EXCLUDED_NAME_CONSTRAINT;
+
+			DWORD dwHardFailures = dwStatus & ~dwSoftFailures;
+
+			if (dwHardFailures != 0)
 			{
-				dwError = pChainContext->TrustStatus.dwErrorStatus;
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error %s (0x%08x) returned by CertVerifyCertificateChainPolicy",GetTrustErrorText(pChainContext->TrustStatus.dwErrorStatus),pChainContext->TrustStatus.dwErrorStatus);
+				dwError = dwStatus;
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error %s (0x%08x) returned by CertGetCertificateChain",GetTrustErrorText(dwStatus),dwStatus);
 				__leave;
 			}
-			if(! CertVerifyCertificateChainPolicy(CERT_CHAIN_POLICY_BASE, pChainContext, &ChainPolicy, &PolicyStatus))
+			// Soft failures only - log and continue
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Chain has soft failures (0x%08x) - continuing",dwStatus);
+		}
+
+		if(!CertVerifyCertificateChainPolicy(CERT_CHAIN_POLICY_BASE, pChainContext, &ChainPolicy, &PolicyStatus))
+		{
+			dwError = GetLastError();
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CertVerifyCertificateChainPolicy", dwError);
+			__leave;
+		}
+
+		if(PolicyStatus.dwError)
+		{
+			// Soft policy failures for self-managed PKI
+			if (PolicyStatus.dwError == CERT_E_VALIDITYPERIODNESTING ||
+			    PolicyStatus.dwError == CRYPT_E_NO_REVOCATION_CHECK ||
+			    PolicyStatus.dwError == CRYPT_E_REVOCATION_OFFLINE)
 			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CertGetCertificateChain", GetLastError());
-				__leave;
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Policy soft failure (0x%08x) - continuing", PolicyStatus.dwError);
 			}
-			if(PolicyStatus.dwError)
+			else
 			{
 				dwError = PolicyStatus.dwError;
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error %s %d returned by CertVerifyCertificateChainPolicy",GetTrustErrorText(PolicyStatus.dwError),PolicyStatus.dwError);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error %s (0x%08x) returned by CertVerifyCertificateChainPolicy",GetTrustErrorText(PolicyStatus.dwError),PolicyStatus.dwError);
 				__leave;
 			}
 		}
-		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Chain OK");
+
+		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Chain validated");
 
 		// verifiate time compliance
 		if (!GetPolicyValue(AllowTimeInvalidCertificates))

@@ -86,6 +86,11 @@
 #define IDC_06UPDATEDATABASE            149
 #define IDC_06SHIELD                    150
 #define IDC_07SHIELD                    151
+#define IDC_03VALIDITYYEARS             152
+#define IDC_03VALIDITYLABEL             153
+#define IDC_03VALIDITYWARNING           154
+#define IDS_03VALIDITYLABEL             155
+#define IDS_03VALIDITYWARNING           156
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -94,7 +99,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        72
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         152
+#define _APS_NEXT_CONTROL_VALUE         157
 #define _APS_NEXT_SYMED_VALUE           241
 #endif
 #endif

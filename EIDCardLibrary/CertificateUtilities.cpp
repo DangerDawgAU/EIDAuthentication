@@ -1065,17 +1065,32 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 
 BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName)
 {
-	//delete
+	// Delete all key containers from the smart card
+	// Note: We must collect all container names first, then delete them in a separate pass.
+	// Deleting containers while enumerating corrupts the enumeration state.
 	BOOL bStatus = FALSE;
 	WCHAR szProviderName[1024];
 	DWORD dwProviderNameLen = ARRAYSIZE(szProviderName);
 	CHAR szContainerName[1024];
-	DWORD dwContainerNameLen =  ARRAYSIZE(szContainerName);
+	DWORD dwContainerNameLen = ARRAYSIZE(szContainerName);
 	DWORD dwFlags;
-	HCRYPTPROV HMainCryptProv = NULL,hProv = NULL;
+	HCRYPTPROV HMainCryptProv = NULL, hProv = NULL;
 	DWORD dwError = 0;
 	BOOL fReturn = FALSE;
 	LPTSTR szMainContainerName = NULL;
+
+	// Dynamic array to collect container names before deletion
+	#define MAX_CONTAINERS 100
+	LPWSTR containerNames[MAX_CONTAINERS];
+	DWORD dwContainerCount = 0;
+	DWORD i;
+
+	// Initialize array
+	for (i = 0; i < MAX_CONTAINERS; i++)
+	{
+		containerNames[i] = NULL;
+	}
+
 	__try
 	{
 		if (!SchGetProviderNameFromCardName(szCardName, szProviderName, &dwProviderNameLen))
@@ -1106,8 +1121,9 @@ BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName)
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptAcquireContext 0x%08x",dwError);
 			__leave;
 		}
+
+		// Phase 1: Enumerate and collect all container names
 		dwFlags = CRYPT_FIRST;
-		/* Enumerate all the containers */
 		while (CryptGetProvParam(HMainCryptProv,
 					PP_ENUMCONTAINERS,
 					(LPBYTE) szContainerName,
@@ -1115,30 +1131,67 @@ BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName)
 					dwFlags)
 				)
 		{
-			// convert the container name to unicode
-			int wLen = MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, NULL, 0);
-			LPWSTR szWideContainerName = (LPWSTR) EIDAlloc(wLen * sizeof(WCHAR));
-			MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, szWideContainerName, wLen);
-			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Deleting %s with %s", szWideContainerName, szProviderName);
+			if (dwContainerCount >= MAX_CONTAINERS)
+			{
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Too many containers on card (max %d)", MAX_CONTAINERS);
+				break;
+			}
 
-			// Acquire a context on the current container
+			// Convert the container name to unicode and store it
+			int wLen = MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, NULL, 0);
+			containerNames[dwContainerCount] = (LPWSTR) EIDAlloc(wLen * sizeof(WCHAR));
+			if (!containerNames[dwContainerCount])
+			{
+				dwError = GetLastError();
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc for container name 0x%08x",dwError);
+				__leave;
+			}
+			MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, containerNames[dwContainerCount], wLen);
+			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Found container: %s", containerNames[dwContainerCount]);
+
+			dwContainerCount++;
+			dwFlags = CRYPT_NEXT;
+			dwContainerNameLen = ARRAYSIZE(szContainerName);
+		}
+
+		// Release the enumeration context before deleting
+		if (HMainCryptProv)
+		{
+			CryptReleaseContext(HMainCryptProv, 0);
+			HMainCryptProv = NULL;
+		}
+
+		// Phase 2: Delete all collected containers
+		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Deleting %d containers from card", dwContainerCount);
+		for (i = 0; i < dwContainerCount; i++)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Deleting container %s with provider %s", containerNames[i], szProviderName);
+
 			if (!CryptAcquireContext(&hProv,
-					szWideContainerName,
+					containerNames[i],
 					szProviderName,
 					PROV_RSA_FULL,
 					CRYPT_DELETEKEYSET))
 			{
 				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CRYPT_DELETEKEYSET 0x%08x",dwError);
-				__leave;
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CRYPT_DELETEKEYSET for %s failed: 0x%08x", containerNames[i], dwError);
+				// Continue trying to delete other containers even if one fails
 			}
-			dwFlags = CRYPT_NEXT;
-			dwContainerNameLen = ARRAYSIZE(szContainerName);
 		}
+
 		fReturn = TRUE;
 	}
 	__finally
 	{
+		// Free all allocated container names
+		for (i = 0; i < MAX_CONTAINERS; i++)
+		{
+			if (containerNames[i])
+			{
+				EIDFree(containerNames[i]);
+				containerNames[i] = NULL;
+			}
+		}
 		if (szMainContainerName) EIDFree(szMainContainerName);
 		if (HMainCryptProv) CryptReleaseContext(HMainCryptProv,0);
 	}

@@ -125,25 +125,26 @@ FONT 9, "Segoe UI", 0, 0, 0x0
 BEGIN
     CONTROL         "Use preconfigured card",IDC_02EXISTING,"Button",BS_COMMANDLINK | WS_TABSTOP,21,21,216,39
     CONTROL         "Configure a new set of credentials",IDC_02NEW,"Button",BS_COMMANDLINK | WS_TABSTOP,21,69,216,33
-    CONTROL         "<a  id=""idDatabase"">Check online database for known incompatibilities</a>",IDC_SYSLINKHELP,
-                    "SysLink",WS_TABSTOP,25,185,223,8
     CONTROL         "Disable smart card logon",IDC_01DELETE,"Button",BS_COMMANDLINK | WS_TABSTOP,21,116,216,33
 END
 
-IDD_03NEW DIALOGEX 65535, 65523, 273, 209
+IDD_03NEW DIALOGEX 65535, 65523, 273, 220
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 FONT 9, "Segoe UI", 0, 0, 0x0
 BEGIN
-    LTEXT           "This wizard will create a certificate on the smart card based on a certification authority. Please select a certification authority",1007,3,18,272,20
-    CONTROL         "&Use this certification authority",IDC_03USETHIS,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,6,57,163,10
+    LTEXT           "This wizard will create a certificate on the smart card based on a certification authority. Please select a certification authority",1007,3,10,272,16
+    CONTROL         "&Use this certification authority",IDC_03USETHIS,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,6,49,163,10
     CONTROL         "&Create a new certification authority",IDC_03_CREATE,
-                    "Button",BS_AUTORADIOBUTTON | WS_TABSTOP,6,39,185,10
+                    "Button",BS_AUTORADIOBUTTON | WS_TABSTOP,6,31,185,10
     CONTROL         "&Import a p12 file into the smart card",IDC_03IMPORT,
                     "Button",BS_AUTORADIOBUTTON | WS_TABSTOP,3,138,185,10
-    LTEXT           "&Selected authority�:",1009,12,78,250,10
-    LISTBOX         IDC_03CERTIFICATEPANEL,9,90,175,45,NOT LBS_NOTIFY | LBS_NOSEL | WS_TABSTOP
-    PUSHBUTTON      "&Show the certificate",IDC_03SHOW,192,87,81,12
-    PUSHBUTTON      "&Select an authority",IDC_03SELECT,192,105,81,12
+    LTEXT           "&Selected authority:",1009,12,68,250,10
+    LISTBOX         IDC_03CERTIFICATEPANEL,9,80,175,38,NOT LBS_NOTIFY | LBS_NOSEL | WS_TABSTOP
+    PUSHBUTTON      "&Show the certificate",IDC_03SHOW,192,80,81,12
+    PUSHBUTTON      "&Select an authority",IDC_03SELECT,192,96,81,12
+    LTEXT           "Certificate validity (years):",IDC_03VALIDITYLABEL,9,122,90,10
+    EDITTEXT        IDC_03VALIDITYYEARS,100,120,30,12,ES_AUTOHSCROLL | ES_NUMBER | NOT WS_BORDER,WS_EX_CLIENTEDGE
+    LTEXT           "",IDC_03VALIDITYWARNING,135,122,138,10
     EDITTEXT        IDC_03IMPORTPASSWORD,96,171,162,11,ES_PASSWORD | ES_AUTOHSCROLL | NOT WS_BORDER,WS_EX_CLIENTEDGE
     LTEXT           "Password :",IDC_STC2,6,171,60,10
     LTEXT           "File :",IDC_STC3,6,153,60,10
@@ -241,6 +242,8 @@ BEGIN
     IDS_03EXPIRES           "Expires : %s %s"
     IDS_03CONTAINERFILES    "Container Files"
     IDS_03ALLFILES          "All Files"
+    IDS_03VALIDITYLABEL     "Certificate validity (years):"
+    IDS_03VALIDITYWARNING   "Warning: exceeds CA expiry!"
 END
 
 STRINGTABLE

@@ -11,6 +11,47 @@
 // null = unknown
 PCCERT_CONTEXT pRootCertificate = NULL;
 
+// Default certificate validity in years
+#define DEFAULT_CERT_VALIDITY_YEARS 3
+#define MAX_CERT_VALIDITY_YEARS 30
+#define MIN_CERT_VALIDITY_YEARS 1
+
+// Helper function to get root CA expiry year
+// Returns 0 if unable to determine
+WORD GetRootCAExpiryYear(PCCERT_CONTEXT pRootCert)
+{
+	if (!pRootCert) return 0;
+	SYSTEMTIME st;
+	if (FileTimeToSystemTime(&(pRootCert->pCertInfo->NotAfter), &st))
+	{
+		return st.wYear;
+	}
+	return 0;
+}
+
+// Validate certificate validity against root CA and update warning
+VOID ValidateCertificateValidity(HWND hWnd, PCCERT_CONTEXT pRootCert)
+{
+	WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, NULL, FALSE);
+	SYSTEMTIME stNow;
+	GetSystemTime(&stNow);
+	WORD wCertExpiryYear = stNow.wYear + wValidityYears;
+	WORD wCAExpiryYear = GetRootCAExpiryYear(pRootCert);
+
+	if (wCAExpiryYear > 0 && wCertExpiryYear > wCAExpiryYear)
+	{
+		// Show warning - certificate will expire after root CA
+		TCHAR szWarning[256] = TEXT("");
+		LoadString(g_hinst, IDS_03VALIDITYWARNING, szWarning, ARRAYSIZE(szWarning));
+		SetWindowText(GetDlgItem(hWnd, IDC_03VALIDITYWARNING), szWarning);
+		// Set text color to red (we'll use a simple approach - just show the text)
+	}
+	else
+	{
+		SetWindowText(GetDlgItem(hWnd, IDC_03VALIDITYWARNING), TEXT(""));
+	}
+}
+
 BOOL SelectFile(HWND hWnd)
 {
 	// select file to open
@@ -123,7 +164,7 @@ BOOL CreateRootCertificate()
 	return fReturn;
 }
 
-BOOL CreateSmartCardCertificate(PCCERT_CONTEXT pCertificate, PWSTR szReader, PWSTR szCard)
+BOOL CreateSmartCardCertificate(PCCERT_CONTEXT pCertificate, PWSTR szReader, PWSTR szCard, WORD wValidityYears)
 {
 	BOOL fReturn;
 	UI_CERTIFICATE_INFO CertificateInfo;
@@ -139,7 +180,9 @@ BOOL CreateSmartCardCertificate(PCCERT_CONTEXT pCertificate, PWSTR szReader, PWS
 	CertificateInfo.szSubject = szSubject;
 	GetSystemTime(&(CertificateInfo.StartTime));
 	GetSystemTime(&(CertificateInfo.EndTime));
-	CertificateInfo.EndTime.wYear += 10;
+	// Use configurable validity period
+	CertificateInfo.EndTime.wYear += wValidityYears;
+	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Creating certificate with %d year validity", wValidityYears);
 	fReturn = CreateCertificate(&CertificateInfo);
 	DWORD dwError = GetLastError();
 	if (fReturn)
@@ -208,6 +251,9 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Activate");
 				//this is an interior page
 				PropSheet_SetWizButtons(hWnd, PSWIZB_BACK | PSWIZB_NEXT);
+				// Initialize certificate validity years control
+				SetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, DEFAULT_CERT_VALIDITY_YEARS, FALSE);
+				SetWindowText(GetDlgItem(hWnd, IDC_03VALIDITYWARNING), TEXT(""));
 				if (pRootCertificate)
 				{
 					CertFreeCertificateContext(pRootCertificate);
@@ -218,6 +264,8 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				{
 					CheckDlgButton(hWnd,IDC_03USETHIS,BST_CHECKED);
 					UpdateCertificatePanel(hWnd);
+					// Validate against root CA
+					ValidateCertificateValidity(hWnd, pRootCertificate);
 				}
 				else
 				{
@@ -248,11 +296,15 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				if (IsDlgButtonChecked(hWnd,IDC_03_CREATE))
 				{
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"IDC_03_CREATE");
+					// Get validity years from UI
+					WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, NULL, FALSE);
+					if (wValidityYears < MIN_CERT_VALIDITY_YEARS) wValidityYears = MIN_CERT_VALIDITY_YEARS;
+					if (wValidityYears > MAX_CERT_VALIDITY_YEARS) wValidityYears = MAX_CERT_VALIDITY_YEARS;
 					// create self signed certificate as root
 					DWORD dwReturn = -1;
 					if (CreateRootCertificate())
 					{
-						if (CreateSmartCardCertificate(pRootCertificate, szReader, szCard))
+						if (CreateSmartCardCertificate(pRootCertificate, szReader, szCard, wValidityYears))
 						{
 							//  OK
 						}
@@ -282,7 +334,11 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 						SetWindowLongPtr(hWnd,DWLP_MSGRESULT,-1);
 						return TRUE;
 					}
-					if (!CreateSmartCardCertificate(pRootCertificate, szReader, szCard))
+					// Get validity years from UI
+					WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, NULL, FALSE);
+					if (wValidityYears < MIN_CERT_VALIDITY_YEARS) wValidityYears = MIN_CERT_VALIDITY_YEARS;
+					if (wValidityYears > MAX_CERT_VALIDITY_YEARS) wValidityYears = MAX_CERT_VALIDITY_YEARS;
+					if (!CreateSmartCardCertificate(pRootCertificate, szReader, szCard, wValidityYears))
 					{
 						DWORD dwError = GetLastError();
 						if (dwError != SCARD_W_CANCELLED_BY_USER)
@@ -312,9 +368,15 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 		case WM_COMMAND:
 		wmId    = LOWORD(wParam);
 		wmEvent = HIWORD(wParam);
-		// Analyse les s�lections de menu�:
 		switch (wmId)
-		{	
+		{
+			case IDC_03VALIDITYYEARS:
+				// Handle changes to validity years - validate against root CA
+				if (wmEvent == EN_CHANGE && pRootCertificate)
+				{
+					ValidateCertificateValidity(hWnd, pRootCertificate);
+				}
+				break;
 			case IDC_03SELECT:
 				if (pRootCertificate)
 				{
@@ -325,6 +387,8 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				if (pRootCertificate)
 				{
 					UpdateCertificatePanel(hWnd);
+					// Validate against new root CA
+					ValidateCertificateValidity(hWnd, pRootCertificate);
 				}
 				break;
 			case IDC_03SHOW:

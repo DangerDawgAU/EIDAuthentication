@@ -157,13 +157,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EIDConfigurationWizardElevated.h" />
-    <ClInclude Include="EIDConfigurationWizardElevated_fr.h" />
-    <ClInclude Include="EIDConfigurationWizardElevated_ru.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="EIDConfigurationWizardElevated.rc" />
-    <ResourceCompile Include="EIDConfigurationWizardElevated_fr.rc" />
-    <ResourceCompile Include="EIDConfigurationWizardElevated_ru.rc" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EIDCardLibrary\EIDCardLibrary.vcxproj">

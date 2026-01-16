@@ -56,21 +56,9 @@
     <ClInclude Include="EIDConfigurationWizard.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EIDConfigurationWizard_fr.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EIDConfigurationWizard_ru.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="EIDConfigurationWizard.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-    <ResourceCompile Include="EIDConfigurationWizard_fr.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-    <ResourceCompile Include="EIDConfigurationWizard_ru.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

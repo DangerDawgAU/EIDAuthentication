@@ -54,11 +54,18 @@ Section "Core" SecCore
   ; Create installation directory
   SetOutPath "$INSTDIR"
 
-  ; Install files to Program Files
+  ; Install DLL files to Program Files
   FILE "..\x64\Release\EIDAuthenticationPackage.dll"
   FILE "..\x64\Release\EIDCredentialProvider.dll"
   FILE "..\x64\Release\EIDPasswordChangeNotification.dll"
+
+  ; Install all executable files
   FILE "..\x64\Release\EIDConfigurationWizard.exe"
+  FILE "..\x64\Release\EIDConfigurationWizardElevated.exe"
+  FILE "..\x64\Release\EIDLogManager.exe"
+  FILE "..\x64\Release\EIDTest.exe"
+
+  ; Install support files
   FILE "CleanupCertificates.ps1"
 
   ; Copy DLLs to System32 (required for LSA and Credential Provider)
@@ -66,6 +73,13 @@ Section "Core" SecCore
   CopyFiles "$INSTDIR\EIDAuthenticationPackage.dll" "$SYSDIR\EIDAuthenticationPackage.dll"
   CopyFiles "$INSTDIR\EIDCredentialProvider.dll" "$SYSDIR\EIDCredentialProvider.dll"
   CopyFiles "$INSTDIR\EIDPasswordChangeNotification.dll" "$SYSDIR\EIDPasswordChangeNotification.dll"
+
+  ; Create Start Menu folder and shortcuts
+  CreateDirectory "$SMPROGRAMS\EID Authentication"
+  CreateShortcut "$SMPROGRAMS\EID Authentication\Configuration Wizard.lnk" "$INSTDIR\EIDConfigurationWizard.exe" "" "$INSTDIR\EIDConfigurationWizard.exe" 0
+  CreateShortcut "$SMPROGRAMS\EID Authentication\Log Manager.lnk" "$INSTDIR\EIDLogManager.exe" "" "$INSTDIR\EIDLogManager.exe" 0
+  CreateShortcut "$SMPROGRAMS\EID Authentication\Test Utility.lnk" "$INSTDIR\EIDTest.exe" "" "$INSTDIR\EIDTest.exe" 0
+  CreateShortcut "$SMPROGRAMS\EID Authentication\Uninstall.lnk" "$INSTDIR\EIDUninstall.exe" "" "$INSTDIR\EIDUninstall.exe" 0
 
   ; Create desktop shortcut pointing to Program Files
   CreateShortcut "$DESKTOP\EID Authentication Configuration.lnk" "$INSTDIR\EIDConfigurationWizard.exe"
@@ -131,6 +145,13 @@ Section "Uninstall"
   DetailPrint "Removing certificates..."
   nsExec::ExecToLog 'powershell -ExecutionPolicy Bypass -File "$INSTDIR\CleanupCertificates.ps1"'
 
+  ; Delete Start Menu shortcuts and folder
+  Delete "$SMPROGRAMS\EID Authentication\Configuration Wizard.lnk"
+  Delete "$SMPROGRAMS\EID Authentication\Log Manager.lnk"
+  Delete "$SMPROGRAMS\EID Authentication\Test Utility.lnk"
+  Delete "$SMPROGRAMS\EID Authentication\Uninstall.lnk"
+  RMDir "$SMPROGRAMS\EID Authentication"
+
   ; Delete desktop shortcut
   Delete "$DESKTOP\EID Authentication Configuration.lnk"
 
@@ -139,11 +160,18 @@ Section "Uninstall"
   Delete /REBOOTOK "$SYSDIR\EIDCredentialProvider.dll"
   Delete /REBOOTOK "$SYSDIR\EIDPasswordChangeNotification.dll"
 
-  ; Delete Program Files installation
+  ; Delete Program Files installation - DLLs
   Delete "$INSTDIR\EIDAuthenticationPackage.dll"
   Delete "$INSTDIR\EIDCredentialProvider.dll"
   Delete "$INSTDIR\EIDPasswordChangeNotification.dll"
+
+  ; Delete Program Files installation - Executables
   Delete "$INSTDIR\EIDConfigurationWizard.exe"
+  Delete "$INSTDIR\EIDConfigurationWizardElevated.exe"
+  Delete "$INSTDIR\EIDLogManager.exe"
+  Delete "$INSTDIR\EIDTest.exe"
+
+  ; Delete support files
   Delete "$INSTDIR\CleanupCertificates.ps1"
   Delete "$INSTDIR\EIDUninstall.exe"
 

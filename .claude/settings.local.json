@@ -13,7 +13,8 @@
       "Bash(\"/c/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.50.35717/bin/Hostx64/x64/dumpbin.exe\" -DEPENDENTS EIDCredentialProvider.dll)",
       "Bash(*)",
       "Bash(\"/c/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.50.35717/bin/Hostx64/x64/dumpbin.exe\" -DEPENDENTS EIDConfigurationWizard.exe)",
-      "Bash(sc query:*)"
+      "Bash(sc query:*)",
+      "Read(//c/Users/user/Desktop/**)"
     ]
   }
 }
