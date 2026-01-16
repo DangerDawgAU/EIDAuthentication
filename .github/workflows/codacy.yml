@@ -42,15 +42,14 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      # Install Visual Studio 2025 build tools (v145 platform toolset)
-      - name: Install Visual Studio build tools
-        uses: microsoft/setup-msbuild@v2
-        with:
-          vs-version: '17'
+      # Install Visual Studio 2025 Build Tools (v145 platform toolset)
+      - name: Install Visual Studio 2025 Build Tools
+        run: |
+          choco install visualstudio2025buildtools --add Microsoft.VisualStudio.Workload.MSBuildTools --add Microsoft.VisualStudio.Workload.VCTools -y --no-progress
 
       # Build the solution before analysis
       - name: Build solution
-        run: msbuild EIDCredentialProvider.sln /p:Configuration=Release /p:Platform=x64 /p:GenerateFullPaths=true
+        run: msbuild EIDCredentialProvider.sln /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v145 /p:GenerateFullPaths=true
 
       # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
       - name: Run Codacy Analysis CLI
