@@ -25,7 +25,7 @@ typedef enum EID_PRIVATE_DATA_TYPE
 	eidpdtCrypted = 2,
 
 }*PEID_PRIVATE_DATA_TYPE;
-#define CERT_HASH_LENGTH 20
+#define CERT_HASH_LENGTH 32  // SHA-256 hash length (security upgrade from SHA-1)
 typedef struct _EID_PRIVATE_DATA
 {
 	EID_PRIVATE_DATA_TYPE dwType;

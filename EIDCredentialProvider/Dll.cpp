@@ -53,13 +53,13 @@ class CClassFactory : public IClassFactory
     // IUnknown
     STDMETHOD_(ULONG, AddRef)()
     {
-        return _cRef++;
+        return InterlockedIncrement(&_cRef);
     }
-    
+
     STDMETHOD_(ULONG, Release)()
     {
-        LONG cRef = _cRef--;
-        if (!cRef)
+        LONG cRef = InterlockedDecrement(&_cRef);
+        if (cRef == 0)
         {
             delete this;
         }

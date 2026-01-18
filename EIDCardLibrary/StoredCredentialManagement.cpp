@@ -30,6 +30,7 @@
 #include <lm.h>
 
 #include <Ntsecpkg.h>
+#include <strsafe.h>
 
 #include "EidCardLibrary.h"
 #include "Tracing.h"
@@ -413,8 +414,8 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by EIDAlloc", GetLastError());
 				__leave;
 			}
-			DWORD dwHashSize = 20;
-			fStatus = CryptHashCertificate(NULL, CALG_SHA1, 0, pCertContext->pbCertEncoded, pCertContext->cbCertEncoded, pbSecret->Hash, &dwHashSize);
+			DWORD dwHashSize = CERT_HASH_LENGTH;  // SHA-256 = 32 bytes
+			fStatus = CryptHashCertificate(NULL, CALG_SHA_256, 0, pCertContext->pbCertEncoded, pCertContext->cbCertEncoded, pbSecret->Hash, &dwHashSize);
 			if (!fStatus)
 			{
 				dwError = GetLastError();
@@ -436,24 +437,12 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 		}
 		else
 		{
-		// uncrypted
-			usSecretSize = (USHORT) sizeof(EID_PRIVATE_DATA) + usPasswordSize + (USHORT) pCertContext->cbCertEncoded;
-			pbSecret = (PEID_PRIVATE_DATA) EIDAlloc(usSecretSize);
-			if (!pbSecret)
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by EIDAlloc", GetLastError());
-				__leave;
-			}
-			pbSecret->dwType = eidpdtClearText;
-			pbSecret->dwCertificatSize = (USHORT) pCertContext->cbCertEncoded;
-			pbSecret->dwSymetricKeySize = 0;
-			pbSecret->dwPasswordSize = usPasswordSize;
-			pbSecret->dwCertificatOffset = 0;
-			memcpy(pbSecret->Data + pbSecret->dwCertificatOffset, pCertContext->pbCertEncoded, pbSecret->dwCertificatSize);
-			pbSecret->dwSymetricKeyOffset = pbSecret->dwCertificatOffset + pbSecret->dwCertificatSize;
-			pbSecret->dwPasswordOffset = pbSecret->dwSymetricKeyOffset;
-			memcpy(pbSecret->Data + pbSecret->dwPasswordOffset, szPassword, pbSecret->dwPasswordSize);
+			// SECURITY FIX: Plaintext credential storage is no longer allowed
+			// This was a critical security vulnerability (CWE-312)
+			// All credentials must be encrypted before storage
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"SECURITY: Plaintext credential storage is disabled - credentials must be encrypted");
+			dwError = ERROR_ACCESS_DENIED;
+			__leave;
 		}
 		// save the data
 		if (!StorePrivateData(dwRid, (PBYTE) pbSecret, usSecretSize))
@@ -537,9 +526,18 @@ BOOL CStoredCredentialManager::UpdateCredential(__in PLUID pLuid, __in PUNICODE_
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"using userName '%wZ'", UserName);
 
+		// SECURITY FIX: Validate UserName->Length before memcpy to prevent buffer overflow (CWE-120)
 		if (UserName->Buffer && UserName->Length)
 		{
-			memcpy(szUser, UserName->Buffer,UserName->Length);
+			// Ensure we don't overflow szUser buffer (256 WCHARs = 512 bytes)
+			// Leave room for null terminator
+			if (UserName->Length >= sizeof(szUser))
+			{
+				dwError = ERROR_BUFFER_OVERFLOW;
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"UserName too long: %d bytes (max %d)", UserName->Length, (int)(sizeof(szUser) - sizeof(WCHAR)));
+				__leave;
+			}
+			memcpy(szUser, UserName->Buffer, UserName->Length);
 		}
 		szUser[UserName->Length/2] = L'\0';
 		dwError = NetUserGetInfo(szComputer, szUser, 3, (LPBYTE*) &pUserInfo);
@@ -1833,8 +1831,13 @@ BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE
 		} 
 
 		//  Initialize an LSA_UNICODE_STRING for the name of the
-		wsprintf(szLsaKeyName, L"%s_%08X", CREDENTIAL_LSAPREFIX, dwRid);
-	
+		if (FAILED(StringCchPrintfW(szLsaKeyName, ARRAYSIZE(szLsaKeyName), L"%s_%08X", CREDENTIAL_LSAPREFIX, dwRid)))
+		{
+			dwError = ERROR_BUFFER_OVERFLOW;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"StringCchPrintfW failed for LSA key name");
+			__leave;
+		}
+
 		lusSecretName.Buffer = szLsaKeyName;
 		lusSecretName.Length = (USHORT) wcslen(szLsaKeyName)* sizeof(WCHAR);
 		lusSecretName.MaximumLength = lusSecretName.Length;
@@ -1880,51 +1883,16 @@ BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE
 
 BOOL CStoredCredentialManager::StorePrivateDataDebug(__in DWORD dwRid, __in_opt PBYTE pbSecret, __in_opt USHORT usSecretSize)
 {
-	HANDLE hFile = INVALID_HANDLE_VALUE;
-	TCHAR szFileName[MAX_PATH];
-	TCHAR szTempPath[MAX_PATH];
-	BOOL fReturn = FALSE;
-	DWORD dwError = 0, dwWritten;
-	__try
-	{
-		if (!GetTempPath(ARRAYSIZE(szTempPath), szTempPath))
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetTempPath 0x%08x", dwError);
-			__leave;
-		}
-		_stprintf_s(szFileName, ARRAYSIZE(szFileName),TEXT("%sEIDCredential%4x.txt"),szTempPath,dwRid);
-		if (!pbSecret)
-		{
-			DeleteFile(szFileName);
-		}
-		else
-		{
-			hFile = CreateFile(szFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0,NULL);
-			if (hFile == INVALID_HANDLE_VALUE)
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CreateFile 0x%08x", dwError);
-				__leave;
-			}
-			if (!WriteFile(hFile, pbSecret, usSecretSize,&dwWritten, NULL))
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"WriteFile 0x%08x", dwError);
-				__leave;
-			}
-		}
-		fReturn = TRUE;
-	}
-	__finally
-	{
-		if (hFile != INVALID_HANDLE_VALUE)
-		{
-			CloseHandle(hFile);
-		}
-	}
-	SetLastError(dwError);
-	return fReturn;
+	// SECURITY FIX: Debug credential storage to TEMP files is disabled
+	// This was a critical security vulnerability (CWE-532) that exposed credentials in plaintext
+	// Credentials can only be stored securely via LSA private data storage
+	UNREFERENCED_PARAMETER(dwRid);
+	UNREFERENCED_PARAMETER(pbSecret);
+	UNREFERENCED_PARAMETER(usSecretSize);
+
+	EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"SECURITY: Debug credential file storage is disabled - must run in LSA context");
+	SetLastError(ERROR_ACCESS_DENIED);
+	return FALSE;
 }
 
 BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData)
@@ -1962,13 +1930,18 @@ BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_
 		} 
 
 		//  Initialize an LSA_UNICODE_STRING for the name of the
-		//  private data ("DefaultPassword").
-		wsprintf(szLsaKeyName, L"%s_%08X", CREDENTIAL_LSAPREFIX, dwRid);
-	
+		//  private data.
+		if (FAILED(StringCchPrintfW(szLsaKeyName, ARRAYSIZE(szLsaKeyName), L"%s_%08X", CREDENTIAL_LSAPREFIX, dwRid)))
+		{
+			dwError = ERROR_BUFFER_OVERFLOW;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"StringCchPrintfW failed for LSA key name");
+			__leave;
+		}
+
 		lusSecretName.Buffer = szLsaKeyName;
 		lusSecretName.Length = (USHORT) wcslen(szLsaKeyName)* sizeof(WCHAR);
 		lusSecretName.MaximumLength = lusSecretName.Length;
-    
+
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Reading dwRid = 0x%x", dwRid);
 		ntsResult = LsaRetrievePrivateData(LsaPolicyHandle,&lusSecretName,&pData);
 		if( STATUS_SUCCESS != ntsResult )
@@ -2004,58 +1977,19 @@ BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_
 
 BOOL CStoredCredentialManager::RetrievePrivateDataDebug(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData)
 {
-	TCHAR szFileName[MAX_PATH];
-	TCHAR szTempPath[MAX_PATH];
-	HANDLE hFile = INVALID_HANDLE_VALUE;
-	BOOL fReturn = FALSE;
-	DWORD dwError = 0, dwRead, dwSize;
-	__try
+	// SECURITY FIX: Debug credential retrieval from TEMP files is disabled
+	// This was a critical security vulnerability (CWE-532) that read credentials from plaintext files
+	// Credentials can only be retrieved securely via LSA private data storage
+	UNREFERENCED_PARAMETER(dwRid);
+
+	if (ppPrivateData)
 	{
-		if (!GetTempPath(ARRAYSIZE(szTempPath), szTempPath))
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetTempPath 0x%08x", dwError);
-			__leave;
-		}
-		_stprintf_s(szFileName, ARRAYSIZE(szFileName),TEXT("%sEIDCredential%4x.txt"),szTempPath,dwRid);
-		hFile = CreateFile(szFileName, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0,NULL);
-		if (hFile == INVALID_HANDLE_VALUE)
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CreateFile 0x%08x", dwError);
-			__leave;
-		}
-		dwSize = GetFileSize(hFile, NULL);
-		if (INVALID_FILE_SIZE == dwSize)
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetFileSize 0x%08x", dwError);
-			__leave;
-		}
-		*ppPrivateData = (PEID_PRIVATE_DATA) EIDAlloc(dwSize);
-		if (!*ppPrivateData)
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc 0x%08x", dwError);
-			__leave;
-		}
-		if (!ReadFile(hFile, *ppPrivateData, dwSize,&dwRead, NULL))
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"WriteFile 0x%08x", dwError);
-			__leave;
-		}
-		fReturn = TRUE;
+		*ppPrivateData = NULL;
 	}
-	__finally
-	{
-		if (hFile != INVALID_HANDLE_VALUE)
-		{
-			CloseHandle(hFile);
-		}
-	}
-	SetLastError(dwError);
-	return fReturn;
+
+	EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"SECURITY: Debug credential file retrieval is disabled - must run in LSA context");
+	SetLastError(ERROR_ACCESS_DENIED);
+	return FALSE;
 }
 
 BOOL CStoredCredentialManager::HasStoredCredential(__in DWORD dwRid)

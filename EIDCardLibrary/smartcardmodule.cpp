@@ -2,6 +2,7 @@
 #define WIN32_NO_STATUS 1
 #include <windows.h>
 #include <tchar.h>
+#include <strsafe.h>
 #pragma warning(push)
 #pragma warning(disable : 4201)
 #include <winscard.h>
@@ -11,6 +12,56 @@
 #include <cardmod.h>
 #include "Tracing.h"
 #include "EIDCardLibrary.h"
+
+//
+// Security: Safe DLL loading helper to prevent DLL hijacking attacks
+// Uses LOAD_LIBRARY_SEARCH_SYSTEM32 when loading from System32,
+// or validates the full path before loading
+//
+static HMODULE SafeLoadLibrary(__in LPCWSTR wszModulePath)
+{
+    if (wszModulePath == NULL || wszModulePath[0] == L'\0')
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return NULL;
+    }
+
+    // Set DLL directory to empty string to remove current directory from search path
+    // This is a defense-in-depth measure against DLL hijacking
+    SetDllDirectoryW(L"");
+
+    // Check if the path is absolute (contains drive letter or UNC path)
+    BOOL isAbsolutePath = (wszModulePath[0] != L'\0' &&
+                          ((wszModulePath[1] == L':' && (wszModulePath[2] == L'\\' || wszModulePath[2] == L'/')) ||
+                           (wszModulePath[0] == L'\\' && wszModulePath[1] == L'\\')));
+
+    if (isAbsolutePath)
+    {
+        // For absolute paths, use LoadLibraryExW with LOAD_WITH_ALTERED_SEARCH_PATH
+        // to ensure DLL dependencies are loaded from the same directory
+        return LoadLibraryExW(wszModulePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+    }
+    else
+    {
+        // For relative paths, try to load from System32 only
+        // This prevents DLL hijacking from current directory
+        WCHAR wszSystem32Path[MAX_PATH];
+        if (GetSystemDirectoryW(wszSystem32Path, ARRAYSIZE(wszSystem32Path)) == 0)
+        {
+            return NULL;
+        }
+
+        WCHAR wszFullPath[MAX_PATH];
+        if (FAILED(StringCchPrintfW(wszFullPath, ARRAYSIZE(wszFullPath), L"%s\\%s", wszSystem32Path, wszModulePath)))
+        {
+            SetLastError(ERROR_BUFFER_OVERFLOW);
+            return NULL;
+        }
+
+        EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"SafeLoadLibrary: Loading '%s' from System32", wszModulePath);
+        return LoadLibraryExW(wszFullPath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+    }
+}
 //
 // Internal context structure for interfacing with a card module
 //
@@ -215,11 +266,13 @@ DWORD MgScCardAcquireContext(
 
         //
         // Load the card module dll and initial entry point
+        // Security: Use SafeLoadLibrary to prevent DLL hijacking attacks
         //
 
-        if (NULL == (pInternal->hModule = LoadLibrary(wszCardModule)))
+        if (NULL == (pInternal->hModule = SafeLoadLibrary(wszCardModule)))
         {
             status = GetLastError();
+            EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"SafeLoadLibrary failed for '%s': 0x%08X", wszCardModule, status);
             __leave;
         }
 

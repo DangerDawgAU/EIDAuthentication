@@ -27,7 +27,7 @@
 #define AUTHENTICATIONPACKAGENAMET TEXT("EIDAuthenticationPackage")
 
 
-#define CERT_HASH_LENGTH        20  // SHA1 hashes are used for cert hashes
+#define CERT_HASH_LENGTH        32  // SHA-256 hashes are used for cert hashes (security upgrade from SHA-1)
 
 #define EIDAlloc(value) EIDAllocEx(__FILE__,__LINE__,__FUNCTION__,value)
 #define EIDFree(value) EIDFreeEx(__FILE__,__LINE__,__FUNCTION__,value)

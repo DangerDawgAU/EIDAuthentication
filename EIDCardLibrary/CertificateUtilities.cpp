@@ -663,8 +663,8 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 				__leave;
 			}
 			CertInfo.SubjectPublicKeyInfo = *pbPublicKeyInfo;
-			// Create Hash     
-			if (!CryptCreateHash(hCryptProvNewCertificate, CALG_SHA1, 0, 0, &hHash))   
+			// Create Hash (using SHA-256 for security)
+			if (!CryptCreateHash(hCryptProvNewCertificate, CALG_SHA_256, 0, 0, &hHash))   
 			{   
 			  dwError = GetLastError();
 			  EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"CryptCreateHash 0x%08X", dwError);

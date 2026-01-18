@@ -183,9 +183,16 @@ void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR
 					dumpExceptionInfo.ExceptionPointers = pExceptPtrs;
 					dumpExceptionInfo.ClientPointers = FALSE;
 
+					// SECURITY FIX: Use MiniDumpNormal instead of MiniDumpWithFullMemory
+					// MiniDumpWithFullMemory captures all process memory including secrets like:
+					// - Plaintext passwords and PINs
+					// - Cryptographic keys
+					// - Session tokens
+					// This was a critical security vulnerability (CWE-532)
+					// MiniDumpNormal captures only essential debugging info without sensitive data
 					BOOL fStatus = MiniDumpWriteDump(GetCurrentProcess(),
 										GetCurrentProcessId(),
-										fileHandle,MiniDumpWithFullMemory,(pExceptPtrs != 0) ? &dumpExceptionInfo: NULL,NULL,NULL);
+										fileHandle, MiniDumpNormal, (pExceptPtrs != 0) ? &dumpExceptionInfo: NULL,NULL,NULL);
 					if (!fStatus)
 					{
 						EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__,WINEVENT_LEVEL_WARNING,L"Unable to write minidump file 0x%08X", GetLastError());
