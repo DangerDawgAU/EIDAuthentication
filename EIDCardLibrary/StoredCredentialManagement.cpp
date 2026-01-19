@@ -437,12 +437,54 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 		}
 		else
 		{
-			// SECURITY FIX: Plaintext credential storage is no longer allowed
-			// This was a critical security vulnerability (CWE-312)
-			// All credentials must be encrypted before storage
-			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"SECURITY: Plaintext credential storage is disabled - credentials must be encrypted");
-			dwError = ERROR_ACCESS_DENIED;
-			__leave;
+			// Use DPAPI to encrypt password when certificate-based encryption is not available
+			// (e.g., AT_SIGNATURE keys that cannot perform encryption)
+			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Using DPAPI encryption for credential storage");
+
+			DATA_BLOB DataIn;
+			DATA_BLOB DataOut;
+			DataIn.pbData = (BYTE*)szPassword;
+			DataIn.cbData = usPasswordSize;
+
+			if (!CryptProtectData(&DataIn, L"EID Credential", NULL, NULL, NULL, CRYPTPROTECT_LOCAL_MACHINE, &DataOut))
+			{
+				dwError = GetLastError();
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptProtectData failed 0x%08x", dwError);
+				__leave;
+			}
+
+			usSecretSize = (USHORT)(sizeof(EID_PRIVATE_DATA) + DataOut.cbData + (USHORT)pCertContext->cbCertEncoded);
+			pbSecret = (PEID_PRIVATE_DATA)EIDAlloc(usSecretSize);
+			if (!pbSecret)
+			{
+				LocalFree(DataOut.pbData);
+				dwError = GetLastError();
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error 0x%08x returned by EIDAlloc", GetLastError());
+				__leave;
+			}
+
+			DWORD dwHashSize = CERT_HASH_LENGTH;
+			fStatus = CryptHashCertificate(NULL, CALG_SHA_256, 0, pCertContext->pbCertEncoded, pCertContext->cbCertEncoded, pbSecret->Hash, &dwHashSize);
+			if (!fStatus)
+			{
+				LocalFree(DataOut.pbData);
+				dwError = GetLastError();
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptHashCertificate 0x%08x", GetLastError());
+				__leave;
+			}
+
+			// copy data
+			pbSecret->dwType = eidpdtDPAPI;
+			pbSecret->dwCertificatSize = (USHORT)pCertContext->cbCertEncoded;
+			pbSecret->dwSymetricKeySize = 0;  // Not used for DPAPI
+			pbSecret->dwPasswordSize = (USHORT)DataOut.cbData;
+			pbSecret->dwCertificatOffset = 0;
+			memcpy(pbSecret->Data + pbSecret->dwCertificatOffset, pCertContext->pbCertEncoded, pbSecret->dwCertificatSize);
+			pbSecret->dwSymetricKeyOffset = pbSecret->dwCertificatOffset + pbSecret->dwCertificatSize;
+			pbSecret->dwPasswordOffset = pbSecret->dwSymetricKeyOffset;  // No symmetric key, so password immediately follows cert
+			memcpy(pbSecret->Data + pbSecret->dwPasswordOffset, DataOut.pbData, pbSecret->dwPasswordSize);
+
+			LocalFree(DataOut.pbData);
 		}
 		// save the data
 		if (!StorePrivateData(dwRid, (PBYTE) pbSecret, usSecretSize))
@@ -644,6 +686,16 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 			break;
 		case eidpdtClearText:
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwType = eidpdtClearText");
+			fStatus = GetSignatureChallenge(ppChallenge, pdwChallengeSize);
+			if (!fStatus)
+			{
+				dwError = GetLastError();
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetSignatureChallenge 0x%08x",dwError);
+				__leave;
+			}
+			break;
+		case eidpdtDPAPI:
+			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwType = eidpdtDPAPI");
 			fStatus = GetSignatureChallenge(ppChallenge, pdwChallengeSize);
 			if (!fStatus)
 			{
@@ -1383,6 +1435,9 @@ BOOL CStoredCredentialManager::GetPasswordFromChallengeResponse(__in DWORD dwRid
 	case eidpdtCrypted:
 		return GetPasswordFromCryptedChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
 		break;
+	case eidpdtDPAPI:
+		return GetPasswordFromDPAPIChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
+		break;
 	}
 	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Type not implemented");
 	return FALSE;
@@ -1683,6 +1738,166 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 			CryptAcquireContext(&hProv,CREDENTIAL_CONTAINER,CREDENTIALPROVIDER,PROV_RSA_AES,CRYPT_DELETEKEYSET);
 		}
 	}
+	return fReturn;
+}
+
+BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
+{
+	BOOL fReturn = FALSE, fStatus;
+	DWORD dwError = 0;
+	PEID_PRIVATE_DATA pEidPrivateData = NULL;
+	HCRYPTPROV hProv = NULL;
+	HCRYPTKEY hKey = NULL;
+	HCRYPTHASH hHash = NULL;
+	PCCERT_CONTEXT pCertContextVerif = NULL;
+	DATA_BLOB DataIn = {0};
+	DATA_BLOB DataOut = {0};
+	__try
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
+		// read the encrypted password
+		if (!dwRid)
+		{
+			dwError = ERROR_NONE_MAPPED;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"dwRid 0x%08x",dwError);
+			__leave;
+		}
+		if (CREDENTIALKEYLENGTH != dwChallengeSize)
+		{
+			dwError = ERROR_NONE_MAPPED;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"dwChallengeSize = 0x%08x",dwChallengeSize);
+			__leave;
+		}
+		if (pszPassword == NULL)
+		{
+			dwError = ERROR_NONE_MAPPED;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pszPassword null");
+			__leave;
+		}
+		*pszPassword = NULL;
+		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData);
+		if (!fStatus)
+		{
+			dwError = GetLastError();
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RetrievePrivateData 0x%08x",dwError);
+			__leave;
+		}
+		pCertContextVerif = CertCreateCertificateContext(X509_ASN_ENCODING,
+			(PBYTE)pEidPrivateData->Data + pEidPrivateData->dwCertificatOffset, pEidPrivateData->dwCertificatSize);
+		if (!pCertContextVerif)
+		{
+			dwError = GetLastError();
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertCreateCertificateContext 0x%08x",dwError);
+			__leave;
+		}
+		// import the public key
+		fStatus = CryptAcquireContext(&hProv,CREDENTIAL_CONTAINER,CREDENTIALPROVIDER,PROV_RSA_AES,0);
+		if(!fStatus)
+		{
+			dwError = GetLastError();
+			if (dwError == NTE_BAD_KEYSET)
+			{
+				fStatus = CryptAcquireContext(&hProv,CREDENTIAL_CONTAINER,CREDENTIALPROVIDER,PROV_RSA_AES,CRYPT_NEWKEYSET);
+				dwError = GetLastError();
+			}
+			if (!fStatus)
+			{
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptAcquireContext 0x%08x",dwError);
+				__leave;
+			}
+		}
+		else
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Container already existed !!");
+		}
+		fStatus = CryptImportPublicKeyInfo(hProv, pCertContextVerif->dwCertEncodingType, &(pCertContextVerif->pCertInfo->SubjectPublicKeyInfo),&hKey);
+		if (!fStatus)
+		{
+			dwError = GetLastError();
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptImportKey 0x%08x",GetLastError());
+			__leave;
+		}
+		if (!CryptCreateHash(hProv,CALG_SHA,NULL,0,&hHash))
+		{
+			dwError = GetLastError();
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%x returned by CryptCreateHash", GetLastError());
+			__leave;
+		}
+		if (!CryptSetHashParam(hHash, HP_HASHVAL, ppChallenge, 0))
+		{
+			dwError = GetLastError();
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%x returned by CryptSetHashParam", GetLastError());
+			__leave;
+		}
+
+		if (!CryptVerifySignature(hHash, pResponse, dwResponseSize, hKey, TEXT(""), 0))
+		{
+			dwError = GetLastError();
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%x returned by CryptVerifySignature", GetLastError());
+			__leave;
+		}
+
+		// Signature verified - now decrypt the password using DPAPI
+		DataIn.pbData = (PBYTE)pEidPrivateData->Data + pEidPrivateData->dwPasswordOffset;
+		DataIn.cbData = pEidPrivateData->dwPasswordSize;
+
+		if (!CryptUnprotectData(&DataIn, NULL, NULL, NULL, NULL, CRYPTPROTECT_LOCAL_MACHINE, &DataOut))
+		{
+			dwError = GetLastError();
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptUnprotectData failed 0x%08x", dwError);
+			__leave;
+		}
+
+		*pszPassword = (PWSTR) EIDAlloc(DataOut.cbData + sizeof(WCHAR));
+		if (!*pszPassword)
+		{
+			dwError = GetLastError();
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc 0x%08x", GetLastError());
+			__leave;
+		}
+		memcpy(*pszPassword, DataOut.pbData, DataOut.cbData);
+		(*pszPassword)[DataOut.cbData / sizeof(WCHAR)] = L'\0';
+		fReturn = TRUE;
+
+	}
+	__finally
+	{
+		if (!fReturn)
+		{
+			if (pszPassword)
+			{
+				if (*pszPassword)
+				{
+					SecureZeroMemory(*pszPassword, wcslen(*pszPassword) * sizeof(WCHAR));
+					EIDFree(*pszPassword);
+					*pszPassword = NULL;
+				}
+			}
+		}
+		if (DataOut.pbData)
+		{
+			SecureZeroMemory(DataOut.pbData, DataOut.cbData);
+			LocalFree(DataOut.pbData);
+		}
+		if (pEidPrivateData)
+		{
+			// Zero entire structure including password data
+			SecureZeroMemory(pEidPrivateData, sizeof(EID_PRIVATE_DATA) + pEidPrivateData->dwCertificatSize + pEidPrivateData->dwSymetricKeySize + pEidPrivateData->dwPasswordSize);
+			EIDFree(pEidPrivateData);
+		}
+		if (pCertContextVerif)
+			CertFreeCertificateContext(pCertContextVerif);
+		if (hHash)
+			CryptDestroyHash(hHash);
+		if (hKey)
+			CryptDestroyKey(hKey);
+		if (hProv)
+		{
+			CryptReleaseContext(hProv, 0);
+			CryptAcquireContext(&hProv,CREDENTIAL_CONTAINER,CREDENTIALPROVIDER,PROV_RSA_AES,CRYPT_DELETEKEYSET);
+		}
+	}
+	SetLastError(dwError);
 	return fReturn;
 }
 

@@ -23,6 +23,7 @@ typedef enum EID_PRIVATE_DATA_TYPE
 {
 	eidpdtClearText=1,
 	eidpdtCrypted = 2,
+	eidpdtDPAPI = 3,
 
 }*PEID_PRIVATE_DATA_TYPE;
 #define CERT_HASH_LENGTH 32  // SHA-256 hash length (security upgrade from SHA-1)
@@ -73,6 +74,7 @@ public:
 	BOOL GetResponseFromCryptedChallenge(__in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PCCERT_CONTEXT pCertContext, __in PWSTR szPin, __out PBYTE *ppResponse, __out PDWORD pdwResponseSize);
 	BOOL GetPasswordFromCryptedChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, __out PWSTR *pszPassword);
 	BOOL GetPasswordFromSignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, __out PWSTR *pszPassword);
+	BOOL GetPasswordFromDPAPIChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, __out PWSTR *pszPassword);
 	BOOL GetCertContextFromRid(__in DWORD dwRid, __out PCCERT_CONTEXT* ppContext, __out PBOOL fEncryptPassword);
 	BOOL RetrievePrivateData(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData);
 	BOOL StorePrivateData(__in DWORD dwRid, __in_opt PBYTE pbSecret, __in_opt USHORT usSecretSize);
