@@ -546,15 +546,17 @@ extern "C"
 				response.dwError = ERROR_INTERNAL_ERROR;
 				__leave;
 			}
-			if ((ULONG_PTR) pGina->pbChallenge + pGina->dwChallengeSize > SubmitBufferLength)
+			if (pGina->dwChallengeSize > SubmitBufferLength ||
+				(ULONG_PTR) pGina->pbChallenge > SubmitBufferLength - pGina->dwChallengeSize)
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pbChallenge");
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pbChallenge overflow");
 				response.dwError = ERROR_INVALID_PARAMETER;
 				__leave;
 			}
-			if ((ULONG_PTR) pGina->pbResponse + pGina->dwResponseSize > SubmitBufferLength)
+			if (pGina->dwResponseSize > SubmitBufferLength ||
+				(ULONG_PTR) pGina->pbResponse > SubmitBufferLength - pGina->dwResponseSize)
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pbResponse");
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pbResponse overflow");
 				response.dwError = ERROR_INVALID_PARAMETER;
 				__leave;
 			}
