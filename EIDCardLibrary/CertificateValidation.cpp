@@ -315,19 +315,16 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 	
 	__try
 	{
-		if (!GetPolicyValue(AllowCertificatesWithNoEKU))
+		// Always enforce Smart Card Logon EKU - certificates without this EKU must not authenticate
+		EnhkeyUsage.cUsageIdentifier = 1;
+		szOid = szOID_KP_SMARTCARD_LOGON;
+		EnhkeyUsage.rgpszUsageIdentifier=& szOid;
+		CertUsage.dwType = USAGE_MATCH_TYPE_OR;
+		if (!HasCertificateRightEKU(pCertContext))
 		{
-			// check EKU SmartCardLogon
-			EnhkeyUsage.cUsageIdentifier = 1;
-			szOid = szOID_KP_SMARTCARD_LOGON;
-			EnhkeyUsage.rgpszUsageIdentifier=& szOid;
-			CertUsage.dwType = USAGE_MATCH_TYPE_OR;
-			if (!HasCertificateRightEKU(pCertContext))
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by HasCertificateRightEKU", GetLastError());
-				__leave;
-			}
+			dwError = GetLastError();
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by HasCertificateRightEKU", GetLastError());
+			__leave;
 		}
 		// Security hardening: Always build and validate the certificate chain
 		// Even for certificates in TrustedPeople store, we verify the chain to ensure:

@@ -1,7 +1,7 @@
 # EID Authentication Security Assessment Report
 
 **Assessment Date:** January 17-18, 2026
-**Last Updated:** January 24, 2026 (Integer overflow fix #1)
+**Last Updated:** January 24, 2026 (EKU enforcement #16)
 **Codebase:** EIDAuthentication (Windows Smart Card Authentication)
 **Assessment Scope:** Complete recursive security analysis
 **Assessment Agents:** 14 specialized security analysis agents
@@ -12,11 +12,11 @@
 
 | Priority | Total | Fixed | Remaining | Progress |
 |----------|-------|-------|-----------|----------|
-| CRITICAL | 27 | 11 | 16 | 🟨 41% |
+| CRITICAL | 27 | 12 | 15 | 🟨 44% |
 | HIGH | 38 | 2 | 36 | 🟨 5% |
 | MEDIUM | 62 | 1 | 61 | ⬜ 2% |
 | LOW | 15 | 0 | 15 | ⬜ 0% |
-| **TOTAL** | **142** | **14** | **128** | 🟨 **10%** |
+| **TOTAL** | **142** | **15** | **127** | 🟨 **11%** |
 
 ### Remediation Session: January 18, 2026
 
@@ -38,6 +38,7 @@
 2. ✅ **#33** Certificate chain depth limit - Max depth of 5 enforced (High)
 3. ✅ **#126** CSP whitelist permissiveness - Resolved by #14 deny-by-default (Medium)
 4. ✅ **#1** Integer wraparound in bounds checking - Overflow-safe arithmetic for buffer validation (Critical)
+5. ✅ **#16** EKU validation bypass removed - Smart Card Logon EKU always enforced (Critical)
 
 ---
 
@@ -96,7 +97,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 #### 1.4 Authentication & Authorization Bypass
 
 - [ ] **#15** [EIDAuthenticationPackage.cpp:393-420](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L393-L420) - Missing authorization check on GetStoredCredentialRid (CWE-862)
-- [ ] **#16** [CertificateValidation.cpp:318-330](EIDCardLibrary/CertificateValidation.cpp#L318-L330) - EKU validation can be bypassed via policy (CWE-295)
+- [x] **#16** [CertificateValidation.cpp:318-330](EIDCardLibrary/CertificateValidation.cpp#L318-L330) - EKU validation can be bypassed via policy (CWE-295) ✅ FIXED - Policy bypass removed, EKU always enforced
 
 #### 1.5 Cryptographic Failures
 
@@ -331,7 +332,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 - [x] **CRITICAL** CSP whitelist defaults to ALLOW - [CertificateValidation.cpp:567-619](EIDCardLibrary/CertificateValidation.cpp#L567-L619) ✅ FIXED - Default changed to DENY
 - [ ] **HIGH** SHA-1 used for certificate matching - [CertificateValidation.cpp:100-150](EIDCardLibrary/CertificateValidation.cpp#L100-L150)
 - [ ] **HIGH** Soft revocation failures allowed - [CertificateValidation.cpp:338-375](EIDCardLibrary/CertificateValidation.cpp#L338-L375)
-- [ ] **HIGH** EKU validation can be bypassed - [CertificateValidation.cpp:318-330](EIDCardLibrary/CertificateValidation.cpp#L318-L330)
+- [x] **HIGH** EKU validation can be bypassed - [CertificateValidation.cpp:318-330](EIDCardLibrary/CertificateValidation.cpp#L318-L330) ✅ FIXED
 - [x] **HIGH** Certificate chain depth not limited - [CertificateValidation.cpp:400-450](EIDCardLibrary/CertificateValidation.cpp#L400-L450) ✅ FIXED
 - [ ] **MEDIUM** Static IV usage - [StoredCredentialManagement.cpp](EIDCardLibrary/StoredCredentialManagement.cpp)
 - [ ] **MEDIUM** No certificate pinning - [CertificateValidation.cpp:500-550](EIDCardLibrary/CertificateValidation.cpp#L500-L550)
@@ -615,4 +616,5 @@ The system requires the following before deployment:
 | 2026-01-24 | 1.2 | #14: CSP whitelist default changed from ALLOW to DENY for unknown providers | Security Assessment Team |
 | 2026-01-24 | 1.3 | #33: Certificate chain depth limited to maximum of 5 | Security Assessment Team |
 | 2026-01-24 | 1.4 | #1: Integer wraparound fixed with overflow-safe bounds checking | Security Assessment Team |
+| 2026-01-24 | 1.5 | #16: EKU validation bypass removed - Smart Card Logon EKU always enforced | Security Assessment Team |
 | | | | |
