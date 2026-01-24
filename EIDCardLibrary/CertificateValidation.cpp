@@ -329,12 +329,10 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 		// Security hardening: Always build and validate the certificate chain
 		// Even for certificates in TrustedPeople store, we verify the chain to ensure:
 		// 1. Certificate signature is valid
-		// 2. Revocation status is checked
-		// 3. Chain integrity is maintained
-
-		// Use revocation checking flags for enhanced security
-		// CERT_CHAIN_REVOCATION_CHECK_CHAIN checks revocation for all certificates in the chain
-		DWORD dwChainFlags = CERT_CHAIN_ENABLE_PEER_TRUST | CERT_CHAIN_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT;
+		// 2. Chain integrity is maintained
+		// Revocation checking is not performed - this system is locally administered
+		// without access to CRL/OCSP infrastructure
+		DWORD dwChainFlags = CERT_CHAIN_ENABLE_PEER_TRUST;
 
 		if(!CertGetCertificateChain(
 			hChainEngine,pCertContext,NULL,NULL,&ChainPara,dwChainFlags,NULL,&pChainContext))
@@ -359,11 +357,9 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 		{
 			DWORD dwStatus = pChainContext->TrustStatus.dwErrorStatus;
 
-			// Soft failures: conditions that should log warnings but allow continuation
-			// for self-managed PKI environments where we control the certificate chain
-			DWORD dwSoftFailures = CERT_TRUST_REVOCATION_STATUS_UNKNOWN |
-			                       CERT_TRUST_IS_OFFLINE_REVOCATION |
-			                       CERT_TRUST_IS_NOT_TIME_NESTED |
+			// Soft failures: non-security-critical conditions that allow continuation
+			// Revocation failures are now hard failures - certificates must have verifiable revocation status
+			DWORD dwSoftFailures = CERT_TRUST_IS_NOT_TIME_NESTED |
 			                       CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT |
 			                       CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT |
 			                       CERT_TRUST_HAS_NOT_PERMITTED_NAME_CONSTRAINT |

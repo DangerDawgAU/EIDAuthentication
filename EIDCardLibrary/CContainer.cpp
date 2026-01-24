@@ -287,6 +287,12 @@ BOOL CContainer::TriggerRemovePolicy()
 				__leave;
 			}
 		}
+		// Validate reader name length to prevent integer overflow in size calculation
+		if (_tcslen(_szReaderName) > MAX_PATH)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Reader name too long");
+			__leave;
+		}
 		dwSize = (DWORD) (sizeof(USHORT) + sizeof(USHORT) + (_tcslen(_szReaderName) + 1) *sizeof(WCHAR));
 		pbBuffer = (PBYTE) EIDAlloc(dwSize);
 		if (!pbBuffer)
@@ -358,6 +364,14 @@ PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSi
 		}
 		dwSize = ARRAYSIZE(szDomainName);
 		GetComputerName(szDomainName,&dwSize);
+
+		// Validate string lengths to prevent integer overflow in buffer size calculations
+		if (wcslen(_szCardName) > MAX_PATH || wcslen(_szContainerName) > MAX_PATH ||
+			wcslen(_szProviderName) > MAX_PATH || wcslen(_szReaderName) > MAX_PATH)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CSP info string too long");
+			__leave;
+		}
 
 		DWORD dwCspBufferLength = (DWORD) (wcslen(_szCardName)+1
 						+ wcslen(_szContainerName)+1

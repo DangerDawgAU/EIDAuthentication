@@ -969,10 +969,14 @@ extern "C"
 			// Log successful authentication
 			EIDSecurityAudit(SECURITY_AUDIT_SUCCESS, L"Smart card logon succeeded for user '%wZ'", *AccountName);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Success !!");
+			SecureZeroMemory(pwzPin, sizeof(pwzPin));
+			SecureZeroMemory(pwzPinUncrypted, sizeof(pwzPinUncrypted));
 			return Status;
 		}
 		__except(EIDExceptionHandler(GetExceptionInformation()))
 		{
+			SecureZeroMemory(pwzPin, sizeof(pwzPin));
+			SecureZeroMemory(pwzPinUncrypted, sizeof(pwzPinUncrypted));
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"NT exception 0x%08x",GetExceptionCode());
 			return STATUS_LOGON_FAILURE;
 		}

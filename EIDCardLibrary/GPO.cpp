@@ -75,7 +75,16 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 		}
 		else if (RegQueryValueEx(key,MyGPOInfo[Policy].Value,NULL, &type,(LPBYTE) &value, &size)==ERROR_SUCCESS)
 		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Policy %s found = %x",MyGPOInfo[Policy].Value,value);
+			// Validate registry value type to prevent misinterpretation of non-DWORD data
+			if (type != REG_DWORD)
+			{
+				value = 0;
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Policy %s has unexpected type %d, ignoring",MyGPOInfo[Policy].Value,type);
+			}
+			else
+			{
+				EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Policy %s found = %x",MyGPOInfo[Policy].Value,value);
+			}
 		}
 		else
 		{
