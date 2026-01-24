@@ -1,7 +1,7 @@
 # EID Authentication Security Assessment Report
 
 **Assessment Date:** January 17-18, 2026
-**Last Updated:** January 24, 2026 (DPAPI integration for #19)
+**Last Updated:** January 24, 2026 (CSP whitelist deny-by-default for #14)
 **Codebase:** EIDAuthentication (Windows Smart Card Authentication)
 **Assessment Scope:** Complete recursive security analysis
 **Assessment Agents:** 14 specialized security analysis agents
@@ -83,7 +83,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 #### 1.3 Code Injection & DLL Hijacking
 
 - [x] **#13** [smartcardmodule.cpp:220](EIDCardLibrary/smartcardmodule.cpp#L220) - LoadLibrary with relative path enables DLL hijacking (CWE-427) ✅ FIXED
-- [ ] **#14** [CertificateValidation.cpp:567-619](EIDCardLibrary/CertificateValidation.cpp#L567-L619) - CSP whitelist defaults to ALLOW unknown providers (CWE-863)
+- [x] **#14** [CertificateValidation.cpp:567-619](EIDCardLibrary/CertificateValidation.cpp#L567-L619) - CSP whitelist defaults to ALLOW unknown providers (CWE-863) ✅ FIXED - Changed default to DENY
 
 #### 1.4 Authentication & Authorization Bypass
 
@@ -272,7 +272,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 #### 3.7 Configuration Security
 
-- [ ] **#126** Default CSP whitelist too permissive - Allows unauthorized CSPs
+- [x] **#126** Default CSP whitelist too permissive - Allows unauthorized CSPs ✅ FIXED - Default changed to DENY
 - [ ] **#127** Debug features can be enabled in production - Information disclosure
 
 ---
@@ -320,7 +320,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 **Agent Assessment:** 2 Critical, 4 High, 8 Medium, 3 Low
 
 - [ ] **CRITICAL** No HMAC for encrypted credential integrity - [StoredCredentialManagement.cpp:200-250](EIDCardLibrary/StoredCredentialManagement.cpp#L200-L250)
-- [ ] **CRITICAL** CSP whitelist defaults to ALLOW - [CertificateValidation.cpp:567-619](EIDCardLibrary/CertificateValidation.cpp#L567-L619)
+- [x] **CRITICAL** CSP whitelist defaults to ALLOW - [CertificateValidation.cpp:567-619](EIDCardLibrary/CertificateValidation.cpp#L567-L619) ✅ FIXED - Default changed to DENY
 - [ ] **HIGH** SHA-1 used for certificate matching - [CertificateValidation.cpp:100-150](EIDCardLibrary/CertificateValidation.cpp#L100-L150)
 - [ ] **HIGH** Soft revocation failures allowed - [CertificateValidation.cpp:338-375](EIDCardLibrary/CertificateValidation.cpp#L338-L375)
 - [ ] **HIGH** EKU validation can be bypassed - [CertificateValidation.cpp:318-330](EIDCardLibrary/CertificateValidation.cpp#L318-L330)
@@ -471,7 +471,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 #### 4. Fix Cryptographic Issues
 - [ ] Implement HMAC-SHA256 for credential integrity
-- [ ] Change CSP whitelist default to DENY
+- [x] Change CSP whitelist default to DENY ✅ FIXED
 - [x] Remove plaintext storage option ✅ Replaced with DPAPI encryption (eidpdtDPAPI)
 - [x] Migrate from SHA-1 to SHA-256 ✅ FIXED
 
@@ -558,7 +558,7 @@ The system requires the following before deployment:
 - [ ] Code signing for all DLLs
 - [ ] Memory safety fixes (buffer overflows, race conditions)
 - [ ] HMAC implementation for credential integrity
-- [ ] CSP whitelist default changed to DENY
+- [x] CSP whitelist default changed to DENY ✅ FIXED
 
 ### Suitable For (After Phase 1 Remediation):
 - Internal enterprise deployment with controlled environments
@@ -604,4 +604,5 @@ The system requires the following before deployment:
 |------|---------|---------|--------|
 | 2026-01-18 | 1.0 | Initial assessment report | Security Assessment Team |
 | 2026-01-24 | 1.1 | #19: DPAPI encryption replaces plaintext storage for AT_SIGNATURE keys | Security Assessment Team |
+| 2026-01-24 | 1.2 | #14: CSP whitelist default changed from ALLOW to DENY for unknown providers | Security Assessment Team |
 | | | | |

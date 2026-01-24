@@ -614,6 +614,6 @@ BOOL IsAllowedCSPProvider(__in LPCWSTR pwszProviderName)
 		return FALSE;
 	}
 
-	// Allow but flag for review - provides audit trail for security monitoring
-	return TRUE;
+	// Deny by default - unknown CSPs must be explicitly added to whitelist
+	return FALSE;
 }
