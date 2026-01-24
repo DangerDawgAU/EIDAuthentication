@@ -13,10 +13,10 @@
 | Priority | Total | Fixed | Remaining | Progress |
 |----------|-------|-------|-----------|----------|
 | CRITICAL | 27 | 15 | 12 | 🟨 56% |
-| HIGH | 38 | 7 | 31 | 🟨 18% |
+| HIGH | 37 | 7 | 30 | 🟨 19% |
 | MEDIUM | 62 | 1 | 61 | ⬜ 2% |
-| LOW | 15 | 0 | 15 | ⬜ 0% |
-| **TOTAL** | **142** | **23** | **119** | 🟨 **16%** |
+| LOW | 16 | 1 | 15 | ⬜ 6% |
+| **TOTAL** | **142** | **24** | **118** | 🟨 **17%** |
 
 ### Remediation Session: January 18, 2026
 
@@ -63,9 +63,9 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 | Severity | Count | Percentage |
 |----------|-------|------------|
 | **CRITICAL** | 27 | 19% |
-| **HIGH** | 38 | 27% |
+| **HIGH** | 37 | 26% |
 | **MEDIUM** | 62 | 44% |
-| **LOW** | 15 | 10% |
+| **LOW** | 16 | 11% |
 | **TOTAL** | **142+** | 100% |
 
 ### Key Findings Summary
@@ -151,7 +151,9 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
   > **#32 Mitigation Note:** This application operates in a locally-administered environment without access to CRL Distribution Points or OCSP responders. Certificate revocation checking cannot be meaningfully implemented because: (1) the smart card certificates are issued by a local CA with no published CRL endpoint, (2) no OCSP responder infrastructure exists, and (3) enabling revocation checks against unreachable endpoints would either silently pass (soft-fail, providing false security) or block all authentication (hard-fail, breaking functionality). The revocation check flag has been removed entirely to eliminate the misleading soft-fail behavior. Revocation is instead managed operationally by removing compromised certificates from the local TrustedPeople store and re-issuing smart cards.
 - [x] **#33** [CertificateValidation.cpp:400-450](EIDCardLibrary/CertificateValidation.cpp#L400-L450) - Certificate chain depth not limited (CWE-295) ✅ FIXED - Max depth of 5 enforced
-- [ ] **#34** [CertificateValidation.cpp:500-550](EIDCardLibrary/CertificateValidation.cpp#L500-L550) - No certificate pinning for known CAs (CWE-295)
+- [ ] **#34** [CertificateValidation.cpp:500-550](EIDCardLibrary/CertificateValidation.cpp#L500-L550) - No certificate pinning for known CAs (CWE-295) ⬇️ DOWNGRADED TO LOW
+
+  > **#34 Risk Reclassification (High → Low):** In this locally-administered environment, certificate pinning provides minimal additional security. The same administrator who controls the EID authentication system also controls the machine's certificate stores. An attacker with sufficient access to add a rogue Root CA to the trust store would already have the access needed to compromise the system directly (modify DLLs, add certs to TrustedPeople, disable LSA protection). Additionally, the `CERT_CHAIN_ENABLE_PEER_TRUST` flag means certificates in TrustedPeople are self-trusted regardless of issuer, so pinning the chain root does not prevent the primary trust-store-based attack path. Pinning adds meaningful value only when different trust boundaries manage the cert store vs. the authentication system (e.g., domain-joined machines with enterprise GPO-pushed root CAs).
 
 #### 2.3 Race Conditions (Additional)
 
@@ -302,7 +304,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 ### PRIORITY 4: LOW - Nice to Have (15 Issues)
 
-- [ ] **#128** SSRF potential in CRL/OCSP checking - Mitigated by OS controls
+- [x] **#128** SSRF potential in CRL/OCSP checking - ✅ MITIGATED - Revocation checking removed entirely (#32); no outbound CRL/OCSP requests are made, eliminating the SSRF vector. This application operates without network access to CRL/OCSP infrastructure.
 - [ ] **#129** Legacy CAPI maintenance burden - Future technical debt
 - [ ] **#130** Documentation inconsistencies - Operational confusion
 - [ ] **#131** Minor code quality issue - Maintainability
@@ -349,7 +351,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 - [x] **HIGH** EKU validation can be bypassed - [CertificateValidation.cpp:318-330](EIDCardLibrary/CertificateValidation.cpp#L318-L330) ✅ FIXED
 - [x] **HIGH** Certificate chain depth not limited - [CertificateValidation.cpp:400-450](EIDCardLibrary/CertificateValidation.cpp#L400-L450) ✅ FIXED
 - [ ] **MEDIUM** Static IV usage - [StoredCredentialManagement.cpp](EIDCardLibrary/StoredCredentialManagement.cpp)
-- [ ] **MEDIUM** No certificate pinning - [CertificateValidation.cpp:500-550](EIDCardLibrary/CertificateValidation.cpp#L500-L550)
+- [ ] **LOW** No certificate pinning - [CertificateValidation.cpp:500-550](EIDCardLibrary/CertificateValidation.cpp#L500-L550) ⬇️ Downgraded (local admin controls both cert store and auth system)
 - [ ] **MEDIUM** Additional cryptographic concerns (6 items)
 - [ ] **LOW** Legacy CAPI instead of CNG - [StoredCredentialManagement.cpp:38-44](EIDCardLibrary/StoredCredentialManagement.cpp#L38-L44)
 
@@ -511,7 +513,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 - [x] Change soft failure default to hard fail ✅ MITIGATED - Revocation checking removed (no CRL/OCSP infrastructure)
 - [x] Limit certificate chain depth ✅ Max depth of 5 enforced
 - [x] Enforce certificate time validity ✅ AllowTimeInvalidCertificates bypass removed
-- [ ] Implement certificate pinning
+- [ ] Implement certificate pinning (Low priority - same admin controls cert store and auth system)
 - [x] Add OCSP stapling support ✅ N/A - No OCSP infrastructure in local environment
 
 #### 7. Fix DLL Hijacking
@@ -562,7 +564,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 - [ ] Multi-factor authentication
 - [ ] Session timeout enforcement
 - [ ] Windows Event Log integration
-- [ ] Certificate pinning
+- [ ] Certificate pinning (Low priority - local admin controls both cert store and auth system)
 
 ### Controls Partially Implemented ⚠️
 
