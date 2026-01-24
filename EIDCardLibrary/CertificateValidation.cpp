@@ -407,16 +407,13 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 
 		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Chain validated");
 
-		// verifiate time compliance
-		if (!GetPolicyValue(AllowTimeInvalidCertificates))
+		// Always enforce time validity - expired certificates must not authenticate
+		LPFILETIME pTimeToVerify = NULL;
+		if (CertVerifyTimeValidity(pTimeToVerify, pCertContext->pCertInfo))
 		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Timecheck");
-			LPFILETIME pTimeToVerify = NULL;
-			if (CertVerifyTimeValidity(pTimeToVerify, pCertContext->pCertInfo))
-			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Timecheck invalid");
-				__leave;
-			}
+			dwError = CERT_E_EXPIRED;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Certificate time validity check failed");
+			__leave;
 		}
 
 		fValidation = TRUE;

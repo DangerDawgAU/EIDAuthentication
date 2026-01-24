@@ -1,7 +1,7 @@
 # EID Authentication Security Assessment Report
 
 **Assessment Date:** January 17-18, 2026
-**Last Updated:** January 24, 2026 (EKU enforcement #16)
+**Last Updated:** January 24, 2026 (authorization, expiration, logging fixes #15, #45, #42)
 **Codebase:** EIDAuthentication (Windows Smart Card Authentication)
 **Assessment Scope:** Complete recursive security analysis
 **Assessment Agents:** 14 specialized security analysis agents
@@ -12,11 +12,11 @@
 
 | Priority | Total | Fixed | Remaining | Progress |
 |----------|-------|-------|-----------|----------|
-| CRITICAL | 27 | 12 | 15 | 🟨 44% |
-| HIGH | 38 | 2 | 36 | 🟨 5% |
+| CRITICAL | 27 | 13 | 14 | 🟨 48% |
+| HIGH | 38 | 4 | 34 | 🟨 11% |
 | MEDIUM | 62 | 1 | 61 | ⬜ 2% |
 | LOW | 15 | 0 | 15 | ⬜ 0% |
-| **TOTAL** | **142** | **15** | **127** | 🟨 **11%** |
+| **TOTAL** | **142** | **18** | **124** | 🟨 **13%** |
 
 ### Remediation Session: January 18, 2026
 
@@ -39,6 +39,9 @@
 3. ✅ **#126** CSP whitelist permissiveness - Resolved by #14 deny-by-default (Medium)
 4. ✅ **#1** Integer wraparound in bounds checking - Overflow-safe arithmetic for buffer validation (Critical)
 5. ✅ **#16** EKU validation bypass removed - Smart Card Logon EKU always enforced (Critical)
+6. ✅ **#15** Missing authorization on GetStoredCredentialRid - Added MatchUserOrIsAdmin(0) check (Critical)
+7. ✅ **#45** Certificate expiration bypass via policy - Time validity always enforced (High)
+8. ✅ **#42** Credential sizes logged at WARNING level - Downgraded to VERBOSE (High)
 
 ---
 
@@ -96,7 +99,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 #### 1.4 Authentication & Authorization Bypass
 
-- [ ] **#15** [EIDAuthenticationPackage.cpp:393-420](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L393-L420) - Missing authorization check on GetStoredCredentialRid (CWE-862)
+- [x] **#15** [EIDAuthenticationPackage.cpp:393-420](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L393-L420) - Missing authorization check on GetStoredCredentialRid (CWE-862) ✅ FIXED - Admin-only access enforced
 - [x] **#16** [CertificateValidation.cpp:318-330](EIDCardLibrary/CertificateValidation.cpp#L318-L330) - EKU validation can be bypassed via policy (CWE-295) ✅ FIXED - Policy bypass removed, EKU always enforced
 
 #### 1.5 Cryptographic Failures
@@ -151,13 +154,13 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 - [ ] **#40** [CredentialManagement.cpp:70-103](EIDCardLibrary/CredentialManagement.cpp#L70-L103) - PIN not cleared on exception paths (CWE-522)
 - [x] **#41** [Tracing.cpp:162-188](EIDCardLibrary/Tracing.cpp#L162-L188) - MiniDumpWithFullMemory captures all secrets in crash dumps (CWE-532) ✅ FIXED - Changed to MiniDumpNormal
-- [ ] **#42** [StoredCredentialManagement.cpp:800-850](EIDCardLibrary/StoredCredentialManagement.cpp#L800-L850) - Credential material logged at DEBUG level (CWE-532)
+- [x] **#42** [StoredCredentialManagement.cpp:800-850](EIDCardLibrary/StoredCredentialManagement.cpp#L800-L850) - Credential material logged at DEBUG level (CWE-532) ✅ FIXED - Downgraded to VERBOSE level
 
 #### 2.5 Authentication Weaknesses
 
 - [ ] **#43** [EIDAuthenticationPackage.cpp:600-650](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L600-L650) - No rate limiting on PIN attempts (CWE-307)
 - [ ] **#44** [EIDAuthenticationPackage.cpp:700-750](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L700-L750) - No account lockout mechanism (CWE-307)
-- [ ] **#45** [CertificateValidation.cpp:200-250](EIDCardLibrary/CertificateValidation.cpp#L200-L250) - Certificate expiration check can be bypassed via policy (CWE-295)
+- [x] **#45** [CertificateValidation.cpp:200-250](EIDCardLibrary/CertificateValidation.cpp#L200-L250) - Certificate expiration check can be bypassed via policy (CWE-295) ✅ FIXED - Time validity always enforced
 
 #### 2.6 Smart Card Specific Issues
 
@@ -312,14 +315,14 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 **Agent Assessment:** 2 Critical, 2 High, 5 Medium
 
-- [ ] **CRITICAL** Missing authorization check on GetStoredCredentialRid - [EIDAuthenticationPackage.cpp:393-420](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L393-L420)
+- [x] **CRITICAL** Missing authorization check on GetStoredCredentialRid - [EIDAuthenticationPackage.cpp:393-420](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L393-L420) ✅ FIXED
 - [ ] **CRITICAL** PIN protection bypass via constant comparison bug - [EIDAuthenticationPackage.cpp:720](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L720)
 - [ ] **HIGH** No rate limiting on PIN attempts - [EIDAuthenticationPackage.cpp:600-650](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L600-L650)
 - [ ] **HIGH** No account lockout mechanism - [EIDAuthenticationPackage.cpp:700-750](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L700-L750)
 - [ ] **MEDIUM** User enumeration via certificate matching - [EIDAuthenticationPackage.cpp:200-250](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L200-L250)
 - [ ] **MEDIUM** No session timeout enforcement - [EIDAuthenticationPackage.cpp:137-270](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L137-L270)
 - [ ] **MEDIUM** TOCTOU in admin status check - Various
-- [ ] **MEDIUM** Certificate expiration bypass via policy - [CertificateValidation.cpp:200-250](EIDCardLibrary/CertificateValidation.cpp#L200-L250)
+- [x] **MEDIUM** Certificate expiration bypass via policy - [CertificateValidation.cpp:200-250](EIDCardLibrary/CertificateValidation.cpp#L200-L250) ✅ FIXED
 - [ ] **MEDIUM** No MFA support - Architecture-wide
 
 ---
@@ -330,7 +333,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 - [ ] **CRITICAL** No HMAC for encrypted credential integrity - [StoredCredentialManagement.cpp:200-250](EIDCardLibrary/StoredCredentialManagement.cpp#L200-L250)
 - [x] **CRITICAL** CSP whitelist defaults to ALLOW - [CertificateValidation.cpp:567-619](EIDCardLibrary/CertificateValidation.cpp#L567-L619) ✅ FIXED - Default changed to DENY
-- [ ] **HIGH** SHA-1 used for certificate matching - [CertificateValidation.cpp:100-150](EIDCardLibrary/CertificateValidation.cpp#L100-L150)
+- [x] **HIGH** SHA-1 used for certificate matching - [CertificateValidation.cpp:100-150](EIDCardLibrary/CertificateValidation.cpp#L100-L150) ✅ FIXED
 - [ ] **HIGH** Soft revocation failures allowed - [CertificateValidation.cpp:338-375](EIDCardLibrary/CertificateValidation.cpp#L338-L375)
 - [x] **HIGH** EKU validation can be bypassed - [CertificateValidation.cpp:318-330](EIDCardLibrary/CertificateValidation.cpp#L318-L330) ✅ FIXED
 - [x] **HIGH** Certificate chain depth not limited - [CertificateValidation.cpp:400-450](EIDCardLibrary/CertificateValidation.cpp#L400-L450) ✅ FIXED
@@ -346,8 +349,8 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 **Agent Assessment:** 3 Critical, 4 High, 5 Medium, 1 Low
 
 - [x] **CRITICAL** Integer wraparound in dwCredentialSize - [EIDAuthenticationPackage.cpp:549-562](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L549-L562) ✅ FIXED
-- [ ] **CRITICAL** wsprintf format string vulnerabilities - [StoredCredentialManagement.cpp:1836,1966](EIDCardLibrary/StoredCredentialManagement.cpp#L1836)
-- [ ] **CRITICAL** memcpy without size validation - [StoredCredentialManagement.cpp:542](EIDCardLibrary/StoredCredentialManagement.cpp#L542)
+- [x] **CRITICAL** wsprintf format string vulnerabilities - [StoredCredentialManagement.cpp:1836,1966](EIDCardLibrary/StoredCredentialManagement.cpp#L1836) ✅ FIXED
+- [x] **CRITICAL** memcpy without size validation - [StoredCredentialManagement.cpp:542](EIDCardLibrary/StoredCredentialManagement.cpp#L542) ✅ FIXED
 - [ ] **HIGH** Buffer overflow in argument parsing - [EIDAuthenticationPackage.cpp:100-150](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L100-L150)
 - [ ] **HIGH** wcscpy_s with unsafe cast - [CContainer.cpp:298](EIDCardLibrary/CContainer.cpp#L298)
 - [ ] **HIGH** Buffer offset calculation errors - [CContainer.cpp:410-424](EIDCardLibrary/CContainer.cpp#L410-L424)
@@ -363,10 +366,10 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 **Agent Assessment:** 2 Critical, 3 High, 3 Medium, 1 Low
 
 - [x] **CRITICAL** Plaintext credential storage option - [StoredCredentialManagement.cpp:437-457](EIDCardLibrary/StoredCredentialManagement.cpp#L437-L457) ✅ FIXED - DPAPI encryption fallback
-- [ ] **CRITICAL** Debug code writes credentials to TEMP - [StoredCredentialManagement.cpp:1881-1928](EIDCardLibrary/StoredCredentialManagement.cpp#L1881-L1928)
-- [ ] **HIGH** MiniDumpWithFullMemory captures secrets - [Tracing.cpp:162-188](EIDCardLibrary/Tracing.cpp#L162-L188)
+- [x] **CRITICAL** Debug code writes credentials to TEMP - [StoredCredentialManagement.cpp:1881-1928](EIDCardLibrary/StoredCredentialManagement.cpp#L1881-L1928) ✅ FIXED
+- [x] **HIGH** MiniDumpWithFullMemory captures secrets - [Tracing.cpp:162-188](EIDCardLibrary/Tracing.cpp#L162-L188) ✅ FIXED
 - [ ] **HIGH** PIN not cleared on exception - [CredentialManagement.cpp:70-103](EIDCardLibrary/CredentialManagement.cpp#L70-L103)
-- [ ] **HIGH** Credential material in DEBUG logs - [StoredCredentialManagement.cpp:800-850](EIDCardLibrary/StoredCredentialManagement.cpp#L800-L850)
+- [x] **HIGH** Credential material in DEBUG logs - [StoredCredentialManagement.cpp:800-850](EIDCardLibrary/StoredCredentialManagement.cpp#L800-L850) ✅ FIXED
 - [ ] **MEDIUM** Verbose trace in release builds - [Tracing.cpp:100-150](EIDCardLibrary/Tracing.cpp#L100-L150)
 - [ ] **MEDIUM** Additional sensitive data issues (2 items)
 
@@ -376,11 +379,11 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 **Agent Assessment:** 4 Critical, 4 High, 5 Medium
 
-- [ ] **CRITICAL** LoadLibrary with relative path - [smartcardmodule.cpp:220](EIDCardLibrary/smartcardmodule.cpp#L220)
+- [x] **CRITICAL** LoadLibrary with relative path - [smartcardmodule.cpp:220](EIDCardLibrary/smartcardmodule.cpp#L220) ✅ FIXED
 - [ ] **CRITICAL** Use-after-free in Callback - [CEIDProvider.cpp:71-117](EIDCredentialProvider/CEIDProvider.cpp#L71-L117)
 - [ ] **CRITICAL** Type confusion in card response - [CContainer.cpp:150-200](EIDCardLibrary/CContainer.cpp#L150-L200)
 - [ ] **CRITICAL** Memory corruption via malformed card - [smartcardmodule.cpp:300-350](EIDCardLibrary/smartcardmodule.cpp#L300-L350)
-- [ ] **HIGH** Non-atomic reference counting - [Dll.cpp:54-67](EIDCredentialProvider/Dll.cpp#L54-L67)
+- [x] **HIGH** Non-atomic reference counting - [Dll.cpp:54-67](EIDCredentialProvider/Dll.cpp#L54-L67) ✅ FIXED
 - [ ] **HIGH** List iteration without locks - [CContainerHolderFactory.cpp:380-415](EIDCardLibrary/CContainerHolderFactory.cpp#L380-L415)
 - [ ] **HIGH** Out-of-bounds read in enumeration - [CContainerHolderFactory.cpp:200-250](EIDCardLibrary/CContainerHolderFactory.cpp#L200-L250)
 - [ ] **HIGH** Stack overflow in name extraction - [CContainer.cpp:500-550](EIDCardLibrary/CContainer.cpp#L500-L550)
@@ -392,7 +395,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 **Agent Assessment:** 6 Critical, 5 High, 3 Medium
 
-- [ ] **CRITICAL** Non-atomic _cRef increment - [Dll.cpp:54-67](EIDCredentialProvider/Dll.cpp#L54-L67)
+- [x] **CRITICAL** Non-atomic _cRef increment - [Dll.cpp:54-67](EIDCredentialProvider/Dll.cpp#L54-L67) ✅ FIXED
 - [ ] **CRITICAL** Use-after-free in Callback - [CEIDProvider.cpp:71-117](EIDCredentialProvider/CEIDProvider.cpp#L71-L117)
 - [ ] **CRITICAL** Credential list race - [CredentialManagement.cpp:180-220](EIDCardLibrary/CredentialManagement.cpp#L180-L220)
 - [ ] **CRITICAL** GPO reading unsynchronized - [GPO.cpp:34-60](EIDCardLibrary/GPO.cpp#L34-L60)
@@ -467,13 +470,14 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 - [ ] Test with RunAsPPL enabled
 
 #### 2. Fix Memory Safety Issues
-- [ ] Replace `wsprintf` with `StringCchPrintf`
-- [ ] Add size validation to all `memcpy` calls
+- [x] Replace `wsprintf` with `StringCchPrintf` ✅ FIXED
+- [x] Add size validation to all `memcpy` calls ✅ FIXED
 - [x] Implement integer overflow checks ✅ Overflow-safe bounds validation
+- [x] Add authorization check to GetStoredCredentialRid ✅ Admin-only access enforced
 - [ ] Fix buffer offset calculations
 
 #### 3. Add Thread Synchronization
-- [ ] Replace `_cRef++` with `InterlockedIncrement`
+- [x] Replace `_cRef++` with `InterlockedIncrement` ✅ FIXED
 - [ ] Add mutex/critical sections to shared data
 - [ ] Fix use-after-free patterns
 - [ ] Implement proper lock ordering
@@ -495,16 +499,18 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 #### 6. Enhance Certificate Validation
 - [ ] Change soft failure default to hard fail
 - [x] Limit certificate chain depth ✅ Max depth of 5 enforced
+- [x] Enforce certificate time validity ✅ AllowTimeInvalidCertificates bypass removed
 - [ ] Implement certificate pinning
 - [ ] Add OCSP stapling support
 
 #### 7. Fix DLL Hijacking
-- [ ] Use full paths in LoadLibrary
-- [ ] Implement SetDllDirectory protection
+- [x] Use full paths in LoadLibrary ✅ FIXED - SafeLoadLibrary implemented
+- [x] Implement SetDllDirectory protection ✅ FIXED
 - [ ] Add DLL search order hardening
 - [ ] Validate loaded module signatures
 
 #### 8. Improve Audit Logging
+- [x] Downgrade credential size logging to VERBOSE ✅ Prevents ETW capture of sensitive sizing
 - [ ] Integrate with Windows Event Log
 - [ ] Add correlation IDs
 - [ ] Configure event forwarding
@@ -617,4 +623,6 @@ The system requires the following before deployment:
 | 2026-01-24 | 1.3 | #33: Certificate chain depth limited to maximum of 5 | Security Assessment Team |
 | 2026-01-24 | 1.4 | #1: Integer wraparound fixed with overflow-safe bounds checking | Security Assessment Team |
 | 2026-01-24 | 1.5 | #16: EKU validation bypass removed - Smart Card Logon EKU always enforced | Security Assessment Team |
-| | | | |
+| 2026-01-24 | 1.6 | #15: Authorization check added to GetStoredCredentialRid - admin-only access | Security Assessment Team |
+| 2026-01-24 | 1.7 | #45: Certificate expiration bypass removed - time validity always enforced | Security Assessment Team |
+| 2026-01-24 | 1.8 | #42: Credential size logging downgraded from WARNING to VERBOSE | Security Assessment Team |

@@ -392,6 +392,11 @@ extern "C"
 				break;
 			case EIDCMGetStoredCredentialRid:
 				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"EIDCMGetStoredCredentialRid");
+				if (!MatchUserOrIsAdmin(0))
+				{
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Not autorized");
+					break;
+				}
 				pPointer = (PBYTE) pBuffer->pbCertificate - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
 				pBuffer->pbCertificate = (PBYTE) pPointer;
 				pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, pBuffer->pbCertificate, pBuffer->dwCertificateSize);

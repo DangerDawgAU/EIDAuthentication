@@ -1376,11 +1376,11 @@ BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __i
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CryptGetKeyParam", GetLastError());
 			__leave;
 		}
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"dwBlockLen = %d",dwBlockLen);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwBlockLen = %d",dwBlockLen);
 		// block size = 256             100 => 1     256 => 1      257  => 2
 		dwRoundNumber = ((DWORD)(dwPasswordSize/dwBlockLen)) + ((dwPasswordSize%dwBlockLen) ? 1 : 0);
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"dwRoundNumber = %d",dwRoundNumber);
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"dwPasswordSize = %d",dwPasswordSize);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwRoundNumber = %d",dwRoundNumber);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwPasswordSize = %d",dwPasswordSize);
 		*pEncryptedPassword = (PBYTE) EIDAlloc(dwRoundNumber * dwBlockLen);
 		if (!*pEncryptedPassword)
 		{
