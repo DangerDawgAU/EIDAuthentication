@@ -1,7 +1,7 @@
 # EID Authentication Security Assessment Report
 
 **Assessment Date:** January 17-18, 2026
-**Last Updated:** January 24, 2026 (CSP whitelist deny-by-default for #14)
+**Last Updated:** January 24, 2026 (Certificate chain depth limit #33)
 **Codebase:** EIDAuthentication (Windows Smart Card Authentication)
 **Assessment Scope:** Complete recursive security analysis
 **Assessment Agents:** 14 specialized security analysis agents
@@ -12,11 +12,11 @@
 
 | Priority | Total | Fixed | Remaining | Progress |
 |----------|-------|-------|-----------|----------|
-| CRITICAL | 27 | 8 | 19 | 🟨 30% |
-| HIGH | 38 | 1 | 37 | 🟨 3% |
-| MEDIUM | 62 | 0 | 62 | ⬜ 0% |
+| CRITICAL | 27 | 10 | 17 | 🟨 37% |
+| HIGH | 38 | 2 | 36 | 🟨 5% |
+| MEDIUM | 62 | 1 | 61 | ⬜ 2% |
 | LOW | 15 | 0 | 15 | ⬜ 0% |
-| **TOTAL** | **142** | **9** | **133** | 🟨 **6%** |
+| **TOTAL** | **142** | **13** | **129** | 🟨 **9%** |
 
 ### Remediation Session: January 18, 2026
 
@@ -30,6 +30,13 @@
 7. ✅ **#21** Code signing - Marked as handled separately by user
 8. ✅ **#41** MiniDumpWithFullMemory - Changed to MiniDumpNormal
 9. ✅ **#2** memcpy buffer overflow - Added bounds checking
+
+### Remediation Session: January 24, 2026
+
+**Hardening Fixes Applied:**
+1. ✅ **#14** CSP whitelist default to DENY - Unknown providers now blocked by default (Critical)
+2. ✅ **#33** Certificate chain depth limit - Max depth of 5 enforced (High)
+3. ✅ **#126** CSP whitelist permissiveness - Resolved by #14 deny-by-default (Medium)
 
 ---
 
@@ -127,7 +134,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 #### 2.2 Certificate Validation Weaknesses
 
 - [ ] **#32** [CertificateValidation.cpp:338-375](EIDCardLibrary/CertificateValidation.cpp#L338-L375) - Soft revocation failures allowed by default (CWE-299)
-- [ ] **#33** [CertificateValidation.cpp:400-450](EIDCardLibrary/CertificateValidation.cpp#L400-L450) - Certificate chain depth not limited (CWE-295)
+- [x] **#33** [CertificateValidation.cpp:400-450](EIDCardLibrary/CertificateValidation.cpp#L400-L450) - Certificate chain depth not limited (CWE-295) ✅ FIXED - Max depth of 5 enforced
 - [ ] **#34** [CertificateValidation.cpp:500-550](EIDCardLibrary/CertificateValidation.cpp#L500-L550) - No certificate pinning for known CAs (CWE-295)
 
 #### 2.3 Race Conditions (Additional)
@@ -324,7 +331,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 - [ ] **HIGH** SHA-1 used for certificate matching - [CertificateValidation.cpp:100-150](EIDCardLibrary/CertificateValidation.cpp#L100-L150)
 - [ ] **HIGH** Soft revocation failures allowed - [CertificateValidation.cpp:338-375](EIDCardLibrary/CertificateValidation.cpp#L338-L375)
 - [ ] **HIGH** EKU validation can be bypassed - [CertificateValidation.cpp:318-330](EIDCardLibrary/CertificateValidation.cpp#L318-L330)
-- [ ] **HIGH** Certificate chain depth not limited - [CertificateValidation.cpp:400-450](EIDCardLibrary/CertificateValidation.cpp#L400-L450)
+- [x] **HIGH** Certificate chain depth not limited - [CertificateValidation.cpp:400-450](EIDCardLibrary/CertificateValidation.cpp#L400-L450) ✅ FIXED
 - [ ] **MEDIUM** Static IV usage - [StoredCredentialManagement.cpp](EIDCardLibrary/StoredCredentialManagement.cpp)
 - [ ] **MEDIUM** No certificate pinning - [CertificateValidation.cpp:500-550](EIDCardLibrary/CertificateValidation.cpp#L500-L550)
 - [ ] **MEDIUM** Additional cryptographic concerns (6 items)
@@ -485,7 +492,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 #### 6. Enhance Certificate Validation
 - [ ] Change soft failure default to hard fail
-- [ ] Limit certificate chain depth
+- [x] Limit certificate chain depth ✅ Max depth of 5 enforced
 - [ ] Implement certificate pinning
 - [ ] Add OCSP stapling support
 
@@ -605,4 +612,5 @@ The system requires the following before deployment:
 | 2026-01-18 | 1.0 | Initial assessment report | Security Assessment Team |
 | 2026-01-24 | 1.1 | #19: DPAPI encryption replaces plaintext storage for AT_SIGNATURE keys | Security Assessment Team |
 | 2026-01-24 | 1.2 | #14: CSP whitelist default changed from ALLOW to DENY for unknown providers | Security Assessment Team |
+| 2026-01-24 | 1.3 | #33: Certificate chain depth limited to maximum of 5 | Security Assessment Team |
 | | | | |

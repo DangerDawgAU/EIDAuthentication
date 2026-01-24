@@ -347,6 +347,16 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 			__leave;
 		}
 
+		// Reject chains that exceed a reasonable depth for smart card authentication
+		// Typical chains are 2-3 levels (Root -> [Intermediate] -> End Entity)
+		#define MAX_CHAIN_DEPTH 5
+		if (pChainContext->cChain > 0 && pChainContext->rgpChain[0]->cElement > MAX_CHAIN_DEPTH)
+		{
+			dwError = CERT_E_CHAINING;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Certificate chain depth %d exceeds maximum %d", pChainContext->rgpChain[0]->cElement, MAX_CHAIN_DEPTH);
+			__leave;
+		}
+
 		// Check chain trust status - handle various trust issues appropriately
 		if (pChainContext->TrustStatus.dwErrorStatus)
 		{
