@@ -1,6 +1,7 @@
 # EID Authentication Security Assessment Report
 
 **Assessment Date:** January 17-18, 2026
+**Last Updated:** January 24, 2026 (DPAPI integration for #19)
 **Codebase:** EIDAuthentication (Windows Smart Card Authentication)
 **Assessment Scope:** Complete recursive security analysis
 **Assessment Agents:** 14 specialized security analysis agents
@@ -24,7 +25,7 @@
 2. ✅ **#3/#4** wsprintf format string vulnerabilities - Fixed with StringCchPrintfW
 3. ✅ **#13** DLL hijacking - Fixed with SafeLoadLibrary and SetDllDirectoryW
 4. ✅ **#18** SHA-1 usage - Upgraded to SHA-256 (CALG_SHA_256)
-5. ✅ **#19** Plaintext credential storage - Disabled, now requires encryption
+5. ✅ **#19** Plaintext credential storage - DPAPI encryption fallback for AT_SIGNATURE keys (preserves functionality)
 6. ✅ **#20** Debug credential file storage - Disabled, rejects with ACCESS_DENIED
 7. ✅ **#21** Code signing - Marked as handled separately by user
 8. ✅ **#41** MiniDumpWithFullMemory - Changed to MiniDumpNormal
@@ -96,7 +97,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 #### 1.6 Sensitive Data Exposure
 
-- [x] **#19** [StoredCredentialManagement.cpp:437-457](EIDCardLibrary/StoredCredentialManagement.cpp#L437-L457) - Plaintext credential storage option (eidpdtClearText) (CWE-312) ✅ FIXED - Disabled, requires encryption
+- [x] **#19** [StoredCredentialManagement.cpp:437-457](EIDCardLibrary/StoredCredentialManagement.cpp#L437-L457) - Plaintext credential storage option (eidpdtClearText) (CWE-312) ✅ FIXED - DPAPI encryption fallback for AT_SIGNATURE keys
 - [x] **#20** [StoredCredentialManagement.cpp:1881-1928](EIDCardLibrary/StoredCredentialManagement.cpp#L1881-L1928) - Debug code writes credentials to TEMP files in plaintext (CWE-532) ✅ FIXED - Disabled
 
 #### 1.7 Missing Code Signing (Deployment Critical)
@@ -352,7 +353,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 **Agent Assessment:** 2 Critical, 3 High, 3 Medium, 1 Low
 
-- [ ] **CRITICAL** Plaintext credential storage option - [StoredCredentialManagement.cpp:437-457](EIDCardLibrary/StoredCredentialManagement.cpp#L437-L457)
+- [x] **CRITICAL** Plaintext credential storage option - [StoredCredentialManagement.cpp:437-457](EIDCardLibrary/StoredCredentialManagement.cpp#L437-L457) ✅ FIXED - DPAPI encryption fallback
 - [ ] **CRITICAL** Debug code writes credentials to TEMP - [StoredCredentialManagement.cpp:1881-1928](EIDCardLibrary/StoredCredentialManagement.cpp#L1881-L1928)
 - [ ] **HIGH** MiniDumpWithFullMemory captures secrets - [Tracing.cpp:162-188](EIDCardLibrary/Tracing.cpp#L162-L188)
 - [ ] **HIGH** PIN not cleared on exception - [CredentialManagement.cpp:70-103](EIDCardLibrary/CredentialManagement.cpp#L70-L103)
@@ -471,8 +472,8 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 #### 4. Fix Cryptographic Issues
 - [ ] Implement HMAC-SHA256 for credential integrity
 - [ ] Change CSP whitelist default to DENY
-- [ ] Remove plaintext storage option
-- [ ] Migrate from SHA-1 to SHA-256
+- [x] Remove plaintext storage option ✅ Replaced with DPAPI encryption (eidpdtDPAPI)
+- [x] Migrate from SHA-1 to SHA-256 ✅ FIXED
 
 ### Phase 2: High Priority Fixes (Weeks 5-8)
 
@@ -602,5 +603,5 @@ The system requires the following before deployment:
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
 | 2026-01-18 | 1.0 | Initial assessment report | Security Assessment Team |
-| | | | |
+| 2026-01-24 | 1.1 | #19: DPAPI encryption replaces plaintext storage for AT_SIGNATURE keys | Security Assessment Team |
 | | | | |
