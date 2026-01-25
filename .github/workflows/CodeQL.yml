@@ -37,8 +37,18 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
+    - name: Setup Visual Studio Dev Environment
+      uses: ilammy/msvc-dev-cmd@v1
+
+    # Auto-retarget solution to current VS version
+    - name: Retarget solution
+      run: |
+        devenv EIDCredentialProvider.sln /upgrade
+        # Alternative using MSBuild
+        # msbuild EIDCredentialProvider.sln /p:PlatformToolset=v143 /p:WindowsTargetPlatformVersion=10.0
+
     - name: Build solution
-      run: msbuild EIDCredentialProvider.sln /p:Configuration=Release /p:Platform=x64
+      run: msbuild EIDCredentialProvider.sln /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
