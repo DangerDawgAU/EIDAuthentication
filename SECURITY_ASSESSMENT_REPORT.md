@@ -1,7 +1,7 @@
 # EID Authentication Security Assessment Report
 
 **Assessment Date:** January 17-18, 2026
-**Last Updated:** January 25, 2026 (buffer overflow, revocation, PIN clearing, registry type fixes #5, #6, #32, #40, #51)
+**Last Updated:** January 25, 2026 (info disclosure, input validation, ATR bounds #46, #54, #55 + hardening)
 **Codebase:** EIDAuthentication (Windows Smart Card Authentication)
 **Assessment Scope:** Complete recursive security analysis
 **Assessment Agents:** 14 specialized security analysis agents
@@ -13,10 +13,10 @@
 | Priority | Total | Fixed | Remaining | Progress |
 |----------|-------|-------|-----------|----------|
 | CRITICAL | 27 | 15 | 12 | 🟨 56% |
-| HIGH | 37 | 7 | 30 | 🟨 19% |
+| HIGH | 37 | 10 | 27 | 🟨 27% |
 | MEDIUM | 62 | 1 | 61 | ⬜ 2% |
 | LOW | 16 | 1 | 15 | ⬜ 6% |
-| **TOTAL** | **142** | **24** | **118** | 🟨 **17%** |
+| **TOTAL** | **142** | **27** | **115** | 🟨 **19%** |
 
 ### Remediation Session: January 18, 2026
 
@@ -43,7 +43,7 @@
 7. ✅ **#45** Certificate expiration bypass via policy - Time validity always enforced (High)
 8. ✅ **#42** Credential sizes logged at WARNING level - Downgraded to VERBOSE (High)
 
-### Remediation Session: January 25, 2026
+### Remediation Session: January 25, 2026 (AM)
 
 **Buffer Safety, Revocation & Credential Hardening:**
 1. ✅ **#5** wcscpy_s unsafe size calculation - Added reader name length validation before DWORD cast (Critical)
@@ -51,6 +51,21 @@
 3. ✅ **#32** Soft revocation failures allowed - Revocation checking removed (no CRL/OCSP infrastructure available) (High)
 4. ✅ **#40** PIN not cleared on exception paths - Added SecureZeroMemory in __except and success paths (High)
 5. ✅ **#51** Registry values read without type validation - Added REG_DWORD type check, rejects unexpected types (High)
+
+### Remediation Session: January 25, 2026 (PM)
+
+**Information Disclosure, Input Validation & Memory Safety Hardening:**
+1. ✅ **#54** Error messages reveal internal state - Authentication failure logs now use generic messages; status codes moved to VERBOSE level (High, CWE-209)
+2. ✅ **#55** Certificate validation errors too detailed - Chain policy errors use generic warnings; detailed codes moved to VERBOSE level (High, CWE-209)
+3. ✅ **#46** Smart card reader name not validated - Added NULL checks and length validation in CheckPINandGetRemainingAttempts (High, CWE-20)
+4. ⚠️ **#52** Registry keys created with overly permissive ACLs - Partial: RegCreateKeyEx with SECURITY_ATTRIBUTES in TriggerRemovePolicy (High, CWE-732)
+5. ⚠️ **#27** Memory corruption via malformed smart card response - Partial: ATR size validation (max 33 bytes per ISO 7816-3) (Critical, CWE-787)
+
+**Additional Hardening (not CVE-mapped):**
+- Added USHORT overflow validation in LsaInitializeUnicodeStringFromWideString (CWE-190)
+- Added USHORT overflow validation for password length in LsaLogonUser path (CWE-190)
+- Added NULL pointer validation in CContainer::GetCSPInfo() (CWE-476)
+- Added policy enum bounds validation in GetPolicyValue/SetPolicyValue (CWE-125)
 
 ---
 
@@ -132,7 +147,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 - [ ] **#24** [CredentialManagement.cpp:300-350](EIDCardLibrary/CredentialManagement.cpp#L300-L350) - Use-after-free pattern in credential cleanup (CWE-416)
 - [ ] **#25** [GPO.cpp:100-150](EIDCardLibrary/GPO.cpp#L100-L150) - Registry symlink attack possible on policy keys (CWE-59)
 - [ ] **#26** [StoredCredentialManagement.cpp:600-650](EIDCardLibrary/StoredCredentialManagement.cpp#L600-L650) - Double-free potential in error handling path (CWE-415)
-- [ ] **#27** [smartcardmodule.cpp:300-350](EIDCardLibrary/smartcardmodule.cpp#L300-L350) - Memory corruption via malformed smart card response (CWE-787)
+- [ ] **#27** [smartcardmodule.cpp:300-350](EIDCardLibrary/smartcardmodule.cpp#L300-L350) - Memory corruption via malformed smart card response (CWE-787) ⚠️ PARTIAL - ATR size validation added (max 33 bytes per ISO 7816-3)
 
 ---
 
@@ -177,7 +192,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 #### 2.6 Smart Card Specific Issues
 
-- [ ] **#46** [smartcardmodule.cpp:100-150](EIDCardLibrary/smartcardmodule.cpp#L100-L150) - Smart card reader name not validated (CWE-20)
+- [x] **#46** [smartcardmodule.cpp:100-150](EIDCardLibrary/smartcardmodule.cpp#L100-L150) - Smart card reader name not validated (CWE-20) ✅ FIXED - NULL checks and length validation in CheckPINandGetRemainingAttempts
 - [ ] **#47** [smartcardmodule.cpp:400-450](EIDCardLibrary/smartcardmodule.cpp#L400-L450) - APDU response length not validated (CWE-131)
 - [ ] **#48** [CContainer.cpp:350-400](EIDCardLibrary/CContainer.cpp#L350-L400) - PIN retry counter not enforced at application level (CWE-307)
 - [ ] **#49** [smartcardmodule.cpp:500-550](EIDCardLibrary/smartcardmodule.cpp#L500-L550) - Card removal not handled atomically (CWE-362)
@@ -186,13 +201,13 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 #### 2.7 Configuration & Registry Security
 
 - [x] **#51** [GPO.cpp:150-200](EIDCardLibrary/GPO.cpp#L150-L200) - Registry values read without type validation (CWE-20) ✅ FIXED - REG_DWORD type enforced
-- [ ] **#52** [Registration.cpp:100-150](EIDCardLibrary/Registration.cpp#L100-L150) - Registry keys created with overly permissive ACLs (CWE-732)
+- [ ] **#52** [Registration.cpp:100-150](EIDCardLibrary/Registration.cpp#L100-L150) - Registry keys created with overly permissive ACLs (CWE-732) ⚠️ PARTIAL - RegCreateKeyEx with SECURITY_ATTRIBUTES in CContainer::TriggerRemovePolicy
 - [ ] **#53** [GPO.cpp:200-250](EIDCardLibrary/GPO.cpp#L200-L250) - No validation of registry key ownership (CWE-59)
 
 #### 2.8 Error Handling Issues
 
-- [ ] **#54** [EIDAuthenticationPackage.cpp:800-850](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L800-L850) - Error messages reveal internal state (CWE-209)
-- [ ] **#55** [CertificateValidation.cpp:600-650](EIDCardLibrary/CertificateValidation.cpp#L600-L650) - Certificate validation errors too detailed (CWE-209)
+- [x] **#54** [EIDAuthenticationPackage.cpp:800-850](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L800-L850) - Error messages reveal internal state (CWE-209) ✅ FIXED - Generic error messages at WARNING level; status codes moved to VERBOSE
+- [x] **#55** [CertificateValidation.cpp:600-650](EIDCardLibrary/CertificateValidation.cpp#L600-L650) - Certificate validation errors too detailed (CWE-209) ✅ FIXED - Generic warnings; detailed policy errors moved to VERBOSE
 
 #### 2.9 Windows Security Concerns
 
@@ -428,7 +443,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 **Agent Assessment:** 1 Critical, 5 High, 6 Medium
 
 - [ ] **CRITICAL** Card emulator detection bypass - [smartcardmodule.cpp:600-650](EIDCardLibrary/smartcardmodule.cpp#L600-L650)
-- [ ] **HIGH** Reader name not validated - [smartcardmodule.cpp:100-150](EIDCardLibrary/smartcardmodule.cpp#L100-L150)
+- [x] **HIGH** Reader name not validated - [smartcardmodule.cpp:100-150](EIDCardLibrary/smartcardmodule.cpp#L100-L150) ✅ FIXED - NULL checks and length validation
 - [ ] **HIGH** APDU response length unvalidated - [smartcardmodule.cpp:400-450](EIDCardLibrary/smartcardmodule.cpp#L400-L450)
 - [ ] **HIGH** PIN retry not enforced at app level - [CContainer.cpp:350-400](EIDCardLibrary/CContainer.cpp#L350-L400)
 - [ ] **HIGH** Multiple readers not isolated - [CContainerHolderFactory.cpp:100-150](EIDCardLibrary/CContainerHolderFactory.cpp#L100-L150)
@@ -449,7 +464,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 - [ ] **HIGH** Deserialization of untrusted data (Code execution) - [StoredCredentialManagement.cpp:900-950](EIDCardLibrary/StoredCredentialManagement.cpp#L900-L950)
 - [ ] **HIGH** Certificate extension parsing (Denial of service) - [CertificateValidation.cpp:700-750](EIDCardLibrary/CertificateValidation.cpp#L700-L750)
 - [ ] **HIGH** Double-free potential (Memory corruption) - [StoredCredentialManagement.cpp:600-650](EIDCardLibrary/StoredCredentialManagement.cpp#L600-L650)
-- [ ] **HIGH** Malformed card response (Code execution) - [smartcardmodule.cpp:300-350](EIDCardLibrary/smartcardmodule.cpp#L300-L350)
+- [ ] **HIGH** Malformed card response (Code execution) - [smartcardmodule.cpp:300-350](EIDCardLibrary/smartcardmodule.cpp#L300-L350) ⚠️ PARTIAL - ATR validation added
 - [ ] **MEDIUM** Additional zero-day patterns (1 item)
 
 ---
@@ -644,3 +659,9 @@ The system requires the following before deployment:
 | 2026-01-25 | 2.1 | #32: Revocation checking removed - no CRL/OCSP infrastructure in local environment | Security Assessment Team |
 | 2026-01-25 | 2.2 | #40: PIN buffers cleared with SecureZeroMemory on exception and success paths | Security Assessment Team |
 | 2026-01-25 | 2.3 | #51: Registry type validation enforces REG_DWORD, rejects unexpected types | Security Assessment Team |
+| 2026-01-25 | 2.4 | #54: Error messages sanitized - internal status codes moved from WARNING to VERBOSE level | Security Assessment Team |
+| 2026-01-25 | 2.5 | #55: Certificate validation errors sanitized - policy details moved to VERBOSE level | Security Assessment Team |
+| 2026-01-25 | 2.6 | #46: Smart card reader name validation - NULL checks and length validation added | Security Assessment Team |
+| 2026-01-25 | 2.7 | #52: Partial - RegCreateKeyEx with SECURITY_ATTRIBUTES in TriggerRemovePolicy | Security Assessment Team |
+| 2026-01-25 | 2.8 | #27: Partial - ATR size validation (max 33 bytes per ISO 7816-3) | Security Assessment Team |
+| 2026-01-25 | 2.9 | Additional hardening: USHORT overflow checks, NULL pointer validation, policy enum bounds | Security Assessment Team |
