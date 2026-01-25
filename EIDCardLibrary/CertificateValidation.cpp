@@ -380,7 +380,8 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 		if(!CertVerifyCertificateChainPolicy(CERT_CHAIN_POLICY_BASE, pChainContext, &ChainPolicy, &PolicyStatus))
 		{
 			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CertVerifyCertificateChainPolicy", dwError);
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Certificate chain policy verification failed");
+			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"CertVerifyCertificateChainPolicy error 0x%08x", dwError);
 			__leave;
 		}
 
@@ -396,7 +397,8 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 			else
 			{
 				dwError = PolicyStatus.dwError;
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error %s (0x%08x) returned by CertVerifyCertificateChainPolicy",GetTrustErrorText(PolicyStatus.dwError),PolicyStatus.dwError);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Certificate chain policy check failed");
+				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Policy error %s (0x%08x)",GetTrustErrorText(PolicyStatus.dwError),PolicyStatus.dwError);
 				__leave;
 			}
 		}

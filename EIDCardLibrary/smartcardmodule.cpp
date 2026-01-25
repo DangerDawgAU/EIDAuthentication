@@ -298,6 +298,13 @@ DWORD MgScCardAcquireContext(
         pInternal->CardData.hScard = hSCardHandle;
         pInternal->CardData.hSCardCtx = hSCardContext;
 
+        // Validate ATR size (ISO 7816-3 maximum is 33 bytes)
+        if (cbAtr == 0 || cbAtr > 33)
+        {
+            EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Invalid ATR size: %d", cbAtr);
+            status = ERROR_INVALID_PARAMETER;
+            __leave;
+        }
         pInternal->CardData.cbAtr = cbAtr;
         CHECK_ALLOC(pInternal->CardData.pbAtr = (PBYTE) _Alloc(cbAtr));
         memcpy(pInternal->CardData.pbAtr, pbAtr, cbAtr);
@@ -587,6 +594,19 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 		{
 			dwError = ERROR_INVALID_PARAMETER;
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pdwAttempts = NULL");
+			__leave;
+		}
+		// Validate input parameters
+		if (szReader == NULL || szCard == NULL || szPin == NULL)
+		{
+			dwError = ERROR_INVALID_PARAMETER;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"NULL parameter: reader=%p card=%p pin=%p", szReader, szCard, szPin);
+			__leave;
+		}
+		if (_tcslen(szReader) == 0 || _tcslen(szReader) >= ARRAYSIZE(szReaderTemp))
+		{
+			dwError = ERROR_INVALID_PARAMETER;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Reader name invalid length");
 			__leave;
 		}
 		*pdwAttempts = 0xFFFFFFFF;

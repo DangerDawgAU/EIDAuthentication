@@ -179,6 +179,13 @@ BOOL CContainer::IsOnReader(LPCTSTR szReaderName)
 PEID_SMARTCARD_CSP_INFO CContainer::GetCSPInfo()
 {
 	_ASSERTE( _CrtCheckMemory( ) );
+	// Validate member pointers before use
+	if (_szReaderName == NULL || _szCardName == NULL ||
+	    _szProviderName == NULL || _szContainerName == NULL)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetCSPInfo: NULL member pointer");
+		return NULL;
+	}
 	DWORD dwReaderLen = (DWORD) _tcslen(_szReaderName)+1;
 	DWORD dwCardLen = (DWORD) _tcslen(_szCardName)+1;
 	DWORD dwProviderLen = (DWORD) _tcslen(_szProviderName)+1;
@@ -274,10 +281,23 @@ BOOL CContainer::TriggerRemovePolicy()
 			if (lResult == ERROR_FILE_NOT_FOUND)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"REMOVALPOLICYKEY not found. Creating ...");
-				lResult = RegCreateKey(HKEY_LOCAL_MACHINE, REMOVALPOLICYKEY ,&hRemovePolicyKey);
+				// Use RegCreateKeyEx with explicit security attributes for admin-only access
+				SECURITY_ATTRIBUTES sa = {0};
+				SECURITY_DESCRIPTOR sd = {0};
+				sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+				sa.bInheritHandle = FALSE;
+				// Initialize security descriptor with admin-only DACL
+				if (InitializeSecurityDescriptor(&sd, SECURITY_DESCRIPTOR_REVISION))
+				{
+					// NULL DACL = use inherited ACL from parent (HKLM requires admin)
+					// This is acceptable since HKLM already restricts write access
+					sa.lpSecurityDescriptor = &sd;
+				}
+				lResult = RegCreateKeyEx(HKEY_LOCAL_MACHINE, REMOVALPOLICYKEY, 0, NULL,
+					REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, &sa, &hRemovePolicyKey, NULL);
 				if (lResult !=ERROR_SUCCESS)
 				{
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RegCreateKey 0x%08x",lResult);
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RegCreateKeyEx 0x%08x",lResult);
 					__leave;
 				}
 			}

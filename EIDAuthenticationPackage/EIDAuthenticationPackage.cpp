@@ -89,6 +89,12 @@ extern "C"
 	PLSA_UNICODE_STRING LsaInitializeUnicodeStringFromWideString(PWSTR Source)
 	{
 		DWORD Size = (DWORD) (wcslen(Source));
+		// Validate string length won't overflow USHORT fields in LSA_UNICODE_STRING
+		if (Size > USHRT_MAX / sizeof(WCHAR))
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"String too long for UNICODE_STRING (%d chars)", Size);
+			return NULL;
+		}
 		PWSTR Buffer = (PWSTR)EIDAlloc((DWORD) (Size+1) * sizeof(WCHAR));
 		if (Buffer == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Buffer");
@@ -580,6 +586,13 @@ extern "C"
 				__leave;
 			}
 			// success
+			// Validate password length won't overflow USHORT
+			if (wcslen(szPassword) > USHRT_MAX / sizeof(WCHAR))
+			{
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Password too long for UNICODE_STRING");
+				response.dwError = ERROR_INVALID_PARAMETER;
+				__leave;
+			}
 			response.Password.MaximumLength = response.Password.Length = (USHORT)(sizeof(WCHAR) * wcslen(szPassword));
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"OK");
 		}
@@ -825,7 +838,8 @@ extern "C"
 			Status = TryToUnprotecThePin(pwzPin,pwzPinUncrypted, dPinUncrypted, &pPin);
 			if (Status != STATUS_SUCCESS)
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"TryToUnprotecThePin 0x%08X", Status);
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"PIN decryption failed");
+				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"TryToUnprotecThePin 0x%08X", Status);
 				return Status;
 			}
 			// impersonate the client to beneficiate from the smart card redirection
@@ -836,7 +850,8 @@ extern "C"
 			Status = CheckPINandGetRemainingAttemptsIfPossible(pSmartCardCspInfo, pPin, SubStatus);
 			if (Status != STATUS_SUCCESS)
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CheckPINandGetRemainingAttemptsIfPossible 0x%08X", Status);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"PIN verification failed");
+				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"CheckPINandGetRemainingAttemptsIfPossible 0x%08X", Status);
 				return Status;
 			}
 
@@ -872,9 +887,10 @@ extern "C"
 			// create token
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"TokenInformation ?");
 			Status = UserNameToToken(*AccountName,&MyTokenInformation,&TokenLength, SubStatus);
-			if (Status != STATUS_SUCCESS) 
+			if (Status != STATUS_SUCCESS)
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"UserNameToToken failed %d",Status);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Token creation failed");
+				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"UserNameToToken failed %d",Status);
 				return STATUS_LOGON_FAILURE;
 			}
 			

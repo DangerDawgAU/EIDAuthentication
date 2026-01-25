@@ -60,6 +60,12 @@ GPOInfo MyGPOInfo[] =
 
 DWORD GetPolicyValue( GPOPolicy Policy)
 {
+	// Validate Policy enum bounds to prevent array overflow
+	if ((int)Policy < 0 || (int)Policy >= ARRAYSIZE(MyGPOInfo))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Invalid policy index %d", (int)Policy);
+		return 0;
+	}
 	HKEY key;
 	DWORD value = 0;
 	DWORD size = sizeof(DWORD);
@@ -238,6 +244,12 @@ BOOL SetRemovePolicyValue(DWORD dwActivate)
 
 BOOL SetPolicyValue(GPOPolicy Policy, DWORD dwValue)
 {
+	// Validate Policy enum bounds to prevent array overflow
+	if ((int)Policy < 0 || (int)Policy >= ARRAYSIZE(MyGPOInfo))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Invalid policy index %d", (int)Policy);
+		return FALSE;
+	}
 	BOOL fReturn = FALSE;
 	if (Policy == scremoveoption)
 	{
