@@ -309,7 +309,21 @@ DWORD MgScCardAcquireContext(
         CHECK_ALLOC(pInternal->CardData.pbAtr = (PBYTE) _Alloc(cbAtr));
         memcpy(pInternal->CardData.pbAtr, pbAtr, cbAtr);
 
-        cch = (DWORD) wcslen(wszCardName) + 1;
+        // Validate card name (CWE-787 fix for #27)
+        if (wszCardName == NULL)
+        {
+            EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Card name is NULL");
+            status = ERROR_INVALID_PARAMETER;
+            __leave;
+        }
+        cch = (DWORD) wcsnlen(wszCardName, 256 + 1);
+        if (cch > 256)
+        {
+            EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Card name exceeds maximum length (256)");
+            status = ERROR_INVALID_PARAMETER;
+            __leave;
+        }
+        cch += 1;  // Add null terminator
         CHECK_ALLOC(pInternal->CardData.pwszCardName = (LPWSTR) _Alloc(
             sizeof(WCHAR) * cch));
         _tcscpy_s(

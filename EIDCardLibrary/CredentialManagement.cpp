@@ -25,6 +25,17 @@ std::list<CSecurityContext*> Contexts;
 std::map<ULONG_PTR, CUsermodeContext*> UserModeContexts;
 typedef std::pair <LUID, CCredential*> Credential_Pair;
 
+// Critical section for thread-safe access to credential containers (CWE-416 fix for #24)
+static CRITICAL_SECTION g_CredentialLock;
+
+// Static initializer to ensure critical section is initialized before use
+class CredentialLockInitializer {
+public:
+    CredentialLockInitializer() { InitializeCriticalSection(&g_CredentialLock); }
+    ~CredentialLockInitializer() { DeleteCriticalSection(&g_CredentialLock); }
+};
+static CredentialLockInitializer g_CredentialLockInit;
+
 
 CCredential* CCredential::CreateCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_INFO pCertInfo,PWSTR szPin, ULONG CredentialUseFlags)
 {
@@ -35,31 +46,14 @@ CCredential* CCredential::CreateCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"LogonIdToUse NULL");
 		return NULL;
 	}
-	/*if (pCertInfo)
-	{*/
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"new Credential");
-		credential = new CCredential(LogonIdToUse,pCertInfo,szPin, CredentialUseFlags);
-		Credentials.insert(credential);
-	/*}
-	else
-	{
-		// find previous credential
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Credential reuse");
-		std::set<CCredential*>::iterator iter;
-		for ( iter = Credentials.begin( ); iter != Credentials.end( ); iter++ )
-		{
-			CCredential* currentCredential = *iter;
-			if (currentCredential->Check(LogonIdToUse))
-			{
-				credential = currentCredential;
-				break;
-			}
-		}
-		if (!credential)
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pCredential NULL");
-		}
-	}*/
+
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"new Credential");
+	credential = new CCredential(LogonIdToUse,pCertInfo,szPin, CredentialUseFlags);
+
+	EnterCriticalSection(&g_CredentialLock);
+	Credentials.insert(credential);
+	LeaveCriticalSection(&g_CredentialLock);
+
 	return credential;
 }
 
@@ -111,16 +105,26 @@ CCredential::~CCredential()
 BOOL CCredential::Delete(ULONG_PTR phCredential)
 {
 	CCredential* testedCredential = (CCredential*) phCredential;
+	CCredential* toDelete = NULL;
+
+	EnterCriticalSection(&g_CredentialLock);
 	std::set<CCredential*>::iterator iter;
 	for ( iter = Credentials.begin( ); iter != Credentials.end( ); iter++ )
 	{
 		CCredential* currentCredential = *iter;
 		if (currentCredential == testedCredential)
 		{
-			delete testedCredential;
-			Credentials.erase(iter);
-			return TRUE;
+			toDelete = testedCredential;
+			Credentials.erase(iter);  // Remove from container first
+			break;
 		}
+	}
+	LeaveCriticalSection(&g_CredentialLock);
+
+	if (toDelete)
+	{
+		delete toDelete;  // Delete outside of lock
+		return TRUE;
 	}
 	return FALSE;
 }
@@ -128,18 +132,26 @@ BOOL CCredential::Delete(ULONG_PTR phCredential)
 CCredential* CCredential::GetCredentialFromHandle(ULONG_PTR CredentialHandle)
 {
 	CCredential* pCredential = (CCredential*) CredentialHandle;
-	CCredential* currentCredential = NULL;
+	CCredential* result = NULL;
+
+	EnterCriticalSection(&g_CredentialLock);
 	std::set<CCredential*>::iterator iter;
 	for ( iter = Credentials.begin( ); iter != Credentials.end( ); iter++ )
 	{
-		currentCredential = *iter;
+		CCredential* currentCredential = *iter;
 		if (currentCredential == pCredential)
 		{
-			return currentCredential;
+			result = currentCredential;
+			break;
 		}
 	}
-	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pCredential = %p not Found",pCredential);
-	return NULL;
+	LeaveCriticalSection(&g_CredentialLock);
+
+	if (!result)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pCredential = %p not Found",pCredential);
+	}
+	return result;
 }
 
 PTSTR CCredential::GetName()
@@ -156,7 +168,11 @@ CSecurityContext* CSecurityContext::CreateContext(CCredential* pCredential)
 		return NULL;
 	}
 	context = new CSecurityContext(pCredential);
+
+	EnterCriticalSection(&g_CredentialLock);
 	Contexts.push_back(context);
+	LeaveCriticalSection(&g_CredentialLock);
+
 	return context;
 }
 
@@ -187,34 +203,49 @@ CSecurityContext::CSecurityContext(CCredential* pCredential)
 BOOL CSecurityContext::Delete(ULONG_PTR phContext)
 {
 	CSecurityContext* testedContext = (CSecurityContext*) phContext;
+	CSecurityContext* toDelete = NULL;
+
+	EnterCriticalSection(&g_CredentialLock);
 	std::list<CSecurityContext*>::iterator iter;
 	for ( iter = Contexts.begin( ); iter != Contexts.end( ); iter++ )
 	{
 		CSecurityContext* currentContext = (CSecurityContext*) *iter;
 		if (currentContext == testedContext)
 		{
-			delete testedContext;
-			Contexts.erase(iter);
-			
-			return TRUE;
+			toDelete = testedContext;
+			Contexts.erase(iter);  // Remove from container first
+			break;
 		}
+	}
+	LeaveCriticalSection(&g_CredentialLock);
+
+	if (toDelete)
+	{
+		delete toDelete;  // Delete outside of lock
+		return TRUE;
 	}
 	return FALSE;
 }
 
 CSecurityContext* CSecurityContext::GetContextFromHandle(ULONG_PTR context)
 {
-	std::list<CSecurityContext*>::iterator iter;
 	CSecurityContext* testedContext = (CSecurityContext*) context;
+	CSecurityContext* result = NULL;
+
+	EnterCriticalSection(&g_CredentialLock);
+	std::list<CSecurityContext*>::iterator iter;
 	for ( iter = Contexts.begin( ); iter != Contexts.end( ); iter++ )
 	{
 		CSecurityContext* currentContext = (CSecurityContext*) *iter;
 		if (currentContext == testedContext)
 		{
-			return currentContext;
+			result = currentContext;
+			break;
 		}
 	}
-	return NULL;
+	LeaveCriticalSection(&g_CredentialLock);
+
+	return result;
 }
 
 NTSTATUS CSecurityContext::InitializeSecurityContextInput(PSecBufferDesc Buffer)
@@ -475,7 +506,7 @@ NTSTATUS CSecurityContext::ReceiveResponseMessage(PSecBufferDesc Buffer)
 
 NTSTATUS CSecurityContext::BuildCompleteMessage(PSecBufferDesc Buffer)
 {
-	// vérification du challenge
+	// vï¿½rification du challenge
 	UNREFERENCED_PARAMETER(Buffer);
 	CStoredCredentialManager* manager = CStoredCredentialManager::Instance();
 	if (!manager->VerifySignatureChallengeResponse(dwRid, pbChallenge, dwChallengeSize, pbResponse, dwResponseSize))

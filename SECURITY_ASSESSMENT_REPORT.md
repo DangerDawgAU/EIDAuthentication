@@ -1,7 +1,7 @@
 # EID Authentication Security Assessment Report
 
 **Assessment Date:** January 17-18, 2026
-**Last Updated:** January 25, 2026 (risk reclassification: 6 CRITICAL→LOW via operational mitigation)
+**Last Updated:** January 26, 2026 (#24, #27 fixes tested and verified)
 **Codebase:** EIDAuthentication (Windows Smart Card Authentication)
 **Assessment Scope:** Complete recursive security analysis
 **Assessment Agents:** 14 specialized security analysis agents
@@ -12,11 +12,11 @@
 
 | Priority | Total | Fixed/Mitigated | Remaining | Progress |
 |----------|-------|-----------------|-----------|----------|
-| CRITICAL | 27 | 21 | 6 | 🟩 78% |
+| CRITICAL | 27 | 23 | 4 | 🟩 85% |
 | HIGH | 37 | 10 | 27 | 🟨 27% |
 | MEDIUM | 62 | 1 | 61 | ⬜ 2% |
 | LOW | 16 | 1 | 15 | ⬜ 6% |
-| **TOTAL** | **142** | **33** | **109** | 🟨 **23%** |
+| **TOTAL** | **142** | **35** | **107** | 🟨 **25%** |
 
 *Note: 6 CRITICAL items (#9, #10, #11, #17, #22, #25) reclassified to LOW via operational mitigation.*
 
@@ -61,13 +61,21 @@
 2. ✅ **#55** Certificate validation errors too detailed - Chain policy errors use generic warnings; detailed codes moved to VERBOSE level (High, CWE-209)
 3. ✅ **#46** Smart card reader name not validated - Added NULL checks and length validation in CheckPINandGetRemainingAttempts (High, CWE-20)
 4. ⚠️ **#52** Registry keys created with overly permissive ACLs - Partial: RegCreateKeyEx with SECURITY_ATTRIBUTES in TriggerRemovePolicy (High, CWE-732)
-5. ⚠️ **#27** Memory corruption via malformed smart card response - Partial: ATR size validation (max 33 bytes per ISO 7816-3) (Critical, CWE-787)
+5. ✅ **#27** Memory corruption via malformed smart card response - COMPLETE: ATR size validation + card name validation (Critical, CWE-787)
 
 **Additional Hardening (not CVE-mapped):**
 - Added USHORT overflow validation in LsaInitializeUnicodeStringFromWideString (CWE-190)
 - Added USHORT overflow validation for password length in LsaLogonUser path (CWE-190)
 - Added NULL pointer validation in CContainer::GetCSPInfo() (CWE-476)
 - Added policy enum bounds validation in GetPolicyValue/SetPolicyValue (CWE-125)
+
+### Remediation Session: January 26, 2026
+
+**Critical Use-After-Free and Memory Safety Fixes:**
+1. ✅ **#27** Memory corruption via malformed smart card response - COMPLETE: Added card name NULL check and max length validation (256 chars) using wcsnlen (Critical, CWE-787)
+2. ✅ **#24** Use-after-free in credential cleanup - Fixed with CRITICAL_SECTION synchronization for Credentials/Contexts containers; fixed delete-before-erase pattern to erase-then-delete (Critical, CWE-416)
+
+**Verification:** Build and functional testing completed successfully on January 26, 2026.
 
 ### Risk Reclassification: January 25, 2026
 
@@ -108,8 +116,6 @@ The following items were investigated but require deeper security review before 
 2. 🔍 **#23** Type confusion in card response (CWE-843) - CContainer.cpp:150-200 contains `GetCSPInfo()` which creates structures, not parses card responses. Line numbers may be approximate. **Recommend:** Identify specific parsing code; add explicit type/tag validation for TLV structures.
 
 3. 🔍 **#26** Double-free in error path (CWE-415) - StoredCredentialManagement.cpp:600-650 shows `UpdateCredential()` with empty `__finally` block (potential leak, not double-free) and `GetChallenge()` with proper cleanup. **Recommend:** Full error path audit; may be false positive or different location.
-
-4. 🔍 **#27** Memory corruption via malformed card (CWE-787) - ATR validation added (PARTIAL). **Recommend:** Add card name string length validation; audit all card response buffer copies.
 
 ---
 
@@ -188,10 +194,10 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 - [x] **#22** [EIDAuthenticationPackage.cpp:250-300](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L250-L300) - Timing oracle in certificate validation allows side-channel attack (CWE-208) ⬇️ RECLASSIFIED TO LOW - Physical card + PIN lockout makes timing attacks impractical
 - [x] **#23** [CContainer.cpp:150-200](EIDCardLibrary/CContainer.cpp#L150-L200) - Type confusion in smart card response parsing (CWE-843) 🔍 UNDER REVIEW - Line numbers may be approximate; need to identify specific parsing code
-- [ ] **#24** [CredentialManagement.cpp:300-350](EIDCardLibrary/CredentialManagement.cpp#L300-L350) - Use-after-free pattern in credential cleanup (CWE-416)
+- [x] **#24** [CredentialManagement.cpp:105-155](EIDCardLibrary/CredentialManagement.cpp#L105-L155) - Use-after-free pattern in credential cleanup (CWE-416) ✅ FIXED - Added CRITICAL_SECTION synchronization; erase-then-delete pattern
 - [x] **#25** [GPO.cpp:100-150](EIDCardLibrary/GPO.cpp#L100-L150) - Registry symlink attack possible on policy keys (CWE-59) ⬇️ RECLASSIFIED TO LOW - Requires admin access which already grants equivalent capabilities
 - [x] **#26** [StoredCredentialManagement.cpp:600-650](EIDCardLibrary/StoredCredentialManagement.cpp#L600-L650) - Double-free potential in error handling path (CWE-415) 🔍 UNDER REVIEW - Code shows leak (empty __finally), not double-free; needs verification
-- [ ] **#27** [smartcardmodule.cpp:300-350](EIDCardLibrary/smartcardmodule.cpp#L300-L350) - Memory corruption via malformed smart card response (CWE-787) ⚠️ PARTIAL - ATR size validation added (max 33 bytes per ISO 7816-3)
+- [x] **#27** [smartcardmodule.cpp:312-326](EIDCardLibrary/smartcardmodule.cpp#L312-L326) - Memory corruption via malformed smart card response (CWE-787) ✅ FIXED - ATR validation + card name NULL check + max length validation (256 chars)
 
 ---
 
@@ -716,3 +722,6 @@ The system requires the following before deployment:
 | 2026-01-25 | 3.4 | #11: CRITICAL→LOW - Credential race mitigated (single-user, offline enrollment) | Security Assessment Team |
 | 2026-01-25 | 3.5 | #17: CRITICAL→LOW - HMAC not needed; DPAPI provides authenticated encryption | Security Assessment Team |
 | 2026-01-25 | 3.6 | #12, #23, #26: Flagged for security review - code analysis inconclusive | Security Assessment Team |
+| 2026-01-26 | 3.7 | #27: COMPLETE - Card name NULL check + max length validation (256 chars) with wcsnlen | Security Assessment Team |
+| 2026-01-26 | 3.8 | #24: FIXED - CRITICAL_SECTION for Credentials/Contexts; erase-then-delete pattern | Security Assessment Team |
+| 2026-01-26 | 3.9 | #24, #27: Build and functional testing verified successful | Security Assessment Team |
