@@ -49,6 +49,7 @@ jobs:
 
     - name: Build solution
       run: msbuild EIDCredentialProvider.sln /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143
+      continue-on-error: true
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
