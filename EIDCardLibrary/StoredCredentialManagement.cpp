@@ -637,7 +637,9 @@ BOOL CStoredCredentialManager::UpdateCredential(__in DWORD dwRid, __in PWSTR szP
 	}
 	__finally
 	{
-
+		// SECURITY FIX: Free certificate context to prevent memory leak (CWE-401 fix for #26)
+		if (pCertContext)
+			CertFreeCertificateContext(pCertContext);
 	}
 	SetLastError(dwError);
 	return fReturn;

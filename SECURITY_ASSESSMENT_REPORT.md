@@ -1,7 +1,7 @@
 # EID Authentication Security Assessment Report
 
 **Assessment Date:** January 17-18, 2026
-**Last Updated:** January 26, 2026 (#8, #31, #47, #63 fixes tested and verified)
+**Last Updated:** January 26, 2026 (#12, #23 closed as false positives; #143 added for CSP offset validation; #26 reclassified CWE-415→CWE-401 and FIXED)
 **Codebase:** EIDAuthentication (Windows Smart Card Authentication)
 **Assessment Scope:** Complete recursive security analysis
 **Assessment Agents:** 14 specialized security analysis agents
@@ -12,11 +12,11 @@
 
 | Priority | Total | Fixed/Mitigated | Remaining | Progress |
 |----------|-------|-----------------|-----------|----------|
-| CRITICAL | 27 | 24 | 3 | 🟩 89% |
-| HIGH | 37 | 13 | 24 | 🟨 35% |
+| CRITICAL | 27 | 27 | 0 | 🟩 100% |
+| HIGH | 38 | 13 | 25 | 🟨 34% |
 | MEDIUM | 62 | 1 | 61 | ⬜ 2% |
 | LOW | 16 | 1 | 15 | ⬜ 6% |
-| **TOTAL** | **142** | **39** | **103** | 🟨 **27%** |
+| **TOTAL** | **143** | **42** | **101** | 🟨 **29%** |
 
 *Note: 6 CRITICAL items (#9, #10, #11, #17, #22, #25) reclassified to LOW via operational mitigation.*
 
@@ -121,11 +121,11 @@ The following CRITICAL vulnerabilities have been reclassified to LOW based on th
 
 The following items were investigated but require deeper security review before determining fix approach:
 
-1. 🔍 **#12** PIN protection bypass (CWE-362) - Code review at EIDAuthenticationPackage.cpp:740 shows `if(CredUnprotected != protectionType)` check which appears logically correct. The "constant comparison bug" description may be inaccurate or the vulnerability is elsewhere. **Recommend:** Security team verification of original finding.
+1. ✅ **#12** PIN protection bypass (CWE-362) - **FALSE POSITIVE.** Code review confirmed: (1) PIN buffers are local stack variables, not shared resources - no race condition possible, (2) the comparison `CredUnprotected != protectionType` is semantically correct and follows standard Windows Credential Protection API patterns, (3) identical pattern used in Microsoft documentation. No vulnerability exists.
 
-2. 🔍 **#23** Type confusion in card response (CWE-843) - CContainer.cpp:150-200 contains `GetCSPInfo()` which creates structures, not parses card responses. Line numbers may be approximate. **Recommend:** Identify specific parsing code; add explicit type/tag validation for TLV structures.
+2. ✅ **#23** Type confusion in card response (CWE-843) - **FALSE POSITIVE.** Code review confirmed: (1) CContainer.cpp:150-200 contains `GetUserName()` and `GetRid()`, not CSP parsing code, (2) `GetCSPInfo()` at line 241 **creates** structures, doesn't parse them, (3) the union in `EID_SMARTCARD_CSP_INFO` is a standard WoW64 compatibility pattern (PVOID/ULONG64), NOT type confusion. The stated vulnerability does not exist at the specified location. **Note:** A related but distinct vulnerability (missing offset validation) was identified and logged as new issue #143.
 
-3. 🔍 **#26** Double-free in error path (CWE-415) - StoredCredentialManagement.cpp:600-650 shows `UpdateCredential()` with empty `__finally` block (potential leak, not double-free) and `GetChallenge()` with proper cleanup. **Recommend:** Full error path audit; may be false positive or different location.
+3. ✅ **#26** Double-free in error path (CWE-415) - **RECLASSIFIED & FIXED.** Code review confirmed: (1) No double-free exists at the specified location, (2) actual issue was **memory leak (CWE-401)** - empty `__finally` block in `UpdateCredential(DWORD)` failed to free `pCertContext` obtained from `GetCertContextFromRid`, (3) **Fix applied:** Added `CertFreeCertificateContext(pCertContext)` to the `__finally` block.
 
 ---
 
@@ -174,7 +174,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 - [x] **#9** [CContainerHolderFactory.cpp:380-415](EIDCardLibrary/CContainerHolderFactory.cpp#L380-L415) - List iteration without locks - concurrent modification (CWE-362) ⬇️ RECLASSIFIED TO LOW - Single-reader deployment mitigates concurrency
 - [x] **#10** [GPO.cpp:34-60](EIDCardLibrary/GPO.cpp#L34-L60) - GPO reading without synchronization (CWE-362) ⬇️ RECLASSIFIED TO LOW - Settings read once at init; race window operationally improbable
 - [x] **#11** [CredentialManagement.cpp:180-220](EIDCardLibrary/CredentialManagement.cpp#L180-L220) - Credential list modification without locks (CWE-362) ⬇️ RECLASSIFIED TO LOW - Single-user workstation; offline enrollment
-- [x] **#12** [EIDAuthenticationPackage.cpp:720](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L720) - PIN protection bypass - CredUnprotected constant comparison bug (CWE-362) 🔍 UNDER REVIEW - Code appears correct; needs verification
+- [x] **#12** [EIDAuthenticationPackage.cpp:720](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L720) - PIN protection bypass - CredUnprotected constant comparison bug (CWE-362) ✅ FALSE POSITIVE - Local stack buffers, no race condition; comparison logic correct
 
 #### 1.3 Code Injection & DLL Hijacking
 
@@ -203,10 +203,10 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 #### 1.8 Zero-Day Attack Patterns
 
 - [x] **#22** [EIDAuthenticationPackage.cpp:250-300](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L250-L300) - Timing oracle in certificate validation allows side-channel attack (CWE-208) ⬇️ RECLASSIFIED TO LOW - Physical card + PIN lockout makes timing attacks impractical
-- [x] **#23** [CContainer.cpp:150-200](EIDCardLibrary/CContainer.cpp#L150-L200) - Type confusion in smart card response parsing (CWE-843) 🔍 UNDER REVIEW - Line numbers may be approximate; need to identify specific parsing code
+- [x] **#23** [CContainer.cpp:150-200](EIDCardLibrary/CContainer.cpp#L150-L200) - Type confusion in smart card response parsing (CWE-843) ✅ FALSE POSITIVE - Wrong location, wrong CWE; actual issue logged as #66
 - [x] **#24** [CredentialManagement.cpp:105-155](EIDCardLibrary/CredentialManagement.cpp#L105-L155) - Use-after-free pattern in credential cleanup (CWE-416) ✅ FIXED - Added CRITICAL_SECTION synchronization; erase-then-delete pattern
 - [x] **#25** [GPO.cpp:100-150](EIDCardLibrary/GPO.cpp#L100-L150) - Registry symlink attack possible on policy keys (CWE-59) ⬇️ RECLASSIFIED TO LOW - Requires admin access which already grants equivalent capabilities
-- [x] **#26** [StoredCredentialManagement.cpp:600-650](EIDCardLibrary/StoredCredentialManagement.cpp#L600-L650) - Double-free potential in error handling path (CWE-415) 🔍 UNDER REVIEW - Code shows leak (empty __finally), not double-free; needs verification
+- [x] **#26** [StoredCredentialManagement.cpp:638-643](EIDCardLibrary/StoredCredentialManagement.cpp#L638-L643) - Memory leak in UpdateCredential (CWE-401, reclassified from CWE-415) ✅ FIXED - Added CertFreeCertificateContext to empty __finally block
 - [x] **#27** [smartcardmodule.cpp:312-326](EIDCardLibrary/smartcardmodule.cpp#L312-L326) - Memory corruption via malformed smart card response (CWE-787) ✅ FIXED - ATR validation + card name NULL check + max length validation (256 chars)
 
 ---
@@ -287,6 +287,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 - [x] **#63** [CContainer.cpp:42-125](EIDCardLibrary/CContainer.cpp#L42-L125) - Container name not sanitized (CWE-20) ✅ FIXED - Added NULL checks and max length validation for all name parameters
 - [ ] **#64** [StoredCredentialManagement.cpp:1000-1050](EIDCardLibrary/StoredCredentialManagement.cpp#L1000-L1050) - Username input not validated for special characters (CWE-20)
 - [ ] **#65** [GPO.cpp:250-300](EIDCardLibrary/GPO.cpp#L250-L300) - Policy path traversal possible (CWE-22)
+- [ ] **#143** [CertificateValidation.cpp:41-42, smartcardmodule.cpp:716-718](EIDCardLibrary/CertificateValidation.cpp#L41-L42) - **NEW** CSP info offset validation missing - client-supplied `nCardNameOffset`, `nReaderNameOffset`, `nContainerNameOffset`, `nCSPNameOffset` used without bounds validation; allows out-of-bounds read (CWE-125/CWE-20)
 
 ---
 
@@ -740,3 +741,7 @@ The system requires the following before deployment:
 | 2026-01-26 | 4.2 | #31: FIXED - Container name bounds check and null-termination | Security Assessment Team |
 | 2026-01-26 | 4.3 | #63: FIXED - All name parameters validated with NULL check and max length | Security Assessment Team |
 | 2026-01-26 | 4.4 | #8, #31, #47, #63: Build and functional testing verified successful | Security Assessment Team |
+| 2026-01-26 | 4.5 | #12: FALSE POSITIVE - PIN buffers are local stack variables; no race condition; comparison logic correct | Security Assessment Team |
+| 2026-01-26 | 4.6 | #23: FALSE POSITIVE - Wrong location (lines 150-200 contain GetUserName/GetRid, not CSP parsing); wrong CWE (union is WoW64 compat, not type confusion) | Security Assessment Team |
+| 2026-01-26 | 4.7 | #143: NEW HIGH - CSP info offset validation missing; client-supplied offsets used without bounds check (CWE-125/CWE-20) | Security Assessment Team |
+| 2026-01-26 | 4.8 | #26: RECLASSIFIED CWE-415→CWE-401 (memory leak, not double-free); FIXED with CertFreeCertificateContext in __finally block | Security Assessment Team |
