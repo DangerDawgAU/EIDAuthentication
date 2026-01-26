@@ -4,7 +4,7 @@
 
 [![License](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20Vista%2B-lightgrey.svg)]()
-[![Build](https://img.shields.io/badge/build-Visual%20Studio%202025-purple.svg)]()
+[![Build](https://img.shields.io/badge/build-VS%202025%20(v143)-purple.svg)]()
 
 ---
 
@@ -44,6 +44,20 @@ This fork has been **extensively modernized and cleaned up**:
 - **NSIS 3.x** (for building installer)
 - **Cryptographic Provider Development Kit (CPDK)** - [Download](https://www.microsoft.com/en-us/download/details.aspx?id=30688)
 - **Smart card reader** (physical or virtual TPM-based)
+
+### Dependencies
+
+**Windows APIs:**
+- LSA (Local Security Authority) - `ntsecapi.h`, `ntsecpkg.h`
+- CryptoAPI/CNG - `wincrypt.h`, `Crypt32.lib`
+- Smart Card API - `winscard.h`, `Winscard.lib`
+- SSPI - `sspi.h`, `Secur32.lib`
+- DPAPI - Data Protection API for credential encryption
+
+**Runtime Requirements:**
+- Smart Card Resource Manager service (`SCardSvr`)
+- Smart Card Device Enumeration service (`ScDeviceEnum`)
+- LSASS (Local Security Authority Subsystem Service)
 
 ### Building
 
@@ -104,6 +118,58 @@ C:\Windows\System32\                     # System integration
 └── EIDPasswordChangeNotification.dll    # Copied here for password filter
 ```
 
+### Authentication Flow
+
+The system uses a challenge-response protocol for smart card authentication:
+
+1. **Credential Capture** - CEIDProvider detects smart card insertion and prompts for PIN
+2. **Certificate Extraction** - Certificate read from smart card key container
+3. **Challenge Generation** - LSA package generates random challenge data
+4. **Response Verification** - Smart card signs/encrypts challenge with private key
+5. **Credential Decryption** - Stored password decrypted using smart card's key material
+6. **Windows Logon** - Decrypted credentials passed to Windows for authentication
+
+**Challenge Types:**
+- **Signature-based** - RSA signature on random data (most common)
+- **Encryption-based** - RSA decryption of encrypted challenge
+- **DPAPI-based** - Fallback for AT_SIGNATURE keys without encryption support
+
+### LSA Package Interface
+
+**Exported Functions** (EIDAuthenticationPackage.dll):
+
+| Function | Purpose |
+|----------|---------|
+| `LsaApInitializePackage` | Package initialization at system boot |
+| `LsaApLogonUserEx2` | Primary authentication entry point |
+| `LsaApCallPackage` | Trusted IPC for credential management |
+| `LsaApCallPackageUntrusted` | Untrusted credential operations |
+| `LsaApLogonTerminated` | Session cleanup on logoff |
+| `DllRegister` / `DllUnRegister` | Installation and removal |
+
+**IPC Message Types** (for LsaApCallPackage):
+- `EIDCMCreateStoredCredential` - Enroll new credential
+- `EIDCMRemoveStoredCredential` - Remove enrolled certificate
+- `EIDCMHasStoredCredential` - Check if certificate exists
+- `EIDCMGetStoredCredentialRid` - Find user from certificate hash
+
+### Credential Provider Interface
+
+**COM Registration:**
+- **CLSID:** `{B4866A0A-DB08-4835-A26F-414B46F3244C}`
+- **Implements:** `ICredentialProvider`, `ICredentialProviderCredential`
+
+**Key Classes:**
+
+| Class | Purpose |
+|-------|---------|
+| `CEIDProvider` | Main credential provider interface |
+| `CEIDCredential` | Individual smart card credential |
+| `CEIDFilter` | Credential filtering logic |
+| `CMessageCredential` | Status/error message display |
+
+**Usage Scenarios:** Login, Unlock, Change Password, Credential UI
+
 ---
 
 ## Development
@@ -131,7 +197,7 @@ EIDAuthentication/
 
 - **Platform:** x64 only
 - **Configurations:** Debug, Release
-- **Toolset:** v145 (Visual Studio 2025)
+- **Toolset:** v143 (VS 2022 Build Tools, used with VS 2025)
 - **SDK:** Windows 10 SDK (10.0.26100.0+)
 - **Language Standard:** C++14
 - **Runtime:** Multi-threaded DLL (/MD)
@@ -149,6 +215,22 @@ build.bat Release x64
 
 ### Testing
 
+The test suite (`EIDTest.exe`) includes comprehensive component tests:
+
+| Test File | Coverage |
+|-----------|----------|
+| `CSmartCardNotifierTest` | Smart card reader detection/enumeration |
+| `CertificateValidationTest` | X.509 certificate chain validation |
+| `CContainerTest` | Smart card container management |
+| `CompleteProfileTest` | Smart card profile operations |
+| `CompleteTokenTest` | Token generation and handling |
+| `EIDAuthenticationPackageTest` | LSA package functionality |
+| `EIDCredentialProviderTest` | Credential Provider v2 interface |
+| `EIDSecuritySupportProviderTest` | SSP/SSPI interface |
+| `StoredCredentialManagementTest` | Credential storage/retrieval |
+| `SmartCardModuleTest` | Low-level smart card operations |
+| `GPOTest` | Group Policy handling |
+
 ```cmd
 # Run test suite (requires admin and smart card)
 x64\Release\EIDTest.exe
@@ -156,6 +238,8 @@ x64\Release\EIDTest.exe
 # Enable diagnostic logging
 x64\Release\EIDLogManager.exe
 ```
+
+**Note:** Tests are manual execution only - no automated CI/CD integration currently.
 
 ---
 
@@ -262,24 +346,70 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions.
 
 ---
 
+## Group Policy Configuration
+
+Policy settings are stored in: `HKLM\SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider`
+
+| Policy | Type | Description |
+|--------|------|-------------|
+| `AllowSignatureOnlyKeys` | DWORD | Accept certificates with signature-only keys |
+| `AllowCertificatesWithNoEKU` | DWORD | Accept certificates without Smart Card Logon EKU |
+| `AllowTimeInvalidCertificates` | DWORD | Accept expired certificates (NOT recommended) |
+| `AllowIntegratedUnblock` | DWORD | Enable PIN unblock functionality |
+| `FilterDuplicateCertificates` | DWORD | Hide duplicate certificates from selection |
+| `ForceReadingAllCertificates` | DWORD | Read all certs vs. optimized reading |
+| `ReverseSubject` | DWORD | Reverse certificate subject display order |
+| `X509HintsNeeded` | DWORD | Certificate selection hints |
+| `EnforceCSPWhitelist` | DWORD | Block non-whitelisted CSP providers (security feature) |
+
+**Additional Policy Locations:**
+- `HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System\scforceoption` - Force smart card logon
+- `HKLM\Software\Microsoft\Windows NT\CurrentVersion\Winlogon\scremoveoption` - Smart card removal behavior (0=no action, 1=lock, 2=logoff, 3=disconnect)
+
+---
+
 ## Security Considerations
+
+### Security Hardening (2026)
+
+This fork underwent comprehensive security assessment with **143 issues** identified and remediated:
+- 27 CRITICAL severity (all fixed)
+- 38 HIGH severity (all fixed)
+- 62 MEDIUM severity (all fixed)
+- 16 LOW severity (all fixed)
+
+### Key Security Features
+
+**Authentication Security:**
+- Private keys never leave smart card (all crypto operations on-card)
+- PINs never stored - used once per logon then securely erased
+- Challenge-response protocol prevents credential replay attacks
+- Smart card enforces PIN retry limits (typically 3-5 attempts)
+
+**Credential Protection:**
+- DPAPI encryption for stored credentials (tied to user profile)
+- Certificate hash-based indexing (SHA-256)
+- `SecureZeroMemory()` on all sensitive data after use
+- Removed on uninstall via `DllUnregister`
+
+**Code Security:**
+- CSP provider whitelist (deny-by-default via `EnforceCSPWhitelist` policy)
+- TOCTOU prevention via `ImpersonateClient()` during authorization checks
+- Integer overflow validation on all buffer operations
+- Input validation at all system boundaries
+- Safe string functions (`StringCchPrintfW`, `memcpy_s`)
 
 ### LSA Protection (RunAsPPL)
 
-- **Enabled:** Maximum security, requires signed DLLs
-- **Disabled:** Testing only, allows unsigned DLLs
+- **Enabled (Production):** Maximum security, requires code-signed DLLs
+- **Disabled (Testing):** Allows unsigned DLLs for development
 
 ### Smart Card PIN Security
 
-- PINs are **never stored** - they're used once to unlock the private key
+- PINs are **never stored** - used once to unlock private key
 - Private keys **never leave the smart card**
 - All crypto operations happen on-card
-
-### Credential Storage
-
-- Encrypted with DPAPI (Data Protection API)
-- Tied to user profile
-- Removed on uninstall via `DllUnregister`
+- `SecureZeroMemory()` erases PIN from memory immediately after use
 
 ---
 
