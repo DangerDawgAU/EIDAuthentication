@@ -49,6 +49,11 @@ REGHANDLE hPub;
 BOOL bFirst = TRUE;
 WCHAR Section[100];
 
+// SECURITY FIX #37: Add synchronization for trace globals (CWE-362)
+// ETW EnableCallback can be called from any thread; protect shared state
+static CRITICAL_SECTION g_csTrace;
+static BOOL g_csTraceInitialized = FALSE;
+
 // to enable tracing in kernel debugger, issue the following command in windbg : ed nt!Kd_DEFAULT_MASK  0xFFFFFFFF
 // OR
 // Open up the registry and go to this path,
@@ -93,16 +98,40 @@ void NTAPI EnableCallback(
 	UNREFERENCED_PARAMETER(MatchAllKeywords);
 	UNREFERENCED_PARAMETER(FilterData);
 	UNREFERENCED_PARAMETER(CallbackContext);
-	IsTracingEnabled = (IsEnabled == EVENT_CONTROL_CODE_ENABLE_PROVIDER);
+	// SECURITY FIX #37: Synchronize access to IsTracingEnabled (CWE-362)
+	if (g_csTraceInitialized)
+	{
+		EnterCriticalSection(&g_csTrace);
+		IsTracingEnabled = (IsEnabled == EVENT_CONTROL_CODE_ENABLE_PROVIDER);
+		LeaveCriticalSection(&g_csTrace);
+	}
+	else
+	{
+		IsTracingEnabled = (IsEnabled == EVENT_CONTROL_CODE_ENABLE_PROVIDER);
+	}
 }
 
 void EIDCardLibraryTracingRegister() {
+	// SECURITY FIX #37: Initialize critical section for trace globals (CWE-362)
+	if (!g_csTraceInitialized)
+	{
+		InitializeCriticalSection(&g_csTrace);
+		g_csTraceInitialized = TRUE;
+	}
+	EnterCriticalSection(&g_csTrace);
 	bFirst = FALSE;
+	LeaveCriticalSection(&g_csTrace);
 	EventRegister(&CLSID_CEIDProvider,EnableCallback,NULL,&hPub);
 }
 
 void EIDCardLibraryTracingUnRegister() {
 	EventUnregister(hPub);
+	// SECURITY FIX #37: Clean up critical section
+	if (g_csTraceInitialized)
+	{
+		DeleteCriticalSection(&g_csTrace);
+		g_csTraceInitialized = FALSE;
+	}
 }
 
 // see http://www.codeproject.com/Articles/16598/Get-Your-DLL-s-Path-Name for the "__ImageBase"

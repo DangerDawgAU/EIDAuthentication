@@ -35,7 +35,20 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"GetCertificateFromCspInfo");
 	HCRYPTPROV hProv = NULL;
 	DWORD dwError = 0;
-	
+
+	// SECURITY FIX #143: Validate CSP info offsets before use (CWE-125/CWE-20)
+	// Client-supplied offsets must be within structure bounds to prevent out-of-bounds read
+	DWORD dwHeaderSize = FIELD_OFFSET(EID_SMARTCARD_CSP_INFO, bBuffer);
+	if (pCspInfo->dwCspInfoLen < dwHeaderSize ||
+	    pCspInfo->nContainerNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize) ||
+	    pCspInfo->nCSPNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"GetCertificateFromCspInfo: Invalid CSP info offset - dwCspInfoLen=%u, nContainerNameOffset=%u, nCSPNameOffset=%u",
+			pCspInfo->dwCspInfoLen, pCspInfo->nContainerNameOffset, pCspInfo->nCSPNameOffset);
+		EIDRevertToSelf();
+		return NULL;
+	}
+
 	BYTE Data[4096];
 	DWORD DataSize = ARRAYSIZE(Data);
 	LPTSTR szContainerName = pCspInfo->bBuffer + pCspInfo->nContainerNameOffset;

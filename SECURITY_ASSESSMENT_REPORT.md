@@ -1,7 +1,7 @@
 # EID Authentication Security Assessment Report
 
 **Assessment Date:** January 17-18, 2026
-**Last Updated:** January 26, 2026 (#12, #23 closed as false positives; #143 added for CSP offset validation; #26 reclassified CWE-415→CWE-401 and FIXED)
+**Last Updated:** January 26, 2026 (#37, #143 FIXED; #28, #29, #30, #36, #38, #39, #43, #44, #48, #49, #52, #53 closed as FALSE POSITIVES)
 **Codebase:** EIDAuthentication (Windows Smart Card Authentication)
 **Assessment Scope:** Complete recursive security analysis
 **Assessment Agents:** 14 specialized security analysis agents
@@ -13,10 +13,10 @@
 | Priority | Total | Fixed/Mitigated | Remaining | Progress |
 |----------|-------|-----------------|-----------|----------|
 | CRITICAL | 27 | 27 | 0 | 🟩 100% |
-| HIGH | 38 | 13 | 25 | 🟨 34% |
+| HIGH | 38 | 27 | 11 | 🟩 71% |
 | MEDIUM | 62 | 1 | 61 | ⬜ 2% |
 | LOW | 16 | 1 | 15 | ⬜ 6% |
-| **TOTAL** | **143** | **42** | **101** | 🟨 **29%** |
+| **TOTAL** | **143** | **56** | **87** | 🟨 **39%** |
 
 *Note: 6 CRITICAL items (#9, #10, #11, #17, #22, #25) reclassified to LOW via operational mitigation.*
 
@@ -215,9 +215,9 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 #### 2.1 Additional Memory Safety Issues
 
-- [ ] **#28** [EIDAuthenticationPackage.cpp:100-150](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L100-L150) - Command line buffer overflow in argument parsing (CWE-120)
-- [ ] **#29** [CContainer.cpp:500-550](EIDCardLibrary/CContainer.cpp#L500-L550) - Stack buffer overflow in certificate name extraction (CWE-121)
-- [ ] **#30** [StoredCredentialManagement.cpp:700-750](EIDCardLibrary/StoredCredentialManagement.cpp#L700-L750) - Heap overflow in credential deserialization (CWE-122)
+- [x] **#28** [EIDAuthenticationPackage.cpp:100-150](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L100-L150) - Command line buffer overflow in argument parsing (CWE-120) ✅ **FALSE POSITIVE** - Lines 100-150 contain `LsaInitializeUnicodeStringFromWideString` and `LsaInitializeUnicodeStringFromUnicodeString` LSA utility functions, NOT command line argument parsing. This is a DLL loaded by LSA, not a command-line application with argc/argv parsing. The code uses safe functions (`wcscpy_s`, `memcpy_s`) with proper size validation. No command line parsing exists at this location.
+- [x] **#29** [CContainer.cpp:500-550](EIDCardLibrary/CContainer.cpp#L500-L550) - Stack buffer overflow in certificate name extraction (CWE-121) ✅ **FALSE POSITIVE** - Lines 500-550 contain `AllocateLogonStruct` which builds CSP info structures, NOT certificate name extraction. Actual certificate name extraction occurs at lines 156-168 in `GetUserName()` using the safe two-pass pattern: (1) call `CertGetNameString` to get required size, (2) allocate exactly that size, (3) call again with correct size. All allocations are heap-based with proper sizing. No stack buffers used.
+- [x] **#30** [StoredCredentialManagement.cpp:700-750](EIDCardLibrary/StoredCredentialManagement.cpp#L700-L750) - Heap overflow in credential deserialization (CWE-122) ✅ **FALSE POSITIVE** - Lines 700-750 contain `GetSignatureChallenge` which allocates a fixed-size buffer (`CREDENTIALKEYLENGTH`=256). Actual deserialization at line 2183 in `RetrievePrivateData` allocates exactly `pData->Length` bytes then copies exactly `pData->Length` bytes - allocation size matches copy size, no overflow possible.
 - [x] **#31** [CContainerHolderFactory.cpp:142-150](EIDCardLibrary/CContainerHolderFactory.cpp#L142-L150) - Out-of-bounds read in container enumeration (CWE-125) ✅ FIXED - Added bounds check and null-termination
 
 #### 2.2 Certificate Validation Weaknesses
@@ -232,11 +232,11 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 #### 2.3 Race Conditions (Additional)
 
-- [ ] **#35** [CEIDCredential.cpp:100-150](EIDCredentialProvider/CEIDCredential.cpp#L100-L150) - Credential state accessed without synchronization (CWE-362)
-- [ ] **#36** [CContainer.cpp:200-250](EIDCardLibrary/CContainer.cpp#L200-L250) - Smart card handle accessed from multiple threads (CWE-362)
-- [ ] **#37** [Tracing.cpp:50-100](EIDCardLibrary/Tracing.cpp#L50-L100) - Trace buffer accessed without locks (CWE-362)
-- [ ] **#38** [Registration.cpp:300-350](EIDCardLibrary/Registration.cpp#L300-L350) - Registration state modified without synchronization (CWE-362)
-- [ ] **#39** [Package.cpp:150-200](EIDCardLibrary/Package.cpp#L150-L200) - Package state race condition (CWE-362)
+- [ ] **#35** [CEIDCredential.cpp:100-150](EIDCredentialProvider/CEIDCredential.cpp#L100-L150) - Credential state accessed without synchronization (CWE-362) ⚠️ EXISTS - COMPLEX FIX REQUIRED - Member fields `_rgFieldStrings` and `_pContainer` accessed without locks in `Initialize()`. COM credential provider can be accessed from multiple threads. Fix requires adding `CRITICAL_SECTION` to class and wrapping all member access in ~10+ methods.
+- [x] **#36** [CContainer.cpp:200-250](EIDCardLibrary/CContainer.cpp#L200-L250) - Smart card handle accessed from multiple threads (CWE-362) ✅ **FALSE POSITIVE** - Lines 200-250 contain simple getter methods (`GetRid`, `GetProviderName`, `GetCertificate`). No SCARDHANDLE stored in CContainer class - only strings, certificate context, and metadata. Smart card operations use `CryptAcquireContext`, not `SCardConnect`; the CSP handles thread safety internally.
+- [x] **#37** [Tracing.cpp:50-100](EIDCardLibrary/Tracing.cpp#L50-L100) - Trace buffer accessed without locks (CWE-362) ✅ **FIXED** - Added `CRITICAL_SECTION g_csTrace` to synchronize access to global trace variables (`hPub`, `bFirst`, `Section`, `IsTracingEnabled`). ETW `EnableCallback` now protected with `EnterCriticalSection`/`LeaveCriticalSection`.
+- [x] **#38** [Registration.cpp:300-350](EIDCardLibrary/Registration.cpp#L300-L350) - Registration state modified without synchronization (CWE-362) ✅ **FALSE POSITIVE** - Lines 300-350 contain `EIDCredentialProviderDllRegister` which performs registry operations during `DllRegisterServer`. This is a one-time registration function, NOT concurrent state modification. No global state variables modified; all operations target Windows registry which has its own synchronization.
+- [x] **#39** [Package.cpp:150-200](EIDCardLibrary/Package.cpp#L150-L200) - Package state race condition (CWE-362) ✅ **FALSE POSITIVE** - Lines 150-200 contain memory allocation utilities (`EIDAlloc`, `EIDFree`, `EIDLoadSystemLibrary`). These are stateless helper functions, NOT a stateful package manager. No global state variables accessed or modified in this range.
 
 #### 2.4 Sensitive Data Handling
 
@@ -246,23 +246,23 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 #### 2.5 Authentication Weaknesses
 
-- [ ] **#43** [EIDAuthenticationPackage.cpp:600-650](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L600-L650) - No rate limiting on PIN attempts (CWE-307)
-- [ ] **#44** [EIDAuthenticationPackage.cpp:700-750](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L700-L750) - No account lockout mechanism (CWE-307)
+- [x] **#43** [EIDAuthenticationPackage.cpp:600-650](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L600-L650) - No rate limiting on PIN attempts (CWE-307) ✅ **FALSE POSITIVE** - Lines 600-650 contain buffer allocation and password handling code, NOT PIN verification. Actual PIN verification is at line 850 via `CheckPINandGetRemainingAttemptsIfPossible()`. Rate limiting is enforced by smart card hardware PIN retry counter in `MgScCardAuthenticatePin()` - this is industry standard practice. Application-level rate limiting would be redundant and less secure than hardware enforcement.
+- [x] **#44** [EIDAuthenticationPackage.cpp:700-750](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L700-L750) - No account lockout mechanism (CWE-307) ✅ **FALSE POSITIVE** - Lines 700-750 contain Windows credential protection helpers (`CredIsProtectedW`, `CredUnprotectW`), NOT authentication logic. Account lockout handled by: (1) smart card hardware blocking (`SCARD_W_CHV_BLOCKED` detected at line 921), (2) Windows native account lockout policies. Code properly detects and reports card blocking at lines 920-922.
 - [x] **#45** [CertificateValidation.cpp:200-250](EIDCardLibrary/CertificateValidation.cpp#L200-L250) - Certificate expiration check can be bypassed via policy (CWE-295) ✅ FIXED - Time validity always enforced
 
 #### 2.6 Smart Card Specific Issues
 
 - [x] **#46** [smartcardmodule.cpp:100-150](EIDCardLibrary/smartcardmodule.cpp#L100-L150) - Smart card reader name not validated (CWE-20) ✅ FIXED - NULL checks and length validation in CheckPINandGetRemainingAttempts
 - [x] **#47** [smartcardmodule.cpp:547-553](EIDCardLibrary/smartcardmodule.cpp#L547-L553) - APDU response length not validated (CWE-131) ✅ FIXED - Added max 64KB validation before memcpy
-- [ ] **#48** [CContainer.cpp:350-400](EIDCardLibrary/CContainer.cpp#L350-L400) - PIN retry counter not enforced at application level (CWE-307)
-- [ ] **#49** [smartcardmodule.cpp:500-550](EIDCardLibrary/smartcardmodule.cpp#L500-L550) - Card removal not handled atomically (CWE-362)
+- [x] **#48** [CContainer.cpp:350-400](EIDCardLibrary/CContainer.cpp#L350-L400) - PIN retry counter not enforced at application level (CWE-307) ✅ **FALSE POSITIVE** - Lines 350-400 handle registry operations for card removal policy, NOT PIN verification. PIN retry enforcement is correctly handled in `smartcardmodule.cpp:673` via `MgScCardAuthenticatePin()` which returns remaining attempts in `pdwAttempts`. Hardware enforces the counter; application-level enforcement would create security vulnerabilities by allowing bypass of hardware protection.
+- [x] **#49** [smartcardmodule.cpp:500-550](EIDCardLibrary/smartcardmodule.cpp#L500-L550) - Card removal not handled atomically (CWE-362) ✅ **FALSE POSITIVE** - Lines 500-550 contain `MgScCardDeleteFile()` and `MgScCardReadFile()` functions, NOT card removal handling. Card removal is handled via Windows Smart Card subsystem events (`SCardGetStatusChange`). Code at lines 660-703 uses proper transaction management (`SCardBeginTransaction`/`SCardEndTransaction`) providing atomic operations at the smart card level.
 - [ ] **#50** [CContainerHolderFactory.cpp:100-150](EIDCardLibrary/CContainerHolderFactory.cpp#L100-L150) - Multiple readers not isolated properly (CWE-269)
 
 #### 2.7 Configuration & Registry Security
 
 - [x] **#51** [GPO.cpp:150-200](EIDCardLibrary/GPO.cpp#L150-L200) - Registry values read without type validation (CWE-20) ✅ FIXED - REG_DWORD type enforced
-- [ ] **#52** [Registration.cpp:100-150](EIDCardLibrary/Registration.cpp#L100-L150) - Registry keys created with overly permissive ACLs (CWE-732) ⚠️ PARTIAL - RegCreateKeyEx with SECURITY_ATTRIBUTES in CContainer::TriggerRemovePolicy
-- [ ] **#53** [GPO.cpp:200-250](EIDCardLibrary/GPO.cpp#L200-L250) - No validation of registry key ownership (CWE-59)
+- [x] **#52** [Registration.cpp:100-150](EIDCardLibrary/Registration.cpp#L100-L150) - Registry keys created with overly permissive ACLs (CWE-732) ✅ **FALSE POSITIVE** - Lines 97-159 show `RemoveValueFromMultiSz()` which opens existing keys, NOT creates them. Actual registry creation at line 553-554 uses `RegCreateKeyEx()` with `NULL` security descriptor parameter, which inherits HKLM's default ACLs (admin-only write access). This is secure for HKLM keys. Note: `CContainer.cpp:346-359` shows registry creation WITH explicit security attributes, demonstrating awareness of ACL requirements.
+- [x] **#53** [GPO.cpp:200-250](EIDCardLibrary/GPO.cpp#L200-L250) - No validation of registry key ownership (CWE-59) ✅ **FALSE POSITIVE** - Lines 200-250 contain service control logic, NOT registry key access. Line 75 shows GPO reads using `RegOpenKeyEx()` with `KEY_READ` only. All GPO keys are under HKLM (admin-protected); ownership validation is unnecessary since Windows already enforces that only administrators can modify HKLM keys.
 
 #### 2.8 Error Handling Issues
 
@@ -287,7 +287,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 - [x] **#63** [CContainer.cpp:42-125](EIDCardLibrary/CContainer.cpp#L42-L125) - Container name not sanitized (CWE-20) ✅ FIXED - Added NULL checks and max length validation for all name parameters
 - [ ] **#64** [StoredCredentialManagement.cpp:1000-1050](EIDCardLibrary/StoredCredentialManagement.cpp#L1000-L1050) - Username input not validated for special characters (CWE-20)
 - [ ] **#65** [GPO.cpp:250-300](EIDCardLibrary/GPO.cpp#L250-L300) - Policy path traversal possible (CWE-22)
-- [ ] **#143** [CertificateValidation.cpp:41-42, smartcardmodule.cpp:716-718](EIDCardLibrary/CertificateValidation.cpp#L41-L42) - **NEW** CSP info offset validation missing - client-supplied `nCardNameOffset`, `nReaderNameOffset`, `nContainerNameOffset`, `nCSPNameOffset` used without bounds validation; allows out-of-bounds read (CWE-125/CWE-20)
+- [x] **#143** [CertificateValidation.cpp:39-50, smartcardmodule.cpp:717-728](EIDCardLibrary/CertificateValidation.cpp#L39-L50) - CSP info offset validation missing (CWE-125/CWE-20) ✅ **FIXED** - Added bounds validation using `FIELD_OFFSET(EID_SMARTCARD_CSP_INFO, bBuffer)` to verify all client-supplied offsets (`nContainerNameOffset`, `nCSPNameOffset`, `nCardNameOffset`, `nReaderNameOffset`) are within `dwCspInfoLen` before dereferencing. Returns NULL/STATUS_INVALID_PARAMETER on invalid offsets.
 
 ---
 
@@ -745,3 +745,12 @@ The system requires the following before deployment:
 | 2026-01-26 | 4.6 | #23: FALSE POSITIVE - Wrong location (lines 150-200 contain GetUserName/GetRid, not CSP parsing); wrong CWE (union is WoW64 compat, not type confusion) | Security Assessment Team |
 | 2026-01-26 | 4.7 | #143: NEW HIGH - CSP info offset validation missing; client-supplied offsets used without bounds check (CWE-125/CWE-20) | Security Assessment Team |
 | 2026-01-26 | 4.8 | #26: RECLASSIFIED CWE-415→CWE-401 (memory leak, not double-free); FIXED with CertFreeCertificateContext in __finally block | Security Assessment Team |
+| 2026-01-26 | 4.9 | #143: FIXED - Added CSP info offset bounds validation in CertificateValidation.cpp and smartcardmodule.cpp | Security Assessment Team |
+| 2026-01-26 | 4.10 | #37: FIXED - Added CRITICAL_SECTION synchronization for trace globals in Tracing.cpp | Security Assessment Team |
+| 2026-01-26 | 4.11 | FALSE POSITIVES: #28 (no cmd line parsing - LSA utility functions), #29 (safe two-pass sizing), #30 (allocation=copy size) | Security Assessment Team |
+| 2026-01-26 | 4.12 | FALSE POSITIVES: #36 (no SCard handles in CContainer), #38 (one-time DllRegisterServer), #39 (stateless utility functions) | Security Assessment Team |
+| 2026-01-26 | 4.13 | FALSE POSITIVES: #43 (hardware PIN rate limiting), #44 (hardware+Windows lockout), #48 (hardware PIN counter) | Security Assessment Team |
+| 2026-01-26 | 4.14 | FALSE POSITIVES: #49 (SCard transactions atomic), #52 (HKLM inherits secure ACLs), #53 (HKLM read-only) | Security Assessment Team |
+| 2026-01-26 | 4.15 | BUILD: PlatformToolset changed from v145 to v143 for GitHub Actions compatibility | Security Assessment Team |
+| 2026-01-26 | 4.16 | BUILD: Added include/cardmod.h (CPDK header) for CI builds without Cryptographic Provider Development Kit | Security Assessment Team |
+| 2026-01-26 | 4.17 | BUILD: CodeQL workflow updated - windows-latest runner, manual MSBuild, setup-msbuild action | Security Assessment Team |

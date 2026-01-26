@@ -713,6 +713,20 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 NTSTATUS CheckPINandGetRemainingAttemptsIfPossible(PEID_SMARTCARD_CSP_INFO pCspInfo, PTSTR szPin, NTSTATUS *pSubStatus)
 {
 	DWORD dwAttempts;
+
+	// SECURITY FIX #143: Validate CSP info offsets before use (CWE-125/CWE-20)
+	// Client-supplied offsets must be within structure bounds to prevent out-of-bounds read
+	DWORD dwHeaderSize = FIELD_OFFSET(EID_SMARTCARD_CSP_INFO, bBuffer);
+	if (pCspInfo->dwCspInfoLen < dwHeaderSize ||
+	    pCspInfo->nCSPNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize) ||
+	    pCspInfo->nCardNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize) ||
+	    pCspInfo->nReaderNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"CheckPINandGetRemainingAttemptsIfPossible: Invalid CSP info offset - dwCspInfoLen=%u, nCSPNameOffset=%u, nCardNameOffset=%u, nReaderNameOffset=%u",
+			pCspInfo->dwCspInfoLen, pCspInfo->nCSPNameOffset, pCspInfo->nCardNameOffset, pCspInfo->nReaderNameOffset);
+		return STATUS_INVALID_PARAMETER;
+	}
+
 	LPTSTR szCSPName = pCspInfo->bBuffer + pCspInfo->nCSPNameOffset;
 	LPTSTR szCardName = pCspInfo->bBuffer + pCspInfo->nCardNameOffset;
 	LPTSTR szReaderName = pCspInfo->bBuffer + pCspInfo->nReaderNameOffset;
