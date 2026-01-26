@@ -544,6 +544,14 @@ MgScCardReadFile(
             &pbLocal,
             &cbLocal));
 
+        // Validate response length - max 64KB per APDU spec (CWE-131 fix for #47)
+        if (cbLocal > 65535)
+        {
+            EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Card returned invalid file size: %d", cbLocal);
+            status = ERROR_INVALID_DATA;
+            __leave;
+        }
+
         if (*pcbData < cbLocal)
         {
             if (NULL != pbData)

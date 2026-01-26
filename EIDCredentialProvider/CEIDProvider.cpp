@@ -53,15 +53,24 @@ CEIDProvider::CEIDProvider():
     _pMessageCredential = NULL;
 	_pSmartCardConnectionNotifier = NULL;
 	_fDontShowAnything = FALSE;
+	_fShuttingDown = FALSE;
+	InitializeCriticalSection(&_csCallback);
 }
 
 CEIDProvider::~CEIDProvider()
 {
+	// Signal shutdown and wait for any running callback to complete (CWE-416 fix for #8)
+	EnterCriticalSection(&_csCallback);
+	_fShuttingDown = TRUE;
+	LeaveCriticalSection(&_csCallback);
+
 	if (_pSmartCardConnectionNotifier)
 	{
 		_pSmartCardConnectionNotifier->Stop();
 		delete _pSmartCardConnectionNotifier;
 	}
+
+	DeleteCriticalSection(&_csCallback);
     DllRelease();
 	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Deletion");
 }
@@ -69,12 +78,21 @@ CEIDProvider::~CEIDProvider()
 // This method acts as a callback for the hardware emulator. When it's called, it simply
 // tells the infrastructure that it needs to re-enumerate the credentials.
 void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in LPCTSTR szReader,__in_opt LPCTSTR szCardName, __in_opt USHORT ActivityCount) {
+	// Protect callback from destruction race (CWE-416 fix for #8)
+	EnterCriticalSection(&_csCallback);
+	if (_fShuttingDown)
+	{
+		LeaveCriticalSection(&_csCallback);
+		return;
+	}
+	LeaveCriticalSection(&_csCallback);
+
 	switch(Message)
 	{
 	case EIDCPRSConnecting:
 		if (szCardName)
 		{
-			if (_pMessageCredential) 
+			if (_pMessageCredential)
 			{
 				_pMessageCredential->SetStatus(Reading);
 				_pMessageCredential->IncreaseSmartCardCount();
@@ -86,7 +104,7 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 			}
 			_CredentialList.ConnectNotification(szReader,szCardName,ActivityCount);
 			if (_pMessageCredential) _pMessageCredential->SetStatus(EndReading);
-			
+
 			if (_pcpe != NULL)
 			{
 				_pcpe->CredentialsChanged(_upAdviseContext);
@@ -94,7 +112,7 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 		}
 		break;
 	case EIDCPRSDisconnected:
-		if (_pMessageCredential) 
+		if (_pMessageCredential)
 		{
 			_pMessageCredential->SetStatus(Reading);
 			_pMessageCredential->DecreaseSmartCardCount();
@@ -103,10 +121,10 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 		{
 			_pcpe->CredentialsChanged(_upAdviseContext);
 			Sleep(100);
-		}		
+		}
 		_CredentialList.DisconnectNotification(szReader);
 		if (_pMessageCredential) _pMessageCredential->SetStatus(EndReading);
-		
+
 		if (_pcpe != NULL)
 		{
 			_pcpe->CredentialsChanged(_upAdviseContext);

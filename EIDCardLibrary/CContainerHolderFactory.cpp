@@ -139,6 +139,16 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 				dwFlags)
 			)
 	{
+		// Ensure null-termination to prevent out-of-bounds read (CWE-125 fix for #31)
+		if (dwContainerNameLen >= ARRAYSIZE(szContainerName))
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Container name too long: %d", dwContainerNameLen);
+			dwFlags = CRYPT_NEXT;
+			dwContainerNameLen = ARRAYSIZE(szContainerName);
+			continue;
+		}
+		szContainerName[dwContainerNameLen] = '\0';
+
 		// convert the container name to unicode
 #ifdef UNICODE
 		int wLen = MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, NULL, 0);

@@ -33,33 +33,95 @@
 
 #define REMOVALPOLICYKEY TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Removal Policy")
 
+// Maximum lengths for container/card/provider/reader names (CWE-20 fix for #63)
+#define MAX_CONTAINER_NAME_LENGTH 1024
+#define MAX_READER_NAME_LENGTH 256
+#define MAX_CARD_NAME_LENGTH 256
+#define MAX_PROVIDER_NAME_LENGTH 256
+
 CContainer::CContainer(LPCTSTR szReaderName, LPCTSTR szCardName, LPCTSTR szProviderName, LPCTSTR szContainerName, DWORD KeySpec,__in USHORT ActivityCount,PCCERT_CONTEXT pCertContext)
 {
 	_dwRid = 0;
-	_szReaderName = (LPTSTR) EIDAlloc ((DWORD)(sizeof(TCHAR)*(_tcslen(szReaderName)+1)));
-	if (_szReaderName)
-	{
-		_tcscpy_s(_szReaderName,_tcslen(szReaderName)+1,szReaderName);
-	}
-	_szProviderName = (LPTSTR) EIDAlloc ((DWORD)(sizeof(TCHAR)*(_tcslen(szProviderName)+1)));
-	if (_szProviderName)
-	{
-		_tcscpy_s(_szProviderName,_tcslen(szProviderName)+1,szProviderName);
-	}
-	_szContainerName = (LPTSTR) EIDAlloc ((DWORD)(sizeof(TCHAR)*(_tcslen(szContainerName)+1)));
-	if (_szContainerName)
-	{
-		_tcscpy_s(_szContainerName,_tcslen(szContainerName)+1,szContainerName);
-	}
-	_szCardName = (LPTSTR) EIDAlloc ((DWORD)(sizeof(TCHAR)*(_tcslen(szCardName)+1)));
-	if (_szCardName)
-	{
-		_tcscpy_s(_szCardName,_tcslen(szCardName)+1,szCardName);
-	}
+	_szReaderName = NULL;
+	_szCardName = NULL;
+	_szProviderName = NULL;
+	_szContainerName = NULL;
 	_szUserName = NULL;
 	_KeySpec = KeySpec;
 	_ActivityCount = ActivityCount;
 	_pCertContext = pCertContext;
+
+	// Validate and copy reader name with length check
+	if (szReaderName != NULL)
+	{
+		size_t len = _tcsnlen(szReaderName, MAX_READER_NAME_LENGTH + 1);
+		if (len <= MAX_READER_NAME_LENGTH)
+		{
+			_szReaderName = (LPTSTR) EIDAlloc ((DWORD)(sizeof(TCHAR)*(len+1)));
+			if (_szReaderName)
+			{
+				_tcscpy_s(_szReaderName, len+1, szReaderName);
+			}
+		}
+		else
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Reader name exceeds max length");
+		}
+	}
+
+	// Validate and copy provider name with length check
+	if (szProviderName != NULL)
+	{
+		size_t len = _tcsnlen(szProviderName, MAX_PROVIDER_NAME_LENGTH + 1);
+		if (len <= MAX_PROVIDER_NAME_LENGTH)
+		{
+			_szProviderName = (LPTSTR) EIDAlloc ((DWORD)(sizeof(TCHAR)*(len+1)));
+			if (_szProviderName)
+			{
+				_tcscpy_s(_szProviderName, len+1, szProviderName);
+			}
+		}
+		else
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Provider name exceeds max length");
+		}
+	}
+
+	// Validate and copy container name with length check
+	if (szContainerName != NULL)
+	{
+		size_t len = _tcsnlen(szContainerName, MAX_CONTAINER_NAME_LENGTH + 1);
+		if (len <= MAX_CONTAINER_NAME_LENGTH)
+		{
+			_szContainerName = (LPTSTR) EIDAlloc ((DWORD)(sizeof(TCHAR)*(len+1)));
+			if (_szContainerName)
+			{
+				_tcscpy_s(_szContainerName, len+1, szContainerName);
+			}
+		}
+		else
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Container name exceeds max length");
+		}
+	}
+
+	// Validate and copy card name with length check
+	if (szCardName != NULL)
+	{
+		size_t len = _tcsnlen(szCardName, MAX_CARD_NAME_LENGTH + 1);
+		if (len <= MAX_CARD_NAME_LENGTH)
+		{
+			_szCardName = (LPTSTR) EIDAlloc ((DWORD)(sizeof(TCHAR)*(len+1)));
+			if (_szCardName)
+			{
+				_tcscpy_s(_szCardName, len+1, szCardName);
+			}
+		}
+		else
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Card name exceeds max length");
+		}
+	}
 }
 
 CContainer::~CContainer()

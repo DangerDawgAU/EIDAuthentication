@@ -99,17 +99,19 @@ public:
     __override ~CEIDProvider();
     HRESULT Initialize();
 private:
-	
-	
+
+
 
     LONG                        _cRef;                  // Reference counter.
 	CMessageCredential          *_pMessageCredential;   // Our "disconnected" credential.
     ICredentialProviderEvents   *_pcpe;                    // Used to tell our owner to re-enumerate credentials.
-    UINT_PTR                    _upAdviseContext;       // Used to tell our owner who we are when asking to 
+    UINT_PTR                    _upAdviseContext;       // Used to tell our owner who we are when asking to
                                                         // re-enumerate credentials.
     CREDENTIAL_PROVIDER_USAGE_SCENARIO      _cpus;
 	DWORD									_dwFlags;
 	BOOL									_fDontShowAnything;
 	CContainerHolderFactory<CEIDCredential>	_CredentialList;
 	CSmartCardConnectionNotifier*			_pSmartCardConnectionNotifier;
+	CRITICAL_SECTION						_csCallback;  // Protects callback from destruction race (CWE-416 fix for #8)
+	BOOL									_fShuttingDown;  // Flag to prevent callback during shutdown
 };

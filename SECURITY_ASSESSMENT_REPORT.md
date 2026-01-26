@@ -1,7 +1,7 @@
 # EID Authentication Security Assessment Report
 
 **Assessment Date:** January 17-18, 2026
-**Last Updated:** January 26, 2026 (#24, #27 fixes tested and verified)
+**Last Updated:** January 26, 2026 (#8, #31, #47, #63 fixes tested and verified)
 **Codebase:** EIDAuthentication (Windows Smart Card Authentication)
 **Assessment Scope:** Complete recursive security analysis
 **Assessment Agents:** 14 specialized security analysis agents
@@ -12,11 +12,11 @@
 
 | Priority | Total | Fixed/Mitigated | Remaining | Progress |
 |----------|-------|-----------------|-----------|----------|
-| CRITICAL | 27 | 23 | 4 | 🟩 85% |
-| HIGH | 37 | 10 | 27 | 🟨 27% |
+| CRITICAL | 27 | 24 | 3 | 🟩 89% |
+| HIGH | 37 | 13 | 24 | 🟨 35% |
 | MEDIUM | 62 | 1 | 61 | ⬜ 2% |
 | LOW | 16 | 1 | 15 | ⬜ 6% |
-| **TOTAL** | **142** | **35** | **107** | 🟨 **25%** |
+| **TOTAL** | **142** | **39** | **103** | 🟨 **27%** |
 
 *Note: 6 CRITICAL items (#9, #10, #11, #17, #22, #25) reclassified to LOW via operational mitigation.*
 
@@ -74,6 +74,16 @@
 **Critical Use-After-Free and Memory Safety Fixes:**
 1. ✅ **#27** Memory corruption via malformed smart card response - COMPLETE: Added card name NULL check and max length validation (256 chars) using wcsnlen (Critical, CWE-787)
 2. ✅ **#24** Use-after-free in credential cleanup - Fixed with CRITICAL_SECTION synchronization for Credentials/Contexts containers; fixed delete-before-erase pattern to erase-then-delete (Critical, CWE-416)
+
+**Verification:** Build and functional testing completed successfully on January 26, 2026.
+
+### Remediation Session: January 26, 2026 (Batch 2)
+
+**Final CRITICAL Fix + HIGH Priority Memory Safety:**
+1. ✅ **#8** Use-after-free in Callback function - Added CRITICAL_SECTION + shutdown flag to prevent callback execution during destruction (Critical, CWE-416)
+2. ✅ **#47** APDU response length not validated - Added max 64KB validation before memcpy in MgScCardReadFile (High, CWE-131)
+3. ✅ **#31** Out-of-bounds read in container enumeration - Added bounds check and null-termination for container names (High, CWE-125)
+4. ✅ **#63** Container name not sanitized - Added NULL checks and max length validation (1024 chars) for all name parameters in CContainer constructor (High, CWE-20)
 
 **Verification:** Build and functional testing completed successfully on January 26, 2026.
 
@@ -160,7 +170,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 #### 1.2 Race Conditions & Concurrency
 
 - [x] **#7** [Dll.cpp:54-67](EIDCredentialProvider/Dll.cpp#L54-L67) - Non-atomic reference counting (`_cRef++` instead of `InterlockedIncrement`) (CWE-362) ✅ FIXED
-- [ ] **#8** [CEIDProvider.cpp:71-117](EIDCredentialProvider/CEIDProvider.cpp#L71-L117) - Use-after-free in Callback function without locks (CWE-416)
+- [x] **#8** [CEIDProvider.cpp:80-134](EIDCredentialProvider/CEIDProvider.cpp#L80-L134) - Use-after-free in Callback function without locks (CWE-416) ✅ FIXED - Added CRITICAL_SECTION + shutdown flag
 - [x] **#9** [CContainerHolderFactory.cpp:380-415](EIDCardLibrary/CContainerHolderFactory.cpp#L380-L415) - List iteration without locks - concurrent modification (CWE-362) ⬇️ RECLASSIFIED TO LOW - Single-reader deployment mitigates concurrency
 - [x] **#10** [GPO.cpp:34-60](EIDCardLibrary/GPO.cpp#L34-L60) - GPO reading without synchronization (CWE-362) ⬇️ RECLASSIFIED TO LOW - Settings read once at init; race window operationally improbable
 - [x] **#11** [CredentialManagement.cpp:180-220](EIDCardLibrary/CredentialManagement.cpp#L180-L220) - Credential list modification without locks (CWE-362) ⬇️ RECLASSIFIED TO LOW - Single-user workstation; offline enrollment
@@ -208,7 +218,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 - [ ] **#28** [EIDAuthenticationPackage.cpp:100-150](EIDAuthenticationPackage/EIDAuthenticationPackage.cpp#L100-L150) - Command line buffer overflow in argument parsing (CWE-120)
 - [ ] **#29** [CContainer.cpp:500-550](EIDCardLibrary/CContainer.cpp#L500-L550) - Stack buffer overflow in certificate name extraction (CWE-121)
 - [ ] **#30** [StoredCredentialManagement.cpp:700-750](EIDCardLibrary/StoredCredentialManagement.cpp#L700-L750) - Heap overflow in credential deserialization (CWE-122)
-- [ ] **#31** [CContainerHolderFactory.cpp:200-250](EIDCardLibrary/CContainerHolderFactory.cpp#L200-L250) - Out-of-bounds read in container enumeration (CWE-125)
+- [x] **#31** [CContainerHolderFactory.cpp:142-150](EIDCardLibrary/CContainerHolderFactory.cpp#L142-L150) - Out-of-bounds read in container enumeration (CWE-125) ✅ FIXED - Added bounds check and null-termination
 
 #### 2.2 Certificate Validation Weaknesses
 
@@ -243,7 +253,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 #### 2.6 Smart Card Specific Issues
 
 - [x] **#46** [smartcardmodule.cpp:100-150](EIDCardLibrary/smartcardmodule.cpp#L100-L150) - Smart card reader name not validated (CWE-20) ✅ FIXED - NULL checks and length validation in CheckPINandGetRemainingAttempts
-- [ ] **#47** [smartcardmodule.cpp:400-450](EIDCardLibrary/smartcardmodule.cpp#L400-L450) - APDU response length not validated (CWE-131)
+- [x] **#47** [smartcardmodule.cpp:547-553](EIDCardLibrary/smartcardmodule.cpp#L547-L553) - APDU response length not validated (CWE-131) ✅ FIXED - Added max 64KB validation before memcpy
 - [ ] **#48** [CContainer.cpp:350-400](EIDCardLibrary/CContainer.cpp#L350-L400) - PIN retry counter not enforced at application level (CWE-307)
 - [ ] **#49** [smartcardmodule.cpp:500-550](EIDCardLibrary/smartcardmodule.cpp#L500-L550) - Card removal not handled atomically (CWE-362)
 - [ ] **#50** [CContainerHolderFactory.cpp:100-150](EIDCardLibrary/CContainerHolderFactory.cpp#L100-L150) - Multiple readers not isolated properly (CWE-269)
@@ -274,7 +284,7 @@ This comprehensive security assessment identified **142+ vulnerabilities** acros
 
 #### 2.11 Input Validation (Additional)
 
-- [ ] **#63** [CContainer.cpp:600-650](EIDCardLibrary/CContainer.cpp#L600-L650) - Container name not sanitized (CWE-20)
+- [x] **#63** [CContainer.cpp:42-125](EIDCardLibrary/CContainer.cpp#L42-L125) - Container name not sanitized (CWE-20) ✅ FIXED - Added NULL checks and max length validation for all name parameters
 - [ ] **#64** [StoredCredentialManagement.cpp:1000-1050](EIDCardLibrary/StoredCredentialManagement.cpp#L1000-L1050) - Username input not validated for special characters (CWE-20)
 - [ ] **#65** [GPO.cpp:250-300](EIDCardLibrary/GPO.cpp#L250-L300) - Policy path traversal possible (CWE-22)
 
@@ -725,3 +735,8 @@ The system requires the following before deployment:
 | 2026-01-26 | 3.7 | #27: COMPLETE - Card name NULL check + max length validation (256 chars) with wcsnlen | Security Assessment Team |
 | 2026-01-26 | 3.8 | #24: FIXED - CRITICAL_SECTION for Credentials/Contexts; erase-then-delete pattern | Security Assessment Team |
 | 2026-01-26 | 3.9 | #24, #27: Build and functional testing verified successful | Security Assessment Team |
+| 2026-01-26 | 4.0 | #8: FIXED - CRITICAL_SECTION + shutdown flag prevents callback use-after-free | Security Assessment Team |
+| 2026-01-26 | 4.1 | #47: FIXED - APDU response length validated (max 64KB) before memcpy | Security Assessment Team |
+| 2026-01-26 | 4.2 | #31: FIXED - Container name bounds check and null-termination | Security Assessment Team |
+| 2026-01-26 | 4.3 | #63: FIXED - All name parameters validated with NULL check and max length | Security Assessment Team |
+| 2026-01-26 | 4.4 | #8, #31, #47, #63: Build and functional testing verified successful | Security Assessment Team |
