@@ -37,7 +37,7 @@ if not exist %DEVENV% (
     echo Please ensure Visual Studio 2025 Community is installed with:
     echo - Desktop development with C++
     echo - Windows SDK 10.0.22621.0 or later
-    echo - Platform Toolset v145
+    echo - Platform Toolset v143 (VS 2022 Build Tools)
     echo.
     exit /b 1
 )
