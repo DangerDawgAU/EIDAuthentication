@@ -28,19 +28,20 @@ echo Configuration: %CONFIG%
 echo Platform: %PLATFORM%
 echo.
 
-REM Find Visual Studio 2025 installation (v18.x)
-set DEVENV="C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\devenv.com"
+REM Find Visual Studio 2025 installation (using VS2022 build tools v143)
+set "DEVENV=C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\devenv.com"
 
-if not exist %DEVENV% (
-    echo ERROR: Visual Studio 2025 not found at %DEVENV%
-    echo.
-    echo Please ensure Visual Studio 2025 Community is installed with:
-    echo - Desktop development with C++
-    echo - Windows SDK 10.0.22621.0 or later
-    echo - Platform Toolset v143 (VS 2022 Build Tools)
-    echo.
-    exit /b 1
-)
+if exist "%DEVENV%" goto :vs_found
+echo ERROR: Visual Studio 2025 not found at %DEVENV%
+echo.
+echo Please ensure Visual Studio 2025 Community is installed with:
+echo - Desktop development with C++
+echo - Windows SDK 10.0.22621.0 or later
+echo - Platform Toolset v143 (VS 2022 Build Tools)
+echo.
+exit /b 1
+
+:vs_found
 
 REM Clean previous build artifacts
 echo Cleaning previous build...
@@ -51,7 +52,9 @@ echo.
 echo ============================================================
 echo Building solution: EIDCredentialProvider.sln
 echo ============================================================
-%DEVENV% EIDCredentialProvider.sln /Rebuild "%CONFIG%|%PLATFORM%" /Out build.log
+echo Build output will be logged to build.log
+"%DEVENV%" EIDCredentialProvider.sln /Rebuild "%CONFIG%|%PLATFORM%" > build.log 2>&1
+type build.log
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
@@ -59,7 +62,7 @@ if %ERRORLEVEL% NEQ 0 (
     echo BUILD FAILED with error code %ERRORLEVEL%
     echo ============================================================
     echo.
-    echo Check build.log for detailed error information
+    echo Check the output above for detailed error information
     exit /b %ERRORLEVEL%
 )
 
