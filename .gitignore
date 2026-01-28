@@ -401,4 +401,4 @@ Installer/*.exe
 
 *.json
 
-sonarqube/
+sonarqube_issues/

@@ -5,7 +5,7 @@ $projectKey = "DangerDawgAU_EIDAuthentication"
 $sonarCloudUrl = "https://sonarcloud.io"
 
 # Create a directory to store the issues
-$outputDir = "sonarqube"
+$outputDir = "sonarqube_issues"
 if (-not (Test-Path -Path $outputDir)) {
     New-Item -ItemType Directory -Path $outputDir
 }
@@ -33,21 +33,18 @@ do {
     }
 } while ($fetchedCount -lt $total)
 
-# Save the issues to a JSON file
-$outputFile = Join-Path -Path $outputDir -ChildPath "sonarqube_issues.json"
-$issues | ConvertTo-Json -Depth 10 | Out-File -FilePath $outputFile -Encoding utf8
+Write-Host "Successfully fetched $($issues.Count) issues."
 
-Write-Host "Successfully fetched $($issues.Count) issues and saved them to $outputFile"
-
-# Create individual markdown files for each issue
-$issuesDir = Join-Path -Path $outputDir -ChildPath "issues"
-if (-not (Test-Path -Path $issuesDir)) {
-    New-Item -ItemType Directory -Path $issuesDir
-}
-
+# Create individual markdown files for each issue, organized by severity
 foreach ($issue in $issues) {
+    $severity = $issue.severity
+    $severityDir = Join-Path -Path $outputDir -ChildPath $severity
+    if (-not (Test-Path -Path $severityDir)) {
+        New-Item -ItemType Directory -Path $severityDir
+    }
+
     $issueKey = $issue.key
-    $issueFile = Join-Path -Path $issuesDir -ChildPath "$issueKey.md"
+    $issueFile = Join-Path -Path $severityDir -ChildPath "$issueKey.md"
     $issueContent = @"
 # $($issue.message)
 
@@ -62,4 +59,4 @@ foreach ($issue in $issues) {
     $issueContent | Out-File -FilePath $issueFile -Encoding utf8
 }
 
-Write-Host "Created markdown files for each issue in $issuesDir"
+Write-Host "Created markdown files for each issue in respective severity folders under $outputDir"
