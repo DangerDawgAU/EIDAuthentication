@@ -52,7 +52,7 @@ private:
 	
 	CCredential* _pCredential;
 	EID_MESSAGE_STATE _State;
-	UCHAR Hash[20];
+	UCHAR Hash[CERT_HASH_LENGTH];
 	PCCERT_CONTEXT pCertContext;
 	DWORD dwRid;
 	PBYTE pbChallenge;

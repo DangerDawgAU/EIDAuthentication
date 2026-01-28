@@ -4,6 +4,7 @@
 #include <ntsecapi.h>
 #include <wmistr.h>
 #include <Evntrace.h>
+#include <random>
 
 #include "global.h"
 #include "EIDConfigurationWizard.h"
@@ -306,8 +307,12 @@ BOOL CreateDebugReport(PTSTR szLogFile)
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz";
 
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution<> dis(0, sizeof(alphanum) - 2);
+
 		for (int i = 0; i < 10; ++i) {
-			szNamedPipeName[_tcslen(szNamedPipeName)] = alphanum[rand() % (sizeof(alphanum) - 1)];
+			szNamedPipeName[_tcslen(szNamedPipeName)] = alphanum[dis(gen)];
 		}
 
 		hNamedPipe = CreateNamedPipe(szNamedPipeName,PIPE_ACCESS_DUPLEX,0,PIPE_UNLIMITED_INSTANCES,0,0,0,NULL);
