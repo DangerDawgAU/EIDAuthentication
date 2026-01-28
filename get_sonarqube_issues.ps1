@@ -6,9 +6,10 @@ $sonarCloudUrl = "https://sonarcloud.io"
 
 # Create a directory to store the issues
 $outputDir = "sonarqube_issues"
-if (-not (Test-Path -Path $outputDir)) {
-    New-Item -ItemType Directory -Path $outputDir
+if (Test-Path -Path $outputDir) {
+    Remove-Item -Path $outputDir -Recurse -Force
 }
+New-Item -ItemType Directory -Path $outputDir
 
 $page = 1
 $pageSize = 500
@@ -16,7 +17,7 @@ $issues = @()
 
 do {
     # Construct the API URL
-    $apiUrl = "$sonarCloudUrl/api/issues/search?componentKeys=$projectKey&p=$page&ps=$pageSize"
+    $apiUrl = "$sonarCloudUrl/api/issues/search?componentKeys=$projectKey&statuses=OPEN&p=$page&ps=$pageSize"
 
     try {
         # Fetch the issues
