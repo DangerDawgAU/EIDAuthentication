@@ -400,3 +400,5 @@ FodyWeavers.xsd
 Installer/*.exe
 
 *.json
+
+sonarqube/
