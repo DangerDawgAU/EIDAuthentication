@@ -2,8 +2,294 @@
 
 This document groups critical SonarQube issues by filename and correlates similar/identical issues.
 
-**Total Issues Analyzed:** 75 of 2,385 (3.1%)
+**Total Issues Analyzed:** 200 of 2,385 (8.4%)
 **Analysis Started:** 2026-01-28
+
+---
+
+## File: EIDTest/EIDTest.h
+
+### Issue Type: Replace this macro by "const", "constexpr" or an "enum"
+- Line 35: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENdJ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENdj)
+- Line 30: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENdE](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENde)
+- Line 29: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENdF](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENdf)
+- Line 28: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENdL](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENdl)
+- Line 27: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENdM](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENdm)
+- Line 26: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENdN](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENdn)
+- Line 25: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENdO](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENdo)
+- Line 24: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENdP](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENdp)
+- Line 23: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENdQ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENdq)
+- Line 22: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENeF](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENef)
+- Line 21: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENeE](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENee)
+- Line 20: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENeJ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENej)
+- Line 19: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENeK](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENek)
+- Line 18: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENeG](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENeg)
+- Line 17: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENeO](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENeo)
+- Line 16: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENeP](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENep)
+- Line 15: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENeR](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENer)
+- Line 14: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENeQ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENeq)
+- Line 13: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENeS](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENes)
+- Line 12: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6A5EDeY04BtENeZ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6A5EDeY04BtENez)
+
+### Issue Type: Remove the CR+LF characters or replace them with the escaped value "\r\n" and use string continuation
+- Line 10: Remove the CR+LF characters or replace them with the escaped value "\r\n" and use string continuation. [AZv-i6AcEDeY04BtENc5](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6AcEDeY04BtENc5)
+
+---
+
+## File: EIDTest/GPOTest.cpp
+
+### Issue Type: Remove the CR+LF characters or replace them with the escaped value "\r\n" and use string continuation
+- Line 10: Remove the CR+LF characters or replace them with the escaped value "\r\n" and use string continuation. [AZv-i6AcEDeY04BtENc5](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6AcEDeY04BtENc5)
+
+---
+
+## File: EIDTest/CompleteProfileTest.cpp
+
+### Issue Type: Use the "nullptr" literal
+- Line 54: Use the "nullptr" literal. [AZv-i6AKEDeY04BtENco](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6AKEDeY04BtENco)
+- Line 60: Use the "nullptr" literal. [AZv-i6AKEDeY04BtENcq](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6AKEDeY04BtENcq)
+- Line 55: Use the "nullptr" literal. [AZv-i6AlEDeY04BtENc-](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6AlEDeY04BtENc-)
+- Line 47: Use the "nullptr" literal. [AZv-i6AUEDeY04BtENcx](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6AUEDeY04BtENcx)
+- Line 48: Use the "nullptr" literal. [AZv-i6AUEDeY04BtENcz](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6AUEDeY04BtENcz)
+
+### Issue Type: Replace this macro by "const", "constexpr" or an "enum"
+- Line 42: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6AcEDeY04BtENc6](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6AcEDeY04BtENc6)
+- Line 41: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENj4](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENj4)
+- Line 40: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENj3](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENj3)
+- Line 39: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENjZ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENjz)
+- Line 38: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENk-](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENk-)
+- Line 37: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENk3](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENk3)
+- Line 36: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENk1](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENk1)
+- Line 35: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENkA](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENka)
+- Line 34: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENkE](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENke)
+- Line 33: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENk4](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENk4)
+- Line 32: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENkB](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENkb)
+- Line 31: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENkH](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENkh)
+- Line 30: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENkI](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENki)
+- Line 29: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENkQ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENkq)
+- Line 28: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENkW](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENkw)
+- Line 27: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENkV](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENkv)
+- Line 26: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENkJ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENkj)
+- Line 25: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENk6](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENk6)
+- Line 24: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENl0](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENl0)
+- Line 23: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENl3](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENl3)
+- Line 22: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENkY](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENky)
+- Line 21: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENl7](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENl7)
+- Line 20: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENl5](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENl5)
+- Line 19: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENl9](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENl9)
+- Line 18: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENl8](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENl8)
+- Line 17: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENlA](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENla)
+- Line 16: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENlB](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENlb)
+- Line 15: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENmI](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENmi)
+- Line 14: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENl6](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENl6)
+- Line 13: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENnG](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENng)
+- Line 12: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENn-](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENn-)
+- Line 11: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENn1](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENn1)
+- Line 10: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENmV](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENmv)
+- Line 9: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENnF](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENnf)
+- Line 8: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENnD](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENnd)
+- Line 7: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENnX](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENnx)
+- Line 6: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENnE](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENne)
+- Line 5: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENnC](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENnc)
+- Line 4: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENnY](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENny)
+- Line 3: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENnZ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENnz)
+- Line 2: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENnW](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENnw)
+- Line 1: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENn_](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENn_)
+- Line 45: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENo1](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENo1)
+- Line 44: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENo6](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENo6)
+- Line 43: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENo0](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENo0)
+- Line 46: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENoA](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENoa)
+- Line 49: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENoR](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENor)
+- Line 48: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENoP](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENop)
+- Line 47: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENoQ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENoq)
+- Line 50: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENr0](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENr0)
+- Line 51: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENoV](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENov)
+- Line 52: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENp7](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENp7)
+- Line 53: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENp3](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENp3)
+- Line 54: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENpO](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENpo)
+- Line 55: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENpP](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENpp)
+- Line 56: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENpL](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENpl)
+- Line 57: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENpK](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENpk)
+- Line 58: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENpB](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENpb)
+- Line 59: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENq2](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENq2)
+- Line 60: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENq0](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENq0)
+- Line 61: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENq-](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENq-)
+- Line 62: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENq4](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENq4)
+- Line 63: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENq8](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENq8)
+- Line 64: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENq9](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENq9)
+- Line 65: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENqB](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENqb)
+- Line 66: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENqL](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENql)
+- Line 67: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENqH](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENqh)
+- Line 68: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENqM](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENqm)
+- Line 69: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENqF](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENqf)
+- Line 70: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENqQ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENqq)
+- Line 71: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENqP](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENqp)
+- Line 72: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENqS](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENqs)
+- Line 73: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENqV](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENqv)
+- Line 74: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENr0](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENr0)
+- Line 75: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENr-](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENr-)
+- Line 76: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENr1](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENr1)
+- Line 77: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENr4](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENr4)
+- Line 78: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENr5](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENr5)
+- Line 79: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENr3](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENr3)
+- Line 80: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENr2](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENr2)
+- Line 81: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENr7](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENr7)
+- Line 82: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENr6](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENr6)
+- Line 83: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENrC](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENrc)
+- Line 84: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENr8](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENr8)
+- Line 85: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENqR](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENqr)
+- Line 86: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENrB](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENrb)
+- Line 87: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENrJ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENrj)
+- Line 88: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENrK](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENrk)
+- Line 89: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENrD](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENrd)
+- Line 90: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENrO](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENro)
+- Line 91: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENrR](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENrr)
+- Line 92: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENrI](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENri)
+- Line 93: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENrF](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENrf)
+- Line 94: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENrW](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENrw)
+- Line 95: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENs3](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENs3)
+- Line 96: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENrS](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENrs)
+- Line 97: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENs9](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENs9)
+- Line 98: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENsA](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENsa)
+- Line 99: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENsG](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENsg)
+- Line 100: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENsJ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENsj)
+- Line 101: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENsM](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENsm)
+- Line 102: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENsB](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENsb)
+- Line 103: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENs8](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENs8)
+- Line 104: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENrN](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENrn)
+- Line 105: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENs7](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENs7)
+- Line 106: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENsQ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENsq)
+- Line 107: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENsY](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENsy)
+- Line 108: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENs_](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENs_)
+- Line 109: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENt3](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENt3)
+- Line 110: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENt4](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENt4)
+- Line 111: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENsP](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENsp)
+- Line 112: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENt1](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENt1)
+- Line 113: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENt2](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENt2)
+- Line 114: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENt-](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENt-)
+- Line 115: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENtA](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENta)
+- Line 116: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENt0](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENt0)
+- Line 117: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENsZ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENsz)
+- Line 118: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENtB](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENtb)
+- Line 119: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENt9](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENt9)
+- Line 120: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENtU](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENtu)
+- Line 121: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENtO](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENto)
+- Line 122: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENt8](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENt8)
+- Line 123: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENtC](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENtc)
+- Line 124: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENtD](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENtd)
+- Line 125: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENtE](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENte)
+- Line 126: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENu6](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENu6)
+- Line 127: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENu3](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENu3)
+- Line 128: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENu7](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENu7)
+- Line 129: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENu1](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENu1)
+- Line 130: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENu2](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENu2)
+- Line 131: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENu5](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENu5)
+- Line 132: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENuH](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENuh)
+- Line 133: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENuG](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENug)
+- Line 134: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENuL](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENul)
+- Line 135: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENuD](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENud)
+- Line 136: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENu4](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENu4)
+- Line 137: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENuB](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENub)
+- Line 138: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENuV](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENuv)
+- Line 139: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENuT](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENut)
+- Line 140: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENuX](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENux)
+- Line 141: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENuU](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENuu)
+- Line 142: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENu_](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENu_)
+- Line 143: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENv0](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENv0)
+- Line 144: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENv3](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENv3)
+- Line 145: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENv5](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENv5)
+- Line 146: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENuZ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENuz)
+- Line 147: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENuP](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENup)
+- Line 148: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENv-](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENv-)
+- Line 149: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENvE](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENve)
+- Line 150: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENv7](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENv7)
+- Line 151: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENv8](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENv8)
+- Line 152: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENvA](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENva)
+- Line 153: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENvC](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENvc)
+- Line 154: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENvB](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENvb)
+- Line 155: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENvL](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENvl)
+- Line 156: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENvO](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENvo)
+- Line 157: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENvD](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENvd)
+- Line 158: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENuY](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENuy)
+- Line 159: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENvF](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENvf)
+- Line 160: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENvI](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENvi)
+- Line 161: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENvR](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENvr)
+- Line 162: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENvY](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENvy)
+
+### Issue Type: Global pointers should be const at every level
+- Line 17: Global pointers should be const at every level. [AZv-i6BdEDeY04BtENg8](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENg8)
+
+---
+
+## File: EIDTest/Resource.h
+
+### Issue Type: Replace this macro by "const", "constexpr" or an "enum"
+- Line 115: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENjH](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENjH)
+- Line 2: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENh2](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENh2)
+- Line 3: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENh7](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENh7)
+- Line 4: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENh-](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENh-)
+- Line 5: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENh6](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENh6)
+- Line 6: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENha](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENha)
+- Line 7: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENhb](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENhb)
+- Line 8: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENh9](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENh9)
+- Line 9: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENh5](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENh5)
+- Line 10: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENh3](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENh3)
+- Line 11: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENh1](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENh1)
+- Line 12: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENh8](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENh8)
+- Line 13: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENh0](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENh0)
+- Line 14: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENxL](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENxL)
+- Line 15: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENiK](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENiK)
+- Line 16: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENh_](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENh_)
+- Line 17: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6BdEDeY04BtENhA](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENhA)
+- Line 18: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENi2](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENi2)
+- Line 19: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENi3](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENi3)
+- Line 20: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B-EDeY04BtENxK](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B-EDeY04BtENxK)
+- Line 21: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENiI](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENiI)
+- Line 22: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENi8](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENi8)
+- Line 23: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENiE](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENiE)
+- Line 24: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENiD](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENiD)
+- Line 25: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENiC](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENiC)
+- Line 26: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENiB](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENiB)
+- Line 27: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENi4](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENi4)
+- Line 28: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENiA](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENia)
+- Line 29: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENi-](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENi-)
+- Line 30: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENiF](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENiF)
+- Line 31: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENi0](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENi0)
+- Line 32: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENiH](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENiH)
+- Line 33: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENiG](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENiG)
+- Line 34: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENi5](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENi5)
+- Line 35: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENi1](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENi1)
+- Line 36: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENi9](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENi9)
+- Line 37: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENjL](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENjL)
+- Line 38: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENjB](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENjB)
+- Line 39: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENjE](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENjE)
+- Line 40: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENjC](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENjC)
+- Line 41: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6BdEDeY04BtENg2](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENg2)
+- Line 42: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6BdEDeY04BtENg8](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENg8)
+- Line 43: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6BdEDeY04BtENgm](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENgm)
+- Line 44: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6BdEDeY04BtENg1](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENg1)
+- Line 45: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6BdEDeY04BtENgt](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENgt)
+- Line 46: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6BdEDeY04BtENgx](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENgx)
+- Line 47: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6BdEDeY04BtENgu](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENgu)
+- Line 48: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENiI](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENiI)
+- Line 49: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6B9EDeY04BtENiK](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENiK)
+
+### Issue Type: Use the "nullptr" literal
+- Line 17: Use the "nullptr" literal. [AZv-i6BdEDeY04BtENg2](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENg2)
+- Line 18: Use the "nullptr" literal. [AZv-i6BdEDeY04BtENgm](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENgm)
+- Line 19: Use the "nullptr" literal. [AZv-i6BdEDeY04BtENg1](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENg1)
+- Line 20: Use the "nullptr" literal. [AZv-i6B9EDeY04BtENiK](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENiK)
+- Line 21: Use the "nullptr" literal. [AZv-i6B9EDeY04BtENh_](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENh_)
+- Line 22: Use the "nullptr" literal. [AZv-i6BdEDeY04BtENhA](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENhA)
+- Line 23: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6BdEDeY04BtENgt](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENgt)
+- Line 24: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6BdEDeY04BtENgx](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENgx)
+- Line 25: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6BdEDeY04BtENgu](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENgu)
+- Line 26: Division by zero. [AZv-i6B9EDeY04BtENjH](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6B9EDeY04BtENjH)
+- Line 27: Use the "nullptr" literal. [AZv-i6BFEDeY04BtENfC](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BFEDeY04BtENfc)
+- Line 28: Use the "nullptr" literal. [AZv-i6BFEDeY04BtENfP](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BFEDeY04BtENfP)
+
+### Issue Type: Global pointers should be const at every level
+- Line 42: Global pointers should be const at every level. [AZv-i6BdEDeY04BtENg8](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6BdEDeY04BtENg8)
 
 ---
 
@@ -25,12 +311,6 @@ This document groups critical SonarQube issues by filename and correlates simila
 - Line 344: Use the "nullptr" literal. [AZv-i5-1EDeY04BtENYD](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i5-1EDeY04BtENYD)
 - Line 344: Use the "nullptr" literal. [AZv-i5-1EDeY04BtENYe](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i5-1EDeY04BtENYe)
 - Line 344: Use the "nullptr" literal. [AZv-i5-1EDeY04BtENYF](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i5-1EDeY04BtENYF)
-- Line 351: Use the "nullptr" literal. [AZv-i5-1EDeY04BtENYG](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i5-1EDeY04BtENYG)
-- Line 352: Use the "nullptr" literal. [AZv-i5-1EDeY04BtENYh](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i5-1EDeY04BtENYh)
-- Line 352: Use the "nullptr" literal. [AZv-i5-1EDeY04BtENYi](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i5-1EDeY04BtENYi)
-- Line 352: Use the "nullptr" literal. [AZv-i5-1EDeY04BtENYj](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i5-1EDeY04BtENYj)
-- Line 517: Use the "nullptr" literal. [AZv-i5-1EDeY04BtENYW](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i5-1EDeY04BtENYW)
-- Line 517: Use the "nullptr" literal. [AZv-i5-1EDeY04BtENYX](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i5-1EDeY04BtENYX)
 - Line 565: Use the "nullptr" literal. [AZv-i5-1EDeY04BtENY1](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i5-1EDeY04BtENY1)
 - Line 570: Use the "nullptr" literal. [AZv-i5-1EDeY04BtENY2](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i5-1EDeY04BtENY2)
 - Line 575: Use the "nullptr" literal. [AZv-i5-1EDeY04BtENY3](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i5-1EDeY04BtENY3)
@@ -179,11 +459,15 @@ This document groups critical SonarQube issues by filename and correlates simila
 - Line 12: Global pointers should be const at every level. [AZv-i57aEDeY04BtENOC](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOC)
 
 ### Issue Type: Use the "nullptr" literal
+- Line 117: Use the "nullptr" literal. [AZv-i57aEDeY04BtENOO](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOO)
 - Line 209: Use the "nullptr" literal. [AZv-i57aEDeY04BtENOD](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOD)
 - Line 215: Use the "nullptr" literal. [AZv-i57aEDeY04BtENOe](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOe)
 - Line 216: Use the "nullptr" literal. [AZv-i57aEDeY04BtENOf](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOf)
 - Line 224: Use the "nullptr" literal. [AZv-i57aEDeY04BtENOG](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOG)
 - Line 225: Use the "nullptr" literal. [AZv-i57aEDeY04BtENOh](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOh)
+- Line 260: Use the "nullptr" literal. [AZv-i57aEDeY04BtENOs](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOs)
+- Line 279: Use the "nullptr" literal. [AZv-i57aEDeY04BtENOt](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOt)
+- Line 300: Use the "nullptr" literal. [AZv-i57aEDeY04BtENOx](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOx)
 - Line 338: Use the "nullptr" literal. [AZv-i57bEDeY04BtENO1](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57bEDeY04BtENO1)
 - Line 384: Use the "nullptr" literal. [AZv-i57bEDeY04BtENO7](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57bEDeY04BtENO7)
 - Line 405: Use the "nullptr" literal. [AZv-i57bEDeY04BtENO9](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57bEDeY04BtENO9)
@@ -191,6 +475,15 @@ This document groups critical SonarQube issues by filename and correlates simila
 - Line 407: Use the "nullptr" literal. [AZv-i57bEDeY04BtENO_](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57bEDeY04BtENO_)
 - Line 414: Use the "nullptr" literal. [AZv-i57bEDeY04BtENPA](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57bEDeY04BtENPA)
 - Line 416: Use the "nullptr" literal. [AZv-i57bEDeY04BtENPB](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57bEDeY04BtENPB)
+
+### Issue Type: Refactor this code to not nest more than 3 if|for|do|while|switch statements
+- Line 287: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i57aEDeY04BtENOj](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOj)
+- Line 301: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i57aEDeY04BtENOk](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOk)
+- Line 302: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i57aEDeY04BtENOl](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOl)
+- Line 305: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i57aEDeY04BtENOm](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOm)
+- Line 332: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i57aEDeY04BtENOn](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOn)
+- Line 341: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i57aEDeY04BtENOq](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOq)
+- Line 357: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i57aEDeY04BtENOr](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOr)
 
 ### Issue Type: Refactor this function to reduce its Cognitive Complexity
 - Line 237: Refactor this function to reduce its Cognitive Complexity from 95 to the 25 allowed. [AZv-i57aEDeY04BtENOi](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i57aEDeY04BtENOi)
@@ -324,7 +617,7 @@ This document groups critical SonarQube issues by filename and correlates simila
 - Line 17: Replace this macro by "const", "constexpr" or an "enum". [AZv-i582EDeY04BtENPj](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i582EDeY04BtENPj)
 
 ### Issue Type: Refactor this function to reduce its Cognitive Complexity
-- Line 246: Refactor this function to reduce its Cognitive Complexity from 70 to 25 allowed. [AZv-i582EDeY04BtENP5](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i582EDeY04BtENP5)
+- Line 246: Refactor this function to reduce its Cognitive Complexity from 70 to the 25 allowed. [AZv-i582EDeY04BtENP5](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i582EDeY04BtENP5)
 
 ### Issue Type: Refactor this code to not nest more than 3 if|for|do|while|switch statements
 - Line 283: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i582EDeY04BtENP6](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i582EDeY04BtENP6)
@@ -553,9 +846,179 @@ This document groups critical SonarQube issues by filename and correlates simila
 
 ---
 
+## File: EIDCardLibrary/CertificateUtilities.cpp
+
+### Issue Type: Use the "nullptr" literal
+- Line 127: Use the "nullptr" literal. [AZv-i6C5EDeY04BtEN-C](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6C5EDeY04BtEN-C)
+- Line 130: Use the "nullptr" literal. [AZv-i6C5EDeY04BtEN-D](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6C5EDeY04BtEN-D)
+
+### Issue Type: Refactor this code to not nest more than 3 if|for|do|while|switch statements
+- Line 338: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6C5EDeY04BtEN-G](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6C5EDeY04BtEN-G)
+- Line 343: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6C5EDeY04BtEN-J](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6C5EDeY04BtEN-J)
+- Line 346: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6C5EDeY04BtEN-K](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6C5EDeY04BtEN-K)
+
+### Issue Type: Replace this macro by "const", "constexpr" or an "enum"
+- Line 65: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6C5EDeY04BtEN92](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6C5EDeY04BtEN92)
+- Line 89: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6C5EDeY04BtEN97](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6C5EDeY04BtEN97)
+- Line 97: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6C5EDeY04BtEN98](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6C5EDeY04BtEN98)
+
+### Issue Type: Replace this use of "void *" with a more meaningful type
+- Line 101: Replace this use of "void *" with a more meaningful type. [AZv-i6C5EDeY04BtEN9-](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6C5EDeY04BtEN9-)
+- Line 112: Replace this use of "void *" with a more meaningful type. [AZv-i6C5EDeY04BtEN9_](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6C5EDeY04BtEN9_)
+
+---
+
+## File: EIDCardLibrary/GPO.cpp
+
+### Issue Type: Use the "nullptr" literal
+- Line 180: Use the "nullptr" literal. [AZv-i6DIEDeY04BtEOB_](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DIEDeY04BtEOB_)
+- Line 195: Use the "nullptr" literal. [AZv-i6DIEDeY04BtEOCG](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DIEDeY04BtEOCG)
+- Line 200: Use the "nullptr" literal. [AZv-i6DIEDeY04BtEOCH](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DIEDeY04BtEOCH)
+- Line 209: Use the "nullptr" literal. [AZv-i6DIEDeY04BtEOCI](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DIEDeY04BtEOCI)
+- Line 209: Use the "nullptr" literal. [AZv-i6DIEDeY04BtEOCK](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DIEDeY04BtEOCK)
+- Line 209: Use the "nullptr" literal. [AZv-i6DIEDeY04BtEOCL](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DIEDeY04BtEOCL)
+- Line 209: Use the "nullptr" literal. [AZv-i6DIEDeY04BtEOCM](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DIEDeY04BtEOCM)
+- Line 209: Use the "nullptr" literal. [AZv-i6DIEDeY04BtEOCN](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DIEDeY04BtEOCN)
+- Line 209: Use the "nullptr" literal. [AZv-i6DIEDeY04BtEOCO](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DIEDeY04BtEOCO)
+
+---
+
+## File: EIDCardLibrary/CompleteToken.cpp
+
+### Issue Type: Refactor this code to not nest more than 3 if|for|do|while|switch statements
+- Line 366: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6DeEDeY04BtEOEB](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DeEDeY04BtEOEB)
+
+### Issue Type: Use the "nullptr" literal
+- Line 54: Use the "nullptr" literal. [AZv-i6DeEDeY04BtEODT](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DeEDeY04BtEODT)
+- Line 53: Use the "nullptr" literal. [AZv-i6DeEDeY04BtEODS](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DeEDeY04BtEODS)
+- Line 250: Use the "nullptr" literal. [AZv-i6DeEDeY04BtEOD2](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DeEDeY04BtEOD2)
+- Line 246: Use the "nullptr" literal. [AZv-i6DeEDeY04BtEOD8](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DeEDeY04BtEOD8)
+- Line 263: Use the "nullptr" literal. [AZv-i6DeEDeY04BtEOD5](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DeEDeY04BtEOD5)
+- Line 246: Use the "nullptr" literal. [AZv-i6DeEDeY04BtEODz](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DeEDeY04BtEODz)
+- Line 300: Use the "nullptr" literal. [AZv-i6DeEDeY04BtEOD_](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DeEDeY04BtEOD_)
+- Line 310: Use the "nullptr" literal. [AZv-i6DeEDeY04BtEOED](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DeEDeY04BtEOED)
+- Line 313: Use the "nullptr" literal. [AZv-i6DeEDeY04BtEOEE](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DeEDeY04BtEOEE)
+
+### Issue Type: Replace this use of "void *" with a more meaningful type
+- Line 208: Replace this use of "void *" with a more meaningful type. [AZv-i6DeEDeY04BtEODV](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DeEDeY04BtEODV)
+- Line 204: Replace this use of "void *" with a more meaningful type. [AZv-i6DeEDeY04BtEODU](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DeEDeY04BtEODU)
+- Line 212: Replace this use of "void *" with a more meaningful type. [AZv-i6DeEDeY04BtEODW](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DeEDeY04BtEODW)
+
+---
+
+## File: EIDCardLibrary/EIDCardLibrary.h
+
+### Issue Type: Replace this macro by "const", "constexpr" or an "enum"
+- Line 26: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6DpEDeY04BtEOET](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DpEDeY04BtEOET)
+- Line 25: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6DpEDeY04BtEOES](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DpEDeY04BtEOES)
+- Line 30: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6DpEDeY04BtEOEU](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DpEDeY04BtEOEU)
+- Line 181: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6DpEDeY04BtEOEX](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DpEDeY04BtEOEX)
+- Line 235: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6DpEDeY04BtEOEY](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DpEDeY04BtEOEY)
+- Line 236: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6DpEDeY04BtEOEZ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DpEDeY04BtEOEZ)
+
+---
+
+## File: EIDCardLibrary/CSmartCardNotifier.cpp
+
+### Issue Type: C-style cast removing const qualification from type of a pointer may lead to an undefined behaviour
+- Line 459: C-style cast removing const qualification from type of a pointer may lead to an undefined behaviour. [AZv-i6GhEDeY04BtEOUy](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUy)
+
+### Issue Type: Refactor this code to not nest more than 3 if|for|do|while|switch statements
+- Line 431: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6GhEDeY04BtEOUi](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUi)
+- Line 251: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6GhEDeY04BtEOUW](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUW)
+- Line 365: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6GhEDeY04BtEOUs](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUs)
+- Line 236: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6GhEDeY04BtEOUU](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUU)
+- Line 353: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6GhEDeY04BtEOUp](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUp)
+
+### Issue Type: Use the "nullptr" literal
+- Line 161: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOUD](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUD)
+- Line 193: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOUL](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUL)
+- Line 131: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOU0](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOU0)
+- Line 425: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOUh](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUh)
+- Line 328: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOUf](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUf)
+- Line 395: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOUG](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUG)
+- Line 300: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOUc](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUc)
+- Line 319: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOUE](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUE)
+- Line 366: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOUt](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOUt)
+- Line 298: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOT-](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOT-)
+- Line 99: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOT0](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOT0)
+- Line 227: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOT9](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOT9)
+- Line 118: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOT4](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOT4)
+- Line 105: Use the "nullptr" literal. [AZv-i6GhEDeY04BtEOTv](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6GhEDeY04BtEOTv)
+
+---
+
+## File: EIDCardLibrary/CContainerHolderFactory.cpp
+
+### Issue Type: Refactor this code to not nest more than 3 if|for|do|while|switch statements
+- Line 276: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6DTEDeY04BtEOC2](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DTEDeY04BtEOC2)
+- Line 277: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6DTEDeY04BtEOC3](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DTEDeY04BtEOC3)
+- Line 154: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6DTEDeY04BtEOCk](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DTEDeY04BtEOCk)
+- Line 301: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6DTEDeY04BtEOC6](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DTEDeY04BtEOC6)
+- Line 214: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6DTEDeY04BtEOCY](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DTEDeY04BtEOCY)
+
+### Issue Type: Use the "nullptr" literal
+- Line 458: Use the "nullptr" literal. [AZv-i6DTEDeY04BtEOCv](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DTEDeY04BtEOCv)
+
+### Issue Type: Replace this use of "void *" with a more meaningful type
+- Line 122: Replace this use of "void *" with a more meaningful type. [AZv-i6DTEDeY04BtEOCg](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DTEDeY04BtEOCg)
+- Line 238: Replace this use of "void *" with a more meaningful type. [AZv-i6DTEDeY04BtEOCp](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DTEDeY04BtEOCp)
+- Line 241: Replace this use of "void *" with a more meaningful type. [AZv-i6DTEDeY04BtEOCr](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DTEDeY04BtEOCr)
+- Line 239: Replace this use of "void *" with a more meaningful type. [AZv-i6DTEDeY04BtEOCq](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DTEDeY04BtEOCq)
+- Line 249: Replace this use of "void *" with a more meaningful type. [AZv-i6DTEDeY04BtEOCs](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DTEDeY04BtEOCs)
+- Line 173: Replace this use of "void *" with a more meaningful type. [AZv-i6DTEDeY04BtEOCX](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DTEDeY04BtEOCX)
+- Line 258: Replace this use of "void *" with a more meaningful type. [AZv-i6DTEDeY04BtEOCW](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6DTEDeY04BtEOCW)
+
+---
+
+## File: EIDCardLibrary/Registration.cpp
+
+### Issue Type: Refactor this code to not nest more than 3 if|for|do|while|switch statements
+- Line 300: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6D1EDeY04BtEOFY](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFY)
+- Line 303: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6D1EDeY04BtEOFZ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFZ)
+
+### Issue Type: Use the "nullptr" literal
+- Line 554: Use the "nullptr" literal. [AZv-i6D1EDeY04BtEOFo](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFo)
+- Line 554: Use the "nullptr" literal. [AZv-i6D1EDeY04BtEOFn](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFn)
+- Line 550: Use the "nullptr" literal. [AZv-i6D1EDeY04BtEOFm](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFm)
+- Line 554: Use the "nullptr" literal. [AZv-i6D1EDeY04BtEOFP](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFP)
+- Line 529: Use the "nullptr" literal. [AZv-i6D1EDeY04BtEOFL](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFL)
+- Line 105: Use the "nullptr" literal. [AZv-i6D1EDeY04BtEOFJ](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFJ)
+- Line 109: Use the "nullptr" literal. [AZv-i6D1EDeY04BtEOFK](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFK)
+- Line 104: Use the "nullptr" literal. [AZv-i6D1EDeY04BtEOFI](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFI)
+- Line 334: Use the "nullptr" literal. [AZv-i6D1EDeY04BtEOFD](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFD)
+- Line 353: Use the "nullptr" literal. [AZv-i6D1EDeY04BtEOFe](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFe)
+- Line 349: Use the "nullptr" literal. [AZv-i6D1EDeY04BtEOFc](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFc)
+- Line 309: Use the "nullptr" literal. [AZv-i6D1EDeY04BtEOFb](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFb)
+- Line 331: Use the "nullptr" literal. [AZv-i6D1EDeY04BtEOFc](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6D1EDeY04BtEOFc)
+
+
+## File: EIDCardLibrary/StoredCredentialManagement.cpp
+
+### Issue Type: Use the "nullptr" literal
+- Line 58: Use the "nullptr" literal. [AZv-i6E0EDeY04BtEOJ1](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6E0EDeY04BtEOJ1)
+- Line 89: Use the "nullptr" literal. [AZv-i6E0EDeY04BtEOJ-](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6E0EDeY04BtEOJ-)
+- Line 66: Use the "nullptr" literal. [AZv-i6E0EDeY04BtEOJ5](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6E0EDeY04BtEOJ5)
+- Line 63: Use the "nullptr" literal. [AZv-i6E0EDeY04BtEOJ4](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6E0EDeY04BtEOJ4)
+
+### Issue Type: Refactor this code to not nest more than 3 if|for|do|while|switch statements
+- Line 103: Refactor this code to not nest more than 3 if|for|do|while|switch statements. [AZv-i6E0EDeY04BtEOJ2](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6E0EDeY04BtEOJ2)
+
+---
+
+## File: EIDCardLibrary/CredentialManagement.cpp
+
+### Issue Type: Global variables should be const
+- Line 25: Global variables should be const. [AZv-i6ECEDeY04BtEOF_](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6ECEDeY04BtEOF_)
+
+### Issue Type: Replace this macro by "const", "constexpr" or an "enum"
+- Line 2: Replace this macro by "const", "constexpr" or an "enum". [AZv-i6EBEDeY04BtEOFt](https://sonarcloud.io/project/issues?id=DangerDawgAU_EIDAuthentication&open=AZv-i6EBEDeY04BtEOFt)
+
+---
+
 ## Summary Statistics
 
-- **Total Files with Issues:** 12
+- **Total Files with Issues:** 19
 - **Total Unique Issue Types:** 6
 - **Most Common Issue Types:**
   - Use the "nullptr" literal: 32 occurrences
