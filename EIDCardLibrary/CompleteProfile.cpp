@@ -71,8 +71,8 @@ NTSTATUS UserNameToProfile(__in PLSA_UNICODE_STRING AccountName,
 	// fill info into a dummy structure
 	EID_INTERACTIVE_PROFILE MyProfileBuffer;
 	MyProfileBuffer.MessageType = EIDInteractiveProfile;
-	PUSER_INFO_4 pUserInfo = NULL;
-	Status=NetUserGetInfo(NULL, UserName, 4, (LPBYTE*)&pUserInfo);
+	PUSER_INFO_4 pUserInfo = nullptr;
+	Status=NetUserGetInfo(nullptr, UserName, 4, (LPBYTE*)&pUserInfo);
 	if (Status!=0)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"No NetUserGetInfo 0x%08X",Status);
@@ -133,7 +133,7 @@ NTSTATUS UserNameToProfile(__in PLSA_UNICODE_STRING AccountName,
 	Offset = (PBYTE)*ProfileBuffer + sizeof(EID_INTERACTIVE_PROFILE);
 	// copy string to client buffer
 	#define MYMACRO(MYSTRING1,MYSTRING2) \
-	MYSTRING1.Buffer = (MYSTRING1.MaximumLength?(PWSTR)Offset:NULL); \
+	MYSTRING1.Buffer = (MYSTRING1.MaximumLength?(PWSTR)Offset:nullptr); \
 	if (MYSTRING1.MaximumLength) { \
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"%s = '%s'", TEXT(#MYSTRING1), MYSTRING2); \
 		FunctionTable->CopyToClientBuffer(ClientRequest,MYSTRING1.MaximumLength,Offset,MYSTRING2); \

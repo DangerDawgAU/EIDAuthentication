@@ -30,10 +30,10 @@
 PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 {
 	// for TS Smart Card redirection
-	PCCERT_CONTEXT pCertContext = NULL;
+	PCCERT_CONTEXT pCertContext = nullptr;
 	EIDImpersonate();
 	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"GetCertificateFromCspInfo");
-	HCRYPTPROV hProv = NULL;
+	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
 	DWORD dwError = 0;
 
 	// SECURITY FIX #143: Validate CSP info offsets before use (CWE-125/CWE-20)
@@ -46,7 +46,7 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 		EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"GetCertificateFromCspInfo: Invalid CSP info offset - dwCspInfoLen=%u, nContainerNameOffset=%u, nCSPNameOffset=%u",
 			pCspInfo->dwCspInfoLen, pCspInfo->nContainerNameOffset, pCspInfo->nCSPNameOffset);
 		EIDRevertToSelf();
-		return NULL;
+		return nullptr;
 	}
 
 	BYTE Data[4096];
@@ -55,7 +55,7 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 	LPTSTR szProviderName = pCspInfo->bBuffer + pCspInfo->nCSPNameOffset;
 //	LPTSTR szReaderName = pCspInfo->bBuffer + pCspInfo->nReaderNameOffset;
 //	LPTSTR szCardName = pCspInfo->bBuffer + pCspInfo->nCardNameOffset;
-	HCRYPTKEY phUserKey = NULL;
+	HCRYPTKEY phUserKey = NULL;  // Windows handle type - keep as NULL
 	BOOL fResult;
 	BOOL fSuccess = FALSE;
 	__try
@@ -79,7 +79,7 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptAcquireContext : 0x%08x container='%s' provider='%s'",GetLastError(),szContainerName,szProviderName);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"PIV fallback");
-			fResult = CryptAcquireContext(&hProv,NULL,szProviderName,PROV_RSA_FULL, CRYPT_SILENT);
+			fResult = CryptAcquireContext(&hProv,nullptr,szProviderName,PROV_RSA_FULL, CRYPT_SILENT);
 			if (!fResult)
 			{
 				dwError = GetLastError();
@@ -135,7 +135,7 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 			__leave;
 		}
 		// important : the hprov will be freed if the certificatecontext is freed, and that's a problem
-		if (!CryptContextAddRef(hProv, NULL, 0))
+		if (!CryptContextAddRef(hProv, nullptr, 0))
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptContextAddRef 0x%08x",dwError);
@@ -151,7 +151,7 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 			if (pCertContext) 
 			{
 				CertFreeCertificateContext(pCertContext);
-				pCertContext = NULL;
+				pCertContext = nullptr;
 			}
 		}
 		if (phUserKey)
@@ -168,7 +168,7 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 #define ERRORTOTEXT(ERROR) case ERROR: pszName = TEXT(#ERROR);                 break;
 LPCTSTR GetTrustErrorText(DWORD Status)
 {
-    LPCTSTR pszName = NULL;
+    LPCTSTR pszName = nullptr;
     switch(Status)
     {
 		ERRORTOTEXT(CERT_E_EXPIRED)
@@ -201,7 +201,7 @@ LPCTSTR GetTrustErrorText(DWORD Status)
 		ERRORTOTEXT(CERT_TRUST_CTL_IS_NOT_SIGNATURE_VALID)
 		ERRORTOTEXT(CERT_TRUST_CTL_IS_NOT_VALID_FOR_USAGE)
 		default:                            
-			pszName = NULL;                      break;
+			pszName = nullptr;                      break;
     }
 	return pszName;
 } 
@@ -212,13 +212,13 @@ BOOL HasCertificateRightEKU(__in PCCERT_CONTEXT pCertContext)
 {
 	BOOL fValidation = FALSE;
 	DWORD dwError = 0, dwSize = 0, dwI;
-	PCERT_ENHKEY_USAGE		 pCertUsage        = NULL;
+	PCERT_ENHKEY_USAGE		 pCertUsage        = nullptr;
 	__try
 	{
 		if (!GetPolicyValue(AllowCertificatesWithNoEKU))
 		{
 			// check EKU SmartCardLogon
-			if (!CertGetEnhancedKeyUsage(pCertContext, 0, NULL, &dwSize))
+			if (!CertGetEnhancedKeyUsage(pCertContext, 0, nullptr, &dwSize))
 			{
 				dwError = GetLastError();
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CertGetEnhancedKeyUsage", GetLastError());
@@ -270,7 +270,7 @@ BOOL IsCertificateInComputerTrustedPeopleStore(__in PCCERT_CONTEXT pCertContext)
 	if (hTrustedPeople)
 	{
 					
-		PCCERT_CONTEXT pCertificateFound = CertFindCertificateInStore(hTrustedPeople, pCertContext->dwCertEncodingType, 0, CERT_FIND_EXISTING, pCertContext, NULL);
+		PCCERT_CONTEXT pCertificateFound = CertFindCertificateInStore(hTrustedPeople, pCertContext->dwCertEncodingType, 0, CERT_FIND_EXISTING, pCertContext, nullptr);
 		if (pCertificateFound)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Certificate found in trusted people store");
@@ -293,7 +293,7 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
     //
 	BOOL fValidation = FALSE;
 
-	PCCERT_CHAIN_CONTEXT     pChainContext     = NULL;
+	PCCERT_CHAIN_CONTEXT     pChainContext     = nullptr;
 	CERT_ENHKEY_USAGE        EnhkeyUsage       = {0};
 	CERT_USAGE_MATCH         CertUsage         = {0};  
 	CERT_CHAIN_PARA          ChainPara         = {0};
@@ -305,7 +305,7 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 	//---------------------------------------------------------
     // Initialize data structures for chain building.
 	EnhkeyUsage.cUsageIdentifier = 0;
-	EnhkeyUsage.rgpszUsageIdentifier=NULL;
+	EnhkeyUsage.rgpszUsageIdentifier=nullptr;
 	CertUsage.dwType = USAGE_MATCH_TYPE_AND;
     CertUsage.Usage  = EnhkeyUsage;
 
@@ -348,7 +348,7 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 		DWORD dwChainFlags = CERT_CHAIN_ENABLE_PEER_TRUST;
 
 		if(!CertGetCertificateChain(
-			hChainEngine,pCertContext,NULL,NULL,&ChainPara,dwChainFlags,NULL,&pChainContext))
+			hChainEngine,pCertContext,nullptr,nullptr,&ChainPara,dwChainFlags,nullptr,&pChainContext))
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CertGetCertificateChain", GetLastError());
@@ -360,7 +360,7 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 		#define MAX_CHAIN_DEPTH 5
 		if (pChainContext->cChain > 0 && pChainContext->rgpChain[0]->cElement > MAX_CHAIN_DEPTH)
 		{
-			dwError = CERT_E_CHAINING;
+			dwError = static_cast<DWORD>(CERT_E_CHAINING);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Certificate chain depth %d exceeds maximum %d", pChainContext->rgpChain[0]->cElement, MAX_CHAIN_DEPTH);
 			__leave;
 		}
@@ -419,10 +419,10 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Chain validated");
 
 		// Always enforce time validity - expired certificates must not authenticate
-		LPFILETIME pTimeToVerify = NULL;
+		LPFILETIME pTimeToVerify = nullptr;
 		if (CertVerifyTimeValidity(pTimeToVerify, pCertContext->pCertInfo))
 		{
-			dwError = CERT_E_EXPIRED;
+			dwError = static_cast<DWORD>(CERT_E_EXPIRED);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Certificate time validity check failed");
 			__leave;
 		}
@@ -445,16 +445,16 @@ BOOL MakeTrustedCertifcate(PCCERT_CONTEXT pCertContext)
 {
 
 	BOOL fReturn = FALSE;
-	PCCERT_CHAIN_CONTEXT     pChainContext     = NULL;
+	PCCERT_CHAIN_CONTEXT     pChainContext     = nullptr;
 	CERT_ENHKEY_USAGE        EnhkeyUsage       = {0};
 	CERT_USAGE_MATCH         CertUsage         = {0};  
 	CERT_CHAIN_PARA          ChainPara         = {0};
 	CERT_CHAIN_POLICY_PARA   ChainPolicy       = {0};
 	CERT_CHAIN_POLICY_STATUS PolicyStatus      = {0};
 	LPSTR					szOid;
-	HCERTSTORE hRootStore = NULL;
-	HCERTSTORE hTrustStore = NULL;
-	HCERTSTORE hTrustedPeople = NULL;
+	HCERTSTORE hRootStore = nullptr;
+	HCERTSTORE hTrustStore = nullptr;
+	HCERTSTORE hTrustedPeople = nullptr;
 	// because machine cert are trusted by user,
 	// build the chain in user context (if used certifcates are trusted only by the user
 	// - think about program running in user space)
@@ -467,7 +467,7 @@ BOOL MakeTrustedCertifcate(PCCERT_CONTEXT pCertContext)
 	if (GetPolicyValue(AllowCertificatesWithNoEKU))
 	{
 		EnhkeyUsage.cUsageIdentifier = 0;
-		EnhkeyUsage.rgpszUsageIdentifier=NULL;
+		EnhkeyUsage.rgpszUsageIdentifier=nullptr;
 	}
 	else
 	{
@@ -495,7 +495,7 @@ BOOL MakeTrustedCertifcate(PCCERT_CONTEXT pCertContext)
     // Build a chain using CertGetCertificateChain
     __try
 	{
-		fReturn = CertGetCertificateChain(hChainEngine,pCertContext,NULL,NULL,&ChainPara,CERT_CHAIN_ENABLE_PEER_TRUST,NULL,&pChainContext);
+		fReturn = CertGetCertificateChain(hChainEngine,pCertContext,nullptr,nullptr,&ChainPara,CERT_CHAIN_ENABLE_PEER_TRUST,nullptr,&pChainContext);
 		if (!fReturn)
 		{
 			dwError = GetLastError();
@@ -516,7 +516,7 @@ BOOL MakeTrustedCertifcate(PCCERT_CONTEXT pCertContext)
 			}
 			fReturn = CertAddCertificateContextToStore(hTrustedPeople,
 					pChainContext->rgpChain[pChainContext->cChain -1]->rgpElement[0]->pCertContext,
-					CERT_STORE_ADD_USE_EXISTING,NULL);
+					CERT_STORE_ADD_USE_EXISTING,nullptr);
 		}
 		else
 		{
@@ -543,14 +543,14 @@ BOOL MakeTrustedCertifcate(PCCERT_CONTEXT pCertContext)
 					// second & so on don't have to be trusted
 					fReturn = CertAddCertificateContextToStore(hTrustStore,
 						pChainContext->rgpChain[pChainContext->cChain -1]->rgpElement[i]->pCertContext,
-						CERT_STORE_ADD_USE_EXISTING,NULL);
+						CERT_STORE_ADD_USE_EXISTING,nullptr);
 				}
 				else
 				{
 					// first must be trusted
 					fReturn = CertAddCertificateContextToStore(hRootStore,
 						pChainContext->rgpChain[pChainContext->cChain -1]->rgpElement[i]->pCertContext,
-						CERT_STORE_ADD_USE_EXISTING,NULL);
+						CERT_STORE_ADD_USE_EXISTING,nullptr);
 				}
 				if (!fReturn)
 				{
@@ -581,7 +581,7 @@ BOOL MakeTrustedCertifcate(PCCERT_CONTEXT pCertContext)
 // This prevents malicious certificates from loading arbitrary code via CSP injection
 BOOL IsAllowedCSPProvider(__in LPCWSTR pwszProviderName)
 {
-	if (pwszProviderName == NULL)
+	if (pwszProviderName == nullptr)
 	{
 		EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"CSP validation failed: NULL provider name");
 		return FALSE;
@@ -606,11 +606,11 @@ BOOL IsAllowedCSPProvider(__in LPCWSTR pwszProviderName)
 		L"YubiKey Smart Card Minidriver",
 		L"Feitian ePass CSP",
 		// NULL terminator
-		NULL
+		nullptr
 	};
 
 	// Check if the provider matches any in the whitelist
-	for (int i = 0; AllowedProviders[i] != NULL; i++)
+	for (int i = 0; AllowedProviders[i] != nullptr; i++)
 	{
 		if (_wcsicmp(pwszProviderName, AllowedProviders[i]) == 0)
 		{

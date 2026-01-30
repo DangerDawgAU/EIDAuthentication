@@ -39,12 +39,12 @@ static CredentialLockInitializer g_CredentialLockInit;
 
 CCredential* CCredential::CreateCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_INFO pCertInfo,PWSTR szPin, ULONG CredentialUseFlags)
 {
-	CCredential* credential = NULL;
+	CCredential* credential = nullptr;
 
 	if (!LogonIdToUse)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"LogonIdToUse NULL");
-		return NULL;
+		return nullptr;
 	}
 
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"new Credential");
@@ -68,7 +68,7 @@ CCredential::CCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_INFO pCertInfo,PWS
 	else
 	{
 		_dwLen = 0;
-		_szPin = NULL;
+		_szPin = nullptr;
 	}
 	_LogonId = *LogonIdToUse;
 	Use = CredentialUseFlags;
@@ -84,7 +84,7 @@ CCredential::CCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_INFO pCertInfo,PWS
 	}
 	else
 	{
-		_pCertInfo = NULL;
+		_pCertInfo = nullptr;
 	}
 
 }
@@ -105,7 +105,7 @@ CCredential::~CCredential()
 BOOL CCredential::Delete(ULONG_PTR phCredential)
 {
 	CCredential* testedCredential = (CCredential*) phCredential;
-	CCredential* toDelete = NULL;
+	CCredential* toDelete = nullptr;
 
 	EnterCriticalSection(&g_CredentialLock);
 	std::set<CCredential*>::iterator iter;
@@ -132,7 +132,7 @@ BOOL CCredential::Delete(ULONG_PTR phCredential)
 CCredential* CCredential::GetCredentialFromHandle(ULONG_PTR CredentialHandle)
 {
 	CCredential* pCredential = (CCredential*) CredentialHandle;
-	CCredential* result = NULL;
+	CCredential* result = nullptr;
 
 	EnterCriticalSection(&g_CredentialLock);
 	std::set<CCredential*>::iterator iter;
@@ -156,16 +156,16 @@ CCredential* CCredential::GetCredentialFromHandle(ULONG_PTR CredentialHandle)
 
 PTSTR CCredential::GetName()
 {
-	return NULL;
+	return nullptr;
 }
 
 CSecurityContext* CSecurityContext::CreateContext(CCredential* pCredential)
 {
-	CSecurityContext* context = NULL;
+	CSecurityContext* context = nullptr;
 	if (!pCredential)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pCredential NULL");
-		return NULL;
+		return nullptr;
 	}
 	context = new CSecurityContext(pCredential);
 
@@ -181,13 +181,13 @@ CSecurityContext::CSecurityContext(CCredential* pCredential)
 {
 	_pCredential = pCredential;
 	_State = EIDMSNone;
-	pbChallenge = NULL;
-	pbResponse = NULL;
+	pbChallenge = nullptr;
+	pbResponse = nullptr;
 	dwChallengeSize = 0;
 	dwResponseSize = 0;
 	dwRid = 0;
-	pCertContext = NULL;
-	szUserName = NULL;
+	pCertContext = nullptr;
+	szUserName = nullptr;
 	if (pCredential)
 	{
 		if (pCredential->_pCertInfo)
@@ -203,7 +203,7 @@ CSecurityContext::CSecurityContext(CCredential* pCredential)
 BOOL CSecurityContext::Delete(ULONG_PTR phContext)
 {
 	CSecurityContext* testedContext = (CSecurityContext*) phContext;
-	CSecurityContext* toDelete = NULL;
+	CSecurityContext* toDelete = nullptr;
 
 	EnterCriticalSection(&g_CredentialLock);
 	std::list<CSecurityContext*>::iterator iter;
@@ -230,7 +230,7 @@ BOOL CSecurityContext::Delete(ULONG_PTR phContext)
 CSecurityContext* CSecurityContext::GetContextFromHandle(ULONG_PTR context)
 {
 	CSecurityContext* testedContext = (CSecurityContext*) context;
-	CSecurityContext* result = NULL;
+	CSecurityContext* result = nullptr;
 
 	EnterCriticalSection(&g_CredentialLock);
 	std::list<CSecurityContext*>::iterator iter;
@@ -362,7 +362,7 @@ NTSTATUS CSecurityContext::ReceiveNegociateMessage(PSecBufferDesc Buffer)
 NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 {
 	DWORD dwEntriesRead, dwTotalEntries, dwI;
-	USER_INFO_3 *pInfo = NULL;
+	USER_INFO_3 *pInfo = nullptr;
 	NTSTATUS Status = STATUS_SUCCESS;
 	__try
 	{
@@ -386,7 +386,7 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 			__leave;
 		}
 		// get username
-		Status = NetUserEnum(NULL, 3, 0, (PBYTE*)&pInfo, MAX_PREFERRED_LENGTH, &dwEntriesRead,&dwTotalEntries, NULL);
+		Status = NetUserEnum(nullptr, 3, 0, (PBYTE*)&pInfo, MAX_PREFERRED_LENGTH, &dwEntriesRead,&dwTotalEntries, nullptr);
 		if (Status != NERR_Success)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"NetUserEnum = 0x%08X",Status);
@@ -524,10 +524,10 @@ DWORD CSecurityContext::GetRid()
 
 PWSTR CSecurityContext::GetUserName()
 {
-	PWSTR szString = NULL;
+	PWSTR szString = nullptr;
 	if (!szUserName)
-		return NULL;
-	if (!szString) return NULL;
+		return nullptr;
+	if (!szString) return nullptr;
 	DWORD dwLen = (DWORD) wcslen(szString) + 1;
 	szString = (PWSTR) EIDAlloc(dwLen * sizeof(WCHAR));
 	
@@ -611,7 +611,7 @@ CUsermodeContext* CUsermodeContext::GetContextFromHandle(ULONG_PTR pHandle)
 	if (it == UserModeContexts.end())
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Context not found = 0x%08X", pHandle);
-		return NULL;
+		return nullptr;
 	}
 	else
 	{

@@ -126,7 +126,7 @@ BOOL AskPin(__out PWSTR szPin, __in PWSTR szReader,__in PWSTR szCard)
 	credUiInfo.cbSize = sizeof(credUiInfo);
 	credUiInfo.pszCaptionText = TEXT("test");
 	credUiInfo.pszMessageText = TEXT("test");
-	credUiInfo.hbmBanner = NULL;
+	credUiInfo.hbmBanner = nullptr;
 	credUiInfo.hwndParent = hMainWnd;
 	ULONG authPackage = 0xffffeb34;
 	LPVOID authBuffer;
@@ -153,7 +153,7 @@ BOOL AskPin(__out PWSTR szPin, __in PWSTR szReader,__in PWSTR szCard)
 		}
 		// get provider name
 	
-		lCardStatus = SCardEstablishContext(SCARD_SCOPE_USER,NULL,NULL,&hSCardContext);
+		lCardStatus = SCardEstablishContext(SCARD_SCOPE_USER,nullptr,nullptr,&hSCardContext);
 		if (SCARD_S_SUCCESS != lCardStatus)
 		{
 			dwError = lCardStatus;
@@ -210,8 +210,8 @@ BOOL AskPin(__out PWSTR szPin, __in PWSTR szReader,__in PWSTR szCard)
 		
 
 		CoInitializeEx(NULL,COINIT_APARTMENTTHREADED); 
-		DWORD result = CredUIPromptForWindowsCredentials(&(credUiInfo), 0, &(authPackage), 
-						pRequest, dwTotalSize, &authBuffer, &authBufferSize, NULL, CREDUIWIN_IN_CRED_ONLY);
+		DWORD result = CredUIPromptForWindowsCredentials(&(credUiInfo), 0, &(authPackage),
+						pRequest, dwTotalSize, &authBuffer, &authBufferSize, nullptr, CREDUIWIN_IN_CRED_ONLY);
 		if (result != ERROR_SUCCESS)
 		{
 			dwError = result;
@@ -277,8 +277,8 @@ private:
 
 PCCERT_CONTEXT SelectCert(__in LPCWSTR szReader,__in LPCWSTR szCard)
 {
-	HCERTSTORE hStore = NULL;
-	PCCERT_CONTEXT pReturnedContext = NULL, pSelectedContext = NULL;
+	HCERTSTORE hStore = nullptr;
+	PCCERT_CONTEXT pReturnedContext = nullptr, pSelectedContext = nullptr;
 	CContainerHolderFactory<CMyCertificate> MyCertificateList;
 	MyCertificateList.SetUsageScenario(CPUS_INVALID, 0);
 	MyCertificateList.ConnectNotification(szReader,szCard,0);
@@ -372,14 +372,14 @@ PCCERT_CONTEXT SelectCerts(__in LPCWSTR szReaderName,__in LPCWSTR szCardName,
 	{
 		if (!SchGetProviderNameFromCardName(szCardName, szOutProviderName, &dwOutProviderLength))
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		size_t ulNameLen = _tcslen(szReaderName);
 		szMainContainerName = (LPWSTR) EIDAlloc((DWORD)(ulNameLen + 6) * sizeof(WCHAR));
 		if (!szMainContainerName)
 		{
-			return NULL;
+			return nullptr;
 		}
 		swprintf_s(szMainContainerName,(ulNameLen + 6), L"\\\\.\\%s\\", szReaderName);
 
@@ -719,11 +719,13 @@ static BOOL CALLBACK SelectCertificateInfoCallBack(HWND hwndDlg, UINT message, W
 					switch ((DWORD) SendDlgItemMessage(hwndDlg,IDC_KEYSIZE,CB_GETCURSEL, 0, 0))
 					{
 					case 0:
-					default:
 						_pCertificateInfo->dwKeySizeInBits = 1024;
 						break;
 					case 1:
 						_pCertificateInfo->dwKeySizeInBits = 2048;
+						break;
+					default:
+						_pCertificateInfo->dwKeySizeInBits = 1024;
 						break;
 					}
 					_pCertificateInfo->dwSaveon = (DWORD) SendDlgItemMessage(hwndDlg,IDC_SAVEON,CB_GETCURSEL, 0, 0);
@@ -882,8 +884,8 @@ DWORD WINAPI WindowThreadTracing(LPVOID lpParameter)
 HWND CreateDialogTracing(TracingWindowsCallback *ponDestroy)
 {
 	onDestroy = ponDestroy;
-	hEvent = CreateEvent(NULL,FALSE,FALSE,NULL);
-	hThread = CreateThread(NULL, 0, WindowThreadTracing, NULL, 0, NULL);
+	hEvent = CreateEvent(nullptr,FALSE,FALSE,nullptr);
+	hThread = CreateThread(nullptr, 0, WindowThreadTracing, nullptr, 0, nullptr);
 	WaitForSingleObject(hEvent, INFINITE);
 	return hTracing;
 }

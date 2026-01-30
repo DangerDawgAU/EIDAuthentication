@@ -96,17 +96,17 @@ void menu_CREDENTIAL_CspInfo()
 						certViewInfo.pCertContext = pCertContext;
 						certViewInfo.cPurposes = 0;
 						certViewInfo.rgszPurposes = 0;
-						certViewInfo.pCryptProviderData = NULL;
-						certViewInfo.hWVTStateData = NULL;
+						certViewInfo.pCryptProviderData = nullptr;
+						certViewInfo.hWVTStateData = nullptr;
 						certViewInfo.fpCryptProviderDataTrustedUsage = FALSE;
 						certViewInfo.idxSigner = 0;
 						certViewInfo.idxCert = 0;
 						certViewInfo.fCounterSigner = FALSE;
 						certViewInfo.idxCounterSigner = 0;
 						certViewInfo.cStores = 0;
-						certViewInfo.rghStores = NULL;
+						certViewInfo.rghStores = nullptr;
 						certViewInfo.cPropSheetPages = 0;
-						certViewInfo.rgPropSheetPages = NULL;
+						certViewInfo.rgPropSheetPages = nullptr;
 						certViewInfo.nStartPage = 0;
 
 						CryptUIDlgViewCertificate(&certViewInfo,&fPropertiesChanged);
@@ -148,7 +148,7 @@ void menu_CREDENTIAL_AllocateLogonStruct()
 			{
 				PEID_INTERACTIVE_LOGON pLogonStruct;
 				CContainerHolderTest* MyTest = MyCredentialList.GetContainerHolderAt(dwI);
-				pLogonStruct = MyTest->GetContainer()->AllocateLogonStruct(L"123", NULL);
+				pLogonStruct = MyTest->GetContainer()->AllocateLogonStruct(L"123", nullptr);
 				if (pLogonStruct)
 				{
 					EIDFree(pLogonStruct);

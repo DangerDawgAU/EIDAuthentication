@@ -20,10 +20,10 @@
 //
 static HMODULE SafeLoadLibrary(__in LPCWSTR wszModulePath)
 {
-    if (wszModulePath == NULL || wszModulePath[0] == L'\0')
+    if (wszModulePath == nullptr || wszModulePath[0] == L'\0')
     {
         SetLastError(ERROR_INVALID_PARAMETER);
-        return NULL;
+        return nullptr;
     }
 
     // Set DLL directory to empty string to remove current directory from search path
@@ -39,7 +39,7 @@ static HMODULE SafeLoadLibrary(__in LPCWSTR wszModulePath)
     {
         // For absolute paths, use LoadLibraryExW with LOAD_WITH_ALTERED_SEARCH_PATH
         // to ensure DLL dependencies are loaded from the same directory
-        return LoadLibraryExW(wszModulePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+        return LoadLibraryExW(wszModulePath, nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
     }
     else
     {
@@ -48,18 +48,18 @@ static HMODULE SafeLoadLibrary(__in LPCWSTR wszModulePath)
         WCHAR wszSystem32Path[MAX_PATH];
         if (GetSystemDirectoryW(wszSystem32Path, ARRAYSIZE(wszSystem32Path)) == 0)
         {
-            return NULL;
+            return nullptr;
         }
 
         WCHAR wszFullPath[MAX_PATH];
         if (FAILED(StringCchPrintfW(wszFullPath, ARRAYSIZE(wszFullPath), L"%s\\%s", wszSystem32Path, wszModulePath)))
         {
             SetLastError(ERROR_BUFFER_OVERFLOW);
-            return NULL;
+            return nullptr;
         }
 
         EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"SafeLoadLibrary: Loading '%s' from System32", wszModulePath);
-        return LoadLibraryExW(wszFullPath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+        return LoadLibraryExW(wszFullPath, nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
     }
 }
 //
@@ -104,7 +104,7 @@ typedef struct _INTERNAL_CONTEXT
 }
 
 #define CHECK_ALLOC(_X) {                                                   \
-    if (NULL == (_X)) {                                                     \
+    if (nullptr == (_X)) {                                                     \
         status = ERROR_NOT_ENOUGH_MEMORY;                                   \
         __leave;                                                            \
     }                                                                       \
@@ -203,14 +203,14 @@ WINAPI
 _FreeManagedContext(
     __inout         PINTERNAL_CONTEXT pInternal)
 {
-    if (NULL == pInternal)
+    if (nullptr == pInternal)
         return;
 
-    if (NULL != pInternal->hModule)
+    if (nullptr != pInternal->hModule)
         FreeLibrary(pInternal->hModule);
-    if (NULL != pInternal->CardData.pbAtr)
+    if (nullptr != pInternal->CardData.pbAtr)
         _Free(pInternal->CardData.pbAtr);
-    if (NULL != pInternal->CardData.pwszCardName)
+    if (nullptr != pInternal->CardData.pwszCardName)
         _Free(pInternal->CardData.pwszCardName);
 
     _Free(pInternal);
@@ -235,13 +235,13 @@ DWORD MgScCardAcquireContext(
     __in                        DWORD dwFlags)
 {
     DWORD status = ERROR_SUCCESS;
-    LPWSTR wszCardModule = NULL;
+    LPWSTR wszCardModule = nullptr;
     DWORD cchCardModule = SCARD_AUTOALLOCATE;
-    PINTERNAL_CONTEXT pInternal = NULL;
-    PFN_CARD_ACQUIRE_CONTEXT pfnCardAcquireContext = NULL;
+    PINTERNAL_CONTEXT pInternal = nullptr;
+    PFN_CARD_ACQUIRE_CONTEXT pfnCardAcquireContext = nullptr;
     DWORD cch = 0;
 
-    pMgSc->pvContext = NULL;
+    pMgSc->pvContext = nullptr;
 
     __try
     {
@@ -269,14 +269,14 @@ DWORD MgScCardAcquireContext(
         // Security: Use SafeLoadLibrary to prevent DLL hijacking attacks
         //
 
-        if (NULL == (pInternal->hModule = SafeLoadLibrary(wszCardModule)))
+        if (nullptr == (pInternal->hModule = SafeLoadLibrary(wszCardModule)))
         {
             status = GetLastError();
             EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"SafeLoadLibrary failed for '%s': 0x%08X", wszCardModule, status);
             __leave;
         }
 
-        if (NULL == (pfnCardAcquireContext = 
+        if (nullptr == (pfnCardAcquireContext =
                      (PFN_CARD_ACQUIRE_CONTEXT) GetProcAddress(
                          pInternal->hModule, "CardAcquireContext")))
         {
@@ -310,7 +310,7 @@ DWORD MgScCardAcquireContext(
         memcpy(pInternal->CardData.pbAtr, pbAtr, cbAtr);
 
         // Validate card name (CWE-787 fix for #27)
-        if (wszCardName == NULL)
+        if (wszCardName == nullptr)
         {
             EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Card name is NULL");
             status = ERROR_INVALID_PARAMETER;
@@ -340,13 +340,13 @@ DWORD MgScCardAcquireContext(
         //
 
         pMgSc->pvContext = pInternal;
-        pInternal = NULL;
+        pInternal = nullptr;
     }
     __finally
     {
-        if (NULL != wszCardModule)
+        if (nullptr != wszCardModule)
             SCardFreeMemory(hSCardContext, wszCardModule);
-        if (NULL != pInternal)
+        if (nullptr != pInternal)
             _FreeManagedContext(pInternal);
     }
 
@@ -369,7 +369,7 @@ MgScCardAuthenticatePin(
     DWORD status = ERROR_SUCCESS;
     PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;
     
-    LPSTR szPin = NULL;
+    LPSTR szPin = nullptr;
     DWORD cbPin = 0;
 
     __try
@@ -383,10 +383,10 @@ MgScCardAuthenticatePin(
             0,
             pwszPin,
             -1,
-            NULL,
+            nullptr,
             0,
-            NULL,
-            NULL)))
+            nullptr,
+            nullptr)))
         {
             status = GetLastError();
             __leave;
@@ -401,8 +401,8 @@ MgScCardAuthenticatePin(
             -1,
             szPin,
             cbPin,
-            NULL,
-            NULL)))
+            nullptr,
+            nullptr)))
         {
             status = GetLastError();
             __leave;
@@ -421,7 +421,7 @@ MgScCardAuthenticatePin(
     }
     __finally
     {
-        if (NULL != szPin)
+        if (nullptr != szPin)
             _Free(szPin);
     }
 
@@ -470,7 +470,7 @@ MgScCardDeauthenticate(
 {
     PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;
 
-    if (NULL != pInternal->CardData.pfnCardDeauthenticate)
+    if (nullptr != pInternal->CardData.pfnCardDeauthenticate)
         return pInternal->CardData.pfnCardDeauthenticate(
             &pInternal->CardData,
             pwszUserId,
@@ -531,7 +531,7 @@ MgScCardReadFile(
 {
     DWORD status = ERROR_SUCCESS;
     PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;
-    PBYTE pbLocal = NULL;
+    PBYTE pbLocal = nullptr;
     DWORD cbLocal = 0;
 
     __try
@@ -554,10 +554,10 @@ MgScCardReadFile(
 
         if (*pcbData < cbLocal)
         {
-            if (NULL != pbData)
+            if (nullptr != pbData)
                 status = ERROR_INSUFFICIENT_BUFFER;
         }
-        else if (NULL != pbData)
+        else if (nullptr != pbData)
         {
             memcpy(pbData, pbLocal, cbLocal);
         }
@@ -566,7 +566,7 @@ MgScCardReadFile(
     }
     __finally
     {
-        if (NULL != pbLocal)
+        if (nullptr != pbLocal)
             _Free(pbLocal);
     }
     
@@ -612,14 +612,14 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 	BOOL fReturn = FALSE;
 	__try
 	{
-		if (pdwAttempts == NULL)
+		if (pdwAttempts == nullptr)
 		{
 			dwError = ERROR_INVALID_PARAMETER;
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pdwAttempts = NULL");
 			__leave;
 		}
 		// Validate input parameters
-		if (szReader == NULL || szCard == NULL || szPin == NULL)
+		if (szReader == nullptr || szCard == nullptr || szPin == nullptr)
 		{
 			dwError = ERROR_INVALID_PARAMETER;
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"NULL parameter: reader=%p card=%p pin=%p", szReader, szCard, szPin);
@@ -633,8 +633,8 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 		}
 		*pdwAttempts = 0xFFFFFFFF;
 		lReturn = SCardEstablishContext(SCARD_SCOPE_USER,
-								NULL,
-								NULL,
+								nullptr,
+								nullptr,
 								&hSCardContext );
 		if ( SCARD_S_SUCCESS != lReturn )
 		{

@@ -19,7 +19,7 @@ void SetErrorMessage(HWND hWnd)
 {
 	LPTSTR Error;
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
-		NULL,dwWizardError,0,(LPTSTR)&Error,0,NULL);
+		nullptr,dwWizardError,0,(LPTSTR)&Error,0,nullptr);
 	SetWindowText(GetDlgItem(hWnd,IDC_WIZARDERROR),Error);
 	LocalFree(Error);
 }
@@ -63,7 +63,7 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, WPARAM wPara
 					if (pCredentialList)
 					{
 						delete pCredentialList;
-						pCredentialList = NULL;
+						pCredentialList = nullptr;
 					}
 					break;
 			}

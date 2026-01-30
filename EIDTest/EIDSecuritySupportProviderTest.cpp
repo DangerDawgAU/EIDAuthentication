@@ -16,8 +16,8 @@
 
 extern HWND hMainWnd;
 
-HMODULE Handle = NULL;
-PSECPKG_FUNCTION_TABLE functionTable = NULL;
+HMODULE Handle = nullptr;
+PSECPKG_FUNCTION_TABLE functionTable = nullptr;
 ULONG functionCount = 0;
 ULONG_PTR PackageId = 1;
 LSA_SECPKG_FUNCTION_TABLE LSAfunction;
@@ -27,7 +27,7 @@ void InitializeDll()
 	ULONG PackageVersion = 0;
 	if (!Handle)
 	{
-		SpLsaModeInitializeFn init = NULL;
+		SpLsaModeInitializeFn init = nullptr;
 		Handle = LoadLibrary(TEXT("EIDAuthenticationPackage.dll"));
 		init = (SpLsaModeInitializeFn) GetProcAddress(Handle, SECPKG_LSAMODEINIT_NAME);
 		NTSTATUS Status = init(SECPKG_INTERFACE_VERSION, &PackageVersion, &functionTable, &functionCount); 
@@ -46,7 +46,7 @@ void InitializeDll()
 		LSAfunction.CopyFromClientBuffer = EIDCardLibraryMyCopyFromClientBuffer;
 		LSAfunction.CreateLogonSession = EIDCardLibraryMyCreateLogonSession;
 		LSAfunction.CreateToken = EIDCardLibraryMyCreateToken;
-		Status = functionTable->Initialize(PackageId, NULL, &LSAfunction);
+		Status = functionTable->Initialize(PackageId, nullptr, &LSAfunction);
 		if (Status != STATUS_SUCCESS)
 		{
 			MessageBoxWin32(LsaNtStatusToWinError(Status));
@@ -67,9 +67,9 @@ ULONG_PTR AcquireTestCredential()
 	credUiInfo.pszCaptionText = TEXT("My caption");
 	credUiInfo.pszMessageText = TEXT("My message");
 	credUiInfo.cbSize = sizeof(credUiInfo);
-	credUiInfo.hbmBanner = NULL;
+	credUiInfo.hbmBanner = nullptr;
 	credUiInfo.hwndParent = hMainWnd;
-	dwStatus = CredUIPromptForCredentials(&credUiInfo, TEXT("test"), NULL, 0, 
+	dwStatus = CredUIPromptForCredentials(&credUiInfo, TEXT("test"), nullptr, 0,
 		szUsername, CREDUI_MAX_USERNAME_LENGTH,
 		szPassword, CREDUI_MAX_PASSWORD_LENGTH,
 		FALSE, 0);
@@ -94,7 +94,7 @@ ULONG_PTR AcquireTestCredential()
 		};
 		SpAcquireCredentialsHandleFn *acqhandle = functionTable->AcquireCredentialsHandle;
 		
-		acqhandle(NULL,SECPKG_CRED_BOTH,NULL,(PVOID) &authIdent, NULL,NULL,&handle,&ExpirationTime);
+		acqhandle(nullptr,SECPKG_CRED_BOTH,nullptr,(PVOID) &authIdent, nullptr,nullptr,&handle,&ExpirationTime);
 	}
 	else if (dwStatus == ERROR_CANCELLED)
 	{
@@ -103,7 +103,7 @@ ULONG_PTR AcquireTestCredential()
 	{
 		MessageBoxWin32(dwStatus);
 	}
-	CredUIConfirmCredentials(NULL,FALSE);
+	CredUIConfirmCredentials(nullptr,FALSE);
 	return handle;
 }
 
@@ -135,11 +135,11 @@ void menu_SSP_login()
 	DWORD grfRequiredCtxAttrsServer = ISC_REQ_CONNECTION;
 
 	// set up some aliases to make it obvious what's happening
-	LSA_SEC_HANDLE    pClientCtxHandleIn  = 0;
-	LSA_SEC_HANDLE    pClientCtxHandleOut = 0;
-	LSA_SEC_HANDLE    pServerCtxHandleIn  = 0;
-	LSA_SEC_HANDLE    pServerCtxHandleOut = 0;
-	SecBufferDesc* pClientInput  = 0;
+	LSA_SEC_HANDLE    pClientCtxHandleIn  = NULL;
+	LSA_SEC_HANDLE    pClientCtxHandleOut = NULL;
+	LSA_SEC_HANDLE    pServerCtxHandleIn  = NULL;
+	LSA_SEC_HANDLE    pServerCtxHandleOut = NULL;
+	SecBufferDesc* pClientInput  = nullptr;
 	SecBufferDesc* pClientOutput = &bdC2S;
 	SecBufferDesc* pServerInput  = &bdC2S;
 	SecBufferDesc* pServerOutput = &bdS2C;
@@ -159,7 +159,7 @@ void menu_SSP_login()
 				sbufC2S.cbBuffer = sizeof bufC2S;
 				err =  functionTable->InitLsaModeContext(
 					handle, pClientCtxHandleIn,
-					NULL,
+					nullptr,
 					grfRequiredCtxAttrsClient,
 					0, 					pClientInput, 
 					&pClientCtxHandleOut,

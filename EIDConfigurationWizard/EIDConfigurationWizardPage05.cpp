@@ -45,26 +45,26 @@ BOOL WizardFinishButton(PTSTR szPassword)
 
 BOOL TestLogon(HWND hMainWnd);
 
-HWND hwndInvalidPasswordBalloon = NULL;
+HWND hwndInvalidPasswordBalloon = nullptr;
 VOID ShowInvalidPasswordBalloon(HWND hWnd)
 {
 	if (hwndInvalidPasswordBalloon) 
 	{ 
 		DestroyWindow(hwndInvalidPasswordBalloon); 
-		hwndInvalidPasswordBalloon = NULL; 
+		hwndInvalidPasswordBalloon = nullptr;
 	}
-	hwndInvalidPasswordBalloon = CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL,
+	hwndInvalidPasswordBalloon = CreateWindowEx(0, TOOLTIPS_CLASS, nullptr,
                             WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP | TTS_BALLOON | TTS_CLOSE,
                             CW_USEDEFAULT, CW_USEDEFAULT,
                             CW_USEDEFAULT, CW_USEDEFAULT,
-                            hWnd, NULL, g_hinst,
-                            NULL);
+                            hWnd, nullptr, g_hinst,
+                            nullptr);
 
 	if (hwndInvalidPasswordBalloon)
 	{
-		LPTSTR szError = NULL;
+		LPTSTR szError = nullptr;
 		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
-			NULL,ERROR_INVALID_PASSWORD,0,(LPTSTR)&szError,0,NULL);
+			nullptr,ERROR_INVALID_PASSWORD,0,(LPTSTR)&szError,0,nullptr);
 		TOOLINFO ti;
 		memset(&ti,0,sizeof(TOOLINFO));
 		ti.cbSize   = sizeof(ti);
@@ -141,7 +141,7 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPAR
 				if (hwndInvalidPasswordBalloon) 
 				{
 					DestroyWindow(hwndInvalidPasswordBalloon); 
-					hwndInvalidPasswordBalloon = NULL; 
+					hwndInvalidPasswordBalloon = nullptr;
 				}
 				GetWindowText(GetDlgItem(hWnd,IDC_05PASSWORD),szPassword,dwPasswordSize);
 				if (!WizardFinishButton(szPassword))
@@ -190,7 +190,7 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPAR
 				if (pCredentialList)
 				{
 					delete pCredentialList;
-					pCredentialList = NULL;
+					pCredentialList = nullptr;
 				}
 				break;
 

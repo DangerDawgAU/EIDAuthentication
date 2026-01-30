@@ -11,10 +11,6 @@
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "CContainerHolder.h"
 
-#define CHECK_FAILED 0
-#define CHECK_WARNING 1
-#define CHECK_SUCCESS 2
-#define CHECK_INFO 3
 
 //#define CHECK_USERNAME 0
 
@@ -88,7 +84,7 @@ void CContainerHolderTest::Release()
 	delete this;
 }
 
-DWORD CContainerHolderTest::GetIconIndex()
+int CContainerHolderTest::GetIconIndex()
 {
 	if (_IsTrusted && !HasSignatureUsageOnly())
 	{
@@ -129,6 +125,11 @@ BOOL CContainerHolderTest::SupportEncryption()
 	return fReturn;*/
 	return _pContainer->GetKeySpec() == AT_KEYEXCHANGE;
 }
+HRESULT CContainerHolderTest::SetUsageScenario(__in CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,__in DWORD dwFlags)
+{
+	return S_OK;
+}
+
 /*
 BOOL CContainerHolderTest::HasCurrentUserName()
 {
@@ -152,19 +153,19 @@ int CContainerHolderTest::GetImage(DWORD dwCheckNum)
 	
 	switch(dwCheckNum)
 	{
-	case CHECK_SIGNATUREONLY: 
+	case CHECK_SIGNATUREONLY:
 		if (!HasSignatureUsageOnly())
 			return CHECK_SUCCESS;
 		else
 			return CHECK_FAILED;
 		break;
-	case CHECK_TRUST: 
+	case CHECK_TRUST:
 		if (_IsTrusted)
 			return CHECK_SUCCESS;
 		else
 			return CHECK_FAILED;
 		break;
-	case CHECK_CRYPTO: 
+	case CHECK_CRYPTO:
 		if (_SupportEncryption)
 			return CHECK_SUCCESS;
 		else
@@ -181,24 +182,24 @@ PTSTR CContainerHolderTest::GetDescription(DWORD dwCheckNum)
 	szDescription[0] = 0;
 	switch(dwCheckNum)
 	{
-	case CHECK_SIGNATUREONLY: 
+	case CHECK_SIGNATUREONLY:
 		if (!HasSignatureUsageOnly())
 			LoadString(g_hinst,IDS_04SIGNATUREONLYOK,szDescription, dwWords);
 		else
 			LoadString(g_hinst,IDS_04SIGNATUREONLYNOK,szDescription, dwWords);
 		break;
-	case CHECK_TRUST: 
+	case CHECK_TRUST:
 		if (_IsTrusted)
 			LoadString(g_hinst,IDS_04TRUSTOK,szDescription, dwWords);
 		else
 		{
 			if (!GetTrustErrorMessage(_dwTrustError,szDescription,dwWords))
 			{
-				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,NULL,_dwTrustError,0,szDescription,dwWords,NULL);
+				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,nullptr,_dwTrustError,0,szDescription,dwWords,nullptr);
 			}
 		}
 		break;
-	case CHECK_CRYPTO: 
+	case CHECK_CRYPTO:
 		if (_SupportEncryption)
 			LoadString(g_hinst,IDS_04ENCRYPTIONOK,szDescription, dwWords);
 		else
@@ -216,13 +217,13 @@ PTSTR CContainerHolderTest::GetSolveDescription(DWORD dwCheckNum)
 	szDescription[0] = 0;
 	switch(dwCheckNum)
 	{
-	case CHECK_SIGNATUREONLY: 
+	case CHECK_SIGNATUREONLY:
 		if (HasSignatureUsageOnly())
 		{
 			LoadString(g_hinst,IDS_04CHANGESIGNATUREPOLICY,szDescription, dwWords);
 		}
 		break;
-	case CHECK_TRUST: 
+	case CHECK_TRUST:
 		if (!_IsTrusted)
 		{
 			if (_dwTrustError & CERT_TRUST_IS_UNTRUSTED_ROOT || _dwTrustError & CERT_TRUST_IS_PARTIAL_CHAIN)

@@ -42,7 +42,7 @@ VOID SetIcon(HWND hWnd)
 BOOL IsElevated()
 {
 	BOOL fReturn = FALSE;
-	HANDLE hToken	= NULL;
+	HANDLE hToken	= nullptr;
 
 	if ( !OpenProcessToken( GetCurrentProcess(), TOKEN_QUERY, &hToken ) )
 	{
@@ -71,8 +71,8 @@ BOOL IsElevated()
 BOOL IsCurrentUserBelongToADomain()
 {
 	BOOL fReturn = FALSE;
-	HANDLE hToken	= NULL;
-	PTOKEN_USER  ptiUser  = NULL;
+	HANDLE hToken	= nullptr;
+	PTOKEN_USER  ptiUser = nullptr;
 	__try
 	{
 		if ( !OpenProcessToken( GetCurrentProcess(), TOKEN_QUERY, &hToken ) )
@@ -82,7 +82,7 @@ BOOL IsCurrentUserBelongToADomain()
 		
 		DWORD        cbti     = 0;
 		// Obtain the size of the user information in the token.
-		if (GetTokenInformation(hToken, TokenUser, NULL, 0, &cbti)) {
+		if (GetTokenInformation(hToken, TokenUser, nullptr, 0, &cbti)) {
 
 			// Call should have failed due to zero-length buffer.
 			__leave;
@@ -108,7 +108,7 @@ BOOL IsCurrentUserBelongToADomain()
 		TCHAR szDomain[255];
 		DWORD cchDomain = ARRAYSIZE(szDomain);
 		SID_NAME_USE snu;
-		if (!LookupAccountSid(NULL, ptiUser->User.Sid, szUser, &cchUser, 
+		if (!LookupAccountSid(nullptr, ptiUser->User.Sid, szUser, &cchUser,
             szDomain, &cchDomain, &snu))
 		{
 			__leave;

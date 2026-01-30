@@ -7,20 +7,20 @@ void Menu_AP_GPO()
 {
 	WCHAR buffer[4096];
 	
-	LPWSTR pMessage = L"AllowSignatureOnlyKeys: %d\r\n\
-AllowCertificatesWithNoEKU %d\r\n\
-AllowTimeInvalidCertificates %d\r\n\
-AllowIntegratedUnblock %d\r\n\
-ReverseSubject %d\r\n\
-X509HintsNeeded %d\r\n\
-IntegratedUnblockPromptString %d\r\n\
-CertPropEnabledString %d\r\n\
-CertPropRootEnabledString %d\r\n\
-RootsCleanupOption %d\r\n\
-FilterDuplicateCertificates %d\r\n\
-ForceReadingAllCertificates %d\r\n\
-scforceoption %d\r\n\
-scremoveoption %d";
+	LPWSTR pMessage = L"AllowSignatureOnlyKeys: %d\n"
+	L"AllowCertificatesWithNoEKU %d\n"
+	L"AllowTimeInvalidCertificates %d\n"
+	L"AllowIntegratedUnblock %d\n"
+	L"ReverseSubject %d\n"
+	L"X509HintsNeeded %d\n"
+	L"IntegratedUnblockPromptString %d\n"
+	L"CertPropEnabledString %d\n"
+	L"CertPropRootEnabledString %d\n"
+	L"RootsCleanupOption %d\n"
+	L"FilterDuplicateCertificates %d\n"
+	L"ForceReadingAllCertificates %d\n"
+	L"scforceoption %d\n"
+	L"scremoveoption %d";
 
 	swprintf_s(buffer,4096,pMessage,GetPolicyValue(AllowSignatureOnlyKeys),
 		GetPolicyValue(AllowCertificatesWithNoEKU),

@@ -22,12 +22,13 @@
 
 #include <ntsecapi.h>
 
-#define AUTHENTICATIONPACKAGENAME "EIDAuthenticationPackage"
-#define AUTHENTICATIONPACKAGENAMEW L"EIDAuthenticationPackage"
+constexpr const char* AUTHENTICATIONPACKAGENAME = "EIDAuthenticationPackage";
+constexpr const wchar_t* AUTHENTICATIONPACKAGENAMEW = L"EIDAuthenticationPackage";
 #define AUTHENTICATIONPACKAGENAMET TEXT("EIDAuthenticationPackage")
 
 
-#define CERT_HASH_LENGTH        32  // SHA-256 hashes are used for cert hashes (security upgrade from SHA-1)
+#undef CERT_HASH_LENGTH
+constexpr DWORD CERT_HASH_LENGTH = 32;  // SHA-256 hashes are used for cert hashes (security upgrade from SHA-1)
 
 #define EIDAlloc(value) EIDAllocEx(__FILE__,__LINE__,__FUNCTION__,value)
 #define EIDFree(value) EIDFreeEx(__FILE__,__LINE__,__FUNCTION__,value)
@@ -178,7 +179,7 @@ typedef struct _EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER
 } EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER, *PEID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER;
 
 
-#define EID_CERTIFICATE_FLAG_USERSTORE 0x00000001
+constexpr DWORD EID_CERTIFICATE_FLAG_USERSTORE = 0x00000001;
 
 typedef struct _EID_NEGOCIATE_MESSAGE
 {
@@ -232,8 +233,8 @@ typedef enum _EID_MESSAGE_TYPE
 	EIDMTResponse = 3,
 } EID_MESSAGE_TYPE;
 
-#define EID_MESSAGE_VERSION 1
-#define EID_MESSAGE_SIGNATURE "EIDAuth"
+constexpr DWORD EID_MESSAGE_VERSION = 1;
+constexpr const char* EID_MESSAGE_SIGNATURE = "EIDAuth";
 
 typedef enum _EID_SSP_CALLER
 {
