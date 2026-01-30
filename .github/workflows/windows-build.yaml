@@ -8,11 +8,11 @@ jobs:
       contents: write
     runs-on: windows-latest
     steps:
-      - name: Check out repo        
-        uses: actions/checkout@v2
+      - name: Check out repo
+        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5
 
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce
         with:
           msbuild-architecture: x64
 
@@ -29,13 +29,13 @@ jobs:
         run: msbuild EIDCredentialProvider.sln -t:rebuild -property:Configuration=Release /p:Platform=x64
 
       - name: Create nsis installer
-        uses: joncloud/makensis-action@v3.3
+        uses: joncloud/makensis-action@5834ecb5add98a9e12ccdb7307438f77c4bf228d
         with: 
           script-file: Installer/Installerx64.nsi
           arguments: "/V3"
 
       - name: upload binaries to release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
         if: ${{startsWith(github.ref, 'refs/tags/') }}
         with:
             files: Installer/EIDInstallx64.exe

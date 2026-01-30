@@ -16,8 +16,8 @@ $pageSize = 500
 $issues = @()
 
 do {
-    # Construct the API URL
-    $apiUrl = "$sonarCloudUrl/api/issues/search?componentKeys=$projectKey&statuses=OPEN&p=$page&ps=$pageSize"
+    # Construct the API URL - only fetch open issues (excluding RESOLVED and CLOSED)
+    $apiUrl = "$sonarCloudUrl/api/issues/search?componentKeys=$projectKey&statuses=OPEN,CONFIRMED,REOPENED&p=$page&ps=$pageSize"
 
     try {
         # Fetch the issues
@@ -42,8 +42,8 @@ $pageSize = 500
 $hotspots = @()
 
 do {
-    # Construct the API URL for hotspots
-    $apiUrl = "$sonarCloudUrl/api/hotspots/search?projectKey=$projectKey&p=$page&ps=$pageSize"
+    # Construct the API URL for hotspots - filter by TO_REVIEW status to exclude remediated/closed hotspots
+    $apiUrl = "$sonarCloudUrl/api/hotspots/search?projectKey=$projectKey&statuses=TO_REVIEW&p=$page&ps=$pageSize"
 
     try {
         # Fetch the hotspots
@@ -60,12 +60,29 @@ do {
     }
 } while ($fetchedCount -lt $total)
 
-Write-Host "Successfully fetched $($hotspots.Count) security hotspots."
+# Filter out any hotspots with REVIEWED status
+$hotspots = $hotspots | Where-Object { $_.status -ne 'REVIEWED' }
+
+Write-Host "Successfully fetched $($hotspots.Count) security hotspots (excluding reviewed/remediated/closed)."
 
 # Create individual markdown files for each issue, organized by severity
+# Map SonarQube severities to user-friendly categories
+$severityMap = @{
+    'BLOCKER' = 'Blocker'
+    'CRITICAL' = 'High'
+    'MAJOR' = 'Medium'
+    'MINOR' = 'Low'
+    'INFO' = 'Info'
+}
+
 foreach ($issue in $issues) {
-    $severity = $issue.severity
-    $severityDir = Join-Path -Path $outputDir -ChildPath "issues\$severity"
+    $originalSeverity = $issue.severity
+    $mappedSeverity = $severityMap[$originalSeverity]
+    if (-not $mappedSeverity) {
+        $mappedSeverity = $originalSeverity
+    }
+
+    $severityDir = Join-Path -Path $outputDir -ChildPath "issues\$mappedSeverity"
     if (-not (Test-Path -Path $severityDir)) {
         New-Item -ItemType Directory -Path $severityDir -Force
     }
@@ -75,7 +92,7 @@ foreach ($issue in $issues) {
     $issueContent = @"
 # $($issue.message)
 
-**Severity:** $($issue.severity)
+**Severity:** $mappedSeverity
 **Component:** $($issue.component)
 **Line:** $($issue.line)
 **Status:** $($issue.status)
@@ -89,9 +106,21 @@ foreach ($issue in $issues) {
 Write-Host "Created markdown files for each issue in respective severity folders under $outputDir\issues"
 
 # Create individual markdown files for each security hotspot, organized by severity
+# Map SonarQube hotspot vulnerability probabilities to user-friendly categories
+$hotspotSeverityMap = @{
+    'HIGH' = 'High'
+    'MEDIUM' = 'Medium'
+    'LOW' = 'Low'
+}
+
 foreach ($hotspot in $hotspots) {
-    $severity = $hotspot.vulnerabilityProbability
-    $severityDir = Join-Path -Path $outputDir -ChildPath "hotspots\$severity"
+    $originalSeverity = $hotspot.vulnerabilityProbability
+    $mappedSeverity = $hotspotSeverityMap[$originalSeverity]
+    if (-not $mappedSeverity) {
+        $mappedSeverity = $originalSeverity
+    }
+
+    $severityDir = Join-Path -Path $outputDir -ChildPath "hotspots\$mappedSeverity"
     if (-not (Test-Path -Path $severityDir)) {
         New-Item -ItemType Directory -Path $severityDir -Force
     }
@@ -101,7 +130,7 @@ foreach ($hotspot in $hotspots) {
     $hotspotContent = @"
 # $($hotspot.ruleKey)
 
-**Severity:** $($hotspot.vulnerabilityProbability)
+**Severity:** $mappedSeverity
 **Component:** $($hotspot.component)
 **Line:** $($hotspot.line)
 **Status:** $($hotspot.status)
@@ -113,4 +142,4 @@ foreach ($hotspot in $hotspots) {
 }
 
 Write-Host "Created markdown files for each security hotspot in respective severity folders under $outputDir\hotspots"
-Write-Host "Total: $($issues.Count) issues and $($hotspots.Count) security hotspots processed."
+Write-Host "Total: $($issues.Count) open issues and $($hotspots.Count) unreviewed security hotspots processed (remediated/closed items excluded)."
