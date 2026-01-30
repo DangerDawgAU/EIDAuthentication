@@ -59,7 +59,7 @@ INT_PTR CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 BOOL IsElevated()
 {
 	BOOL fReturn = FALSE;
-	HANDLE hToken	= NULL;
+	HANDLE hToken	= nullptr;
 
 	if ( !OpenProcessToken( GetCurrentProcess(), TOKEN_QUERY, &hToken ) )
 	{
@@ -102,7 +102,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		{
 			if (IsElevated())
 			{
-				menu_TRACE_TRACING_Thread(NULL);
+				menu_TRACE_TRACING_Thread(nullptr);
 			}
 			return 0;
 		}
@@ -170,8 +170,8 @@ INT_PTR CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	   if (pds->CtlType == ODT_MENU) {
 		   DrawIconEx(pds->hDC, pds->rcItem.left - 15, 
 			   pds->rcItem.top, 
-			   (HICON)pds->itemData, 
-			   16, 16, 0, NULL, DI_NORMAL);
+			   (HICON)pds->itemData,
+			   16, 16, 0, nullptr, DI_NORMAL);
 		   return TRUE;
 	   }
 	}
@@ -371,17 +371,17 @@ INT_PTR CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				// elevate
 				SHELLEXECUTEINFO shExecInfo;
 				TCHAR szName[1024];
-				GetModuleFileName(GetModuleHandle(NULL),szName, ARRAYSIZE(szName));
+				GetModuleFileName(GetModuleHandle(nullptr),szName, ARRAYSIZE(szName));
 				shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 
 				shExecInfo.fMask = NULL;
-				shExecInfo.hwnd = NULL;
+				shExecInfo.hwnd = nullptr;
 				shExecInfo.lpVerb = TEXT("runas");
 				shExecInfo.lpFile = szName;
 				shExecInfo.lpParameters = TEXT("TRACE");
-				shExecInfo.lpDirectory = NULL;
+				shExecInfo.lpDirectory = nullptr;
 				shExecInfo.nShow = SW_NORMAL;
-				shExecInfo.hInstApp = NULL;
+				shExecInfo.hInstApp = nullptr;
 
 				ShellExecuteEx(&shExecInfo);
 			}

@@ -34,25 +34,25 @@
 #define REMOVALPOLICYKEY TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Removal Policy")
 
 // Maximum lengths for container/card/provider/reader names (CWE-20 fix for #63)
-#define MAX_CONTAINER_NAME_LENGTH 1024
-#define MAX_READER_NAME_LENGTH 256
-#define MAX_CARD_NAME_LENGTH 256
-#define MAX_PROVIDER_NAME_LENGTH 256
+constexpr DWORD MAX_CONTAINER_NAME_LENGTH = 1024;
+constexpr DWORD MAX_READER_NAME_LENGTH = 256;
+constexpr DWORD MAX_CARD_NAME_LENGTH = 256;
+constexpr DWORD MAX_PROVIDER_NAME_LENGTH = 256;
 
 CContainer::CContainer(LPCTSTR szReaderName, LPCTSTR szCardName, LPCTSTR szProviderName, LPCTSTR szContainerName, DWORD KeySpec,__in USHORT ActivityCount,PCCERT_CONTEXT pCertContext)
 {
 	_dwRid = 0;
-	_szReaderName = NULL;
-	_szCardName = NULL;
-	_szProviderName = NULL;
-	_szContainerName = NULL;
-	_szUserName = NULL;
+	_szReaderName = nullptr;
+	_szCardName = nullptr;
+	_szProviderName = nullptr;
+	_szContainerName = nullptr;
+	_szUserName = nullptr;
 	_KeySpec = KeySpec;
 	_ActivityCount = ActivityCount;
 	_pCertContext = pCertContext;
 
 	// Validate and copy reader name with length check
-	if (szReaderName != NULL)
+	if (szReaderName != nullptr)
 	{
 		size_t len = _tcsnlen(szReaderName, MAX_READER_NAME_LENGTH + 1);
 		if (len <= MAX_READER_NAME_LENGTH)
@@ -70,7 +70,7 @@ CContainer::CContainer(LPCTSTR szReaderName, LPCTSTR szCardName, LPCTSTR szProvi
 	}
 
 	// Validate and copy provider name with length check
-	if (szProviderName != NULL)
+	if (szProviderName != nullptr)
 	{
 		size_t len = _tcsnlen(szProviderName, MAX_PROVIDER_NAME_LENGTH + 1);
 		if (len <= MAX_PROVIDER_NAME_LENGTH)
@@ -88,7 +88,7 @@ CContainer::CContainer(LPCTSTR szReaderName, LPCTSTR szCardName, LPCTSTR szProvi
 	}
 
 	// Validate and copy container name with length check
-	if (szContainerName != NULL)
+	if (szContainerName != nullptr)
 	{
 		size_t len = _tcsnlen(szContainerName, MAX_CONTAINER_NAME_LENGTH + 1);
 		if (len <= MAX_CONTAINER_NAME_LENGTH)
@@ -106,7 +106,7 @@ CContainer::CContainer(LPCTSTR szReaderName, LPCTSTR szCardName, LPCTSTR szProvi
 	}
 
 	// Validate and copy card name with length check
-	if (szCardName != NULL)
+	if (szCardName != nullptr)
 	{
 		size_t len = _tcsnlen(szCardName, MAX_CARD_NAME_LENGTH + 1);
 		if (len <= MAX_CARD_NAME_LENGTH)
@@ -149,11 +149,11 @@ PTSTR CContainer::GetUserName()
 	}
 	DWORD dwSize;
 	BOOL fReturn = FALSE;
-	PCRYPT_KEY_PROV_INFO pKeyProvInfo = NULL;
+	PCRYPT_KEY_PROV_INFO pKeyProvInfo = nullptr;
 	__try
 	{
 		// get the subject details for the cert
-		dwSize = CertGetNameString(_pCertContext,CERT_NAME_SIMPLE_DISPLAY_TYPE,0,NULL,NULL,0);
+		dwSize = CertGetNameString(_pCertContext,CERT_NAME_SIMPLE_DISPLAY_TYPE,0,nullptr,nullptr,0);
 		if (!dwSize)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertGetNameString error = %d",GetLastError());
@@ -165,7 +165,7 @@ PTSTR CContainer::GetUserName()
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc error = %d",GetLastError());
 			__leave;
 		}
-		dwSize = CertGetNameString(_pCertContext,CERT_NAME_SIMPLE_DISPLAY_TYPE,0,NULL,_szUserName,dwSize);
+		dwSize = CertGetNameString(_pCertContext,CERT_NAME_SIMPLE_DISPLAY_TYPE,0,nullptr,_szUserName,dwSize);
 		if (!dwSize)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertGetNameString error = %d",GetLastError());
@@ -183,7 +183,7 @@ PTSTR CContainer::GetUserName()
 			if (_szUserName)
 			{
 				EIDFree(_szUserName);
-				_szUserName = NULL;
+				_szUserName = nullptr;
 			}
 		}
 	}
@@ -242,11 +242,11 @@ PEID_SMARTCARD_CSP_INFO CContainer::GetCSPInfo()
 {
 	_ASSERTE( _CrtCheckMemory( ) );
 	// Validate member pointers before use
-	if (_szReaderName == NULL || _szCardName == NULL ||
-	    _szProviderName == NULL || _szContainerName == NULL)
+	if (_szReaderName == nullptr || _szCardName == nullptr ||
+	    _szProviderName == nullptr || _szContainerName == nullptr)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetCSPInfo: NULL member pointer");
-		return NULL;
+		return nullptr;
 	}
 	DWORD dwReaderLen = (DWORD) _tcslen(_szReaderName)+1;
 	DWORD dwCardLen = (DWORD) _tcslen(_szCardName)+1;
@@ -255,7 +255,7 @@ PEID_SMARTCARD_CSP_INFO CContainer::GetCSPInfo()
 	DWORD dwBufferSize = dwReaderLen + dwCardLen + dwProviderLen + dwContainerLen;
 	
 	PEID_SMARTCARD_CSP_INFO pCspInfo = (PEID_SMARTCARD_CSP_INFO) EIDAlloc(sizeof(EID_SMARTCARD_CSP_INFO)+dwBufferSize*sizeof(TCHAR));
-	if (!pCspInfo) return NULL;
+	if (!pCspInfo) return nullptr;
 	//ZeroMemory(pCspInfo);
 	memset(pCspInfo,0,sizeof(EID_SMARTCARD_CSP_INFO));
 	pCspInfo->dwCspInfoLen = sizeof(EID_SMARTCARD_CSP_INFO)+dwBufferSize*sizeof(TCHAR);
@@ -297,17 +297,17 @@ BOOL CContainer::ViewCertificate(HWND hWnd)
 		szOid = szOID_KP_SMARTCARD_LOGON;
 		certViewInfo.rgszPurposes = & szOid;
 	}
-	certViewInfo.pCryptProviderData = NULL;
-	certViewInfo.hWVTStateData = NULL;
+	certViewInfo.pCryptProviderData = nullptr;
+	certViewInfo.hWVTStateData = nullptr;
 	certViewInfo.fpCryptProviderDataTrustedUsage = FALSE;
 	certViewInfo.idxSigner = 0;
 	certViewInfo.idxCert = 0;
 	certViewInfo.fCounterSigner = FALSE;
 	certViewInfo.idxCounterSigner = 0;
 	certViewInfo.cStores = 0;
-	certViewInfo.rghStores = NULL;
+	certViewInfo.rghStores = nullptr;
 	certViewInfo.cPropSheetPages = 0;
-	certViewInfo.rgPropSheetPages = NULL;
+	certViewInfo.rgPropSheetPages = nullptr;
 	certViewInfo.nStartPage = 0;
 	
 	return CryptUIDlgViewCertificate(&certViewInfo,&fPropertiesChanged);
@@ -317,8 +317,8 @@ BOOL CContainer::TriggerRemovePolicy()
 {
 	LONG lResult;
 	BOOL fReturn = FALSE;
-	HKEY hRemovePolicyKey = NULL;
-	PBYTE pbBuffer = NULL;
+	HKEY hRemovePolicyKey = nullptr;
+	PBYTE pbBuffer = nullptr;
 	DWORD dwSize;
 	DWORD dwProcessId, dwSessionId;
 	TCHAR szValueKey[sizeof(DWORD)+1];
@@ -355,8 +355,8 @@ BOOL CContainer::TriggerRemovePolicy()
 					// This is acceptable since HKLM already restricts write access
 					sa.lpSecurityDescriptor = &sd;
 				}
-				lResult = RegCreateKeyEx(HKEY_LOCAL_MACHINE, REMOVALPOLICYKEY, 0, NULL,
-					REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, &sa, &hRemovePolicyKey, NULL);
+				lResult = RegCreateKeyEx(HKEY_LOCAL_MACHINE, REMOVALPOLICYKEY, 0, nullptr,
+					REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, &sa, &hRemovePolicyKey, nullptr);
 				if (lResult !=ERROR_SUCCESS)
 				{
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RegCreateKeyEx 0x%08x",lResult);
@@ -418,10 +418,10 @@ BOOL CContainer::TriggerRemovePolicy()
 
 PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSize)
 {
-	PEID_INTERACTIVE_LOGON pReturn = NULL;
-	PEID_INTERACTIVE_LOGON pRequest = NULL;
+	PEID_INTERACTIVE_LOGON pReturn = nullptr;
+	PEID_INTERACTIVE_LOGON pRequest = nullptr;
 	DWORD dwRid = 0;
-	PWSTR szUserName = NULL;
+	PWSTR szUserName = nullptr;
 	WCHAR szDomainName[MAX_COMPUTERNAME_LENGTH+1];
 	DWORD dwSize, dwTotalSize;
 	__try
@@ -545,8 +545,8 @@ PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSi
 /*
 PEID_MSGINA_AUTHENTICATION CContainer::AllocateGinaStruct(PWSTR szPin, PDWORD pdwSize)
 {
-	PEID_MSGINA_AUTHENTICATION pReturn = NULL;
-	PEID_MSGINA_AUTHENTICATION pRequest = NULL;
+	PEID_MSGINA_AUTHENTICATION pReturn = nullptr;
+	PEID_MSGINA_AUTHENTICATION pRequest = nullptr;
 	DWORD dwRid = 0;
 	DWORD dwTotalSize;
 	__try

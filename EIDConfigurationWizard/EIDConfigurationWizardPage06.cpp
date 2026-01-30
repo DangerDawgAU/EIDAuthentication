@@ -78,7 +78,7 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, WPARAM wParam, 
 				if (pCredentialList)
 				{
 					delete pCredentialList;
-					pCredentialList = NULL;
+					pCredentialList = nullptr;
 				}
 				break;
 			}

@@ -40,10 +40,10 @@ void AppendValueToMultiSz(HKEY hKey,PTSTR szKey, PTSTR szValue, PTSTR szData)
 	}
 	DWORD RegType;
 	DWORD RegSize;
-	PTSTR Buffer = NULL;
+	PTSTR Buffer = nullptr;
 	PTSTR Pointer;
 	RegSize = 0;
-	Status = RegQueryValueEx( hkResult,szValue,NULL,&RegType,NULL,&RegSize);
+	Status = RegQueryValueEx( hkResult,szValue,nullptr,&RegType,nullptr,&RegSize);
 	if (Status != ERROR_SUCCESS) {
 		MessageBoxWin32(Status);
 		RegCloseKey(hkResult);
@@ -57,7 +57,7 @@ void AppendValueToMultiSz(HKEY hKey,PTSTR szKey, PTSTR szValue, PTSTR szData)
 		RegCloseKey(hkResult);
 		return;
 	}
-	Status = RegQueryValueEx( hkResult,szValue,NULL,&RegType,(LPBYTE)Buffer,&RegSize);
+	Status = RegQueryValueEx( hkResult,szValue,nullptr,&RegType,(LPBYTE)Buffer,&RegSize);
 	if (Status != ERROR_SUCCESS) {
 		MessageBoxWin32(Status);
 		RegCloseKey(hkResult);
@@ -101,12 +101,12 @@ void RemoveValueFromMultiSz(HKEY hKey, PTSTR szKey, PTSTR szValue, PTSTR szData)
 	}
 	DWORD RegType;
 	DWORD RegSize, RegSizeOut;
-	PTSTR BufferIn = NULL;
-	PTSTR BufferOut = NULL;
+	PTSTR BufferIn = nullptr;
+	PTSTR BufferOut = nullptr;
 	PTSTR PointerIn;
 	PTSTR PointerOut;
 	RegSize = 0;
-	Status = RegQueryValueEx( hkResult,szValue,NULL,&RegType,NULL,&RegSize);
+	Status = RegQueryValueEx( hkResult,szValue,nullptr,&RegType,nullptr,&RegSize);
 	if (Status != ERROR_SUCCESS) {
 		MessageBoxWin32(Status);
 		RegCloseKey(hkResult);
@@ -127,7 +127,7 @@ void RemoveValueFromMultiSz(HKEY hKey, PTSTR szKey, PTSTR szValue, PTSTR szData)
 		RegCloseKey(hkResult);
 		return;
 	}
-	Status = RegQueryValueEx( hkResult,szValue,NULL,&RegType,(LPBYTE)BufferIn,&RegSize);
+	Status = RegQueryValueEx( hkResult,szValue,nullptr,&RegType,(LPBYTE)BufferIn,&RegSize);
 	if (Status != ERROR_SUCCESS) {
 		MessageBoxWin32(Status);
 		EIDFree(BufferIn);
@@ -297,16 +297,16 @@ void EIDCredentialProviderDllRegister()
 {
 	RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
 		TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Authentication\\Credential Providers\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"), 
-		NULL, REG_SZ, TEXT("EidCredentialProvider"),sizeof(TEXT("EidCredentialProvider")));
+		nullptr, REG_SZ, TEXT("EidCredentialProvider"),sizeof(TEXT("EidCredentialProvider")));
 	RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
 		TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Authentication\\Credential Provider Filters\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"), 
-		NULL, REG_SZ, TEXT("EidCredentialProvider"),sizeof(TEXT("EidCredentialProvider")));
+		nullptr, REG_SZ, TEXT("EidCredentialProvider"),sizeof(TEXT("EidCredentialProvider")));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
 		TEXT("CLSID\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"), 
 		NULL, REG_SZ, TEXT("EidCredentialProvider"),sizeof(TEXT("EidCredentialProvider")));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
 		TEXT("CLSID\\{B4866A0A-DB08-4835-A26F-414B46F3244C}\\InprocServer32"),
-		NULL, REG_SZ, TEXT("EidCredentialProvider.dll"),sizeof(TEXT("EidCredentialProvider.dll")));
+		nullptr, REG_SZ, TEXT("EidCredentialProvider.dll"),sizeof(TEXT("EidCredentialProvider.dll")));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
 		TEXT("CLSID\\{B4866A0A-DB08-4835-A26F-414B46F3244C}\\InprocServer32"),
 		TEXT("ThreadingModel"),REG_SZ, TEXT("Apartment"),sizeof(TEXT("Apartment")));
@@ -328,10 +328,10 @@ void EIDConfigurationWizardDllRegister()
 {
 	RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
 		TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ControlPanel\\NameSpace\\{F5D846B4-14B0-11DE-B23C-27A355D89593}"),
-		NULL,REG_SZ, TEXT("EIDConfigurationWizard"),sizeof(TEXT("EIDConfigurationWizard")));
+		nullptr,REG_SZ, TEXT("EIDConfigurationWizard"),sizeof(TEXT("EIDConfigurationWizard")));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
 		TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}"), 
-		NULL, REG_SZ, TEXT("EIDConfigurationWizard"),sizeof(TEXT("EIDConfigurationWizard")));
+		nullptr, REG_SZ, TEXT("EIDConfigurationWizard"),sizeof(TEXT("EIDConfigurationWizard")));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
 		TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}"),
 		TEXT("System.ApplicationName"),REG_SZ, TEXT("EID.EIDConfigurationWizard"),sizeof(TEXT("EID.EIDConfigurationWizard")));
@@ -346,11 +346,11 @@ void EIDConfigurationWizardDllRegister()
 		TEXT("InfoTip"),REG_EXPAND_SZ, TEXT("Smart Card Logon"),sizeof(TEXT("Smart Card Logon")));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
 		TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}\\DefaultIcon"),
-		NULL,REG_EXPAND_SZ, TEXT("%SystemRoot%\\system32\\imageres.dll,-58"),
+		nullptr,REG_EXPAND_SZ, TEXT("%SystemRoot%\\system32\\imageres.dll,-58"),
 			sizeof(TEXT("%SystemRoot%\\system32\\imageres.dll,-58")));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
 		TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}\\Shell\\Open\\Command"),
-		NULL,REG_EXPAND_SZ, TEXT("%SystemRoot%\\system32\\EIDConfigurationWizard.exe"),
+		nullptr,REG_EXPAND_SZ, TEXT("%SystemRoot%\\system32\\EIDConfigurationWizard.exe"),
 			sizeof(TEXT("%SystemRoot%\\system32\\EIDConfigurationWizard.exe")));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
 		TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}"),
@@ -526,7 +526,7 @@ BOOL Is64BitOS()
    LPFN_ISWOW64PROCESS
       fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(GetModuleHandle(TEXT("kernel32")),"IsWow64Process");
  
-   if (NULL != fnIsWow64Process)
+   if (nullptr != fnIsWow64Process)
    {
       if (!fnIsWow64Process(GetCurrentProcess(),&bIs64BitOS))
       {
@@ -551,7 +551,7 @@ void EnableCrashDump(PTSTR szPath)
 	__try
 	{
 		Status=RegCreateKeyEx(HKEY_LOCAL_MACHINE,TEXT("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps\\lsass.exe"),
-			0,NULL,0,KEY_READ|KEY_QUERY_VALUE|KEY_WRITE|dwFlag,NULL,&hkResult,NULL);
+			0,nullptr,0,KEY_READ|KEY_QUERY_VALUE|KEY_WRITE|dwFlag,nullptr,&hkResult,nullptr);
 		if (Status != ERROR_SUCCESS) {MessageBoxWin32(Status); __leave;}
 		Status = RegSetValueEx(hkResult,TEXT("DumpFolder"),0,REG_SZ, (PBYTE) szPath,((DWORD)sizeof(TCHAR))*((DWORD)_tcslen(szPath)+1));
 		if (Status != ERROR_SUCCESS) {MessageBoxWin32(Status); __leave;}

@@ -9,12 +9,12 @@
 
 // used to know what root certicate we are refering
 // null = unknown
-PCCERT_CONTEXT pRootCertificate = NULL;
+PCCERT_CONTEXT pRootCertificate = nullptr;
 
 // Default certificate validity in years
-#define DEFAULT_CERT_VALIDITY_YEARS 3
-#define MAX_CERT_VALIDITY_YEARS 30
-#define MIN_CERT_VALIDITY_YEARS 1
+constexpr WORD DEFAULT_CERT_VALIDITY_YEARS = 3;
+constexpr WORD MAX_CERT_VALIDITY_YEARS = 30;
+constexpr WORD MIN_CERT_VALIDITY_YEARS = 1;
 
 // Helper function to get root CA expiry year
 // Returns 0 if unable to determine
@@ -32,7 +32,7 @@ WORD GetRootCAExpiryYear(PCCERT_CONTEXT pRootCert)
 // Validate certificate validity against root CA and update warning
 VOID ValidateCertificateValidity(HWND hWnd, PCCERT_CONTEXT pRootCert)
 {
-	WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, NULL, FALSE);
+	WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);
 	SYSTEMTIME stNow;
 	GetSystemTime(&stNow);
 	WORD wCertExpiryYear = stNow.wYear + wValidityYears;
@@ -55,7 +55,7 @@ VOID ValidateCertificateValidity(HWND hWnd, PCCERT_CONTEXT pRootCert)
 BOOL SelectFile(HWND hWnd)
 {
 	// select file to open
-	PWSTR szFileName = NULL;
+	PWSTR szFileName = nullptr;
 	TCHAR szSpecContainer[256] = TEXT("");
 	TCHAR szSpecAll[256] = TEXT("");
 	LoadString(g_hinst,IDS_03CONTAINERFILES,szSpecContainer,ARRAYSIZE(szSpecContainer));
@@ -66,11 +66,11 @@ BOOL SelectFile(HWND hWnd)
 		{ szSpecContainer, L"*.pfx;*.p12" },
 		{ szSpecAll, L"*.*" },
 	};
-    CoInitialize(NULL);
+    CoInitialize(nullptr);
     // CoCreate the dialog object.
-    HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog, 
-                                  NULL, 
-                                  CLSCTX_INPROC_SERVER, 
+    HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog,
+                                  nullptr,
+                                  CLSCTX_INPROC_SERVER,
 								  IID_IFileDialog,
                                   (void**)&pfd);
     
@@ -114,9 +114,9 @@ BOOL SelectFile(HWND hWnd)
 	ofn.nMaxFile = sizeof(szFile);
 	ofn.lpstrFilter = szFilter;
 	ofn.nFilterIndex = 1;
-	ofn.lpstrFileTitle = NULL;
+	ofn.lpstrFileTitle = nullptr;
 	ofn.nMaxFileTitle = 0;
-	ofn.lpstrInitialDir = NULL;
+	ofn.lpstrInitialDir = nullptr;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 	if (GetOpenFileName(&ofn)==TRUE) 
 	{
@@ -206,14 +206,14 @@ VOID UpdateCertificatePanel(HWND hWnd)
 	SYSTEMTIME st;
 	SendDlgItemMessage(hWnd,IDC_03CERTIFICATEPANEL,LB_RESETCONTENT,0,0);
 	// object : 
-	CertGetNameString(pRootCertificate,CERT_NAME_SIMPLE_DISPLAY_TYPE,0,NULL,szBuffer2,ARRAYSIZE(szBuffer2));
+	CertGetNameString(pRootCertificate,CERT_NAME_SIMPLE_DISPLAY_TYPE,0,nullptr,szBuffer2,ARRAYSIZE(szBuffer2));
 	LoadString(g_hinst, IDS_03OBJECT, szMessage, ARRAYSIZE(szMessage));
 	_stprintf_s(szBuffer, ARRAYSIZE(szBuffer), szMessage,  szBuffer2);
 	SendDlgItemMessage(hWnd,IDC_03CERTIFICATEPANEL,LB_ADDSTRING,0,(LPARAM) szBuffer);
 	// delivered :
 	FileTimeToSystemTime( &(pRootCertificate->pCertInfo->NotBefore), &st );
-	GetDateFormat( LOCALE_USER_DEFAULT, DATE_LONGDATE, &st, NULL, szLocalDate, ARRAYSIZE(szLocalDate));
-    GetTimeFormat( LOCALE_USER_DEFAULT, 0, &st, NULL, szLocalTime, ARRAYSIZE(szLocalTime) );
+	GetDateFormat( LOCALE_USER_DEFAULT, DATE_LONGDATE, &st, nullptr, szLocalDate, ARRAYSIZE(szLocalDate));
+	   GetTimeFormat( LOCALE_USER_DEFAULT, 0, &st, nullptr, szLocalTime, ARRAYSIZE(szLocalTime) );
 
 	LoadString(g_hinst, IDS_03DELIVERED, szMessage, ARRAYSIZE(szMessage));
 	_stprintf_s(szBuffer, ARRAYSIZE(szBuffer), szMessage, szLocalDate, szLocalTime);
@@ -221,8 +221,8 @@ VOID UpdateCertificatePanel(HWND hWnd)
 
 	// expires :
 	FileTimeToSystemTime( &(pRootCertificate->pCertInfo->NotAfter), &st );
-	GetDateFormat( LOCALE_USER_DEFAULT, DATE_LONGDATE, &st, NULL, szLocalDate, ARRAYSIZE(szLocalDate));
-    GetTimeFormat( LOCALE_USER_DEFAULT, 0, &st, NULL, szLocalTime, ARRAYSIZE(szLocalTime) );
+	GetDateFormat( LOCALE_USER_DEFAULT, DATE_LONGDATE, &st, nullptr, szLocalDate, ARRAYSIZE(szLocalDate));
+	   GetTimeFormat( LOCALE_USER_DEFAULT, 0, &st, nullptr, szLocalTime, ARRAYSIZE(szLocalTime) );
 
 	LoadString(g_hinst, IDS_03EXPIRES, szMessage, ARRAYSIZE(szMessage));
 	_stprintf_s(szBuffer, ARRAYSIZE(szBuffer), szMessage, szLocalDate, szLocalTime);
@@ -257,7 +257,7 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				if (pRootCertificate)
 				{
 					CertFreeCertificateContext(pRootCertificate);
-					pRootCertificate = NULL;
+					pRootCertificate = nullptr;
 				}
 				pRootCertificate = SelectFirstCertificateWithPrivateKey();
 				if (pRootCertificate)
@@ -276,7 +276,7 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				if (pRootCertificate)
 				{
 					CertFreeCertificateContext(pRootCertificate);
-					pRootCertificate = NULL;
+					pRootCertificate = nullptr;
 				}
 				break;
 			case PSN_WIZNEXT:
@@ -297,7 +297,7 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				{
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"IDC_03_CREATE");
 					// Get validity years from UI
-					WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, NULL, FALSE);
+					WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);
 					if (wValidityYears < MIN_CERT_VALIDITY_YEARS) wValidityYears = MIN_CERT_VALIDITY_YEARS;
 					if (wValidityYears > MAX_CERT_VALIDITY_YEARS) wValidityYears = MAX_CERT_VALIDITY_YEARS;
 					// create self signed certificate as root
@@ -335,7 +335,7 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 						return TRUE;
 					}
 					// Get validity years from UI
-					WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, NULL, FALSE);
+					WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);
 					if (wValidityYears < MIN_CERT_VALIDITY_YEARS) wValidityYears = MIN_CERT_VALIDITY_YEARS;
 					if (wValidityYears > MAX_CERT_VALIDITY_YEARS) wValidityYears = MAX_CERT_VALIDITY_YEARS;
 					if (!CreateSmartCardCertificate(pRootCertificate, szReader, szCard, wValidityYears))
@@ -381,7 +381,7 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				if (pRootCertificate)
 				{
 						CertFreeCertificateContext(pRootCertificate);
-						pRootCertificate = NULL;
+						pRootCertificate = nullptr;
 				}
 				pRootCertificate = SelectCertificateWithPrivateKey(hWnd);
 				if (pRootCertificate)
@@ -403,17 +403,17 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					certViewInfo.pCertContext = pRootCertificate;
 					certViewInfo.cPurposes = 0;
 					certViewInfo.rgszPurposes = 0;
-					certViewInfo.pCryptProviderData = NULL;
-					certViewInfo.hWVTStateData = NULL;
+					certViewInfo.pCryptProviderData = nullptr;
+					certViewInfo.hWVTStateData = nullptr;
 					certViewInfo.fpCryptProviderDataTrustedUsage = FALSE;
 					certViewInfo.idxSigner = 0;
 					certViewInfo.idxCert = 0;
 					certViewInfo.fCounterSigner = FALSE;
 					certViewInfo.idxCounterSigner = 0;
 					certViewInfo.cStores = 0;
-					certViewInfo.rghStores = NULL;
+					certViewInfo.rghStores = nullptr;
 					certViewInfo.cPropSheetPages = 0;
-					certViewInfo.rgPropSheetPages = NULL;
+					certViewInfo.rgPropSheetPages = nullptr;
 					certViewInfo.nStartPage = 0;
 
 					CryptUIDlgViewCertificate(&certViewInfo,&fPropertiesChanged);

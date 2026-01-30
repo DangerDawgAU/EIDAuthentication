@@ -113,7 +113,7 @@ BOOL AuthenticateWithLsaLogonUser(LONG authPackage, PVOID authBuffer, DWORD auth
 	HANDLE Token;
 	err = LsaConnectUntrusted(&hLsa);
 	
-	err = LsaLogonUser(hLsa, &Origin, (SECURITY_LOGON_TYPE)  Interactive , authPackage, authBuffer,authBufferSize,NULL, &Source, (PVOID*)&Profile, &ProfileLen, &Luid, &Token, &Quota, &stat);
+	err = LsaLogonUser(hLsa, &Origin, (SECURITY_LOGON_TYPE)  Interactive , authPackage, authBuffer,authBufferSize,nullptr, &Source, (PVOID*)&Profile, &ProfileLen, &Luid, &Token, &Quota, &stat);
 	
 	LsaDeregisterLogonProcess(hLsa);
 	if (err)
@@ -135,11 +135,11 @@ BOOL AddServerCertInfo(IN OUT PSCHANNEL_CRED pSchannelCred)
 {
     BOOL fRet = FALSE;
  
-    LPWSTR pwszSubjectName = NULL;
+    LPWSTR pwszSubjectName = nullptr;
     TCHAR szMachineName[256];
     DWORD cchMachineName  = ARRAYSIZE(szMachineName);
  
-    HCERTSTORE  hCertStore = NULL;
+    HCERTSTORE  hCertStore = nullptr;
     PCCERT_CONTEXT*  ppCertContext   = NULL; // server cert array
     BOOL fCloseStore = FALSE;
  
@@ -282,15 +282,15 @@ BOOL AuthenticateWithSSPI(PTSTR szPrincipal, PTSTR szPassword, PTSTR szSSP)
 	SecBufferDesc bdS2C = { SECBUFFER_VERSION, 1, &sbufS2C };
 
 	// don't really need any special context attributes
-	DWORD grfRequiredCtxAttrsClient = NULL;//ASC_REQ_DELEGATE | ASC_REQ_CONNECTION | ASC_REQ_ALLOCATE_MEMORY;
-	DWORD grfRequiredCtxAttrsServer = NULL;//ASC_REQ_DELEGATE | ASC_REQ_CONNECTION | ASC_REQ_ALLOCATE_MEMORY;
+	DWORD grfRequiredCtxAttrsClient = 0;//ASC_REQ_DELEGATE | ASC_REQ_CONNECTION | ASC_REQ_ALLOCATE_MEMORY;
+	DWORD grfRequiredCtxAttrsServer = 0;//ASC_REQ_DELEGATE | ASC_REQ_CONNECTION | ASC_REQ_ALLOCATE_MEMORY;
 
 	// set up some aliases to make it obvious what's happening
 	PCtxtHandle    pClientCtxHandleIn  = 0;
 	PCtxtHandle    pClientCtxHandleOut = &hctxClient;
 	PCtxtHandle    pServerCtxHandleIn  = 0;
 	PCtxtHandle    pServerCtxHandleOut = &hctxServer;
-	SecBufferDesc* pClientInput  = 0;
+	SecBufferDesc* pClientInput  = nullptr;
 	SecBufferDesc* pClientOutput = &bdC2S;
 	SecBufferDesc* pServerInput  = &bdC2S;
 	SecBufferDesc* pServerOutput = &bdS2C;
@@ -306,7 +306,7 @@ BOOL AuthenticateWithSSPI(PTSTR szPrincipal, PTSTR szPassword, PTSTR szSSP)
 	TimeStamp expiryServer;
 	CREDSSP_CRED CredClient, CredServer;
 	SCHANNEL_CRED SchannelServerCred, SchannelClientCred;
-	PVOID pCredClient = NULL, pCredServer = NULL;
+	PVOID pCredClient = nullptr, pCredServer = nullptr;
 	memset(&CredClient, 0, sizeof(CREDSSP_CRED));
 	memset(&CredServer, 0, sizeof(CREDSSP_CRED));
 	memset(&SchannelServerCred, 0, sizeof(SCHANNEL_CRED));
@@ -340,7 +340,7 @@ BOOL AuthenticateWithSSPI(PTSTR szPrincipal, PTSTR szPassword, PTSTR szSSP)
 			pCredClient = &authIdent;
 		}
 		
-		err = AcquireCredentialsHandle(NULL, szSSP, SECPKG_CRED_OUTBOUND,
+		err = AcquireCredentialsHandle(nullptr, szSSP, SECPKG_CRED_OUTBOUND,
 											0, pCredClient, 0, 0,
 											&hcredClient, &expiryClient);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"AcquireCredentialsHandle client 0x%08x",err);
@@ -348,7 +348,7 @@ BOOL AuthenticateWithSSPI(PTSTR szPrincipal, PTSTR szPassword, PTSTR szSSP)
 		{
 			__leave;
 		}
-		AcquireCredentialsHandle(0, szSSP, SECPKG_CRED_INBOUND,
+		AcquireCredentialsHandle(nullptr, szSSP, SECPKG_CRED_INBOUND,
 											  0, pCredServer, 0, 0, &hcredServer,
 											  &expiryServer);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"AcquireCredentialsHandle server 0x%08x",err);
@@ -434,7 +434,7 @@ BOOL AuthenticateWithSSPI(PTSTR szPrincipal, PTSTR szPassword, PTSTR szSSP)
 			}
 			else
 			{
-				MessageBox(hMainWnd, negoinfo.PackageInfo->Name, TEXT("Security Package Used"),NULL);
+				MessageBox(hMainWnd, negoinfo.PackageInfo->Name, TEXT("Security Package Used"),0);
 			}
 		}
 		else if (_tcscmp(szSSP,TEXT("credssp")) == 0)
@@ -447,7 +447,7 @@ BOOL AuthenticateWithSSPI(PTSTR szPrincipal, PTSTR szPassword, PTSTR szSSP)
 			}
 			else
 			{
-				MessageBox(hMainWnd, negoinfo.PackageInfo->Name, TEXT("Security Package Used"),NULL);
+				MessageBox(hMainWnd, negoinfo.PackageInfo->Name, TEXT("Security Package Used"),0);
 			}
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"before  ImpersonateSecurityContext",err);
@@ -462,7 +462,7 @@ BOOL AuthenticateWithSSPI(PTSTR szPrincipal, PTSTR szPassword, PTSTR szSSP)
 			TCHAR szUserName[256];
 			DWORD cbUserName = ARRAYSIZE(szUserName);
 			GetUserName (szUserName, &cbUserName);
-			MessageBox(hMainWnd, szUserName, TEXT("Connected as"),NULL);
+			MessageBox(hMainWnd, szUserName, TEXT("Connected as"),0);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"before  RevertSecurityContext",err);
 			RevertSecurityContext (pServerCtxHandleOut);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"after  RevertSecurityContext",err);
@@ -514,7 +514,7 @@ BOOL AuthenticateWithSSPIWrapper(LONG authPackage, PVOID authBuffer, DWORD authB
         LSA_STRING lsaszPackageName;
 		CHAR szTemp[255];
 		WideCharToMultiByte(CP_ACP, 0, pPackageInfo[dwI].Name,(int) _tcsclen(pPackageInfo[dwI].Name) +1,
-				szTemp, ARRAYSIZE(szTemp), NULL, NULL);
+				szTemp, ARRAYSIZE(szTemp), nullptr, nullptr);
 		LsaInitString(&lsaszPackageName,szTemp );
 
         status = LsaLookupAuthenticationPackage(hLsa, &lsaszPackageName, &ulAuthPackage);
@@ -562,17 +562,17 @@ void Menu_CREDENTIALUID_GENERIC(DWORD dwFlag)
 		RetrieveNegotiateAuthPackage(&authPackage);
 	}
 
-	CoInitializeEx(NULL,COINIT_APARTMENTTHREADED); 
+	CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
 
 	credUiInfo.pszCaptionText = TEXT("My caption");
 	credUiInfo.pszMessageText = TEXT("My message");
 	credUiInfo.cbSize = sizeof(credUiInfo);
-	credUiInfo.hbmBanner = NULL;
+	credUiInfo.hbmBanner = nullptr;
 	credUiInfo.hwndParent = hMainWnd;
 
 	DWORD result = 0;
-	result = CredUIPromptForWindowsCredentials(&(credUiInfo), 0, &(authPackage), 
-		NULL, 0, &authBuffer, &authBufferSize, &(save), dwFlag);
+	result = CredUIPromptForWindowsCredentials(&(credUiInfo), 0, &(authPackage),
+		nullptr, 0, &authBuffer, &authBufferSize, &(save), dwFlag);
 	if (result == ERROR_SUCCESS)
 	{
 		//AuthenticateWithLsaLogonUser(authPackage,authBuffer,authBufferSize);
@@ -594,7 +594,7 @@ void Menu_CREDENTIALUID_GENERIC(DWORD dwFlag)
 	{
 		MessageBoxWin32(result);
 	}
-	result = CredUIConfirmCredentials(NULL,FALSE);
+	result = CredUIConfirmCredentials(nullptr,FALSE);
 }
 
 void Menu_CREDENTIALUID()
@@ -622,11 +622,11 @@ void menu_CREDENTIALUID_OldBehavior()
 	credUiInfo.pszCaptionText = TEXT("My caption");
 	credUiInfo.pszMessageText = TEXT("My message");
 	credUiInfo.cbSize = sizeof(credUiInfo);
-	credUiInfo.hbmBanner = NULL;
+	credUiInfo.hbmBanner = nullptr;
 	credUiInfo.hwndParent = hMainWnd;
 	DWORD dwSize = ARRAYSIZE(szTarget);
 	GetComputerName(szTarget,&dwSize);
-	dwStatus = CredUIPromptForCredentials(&credUiInfo, szTarget, NULL, 0, 
+	dwStatus = CredUIPromptForCredentials(&credUiInfo, szTarget, nullptr, 0,
 		szUsername, CREDUI_MAX_USERNAME_LENGTH,
 		szPassword, CREDUI_MAX_PASSWORD_LENGTH,
 		FALSE, 0);
@@ -666,20 +666,20 @@ void menu_CREDENTIALUID_OldBehavior()
 	{
 		MessageBoxWin32(dwStatus);
 	}
-	CredUIConfirmCredentials(NULL,FALSE);
+	CredUIConfirmCredentials(nullptr,FALSE);
 }
 
 void menu_CRED_COM()
 {
-	ICredentialProvider* m_pIMyCredentialProvider = NULL;
+	ICredentialProvider* m_pIMyCredentialProvider = nullptr;
 	DWORD dwCount;
 	DWORD dwCountDefault;
 	BOOL bAutoLogon;
-	ICredentialProviderCredential* m_pMyID = NULL;
+	ICredentialProviderCredential* m_pMyID = nullptr;
 	PWSTR pwszOptionalStatusText;
 	CREDENTIAL_PROVIDER_STATUS_ICON cpsiOptionalStatusIcon;
-	CoInitializeEx(NULL,COINIT_APARTMENTTHREADED); 
-	CoCreateInstance(CLSID_CEIDProvider,NULL,CLSCTX_INPROC_SERVER,IID_ICredentialProvider,(void**)&m_pIMyCredentialProvider);
+	CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
+	CoCreateInstance(CLSID_CEIDProvider,nullptr,CLSCTX_INPROC_SERVER,IID_ICredentialProvider,(void**)&m_pIMyCredentialProvider);
 	//CoCreateInstance(CLSID_SmartcardCredentialProvider,NULL,CLSCTX_INPROC_SERVER,IID_ICredentialProvider,(void**)&m_pIMyCredentialProvider);
 	m_pIMyCredentialProvider->SetUsageScenario(CPUS_CREDUI,0);
 	Sleep(1000);
@@ -696,7 +696,7 @@ void menu_ResetPasswordWizard()
 {
 	WCHAR szUserName[256];
 	WCHAR szComputerName[256];
-	HMODULE keymgrDll = NULL;
+	HMODULE keymgrDll = nullptr;
 	if (AskUsername(szUserName, szComputerName))
 	{
 		__try
@@ -711,7 +711,7 @@ void menu_ResetPasswordWizard()
 			{
 				__leave;
 			}
-			MyPRShowRestoreFromMsginaW(NULL,NULL,szUserName,NULL);
+			MyPRShowRestoreFromMsginaW(0UL,0UL,szUserName,0UL);
 		}
 		__finally
 		{

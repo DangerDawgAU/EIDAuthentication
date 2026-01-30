@@ -52,11 +52,11 @@ BOOL TestLogon(HWND hMainWnd)
 	credUiInfo.pszCaptionText = szCaption;
 	credUiInfo.pszMessageText = szMessage;
 	credUiInfo.cbSize = sizeof(credUiInfo);
-	credUiInfo.hbmBanner = NULL;
+	credUiInfo.hbmBanner = nullptr;
 	credUiInfo.hwndParent = hMainWnd;
 
 	DWORD result = CredUIPromptForWindowsCredentials(&(credUiInfo), 0, &(authPackage), 
-					NULL, 0, &authBuffer, &authBufferSize, &(save), dwFlag);
+					nullptr, 0, &authBuffer, &authBufferSize, &(save), dwFlag);
 	if (result == ERROR_SUCCESS)
 	{
 		err = LsaConnectUntrusted(&hLsa);
@@ -97,7 +97,7 @@ BOOL TestLogon(HWND hMainWnd)
 	return fReturn;
 }
 
-HANDLE hInternalLogWriteHandle = NULL;
+HANDLE hInternalLogWriteHandle = nullptr;
 
 VOID WINAPI ProcessEvents(PEVENT_TRACE pEvent)
 {

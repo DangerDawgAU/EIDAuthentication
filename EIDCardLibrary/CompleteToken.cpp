@@ -49,14 +49,14 @@ NTSTATUS UserNameToToken(__in PLSA_UNICODE_STRING AccountName,
 						) {
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 	PLSA_TOKEN_INFORMATION_V2 TokenInformation;
-	PTOKEN_GROUPS pTokenGroups=NULL;
-	PGROUP_USERS_INFO_1 pGroupInfo = NULL;
-	PGROUP_USERS_INFO_0 pLocalGroupInfo = NULL;
+	PTOKEN_GROUPS pTokenGroups=nullptr;
+	PGROUP_USERS_INFO_1 pGroupInfo = nullptr;
+	PGROUP_USERS_INFO_0 pLocalGroupInfo = nullptr;
 
 	DWORD NumberOfGroups;
 	DWORD NumberOfLocalGroups;
 	BOOL bResult;
-	PSID UserSid = NULL, PrimaryGroupSid = NULL, *pGroupSid = NULL;
+	PSID UserSid = nullptr, PrimaryGroupSid = nullptr, *pGroupSid = nullptr;
 	DWORD Size;
 	PBYTE Offset;
 	DWORD i;
@@ -139,7 +139,7 @@ NTSTATUS UserNameToToken(__in PLSA_UNICODE_STRING AccountName,
 		Size += sizeof(DWORD) + (sizeof(SID_AND_ATTRIBUTES)) * (NumberOfGroups+NumberOfLocalGroups); // groups
 
 		TokenInformation = (PLSA_TOKEN_INFORMATION_V2) EIDAlloc(Size);
-		if (TokenInformation == NULL)
+		if (TokenInformation == nullptr)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"TokenInformation NULL");
 			Status = STATUS_NO_MEMORY;
@@ -201,15 +201,15 @@ NTSTATUS UserNameToToken(__in PLSA_UNICODE_STRING AccountName,
 		
 		// privileges
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"privileges");
-		TokenInformation->Privileges = NULL;
+		TokenInformation->Privileges = nullptr;
 
 		// owner
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"owner");
-		TokenInformation->Owner.Owner = NULL;
+		TokenInformation->Owner.Owner = nullptr;
 
 		// dacl
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dacl");
-		TokenInformation->DefaultDacl.DefaultDacl = NULL;
+		TokenInformation->DefaultDacl.DefaultDacl = nullptr;
 
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"TokenInformation done");
 
@@ -243,11 +243,11 @@ BOOL NameToSid(WCHAR* UserName, PSID *pUserSid)
 	DWORD cchReferencedDomainName=0;
 
 	DWORD dLengthSid = 0;
-	bResult = LookupAccountNameW( NULL, UserName, NULL,&dLengthSid,NULL, &cchReferencedDomainName, &Use);
+	bResult = LookupAccountNameW( nullptr, UserName, nullptr,&dLengthSid,nullptr, &cchReferencedDomainName, &Use);
 	
 	*pUserSid = EIDAlloc(dLengthSid);
 	cchReferencedDomainName=UNCLEN;
-	bResult = LookupAccountNameW( NULL, UserName, *pUserSid,&dLengthSid,checkDomainName, &cchReferencedDomainName, &Use);
+	bResult = LookupAccountNameW( nullptr, UserName, *pUserSid,&dLengthSid,checkDomainName, &cchReferencedDomainName, &Use);
 	if (!bResult) 
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to LookupAccountNameW 0x%08x",GetLastError());
@@ -260,7 +260,7 @@ BOOL GetGroups(WCHAR* UserName,PGROUP_USERS_INFO_1 *lpGroupInfo, LPDWORD pTotalE
 {
 	NET_API_STATUS Status;
 	DWORD NumberOfEntries;
-	Status = NetUserGetGroups(NULL,UserName,1,(LPBYTE*)lpGroupInfo,MAX_PREFERRED_LENGTH,&NumberOfEntries,pTotalEntries);
+	Status = NetUserGetGroups(nullptr,UserName,1,(LPBYTE*)lpGroupInfo,MAX_PREFERRED_LENGTH,&NumberOfEntries,pTotalEntries);
 	if (Status != NERR_Success)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to NetUserGetGroups 0x%08x",Status);
@@ -273,7 +273,7 @@ BOOL GetLocalGroups(WCHAR* UserName,PGROUP_USERS_INFO_0 *lpGroupInfo, LPDWORD pT
 {
 	NET_API_STATUS Status;
 	DWORD NumberOfEntries;
-	Status = NetUserGetLocalGroups(NULL,UserName,0,0,(LPBYTE*)lpGroupInfo,MAX_PREFERRED_LENGTH,&NumberOfEntries,pTotalEntries);
+	Status = NetUserGetLocalGroups(nullptr,UserName,0,0,(LPBYTE*)lpGroupInfo,MAX_PREFERRED_LENGTH,&NumberOfEntries,pTotalEntries);
 	if (Status != NERR_Success)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to NetUserGetLocalGroups 0x%08x",Status);
@@ -297,7 +297,7 @@ BOOL GetPrimaryGroupSidFromUserSid(PSID UserSID, PSID *PrimaryGroupSID)
 
 void DebugPrintSid(WCHAR* Name, PSID Sid)
 {
-	LPTSTR chSID = NULL;
+	LPTSTR chSID = nullptr;
 	ConvertSidToStringSid(Sid,&chSID);
 	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Name %s Sid %s",Name,chSID);
 	LocalFree(chSID);
@@ -307,10 +307,10 @@ void DebugPrintSid(WCHAR* Name, PSID Sid)
 NTSTATUS CheckAuthorization(PWSTR UserName, NTSTATUS *SubStatus, LARGE_INTEGER *ExpirationTime)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
-	PUSER_INFO_4 pUserInfo = NULL;
+	PUSER_INFO_4 pUserInfo = nullptr;
 	__try
 	{
-		if((Status=NetUserGetInfo(NULL, UserName, 4, (LPBYTE*)&pUserInfo))!=0)
+		if((Status=NetUserGetInfo(nullptr, UserName, 4, (LPBYTE*)&pUserInfo))!=0)
 		{
 			switch(Status)
 			{

@@ -38,8 +38,8 @@
 CSmartCardConnectionNotifier::CSmartCardConnectionNotifier(ISmartCardConnectionNotifierRef* CallBack, BOOL fImmediateStart) 
 {
 	_CallBack = CallBack;
-	_hAccessStartedEvent = NULL;
-	_hThread = NULL;
+	_hAccessStartedEvent = nullptr;
+	_hThread = nullptr;
 	if (fImmediateStart)
 	{
 		Start();
@@ -60,25 +60,25 @@ HRESULT CSmartCardConnectionNotifier::Start()
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 	
 	// check callback
-	if(NULL == _CallBack)
+	if(nullptr == _CallBack)
 	{
 		// no callback defined : don't launch
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No callback definied");
 		return E_FAIL;
 	}
-	if (_hThread != NULL)
+	if (_hThread != nullptr)
 	{
 		// Thread already launched
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Thread already launched");
 		return E_FAIL;
 	}
-	_hThread = CreateThread(NULL, 0, CSmartCardConnectionNotifier::_ThreadProc, (LPVOID) this, 0, NULL);
-    if (_hThread == NULL)
+	_hThread = CreateThread(nullptr, 0, CSmartCardConnectionNotifier::_ThreadProc, (LPVOID) this, 0, nullptr);
+    if (_hThread == nullptr)
     {
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to launch the thread : %d",GetLastError());
 		return E_FAIL;
     }
-	_hAccessStartedEvent = CreateEvent(NULL,TRUE,FALSE,NULL);
+	_hAccessStartedEvent = CreateEvent(nullptr,TRUE,FALSE,nullptr);
 
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Leave");
 	return S_OK;
@@ -90,13 +90,13 @@ HRESULT CSmartCardConnectionNotifier::Stop()
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 	LONG lReturn;
 
-	if (_hThread != NULL) 
+	if (_hThread != nullptr)
 	{
 		if (WaitForSingleObject(_hThread,0)==WAIT_TIMEOUT) 
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Wait for thread");
 			// blocked on SCardAccessStartedEvent ?
-			if (_hAccessStartedEvent != NULL) {
+			if (_hAccessStartedEvent != nullptr) {
 				SetEvent( _hAccessStartedEvent );
 			}
 			if (_hSCardContext != NULL)
@@ -115,7 +115,7 @@ HRESULT CSmartCardConnectionNotifier::Stop()
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Thread already finished");
 		}
 		CloseHandle(_hThread);
-		_hThread = NULL;
+		_hThread = nullptr;
 	}
 	else
 	{
@@ -158,13 +158,13 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 	do {
 		// Establish the Resource Manager Context.
-		Status = SCardEstablishContext(SCARD_SCOPE_USER,NULL,NULL,&_hSCardContext);
+		Status = SCardEstablishContext(SCARD_SCOPE_USER,nullptr,nullptr,&_hSCardContext);
 		if(Status == SCARD_E_NO_SERVICE) 
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardEstablishContext : SCARD_E_NO_SERVICE");
 			// Wait for the launch of the Resource Manager
 			hAccessStartedEvent[0] = SCardAccessStartedEvent();
-			if (_hAccessStartedEvent == NULL)
+			if (_hAccessStartedEvent == nullptr)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardAccessStartedEvent : %d",GetLastError());
 				return SCARD_E_NO_SERVICE;
@@ -190,7 +190,7 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 				return SCARD_E_NO_SERVICE;
 			}
 			// no error and manager available
-			Status = SCardEstablishContext(SCARD_SCOPE_USER,NULL,NULL,&_hSCardContext);
+			Status = SCardEstablishContext(SCARD_SCOPE_USER,nullptr,nullptr,&_hSCardContext);
 			if(Status != SCARD_S_SUCCESS)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardEstablishContext2 :%X",Status);
@@ -233,7 +233,7 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 						if ( (SCARD_STATE_PRESENT  & rgscState[dwI].dwEventState) &&
 								!(SCARD_STATE_PRESENT & rgscState[dwI].dwCurrentState))
 						{
-							LPTSTR pmszCards = NULL;
+							LPTSTR pmszCards = nullptr;
 							DWORD cch = SCARD_AUTOALLOCATE;
 							for (DWORD dwJ = 0; dwJ < 4; dwJ++)
 							{
@@ -248,7 +248,7 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 									rgscState[dwI].rgbAtr[dwJ * 8 + 7]
 								);
 							}
-							Status = SCardListCards(_hSCardContext,rgscState[dwI].rgbAtr,NULL,NULL, (LPTSTR)&pmszCards,&cch );
+							Status = SCardListCards(_hSCardContext,rgscState[dwI].rgbAtr,nullptr,0, (LPTSTR)&pmszCards,&cch );
 							if (Status != SCARD_S_SUCCESS)
 							{
 								EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to retrieve smart card name 0x%08x",Status);
@@ -263,7 +263,7 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 								!(SCARD_STATE_MUTE & rgscState[dwI].dwCurrentState)
 								)
 						{
-								Callback(EIDCPRSDisconnected,rgscState[dwI].szReader, NULL, 0);
+								Callback(EIDCPRSDisconnected,rgscState[dwI].szReader, nullptr, 0);
 								rgscState[dwI].dwCurrentState = SCARD_STATE_EMPTY;
 						}
 					}				
@@ -297,7 +297,7 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 			{
 				if (SCARD_STATE_PRESENT  & rgscState[dwI].dwEventState)
 				{
-					Callback(EIDCPRSDisconnected,rgscState[dwI].szReader, NULL, 0);
+					Callback(EIDCPRSDisconnected,rgscState[dwI].szReader, nullptr, 0);
 				}
 			}
 			EIDFree((PVOID)rgscState[dwI].szReader);
@@ -316,8 +316,8 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 	}
 	// synchronization event
 	CloseHandle(_hAccessStartedEvent);
-	_hAccessStartedEvent = NULL;
-	Callback(EIDCPRSThreadFinished,_T(""), NULL, 0);
+	_hAccessStartedEvent = nullptr;
+	Callback(EIDCPRSThreadFinished,_T(""), nullptr, 0);
 	return Status;
 }
 
@@ -362,8 +362,8 @@ LONG CSmartCardConnectionNotifier::GetReaderStates(SCARD_READERSTATE rgscState[M
 	}
 
 	dwReadersLength = SCARD_AUTOALLOCATE;
-	szListReaders = NULL;
-	Status = SCardListReaders(_hSCardContext,NULL,(LPTSTR)&szListReaders,&dwReadersLength);
+	szListReaders = nullptr;
+	Status = SCardListReaders(_hSCardContext,nullptr,(LPTSTR)&szListReaders,&dwReadersLength);
 	// No reader is connected to the system.
 	if (Status == SCARD_E_NO_READERS_AVAILABLE)
 	{

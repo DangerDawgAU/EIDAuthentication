@@ -121,7 +121,7 @@ void EIDCardLibraryTracingRegister() {
 	EnterCriticalSection(&g_csTrace);
 	bFirst = FALSE;
 	LeaveCriticalSection(&g_csTrace);
-	EventRegister(&CLSID_CEIDProvider,EnableCallback,NULL,&hPub);
+	EventRegister(&CLSID_CEIDProvider,EnableCallback,nullptr,&hPub);
 }
 
 void EIDCardLibraryTracingUnRegister() {
@@ -188,7 +188,7 @@ void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR
 			// may contain sensitive information - generate a dump only if the debugging is active
 			if (IsTracingEnabled)
 			{
-				HANDLE fileHandle = CreateFile (TEXT("c:\\EIDAuthenticateDump.dmp"), GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+				HANDLE fileHandle = CreateFile (TEXT("c:\\EIDAuthenticateDump.dmp"), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 				if (fileHandle == INVALID_HANDLE_VALUE)
 				{
 					if (GetLastError() == 0x5)
@@ -198,7 +198,7 @@ void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR
 						GetTempPath(MAX_PATH, szFileName);
 						_tcscat_s(szFileName, MAX_PATH, TEXT("EIDAuthenticateDump.dmp"));
 						EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__,WINEVENT_LEVEL_WARNING,L"Trying to create dump file %s",szFileName);
-						fileHandle = CreateFile (szFileName, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+						fileHandle = CreateFile (szFileName, GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 					}
 				}
 				if (fileHandle == INVALID_HANDLE_VALUE)
@@ -221,7 +221,7 @@ void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR
 					// MiniDumpNormal captures only essential debugging info without sensitive data
 					BOOL fStatus = MiniDumpWriteDump(GetCurrentProcess(),
 										GetCurrentProcessId(),
-										fileHandle, MiniDumpNormal, (pExceptPtrs != 0) ? &dumpExceptionInfo: NULL,NULL,NULL);
+										fileHandle, MiniDumpNormal, (pExceptPtrs != 0) ? &dumpExceptionInfo: nullptr,nullptr,nullptr);
 					if (!fStatus)
 					{
 						EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__,WINEVENT_LEVEL_WARNING,L"Unable to write minidump file 0x%08X", GetLastError());
@@ -322,13 +322,13 @@ void MessageBoxWin32Ex2(DWORD status, HWND hWnd, LPCSTR szFile, DWORD dwLine) {
 	{
 		// winhttp error message
 		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER| FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_HMODULE,
-			GetModuleHandle(_T("winhttp.dll")),status,0,(LPTSTR)&Error,0,NULL);
+			GetModuleHandle(_T("winhttp.dll")),status,0,(LPTSTR)&Error,0,nullptr);
 	}
 	else
 	{
 		// system error message
 		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
-			NULL,status,0,(LPTSTR)&Error,0,NULL);
+			nullptr,status,0,(LPTSTR)&Error,0,nullptr);
 	}
 	_stprintf_s(szMessage,ARRAYSIZE(szMessage),TEXT("0x%08X - %s"),status,(wchar_t *) Error);
 	EIDCardLibraryTraceEx(szFile, dwLine, "MessageBoxWin32Ex2", WINEVENT_LEVEL_INFO, L"%s", szMessage);
@@ -367,7 +367,7 @@ BOOL StartLogging()
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"StartTrace 0x%08x", err);
 			__leave;
 		}
-		err = EnableTraceEx(&CLSID_CEIDProvider,NULL,SessionHandle,TRUE,WINEVENT_LEVEL_VERBOSE,0,0,0,NULL);
+		err = EnableTraceEx(&CLSID_CEIDProvider,nullptr,SessionHandle,TRUE,WINEVENT_LEVEL_VERBOSE,0,0,0,nullptr);
 		if (err != ERROR_SUCCESS)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EnableTraceEx 0x%08x", err);
@@ -401,7 +401,7 @@ BOOL StopLogging()
 		Properties.TraceProperties.LogFileNameOffset = sizeof(EVENT_TRACE_PROPERTIES);
 		Properties.TraceProperties.LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES) + 1024 * sizeof(TCHAR);
 		Properties.TraceProperties.MaximumFileSize = 8;
-		err = ControlTrace(NULL, TEXT("EIDCredentialProvider"), &(Properties.TraceProperties),EVENT_TRACE_CONTROL_STOP);
+		err = ControlTrace(0, TEXT("EIDCredentialProvider"), &(Properties.TraceProperties),EVENT_TRACE_CONTROL_STOP);
 		if (err != ERROR_SUCCESS && err != 0x00001069)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"ControlTrace 0x%08x", err);
@@ -419,6 +419,7 @@ BOOL StopLogging()
 // Logs to ETW with security-specific formatting for SIEM/security monitoring tools
 void EIDSecurityAuditEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR dwAuditType, PCWSTR szFormat,...)
 {
+	UNREFERENCED_PARAMETER(szFile);
 	WCHAR Buffer[512];
 	WCHAR AuditBuffer[600];
 	int ret;

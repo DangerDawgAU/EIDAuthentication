@@ -21,7 +21,7 @@ void menu_CREDMGMT_CreateStoredCredential(BOOL fCrypt)
 	WCHAR szCard[256];
 	WCHAR szPin[256];
 	DWORD dwKeySpec = 0;
-	PCCERT_CONTEXT Context = NULL;
+	PCCERT_CONTEXT Context = nullptr;
 
 	if (AskForCard(szReader,256,szCard,256)) {
 		if (Context = SelectCert(szReader,szCard)) 

@@ -61,7 +61,7 @@ extern "C"
 	void initializeExportedFunctionsTable();
 
 	// allocate an LSA_STRING from a char*
-	PLSA_STRING LsaInitializeString(PCHAR Source)
+	PLSA_STRING LsaInitializeString(PCSTR Source)
 	{
 		size_t Size = strlen(Source);
 		PCHAR Buffer = (PCHAR)EIDAlloc((DWORD) (sizeof(CHAR)*(Size+1)));

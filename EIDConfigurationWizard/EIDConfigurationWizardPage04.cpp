@@ -18,7 +18,7 @@
 #pragma comment(lib,"Scarddlg")
 
 
-CContainerHolderFactory<CContainerHolderTest> *pCredentialList = NULL;
+CContainerHolderFactory<CContainerHolderTest> *pCredentialList = nullptr;
 DWORD dwCurrentCredential = 0xFFFFFFFF;
 BOOL fHasDeselected = TRUE;
 

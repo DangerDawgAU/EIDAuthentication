@@ -72,14 +72,14 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 	DWORD type=REG_SZ;
 	TCHAR szValue[2]=TEXT("0");
 	DWORD size2 = sizeof(szValue);
-	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,MyGPOInfo[Policy].Key,NULL, KEY_READ, &key)==ERROR_SUCCESS){
+	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,MyGPOInfo[Policy].Key,0, KEY_READ, &key)==ERROR_SUCCESS){
 		// for the scremoveoption : DWORD value stored as PTSTR !!!!
-		if (Policy == scremoveoption && RegQueryValueEx(key,MyGPOInfo[Policy].Value,NULL, &type,(LPBYTE) &szValue, &size2)==ERROR_SUCCESS)
+		if (Policy == scremoveoption && RegQueryValueEx(key,MyGPOInfo[Policy].Value,nullptr, &type,(LPBYTE) &szValue, &size2)==ERROR_SUCCESS)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Policy %s found = %s",MyGPOInfo[Policy].Value,szValue);
 			value = _tstoi(szValue);
 		}
-		else if (RegQueryValueEx(key,MyGPOInfo[Policy].Value,NULL, &type,(LPBYTE) &value, &size)==ERROR_SUCCESS)
+		else if (RegQueryValueEx(key,MyGPOInfo[Policy].Value,nullptr, &type,(LPBYTE) &value, &size)==ERROR_SUCCESS)
 		{
 			// Validate registry value type to prevent misinterpretation of non-DWORD data
 			if (type != REG_DWORD)
@@ -111,19 +111,19 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 DWORD GetPolicyValue(GPOPolicy Policy)
 {
 	HRESULT hr=S_OK;
-	IGroupPolicyObject* p = NULL;
+	IGroupPolicyObject* p = nullptr;
 	DWORD dwSection = GPO_SECTION_MACHINE;
 	HKEY hGPOSectionKey = NULL; 
 	DWORD dwValue = 0;
     __try
 	{
-		hr = CoInitialize(NULL);
+		hr = CoInitialize(nullptr);
 		if (!SUCCEEDED(hr))
 		{ 
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CoInitialize");
 			__leave;
 		}
-		hr = CoCreateInstance(CLSID_GroupPolicyObject, NULL,
+		hr = CoCreateInstance(CLSID_GroupPolicyObject, nullptr,
 							  CLSCTX_INPROC_SERVER, IID_IGroupPolicyObject,
 							  (LPVOID*)&p);
 
@@ -177,7 +177,7 @@ BOOL SetRemovePolicyValue(DWORD dwActivate)
 			dwError = lReturn;
 			__leave;
 		}
-		hServiceManager = OpenSCManager(NULL,NULL,SC_MANAGER_CONNECT);
+		hServiceManager = OpenSCManager(nullptr,nullptr,SC_MANAGER_CONNECT);
 		if (!hServiceManager)
 		{
 			dwError = GetLastError();
@@ -192,12 +192,12 @@ BOOL SetRemovePolicyValue(DWORD dwActivate)
 		if (dwActivate)
 		{	
 			// start service
-			if (!ChangeServiceConfig(hService, SERVICE_NO_CHANGE, SERVICE_AUTO_START, SERVICE_NO_CHANGE, NULL, NULL, NULL, NULL, NULL, NULL, NULL))
+			if (!ChangeServiceConfig(hService, SERVICE_NO_CHANGE, SERVICE_AUTO_START, SERVICE_NO_CHANGE, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr))
 			{
 				dwError = GetLastError();
 				__leave;
 			}
-			if (!StartService(hService,0,NULL))
+			if (!StartService(hService,0,nullptr))
 			{
 				dwError = GetLastError();
 				__leave;
@@ -206,7 +206,7 @@ BOOL SetRemovePolicyValue(DWORD dwActivate)
 		else
 		{ 
 			// stop service
-			if (!ChangeServiceConfig(hService, SERVICE_NO_CHANGE, SERVICE_DEMAND_START, SERVICE_NO_CHANGE, NULL, NULL, NULL, NULL, NULL, NULL, NULL))
+			if (!ChangeServiceConfig(hService, SERVICE_NO_CHANGE, SERVICE_DEMAND_START, SERVICE_NO_CHANGE, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr))
 			{
 				dwError = GetLastError();
 				__leave;

@@ -119,7 +119,7 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptAcquireContext 1 0x%08x",GetLastError());
 		// for the spanish EID
 		bStatus = CryptAcquireContext(&HCryptProv,
-				NULL,
+				nullptr,
 				szProviderName,
 				PROV_RSA_FULL,
 				CRYPT_SILENT);
@@ -151,7 +151,7 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 
 		// convert the container name to unicode
 #ifdef UNICODE
-		int wLen = MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, NULL, 0);
+		int wLen = MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, nullptr, 0);
 		LPTSTR szWideContainerName = (LPTSTR) EIDAlloc(sizeof(TCHAR)*wLen);
 		if (szWideContainerName)
 		{
@@ -185,10 +185,10 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 								0))
 						{
 							CreateItemFromCertificateBlob(hProv, szReaderName,szCardName,szProviderName,
-								szWideContainerName, pKeySpecs[i],ActivityCount, Data, DataSize);
-						}
-						CryptDestroyKey(hKey);
-						hKey = NULL;
+									szWideContainerName, pKeySpecs[i],ActivityCount, Data, DataSize);
+							}
+							CryptDestroyKey(hKey);
+							hKey = NULL;
 					}
 				}
 			}
@@ -219,7 +219,7 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 				{
 					CreateItemFromCertificateBlob(hProv, szReaderName,szCardName,szProviderName,
 						szMainContainerName, pKeySpecs[i],ActivityCount, Data, DataSize);
-				}
+					}
 				CryptDestroyKey(hKey);
 				hKey = NULL;
 			}
@@ -235,7 +235,7 @@ BOOL CContainerHolderFactory<T>::CreateContainer(__in LPCTSTR szReaderName,__in 
 															   __in LPCTSTR szProviderName, __in LPCTSTR szWideContainerName,
 															   __in DWORD KeySpec, __in USHORT ActivityCount, __in PCCERT_CONTEXT pCertContext)
 {
-	CContainer* pContainer = NULL;
+	CContainer* pContainer = nullptr;
 	pContainer = new CContainer(szReaderName,szCardName,szProviderName,szWideContainerName, KeySpec, ActivityCount, pCertContext);
 	this->Lock();
 	T* ContainerHolder = new T(pContainer);
@@ -253,9 +253,9 @@ BOOL CContainerHolderFactory<T>::CreateItemFromCertificateBlob(__in HCRYPTPROV h
 															   __in PBYTE Data, __in DWORD DataSize)
 {
 	BOOL fReturn = FALSE;
-	PCCERT_CONTEXT pCertContext = NULL;
+	PCCERT_CONTEXT pCertContext = nullptr;
 	BOOL fSuccess;
-	PTSTR szUsername = NULL;
+	PTSTR szUsername = nullptr;
 	DWORD dwError = 0;
 	__try
 	{
@@ -298,7 +298,7 @@ BOOL CContainerHolderFactory<T>::CreateItemFromCertificateBlob(__in HCRYPTPROV h
 		}
 		// important : the hprov will be used later and free if the certificatecontext is free
 		// so we have to add 1 to the reference count
-		fReturn = CryptContextAddRef(hProv, NULL, 0);
+		fReturn = CryptContextAddRef(hProv, nullptr, 0);
 		if (!fReturn)
 		{
 			dwError = GetLastError();
@@ -396,7 +396,7 @@ BOOL CContainerHolderFactory<T>::DisconnectNotification(LPCTSTR szReaderName)
 		CContainer* container = item->GetContainer();
 
 #ifndef UNICODE
-		int wLen = MultiByteToWideChar(CP_ACP, 0, szReaderName, -1, NULL, 0);
+		int wLen = MultiByteToWideChar(CP_ACP, 0, szReaderName, -1, nullptr, 0);
 		LPWSTR szWideReaderName = (LPWSTR) EIDAlloc(sizeof(WCHAR)*wLen);
 		if (szWideReaderName)
 		{
@@ -455,7 +455,7 @@ T* CContainerHolderFactory<T>::GetContainerHolderAt(DWORD dwIndex)
 {
 	if (dwIndex >= _CredentialList.size())
 	{
-		return NULL;
+		return nullptr;
 	}
 	std::list<T*>::iterator it = _CredentialList.begin();
 	std::advance(it, dwIndex);

@@ -30,7 +30,7 @@ CSmartCardConnectionNotifierTest _SmartCardConnectionNotifierTest;
 
 void Menu_STARTWAITTHREAD()
 {
-	if (_pSmartCardConnectionNotifier == NULL)
+	if (_pSmartCardConnectionNotifier == nullptr)
 	{
 		_pSmartCardConnectionNotifier = new CSmartCardConnectionNotifier(&_SmartCardConnectionNotifierTest);
 	}
@@ -42,11 +42,11 @@ void Menu_STARTWAITTHREAD()
 
 void Menu_STOPWAITTHREAD()
 {
-	if (_pSmartCardConnectionNotifier != NULL)
+	if (_pSmartCardConnectionNotifier != nullptr)
 	{
 		_pSmartCardConnectionNotifier->Stop();
 		delete _pSmartCardConnectionNotifier;
-		_pSmartCardConnectionNotifier = NULL;
+		_pSmartCardConnectionNotifier = nullptr;
 	}
 	else
 	{
