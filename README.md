@@ -100,7 +100,6 @@ cd Installer
 | **EIDConfigurationWizardElevated** | C++ Elevated Helper | UAC elevation helper for admin tasks |
 | **EIDLogManager** | C++ Diagnostic Tool | Enable/disable event tracing |
 | **EIDCardLibrary** | C++ Static Library | Shared smart card and crypto utilities |
-| **EIDTest** | C++ Test Suite | Component unit tests |
 
 ### Installation Layout
 
@@ -185,7 +184,6 @@ EIDAuthentication/
 ├── EIDCredentialProvider/        # Credential Provider v2
 ├── EIDLogManager/                # Logging management tool
 ├── EIDPasswordChangeNotification/   # Password filter DLL
-├── EIDTest/                      # Test suite
 ├── Installer/                    # NSIS installer scripts
 ├── build.bat                     # Build automation script
 ├── notes.md                      # Development notes and history
@@ -213,35 +211,6 @@ EIDAuthentication/
 build.bat Release x64
 ```
 
-### Testing
-
-The test suite (`EIDTest.exe`) includes comprehensive component tests:
-
-| Test File | Coverage |
-|-----------|----------|
-| `CSmartCardNotifierTest` | Smart card reader detection/enumeration |
-| `CertificateValidationTest` | X.509 certificate chain validation |
-| `CContainerTest` | Smart card container management |
-| `CompleteProfileTest` | Smart card profile operations |
-| `CompleteTokenTest` | Token generation and handling |
-| `EIDAuthenticationPackageTest` | LSA package functionality |
-| `EIDCredentialProviderTest` | Credential Provider v2 interface |
-| `EIDSecuritySupportProviderTest` | SSP/SSPI interface |
-| `StoredCredentialManagementTest` | Credential storage/retrieval |
-| `SmartCardModuleTest` | Low-level smart card operations |
-| `GPOTest` | Group Policy handling |
-
-```cmd
-# Run test suite (requires admin and smart card)
-x64\Release\EIDTest.exe
-
-# Enable diagnostic logging
-x64\Release\EIDLogManager.exe
-```
-
-**Note:** Tests are manual execution only - no automated CI/CD integration currently.
-
----
 
 ## Deployment
 

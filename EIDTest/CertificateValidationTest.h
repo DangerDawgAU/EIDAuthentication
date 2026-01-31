@@ -1,1 +1,0 @@
-void menu_CREDENTIAL_Certificate();

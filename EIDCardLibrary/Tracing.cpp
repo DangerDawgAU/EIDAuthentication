@@ -237,7 +237,6 @@ void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR
 		}
 	}
 
-	// to allow this code to be tested in debug mode using EIDTest.exe
 	LONG EIDExceptionHandler( PEXCEPTION_POINTERS pExceptPtrs )
 	{
 #ifdef _DEBUG

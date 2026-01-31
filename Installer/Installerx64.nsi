@@ -63,7 +63,6 @@ Section "Core" SecCore
   FILE "..\x64\Release\EIDConfigurationWizard.exe"
   FILE "..\x64\Release\EIDConfigurationWizardElevated.exe"
   FILE "..\x64\Release\EIDLogManager.exe"
-  FILE "..\x64\Release\EIDTest.exe"
 
   ; Install support files
   FILE "CleanupCertificates.ps1"
@@ -78,7 +77,6 @@ Section "Core" SecCore
   CreateDirectory "$SMPROGRAMS\EID Authentication"
   CreateShortcut "$SMPROGRAMS\EID Authentication\Configuration Wizard.lnk" "$INSTDIR\EIDConfigurationWizard.exe" "" "$INSTDIR\EIDConfigurationWizard.exe" 0
   CreateShortcut "$SMPROGRAMS\EID Authentication\Log Manager.lnk" "$INSTDIR\EIDLogManager.exe" "" "$INSTDIR\EIDLogManager.exe" 0
-  CreateShortcut "$SMPROGRAMS\EID Authentication\Test Utility.lnk" "$INSTDIR\EIDTest.exe" "" "$INSTDIR\EIDTest.exe" 0
   CreateShortcut "$SMPROGRAMS\EID Authentication\Uninstall.lnk" "$INSTDIR\EIDUninstall.exe" "" "$INSTDIR\EIDUninstall.exe" 0
 
   ; Create desktop shortcut pointing to Program Files
@@ -148,7 +146,6 @@ Section "Uninstall"
   ; Delete Start Menu shortcuts and folder
   Delete "$SMPROGRAMS\EID Authentication\Configuration Wizard.lnk"
   Delete "$SMPROGRAMS\EID Authentication\Log Manager.lnk"
-  Delete "$SMPROGRAMS\EID Authentication\Test Utility.lnk"
   Delete "$SMPROGRAMS\EID Authentication\Uninstall.lnk"
   RMDir "$SMPROGRAMS\EID Authentication"
 
@@ -169,7 +166,6 @@ Section "Uninstall"
   Delete "$INSTDIR\EIDConfigurationWizard.exe"
   Delete "$INSTDIR\EIDConfigurationWizardElevated.exe"
   Delete "$INSTDIR\EIDLogManager.exe"
-  Delete "$INSTDIR\EIDTest.exe"
 
   ; Delete support files
   Delete "$INSTDIR\CleanupCertificates.ps1"
