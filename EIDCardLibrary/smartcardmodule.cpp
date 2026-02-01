@@ -428,12 +428,6 @@ MgScCardAuthenticatePin(
     return status;
     
 
-    /*return pInternal->CardData.pfnCardAuthenticatePin(
-        &pInternal->CardData,
-        pwszUserId,
-        pbPin,
-        cbPin,
-        pcAttemptsRemaining);*/
 }
 
 //

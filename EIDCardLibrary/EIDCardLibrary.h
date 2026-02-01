@@ -27,8 +27,9 @@ constexpr const wchar_t* AUTHENTICATIONPACKAGENAMEW = L"EIDAuthenticationPackage
 #define AUTHENTICATIONPACKAGENAMET TEXT("EIDAuthenticationPackage")
 
 
-#undef CERT_HASH_LENGTH
-constexpr DWORD CERT_HASH_LENGTH = 32;  // SHA-256 hashes are used for cert hashes (security upgrade from SHA-1)
+#ifndef CERT_HASH_LENGTH
+#define CERT_HASH_LENGTH 32  // SHA-256 hashes are used for cert hashes (security upgrade from SHA-1)
+#endif
 
 #define EIDAlloc(value) EIDAllocEx(__FILE__,__LINE__,__FUNCTION__,value)
 #define EIDFree(value) EIDFreeEx(__FILE__,__LINE__,__FUNCTION__,value)

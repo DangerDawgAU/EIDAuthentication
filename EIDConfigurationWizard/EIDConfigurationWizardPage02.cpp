@@ -15,7 +15,7 @@ void CheckIfCardHasADriver(HWND hWnd)
 {
 	LONG             lReturn = 0;
 	SCARDCONTEXT     hSC = NULL;
-	PTSTR szReaders = NULL;
+	PTSTR szReaders = nullptr;
 	__try
 	{
 		// Establish a context.
@@ -42,11 +42,11 @@ void CheckIfCardHasADriver(HWND hWnd)
 		{
 			SCARDHANDLE hCard = NULL;
 			DWORD dwProtocol;
-			LPTSTR szTempReader = NULL;
+			LPTSTR szTempReader = nullptr;
 			DWORD dwTempReaderSize = SCARD_AUTOALLOCATE;
-			PBYTE pbAtr = NULL;
+			PBYTE pbAtr = nullptr;
 			DWORD dwAtrSize = SCARD_AUTOALLOCATE;
-			LPTSTR szCards = NULL;
+			LPTSTR szCards = nullptr;
 			DWORD dwzCardsSize = SCARD_AUTOALLOCATE;
 			__try
 			{
@@ -173,13 +173,13 @@ INT_PTR CALLBACK	WndProc_02ENABLE(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 
 				shExecInfo.fMask = NULL;
-				shExecInfo.hwnd = NULL;
+				shExecInfo.hwnd = nullptr;
 				shExecInfo.lpVerb = TEXT("runas");
 				shExecInfo.lpFile = szName;
 				shExecInfo.lpParameters = szParameter;
-				shExecInfo.lpDirectory = NULL;
+				shExecInfo.lpDirectory = nullptr;
 				shExecInfo.nShow = SW_NORMAL;
-				shExecInfo.hInstApp = NULL;
+				shExecInfo.hInstApp = nullptr;
 
 				if (ShellExecuteEx(&shExecInfo))
 					PropSheet_PressButton(hWnd,PSBTN_CANCEL);
@@ -236,13 +236,9 @@ INT_PTR CALLBACK	WndProc_02ENABLE(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			case NM_RETURN:
 				{
 					PNMLINK pNMLink = (PNMLINK)lParam;
-					LITEM item = pNMLink->item;
-					// Online database link removed - internet functionality disabled
-					/*if ((((LPNMHDR)lParam)->hwndFrom == GetDlgItem(hWnd,IDC_SYSLINKHELP)) && (item.iLink == 0))
-					{
-						ShellExecute(NULL, L"open", item.szUrl, NULL, NULL, SW_SHOW);
-					}*/
-					break;
+						LITEM item = pNMLink->item;
+						// Online database link removed - internet functionality disabled
+						break;
 				}
 		}
     }

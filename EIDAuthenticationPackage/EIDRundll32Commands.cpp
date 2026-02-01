@@ -76,10 +76,6 @@ extern "C"
 	int NTAPI Commit(MSIHANDLE hInstall)
 	{
 		UNREFERENCED_PARAMETER(hInstall);
-		/*EIDAuthenticationPackageDllRegister();
-		EIDCredentialProviderDllRegister();
-		EIDPasswordChangeNotificationDllRegister();
-		EIDConfigurationWizardDllRegister();*/
 		DWORD dwError = 0;
 		int ret = ERROR_INSTALL_FAILURE;
 		__try
@@ -111,10 +107,6 @@ extern "C"
 	int NTAPI Uninstall(MSIHANDLE hInstall)
 	{
 		UNREFERENCED_PARAMETER(hInstall);
-		/*EIDAuthenticationPackageDllUnRegister();
-		EIDCredentialProviderDllUnRegister();
-		EIDPasswordChangeNotificationDllUnRegister();
-		EIDConfigurationWizardDllUnRegister();*/
 		DWORD dwError = 0;
 		int ret = ERROR_INSTALL_FAILURE;
 		__try

@@ -55,7 +55,7 @@ INT_PTR CALLBACK	WndProc_RemovePolicy(HWND hWnd, UINT message, WPARAM wParam, LP
 			{
 				SetPolicyValue(scremoveoption, 3);
 			}
-			[[fallthrough]];
+			// fall through
 		case IDCANCEL:
 			EndDialog(hWnd, 0);
 			return TRUE;

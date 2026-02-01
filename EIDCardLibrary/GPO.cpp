@@ -107,55 +107,6 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 	}
 	return value;
 }
-/*
-DWORD GetPolicyValue(GPOPolicy Policy)
-{
-	HRESULT hr=S_OK;
-	IGroupPolicyObject* p = nullptr;
-	DWORD dwSection = GPO_SECTION_MACHINE;
-	HKEY hGPOSectionKey = NULL; 
-	DWORD dwValue = 0;
-    __try
-	{
-		hr = CoInitialize(nullptr);
-		if (!SUCCEEDED(hr))
-		{ 
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CoInitialize");
-			__leave;
-		}
-		hr = CoCreateInstance(CLSID_GroupPolicyObject, nullptr,
-							  CLSCTX_INPROC_SERVER, IID_IGroupPolicyObject,
-							  (LPVOID*)&p);
-
-		if (!SUCCEEDED(hr))
-		{ 
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CoCreateInstance");
-			__leave;
-		}
-		hr = p->OpenLocalMachineGPO(GPO_OPEN_LOAD_REGISTRY | GPO_OPEN_READ_ONLY);
-		if (!SUCCEEDED(hr))
-		{ 
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"OpenLocalMachineGPO");
-			__leave;
-		}
-		hr = p->GetRegistryKey(dwSection, &hGPOSectionKey); 
-		if (!SUCCEEDED(hr))
-		{ 
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetRegistryKey");
-			__leave;
-		}
-		dwValue = GetPolicyValueFromReg(hGPOSectionKey, Policy);
-	}
-	__finally
-	{
-		if (p)
-			hr = p->Release(); 
-		if (hGPOSectionKey)
-			RegCloseKey(hGPOSectionKey);
-		CoUninitialize();
-	}
-	return dwValue;
-}*/
 
 BOOL SetRemovePolicyValue(DWORD dwActivate)
 {

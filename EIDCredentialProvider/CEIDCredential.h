@@ -122,7 +122,7 @@ class CEIDCredential : public ICredentialProviderCredential
 
   public:
     HRESULT Initialize();
-    CEIDCredential(CContainer* container);
+    explicit CEIDCredential(CContainer* container);
 	void SetUsageScenario(__in CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,__in DWORD dwFlags);
     virtual ~CEIDCredential();
 	CContainer* GetContainer();

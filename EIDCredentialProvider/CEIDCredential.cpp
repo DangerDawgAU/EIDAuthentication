@@ -42,7 +42,7 @@
 
 CEIDCredential::CEIDCredential(CContainer* container):
     _cRef(1),
-    _pCredProvCredentialEvents(NULL)
+    _pCredProvCredentialEvents(nullptr)
 {
 	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Creation");
 	DllAddRef();
@@ -143,7 +143,7 @@ HRESULT CEIDCredential::Advise(
     ICredentialProviderCredentialEvents* pcpce
     )
 {
-	if (_pCredProvCredentialEvents != NULL)
+	if (_pCredProvCredentialEvents != nullptr)
     {
         _pCredProvCredentialEvents->Release();
     }
@@ -162,11 +162,11 @@ void CEIDCredential::SetUsageScenario(CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus, D
 // LogonUI calls this to tell us to release the callback.
 HRESULT CEIDCredential::UnAdvise()
 {
-	if (_pCredProvCredentialEvents)
+	if (_pCredProvCredentialEvents != nullptr)
     {
         _pCredProvCredentialEvents->Release();
     }
-    _pCredProvCredentialEvents = NULL;
+    _pCredProvCredentialEvents = nullptr;
     return S_OK;
 }
 
@@ -176,10 +176,9 @@ HRESULT CEIDCredential::UnAdvise()
 // field definitions.  But if you want to do something
 // more complicated, like change the contents of a field when the tile is
 // selected, you would do it here.
-HRESULT CEIDCredential::SetSelected(BOOL* pbAutoLogon)  
+HRESULT CEIDCredential::SetSelected(BOOL* pbAutoLogon)
 {
-	*pbAutoLogon = FALSE;  
-	//EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"");
+	*pbAutoLogon = FALSE;
     return S_OK;
 }
 
@@ -229,7 +228,6 @@ HRESULT CEIDCredential::GetFieldState(
     {
         *pcpfis = _rgFieldStatePairs[dwFieldID].cpfis;
         *pcpfs = _rgFieldStatePairs[dwFieldID].cpfs;
-		//EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"dwFieldID = %d cpfis = %d cpfs = %d",dwFieldID, *pcpfis, *pcpfs);
         hr = S_OK;
     }
     else
@@ -257,7 +255,6 @@ HRESULT CEIDCredential::GetStringValue(
         // Make a copy of the string and return that. The caller
         // is responsible for freeing it.
         hr = SHStrDupW(_rgFieldStrings[dwFieldID], ppwsz);
-		//EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"dwFieldId = %d pwsz = '%s'",dwFieldID,*ppwsz);
     }
     else
     {
@@ -283,10 +280,9 @@ HRESULT CEIDCredential::GetBitmapValue(
         HBITMAP hbmp;
 		// load the bitmap saved in the resource.
 		hbmp = LoadBitmap(HINST_THISDLL, MAKEINTRESOURCE(IDB_TILE_IMAGE));
-		if (hbmp != NULL)
+		if (hbmp != nullptr)
 		{
 			hr = S_OK;
-			//EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"");
 			*phbmp = hbmp;
 		}
 		else
@@ -351,8 +347,7 @@ HRESULT CEIDCredential::SetStringValue(
         PWSTR* ppwszStored = &_rgFieldStrings[dwFieldID];
         CoTaskMemFree(*ppwszStored);
 
-        //EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"%s",pwz);
-		hr = SHStrDupW(pwz, ppwszStored);
+  hr = SHStrDupW(pwz, ppwszStored);
     }
     else
     {
@@ -507,37 +502,15 @@ HRESULT EIDUnlockLogonInit(
             {
                 // Set a MessageType based on the usage scenario.
                 pkil->MessageType = EID_INTERACTIVE_LOGON_SUBMIT_TYPE_VANILLIA;
-				pkil->CspDataLength = 0;
-				pkil->CspData = NULL;
-				pkil->Flags = 0;
-				/*switch (cpus)
-                {
-                case CPUS_UNLOCK_WORKSTATION:
-                    pkil->MessageType = KerbWorkstationUnlockLogon;
-                    hr = S_OK;
-                    break;
-
-                case CPUS_LOGON:
-                    pkil->MessageType = KerbInteractiveLogon;
-                    hr = S_OK;
-                    break;
-
-                case CPUS_CREDUI:
-                    pkil->MessageType = (KERB_LOGON_SUBMIT_TYPE)0; // MessageType does not apply to CredUI
-                    hr = S_OK;
-                    break;
-
-                default:
-                    hr = E_FAIL;
-                    break;
-                }*/
+    pkil->CspDataLength = 0;
+    pkil->CspData = nullptr;
+    pkil->Flags = 0;
 
                 if (SUCCEEDED(hr))
                 {
                     // EID_INTERACTIVE_UNLOCK_LOGON is just a series of structures.  A
                     // flat copy will properly initialize the output parameter.
                     CopyMemory(pkiul, &kiul, sizeof(*pkiul));
-					//EIDDebugPrintEIDUnlockLogonStruct(WINEVENT_LEVEL_VERBOSE,pkiul);
                 }
             }
         }
@@ -702,7 +675,7 @@ HRESULT CEIDCredential::ReportResult(
 	if (ppwszOptionalStatusText)
 	{
 	    // get message from system table
-		PWSTR Error = NULL;
+		PWSTR Error = nullptr;
 		if (ntsStatus == STATUS_SMARTCARD_WRONG_PIN && ntsSubstatus != 0xFFFFFFFF)
 		{
 			HINSTANCE Handle = EIDLoadSystemLibrary(TEXT("SmartcardCredentialProvider.dll"));
@@ -722,7 +695,7 @@ HRESULT CEIDCredential::ReportResult(
 			Error = (PWSTR) CoTaskMemAlloc(dwLen);
 			if (Error)
 			{
-				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,NULL,LsaNtStatusToWinError(ntsStatus),0,(PWSTR)Error,dwLen,NULL);
+				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,nullptr,LsaNtStatusToWinError(ntsStatus),0,(PWSTR)Error,dwLen,nullptr);
 			}
 			*ppwszOptionalStatusText = Error;
 		}

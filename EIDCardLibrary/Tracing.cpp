@@ -158,11 +158,7 @@ void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR
 	va_end (ap);
 	if (ret < 0) return;
 	if (ret > 256) ret = 255;
-	Buffer[255] = L'\0';/*
-	if ((ret>2) && (ret< 254) && (Buffer[ret-1] != L'\n') && (Buffer[ret-2] != L'\n')) {
-		wcscat_s(Buffer,256,L"\r\n");
-		ret+=2;
-	}*/
+	Buffer[255] = L'\0';
 #ifdef _DEBUG
 	swprintf_s(Buffer2,356,L"%S(%d) : %S - %s\r\n",szFile,dwLine,szFunction,Buffer);
 	OutputDebugString(Buffer2);

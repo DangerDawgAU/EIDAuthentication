@@ -26,8 +26,6 @@ void SetErrorMessage(HWND hWnd)
 
 INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	int wmId;
-	int wmEvent;
 	LPNMHDR pnmh = (LPNMHDR)lParam;
 	switch(message)
 	{

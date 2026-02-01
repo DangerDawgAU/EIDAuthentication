@@ -49,9 +49,9 @@ CEIDProvider::CEIDProvider():
 {
     EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Creation");
 	DllAddRef();
-    _pcpe = NULL;
-    _pMessageCredential = NULL;
-	_pSmartCardConnectionNotifier = NULL;
+    _pcpe = nullptr;
+    _pMessageCredential = nullptr;
+ _pSmartCardConnectionNotifier = nullptr;
 	_fDontShowAnything = FALSE;
 	_fShuttingDown = FALSE;
 	InitializeCriticalSection(&_csCallback);
@@ -97,7 +97,7 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 				_pMessageCredential->SetStatus(Reading);
 				_pMessageCredential->IncreaseSmartCardCount();
 			}
-			if (_pcpe != NULL)
+			if (_pcpe != nullptr)
 			{
 				_pcpe->CredentialsChanged(_upAdviseContext);
 				Sleep(100);
@@ -105,7 +105,7 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 			_CredentialList.ConnectNotification(szReader,szCardName,ActivityCount);
 			if (_pMessageCredential) _pMessageCredential->SetStatus(EndReading);
 
-			if (_pcpe != NULL)
+			if (_pcpe != nullptr)
 			{
 				_pcpe->CredentialsChanged(_upAdviseContext);
 			}
@@ -117,7 +117,7 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 			_pMessageCredential->SetStatus(Reading);
 			_pMessageCredential->DecreaseSmartCardCount();
 		}
-		if (_pcpe != NULL)
+		if (_pcpe != nullptr)
 		{
 			_pcpe->CredentialsChanged(_upAdviseContext);
 			Sleep(100);
@@ -125,7 +125,7 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 		_CredentialList.DisconnectNotification(szReader);
 		if (_pMessageCredential) _pMessageCredential->SetStatus(EndReading);
 
-		if (_pcpe != NULL)
+		if (_pcpe != nullptr)
 		{
 			_pcpe->CredentialsChanged(_upAdviseContext);
 		}
@@ -255,12 +255,11 @@ STDMETHODIMP CEIDProvider::SetSerialization(
 			}
 		}
 	}
-	PSEC_WINNT_CREDUI_CONTEXT pCredUIContext = NULL;
+	PSEC_WINNT_CREDUI_CONTEXT pCredUIContext = nullptr;
 	SECURITY_STATUS status;
 	status= SspiUnmarshalCredUIContext(pcpcs->rgbSerialization, pcpcs->cbSerialization, &pCredUIContext);
-	//SspiGetCredUIContext(
 
-    return S_OK;
+	   return S_OK;
 }
 
 // Called by LogonUI to give you a callback. Providers often use the callback if they
@@ -270,7 +269,7 @@ HRESULT CEIDProvider::Advise(
     UINT_PTR upAdviseContext
     )
 {
-	if (_pcpe != NULL)
+	if (_pcpe != nullptr)
     {
         _pcpe->Release();
     }
@@ -283,10 +282,10 @@ HRESULT CEIDProvider::Advise(
 // Called by LogonUI when the ICredentialProviderEvents callback is no longer valid.
 HRESULT CEIDProvider::UnAdvise()
 {
-	if (_pcpe != NULL)
+	if (_pcpe != nullptr)
     {
         _pcpe->Release();
-        _pcpe = NULL;
+        _pcpe = nullptr;
     }
     return S_OK;
 }
@@ -336,7 +335,7 @@ HRESULT CEIDProvider::GetFieldDescriptorAt(
 				*ppcpfd = (CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR*)CoTaskMemAlloc(sizeof(CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR));
 				if (*ppcpfd)
 				{
-					(*ppcpfd)->pszLabel = NULL;
+					(*ppcpfd)->pszLabel = nullptr;
 					(*ppcpfd)->dwFieldID = s_rgCredProvFieldDescriptors[dwIndex].dwFieldID;
 					(*ppcpfd)->cpft = s_rgCredProvFieldDescriptors[dwIndex].cpft;
 					HINSTANCE Handle = EIDLoadSystemLibrary(TEXT("SmartcardCredentialProvider.dll"));
@@ -394,8 +393,7 @@ HRESULT CEIDProvider::GetFieldDescriptorAt(
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"not SUCCEEDED hr=0x%08x",hr);
 	}
 	_CredentialList.Unlock();
-	//EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"dwIndex %d pszLabel %s dwFieldID %d cpft %d",dwIndex,(*ppcpfd)->pszLabel, (*ppcpfd)->dwFieldID, (*ppcpfd)->cpft );
-    return hr;
+	   return hr;
 }
 
 
@@ -444,7 +442,6 @@ HRESULT CEIDProvider::GetCredentialCount(
 		_CredentialList.Unlock();
 	}
     *pbAutoLogonWithDefault = FALSE;
-	//EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"pdwCount %d, pdwDefault %d", *pdwCount, *pdwDefault);
     return S_OK;
 }
 
@@ -464,7 +461,7 @@ HRESULT CEIDProvider::GetCredentialAt(
 		if (_CredentialList.HasContainerHolder())
         {
 			CEIDCredential* EIDCredential = _CredentialList.GetContainerHolderAt(dwIndex);
-			if (EIDCredential != NULL)
+			if (EIDCredential != nullptr)
 			{
 				hr = EIDCredential->QueryInterface(IID_ICredentialProviderCredential, reinterpret_cast<void**>(ppcpc));
 			}

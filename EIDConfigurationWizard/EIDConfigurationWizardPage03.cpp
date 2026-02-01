@@ -60,49 +60,6 @@ BOOL SelectFile(HWND hWnd)
 	TCHAR szSpecAll[256] = TEXT("");
 	LoadString(g_hinst,IDS_03CONTAINERFILES,szSpecContainer,ARRAYSIZE(szSpecContainer));
 	LoadString(g_hinst,IDS_03ALLFILES,szSpecAll,ARRAYSIZE(szSpecAll));
-	/*IFileDialog *pfd;
-	COMDLG_FILTERSPEC rgSpec[] =
-	{ 
-		{ szSpecContainer, L"*.pfx;*.p12" },
-		{ szSpecAll, L"*.*" },
-	};
-    CoInitialize(nullptr);
-    // CoCreate the dialog object.
-    HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog,
-                                  nullptr,
-                                  CLSCTX_INPROC_SERVER,
-								  IID_IFileDialog,
-                                  (void**)&pfd);
-    
-    if (SUCCEEDED(hr))
-    {
-		pfd->SetFileTypes(ARRAYSIZE(rgSpec), rgSpec);
-		// Show the dialog
-        hr = pfd->Show(hWnd);
-        
-        if (SUCCEEDED(hr))
-        {
-            // Obtain the result of the user's interaction with the dialog.
-            IShellItem *psiResult;
-            hr = pfd->GetResult(&psiResult);
-            
-            if (SUCCEEDED(hr))
-            {
-				hr = psiResult->GetDisplayName( SIGDN_FILESYSPATH, &szFileName);
-				if (SUCCEEDED(hr))
-				{
-					SetWindowText(GetDlgItem(hWnd,IDC_03FILENAME),szFileName);
-					CoTaskMemFree(szFileName);
-					CheckDlgButton(hWnd,IDC_03IMPORT,BST_CHECKED);
-					CheckDlgButton(hWnd,IDC_03USETHIS,BST_UNCHECKED);
-					CheckDlgButton(hWnd,IDC_03_CREATE,BST_UNCHECKED);
-				}
-                psiResult->Release();
-            }
-        }
-        pfd->Release();
-    }
-    return SUCCEEDED(hr);*/
 	OPENFILENAME ofn;
 	TCHAR szFile[MAX_PATH], szFilter[256];
 	_stprintf_s(szFilter, 256, TEXT("%s%c*.pfx;*.p12%c%s%c*.*%c"),szSpecContainer,0,0,szSpecAll,0,0);

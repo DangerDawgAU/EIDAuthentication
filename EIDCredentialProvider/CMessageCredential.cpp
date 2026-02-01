@@ -37,7 +37,7 @@
 
 CMessageCredential::CMessageCredential():
     _cRef(1),
-    _pCredProvCredentialEvents(NULL)
+    _pCredProvCredentialEvents(nullptr)
 {
     DllAddRef();
     ZeroMemory(_rgCredProvFieldDescriptors, sizeof(_rgCredProvFieldDescriptors));
@@ -98,7 +98,7 @@ HRESULT CMessageCredential::Advise(
     ICredentialProviderCredentialEvents* pcpce
     )
 {
-	if (_pCredProvCredentialEvents != NULL)
+	if (_pCredProvCredentialEvents != nullptr)
     {
         _pCredProvCredentialEvents->Release();
     }
@@ -110,11 +110,11 @@ HRESULT CMessageCredential::Advise(
 // LogonUI calls this to tell us to release the callback.
 HRESULT CMessageCredential::UnAdvise()
 {
-	if (_pCredProvCredentialEvents)
+	if (_pCredProvCredentialEvents != nullptr)
     {
         _pCredProvCredentialEvents->Release();
     }
-    _pCredProvCredentialEvents = NULL;
+    _pCredProvCredentialEvents = nullptr;
     return S_OK;
 }
 
