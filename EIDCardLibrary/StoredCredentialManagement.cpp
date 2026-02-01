@@ -36,11 +36,11 @@
 #include "Tracing.h"
 #include "CertificateValidation.h"
 
-#define CREDENTIALPROVIDER MS_ENH_RSA_AES_PROV
-#define CREDENTIALKEYLENGTH 256
-#define CREDENTIALCRYPTALG CALG_AES_256
-#define CREDENTIAL_LSAPREFIX L"L$_EID_"
-#define CREDENTIAL_CONTAINER TEXT("EIDCredential")
+constexpr LPCTSTR CREDENTIALPROVIDER = MS_ENH_RSA_AES_PROV;
+constexpr DWORD CREDENTIALKEYLENGTH = 256;
+constexpr ALG_ID CREDENTIALCRYPTALG = CALG_AES_256;
+constexpr LPCWSTR CREDENTIAL_LSAPREFIX = L"L$_EID_";
+constexpr LPCTSTR CREDENTIAL_CONTAINER = TEXT("EIDCredential");
 
 #pragma comment(lib,"Crypt32")
 #pragma comment(lib,"advapi32")

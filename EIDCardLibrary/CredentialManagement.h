@@ -1,8 +1,49 @@
+#ifndef __CREDENTIALMANAGEMENT_H__
+#define __CREDENTIALMANAGEMENT_H__
+
+#include <ntstatus.h>
 #include <list>
 
+#include "CertificateValidation.h"
 
+// Forward declaration - CCredential is defined below after CSecurityContext
+class CCredential;
 
-class CSecurityContext;
+class CSecurityContext
+{
+public:
+	static CSecurityContext* CSecurityContext::CreateContext(CCredential* pCredential);
+	explicit CSecurityContext(CCredential* pCredential);
+	CSecurityContext(const CSecurityContext&) = delete;
+	CSecurityContext& operator=(const CSecurityContext&) = delete;
+	static BOOL Delete(ULONG_PTR pHandle);
+	static CSecurityContext* GetContextFromHandle(ULONG_PTR);
+	NTSTATUS InitializeSecurityContextInput(PSecBufferDesc);
+	NTSTATUS InitializeSecurityContextOutput(PSecBufferDesc);
+	NTSTATUS AcceptSecurityContextInput(PSecBufferDesc);
+	NTSTATUS AcceptSecurityContextOutput(PSecBufferDesc);
+	NTSTATUS BuildNegociateMessage(PSecBufferDesc Buffer);
+	NTSTATUS ReceiveNegociateMessage(PSecBufferDesc Buffer);
+	NTSTATUS BuildChallengeMessage(PSecBufferDesc Buffer);
+	NTSTATUS ReceiveChallengeMessage(PSecBufferDesc Buffer);
+	NTSTATUS BuildResponseMessage(PSecBufferDesc Buffer);
+	NTSTATUS ReceiveResponseMessage(PSecBufferDesc Buffer);
+	NTSTATUS BuildCompleteMessage(PSecBufferDesc Buffer);
+	DWORD GetRid();
+	~CSecurityContext();
+	PWSTR GetUserName();
+private:
+	CCredential* _pCredential;
+	EID_MESSAGE_STATE _State;
+	UCHAR Hash[CERT_HASH_LENGTH];
+	PCCERT_CONTEXT pCertContext;
+	DWORD dwRid;
+	PBYTE pbChallenge;
+	DWORD dwChallengeSize;
+	PBYTE pbResponse;
+	DWORD dwResponseSize;
+	PWSTR szUserName;
+};
 
 class CCredential
 {
@@ -26,42 +67,6 @@ public:
 	PCERT_CREDENTIAL_INFO _pCertInfo;
 };
 
-class CSecurityContext
-{
-
-public:
-	static CSecurityContext* CSecurityContext::CreateContext(CCredential* pCredential);
-	explicit CSecurityContext(CCredential* pCredential);
-	static BOOL Delete(ULONG_PTR pHandle);
-	static CSecurityContext* GetContextFromHandle(ULONG_PTR);
-	NTSTATUS InitializeSecurityContextInput(PSecBufferDesc);
-	NTSTATUS InitializeSecurityContextOutput(PSecBufferDesc);
-	NTSTATUS AcceptSecurityContextInput(PSecBufferDesc);
-	NTSTATUS AcceptSecurityContextOutput(PSecBufferDesc);
-	NTSTATUS BuildNegociateMessage(PSecBufferDesc Buffer);
-	NTSTATUS ReceiveNegociateMessage(PSecBufferDesc Buffer);
-	NTSTATUS BuildChallengeMessage(PSecBufferDesc Buffer);
-	NTSTATUS ReceiveChallengeMessage(PSecBufferDesc Buffer);
-	NTSTATUS BuildResponseMessage(PSecBufferDesc Buffer);
-	NTSTATUS ReceiveResponseMessage(PSecBufferDesc Buffer);
-	NTSTATUS BuildCompleteMessage(PSecBufferDesc Buffer);
-	DWORD GetRid();
-	~CSecurityContext();
-	PWSTR GetUserName();
-private:
-	
-	CCredential* _pCredential;
-	EID_MESSAGE_STATE _State;
-	UCHAR Hash[CERT_HASH_LENGTH];
-	PCCERT_CONTEXT pCertContext;
-	DWORD dwRid;
-	PBYTE pbChallenge;
-	DWORD dwChallengeSize;
-	PBYTE pbResponse;
-	DWORD dwResponseSize;
-	PWSTR szUserName;
-};
-
 class CUsermodeContext
 {
 public:
@@ -73,3 +78,5 @@ private:
 	HANDLE Handle;
 	explicit CUsermodeContext(PEID_SSP_CALLBACK_MESSAGE pMessage);
 };
+
+#endif

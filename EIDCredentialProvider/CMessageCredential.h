@@ -43,7 +43,9 @@ enum CMessageCredentialStatus
   */
 class CMessageCredential : public ICredentialProviderCredential
 {
-    public:
+public:
+	CMessageCredential(const CMessageCredential&) = delete;
+	CMessageCredential& operator=(const CMessageCredential&) = delete;
     // IUnknown
     STDMETHOD_(ULONG, AddRef)()
     {

@@ -26,7 +26,7 @@
 #include "Tracing.h"
 #include "CContainer.h"
 
-#define TIMEOUT 300
+constexpr DWORD TIMEOUT = 300;
 
 #pragma comment(lib,"Winscard")
 //#define  _CRTDBG_MAP_ALLOC

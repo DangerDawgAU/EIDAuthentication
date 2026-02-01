@@ -51,8 +51,8 @@ extern "C"
 	PLSA_SECPKG_FUNCTION_TABLE MyLsaDispatchTable;
 	PSECPKG_PARAMETERS MyParameters;
 	SECPKG_FUNCTION_TABLE MyExportedFunctions;
-	ULONG MyExportedFunctionsCount = 1;
-	BOOL DoUnicode = TRUE; 
+	const ULONG MyExportedFunctionsCount = 1;
+	const BOOL DoUnicode = TRUE;
 	LUID PackageUid;
 	void initializeExportedFunctionsTable(PSECPKG_FUNCTION_TABLE exportedFunctions);
 	ULONG MutualAuthLevel=0;
@@ -61,15 +61,15 @@ extern "C"
 	// 1.3 . 6  .  1 .  4 .1   .35000    .1
 	// 0x2B,0x06,0x01,0x04,0x01,0x88,0xB8,0x01
 	UCHAR GssOid[] = {0x2B,0x06,0x01,0x04,0x01,0x88,0xB8,0x01};
-	DWORD GssOidLen = ARRAYSIZE(GssOid);
+	const DWORD GssOidLen = ARRAYSIZE(GssOid);
 	// guid for negoEx
 	// 6550d49b-a716-484e-8955-a8e666df45d1
-	UCHAR AUTHENTICATIONNAGOTIATEGUID[16] = 
+	const UCHAR AUTHENTICATIONNAGOTIATEGUID[16] =
 			{0x65,0x50,0xd4,0x9b,0xa7,0x16,0x48,0x4e,0x89,0x55,0xa8,0xe6,0x66,0xdf,0x45,0xd1};
 
 
-	TimeStamp Forever = {0x7fffffff,0xfffffff};
-	TimeStamp Never = {0,0};
+	const TimeStamp Forever = {0x7fffffff,0xfffffff};
+	const TimeStamp Never = {0,0};
 
 	/** The SpLsaModeInitialize function is called once by the  LSA for each registered  
 	security support provider/ authentication package (SSP/AP) DLL it loads. This function 
