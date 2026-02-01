@@ -9,7 +9,6 @@ REM - EIDPasswordChangeNotification.dll (Password change notification)
 REM - EIDConfigurationWizard.exe (Configuration tool)
 REM - EIDCardLibrary (shared library)
 REM - EIDLogManager.exe (Log management utility)
-REM - EIDTest.exe (Testing tool)
 REM - Installer (NSIS installer for Release builds)
 
 setlocal

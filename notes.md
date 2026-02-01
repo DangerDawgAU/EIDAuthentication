@@ -163,27 +163,6 @@ GUI for viewing event logs.
 
 **Type:** MFC/Win32 dialog application.
 
-#### 9. **EIDTest** (EXE)
-**Path:** [EIDTest/](EIDTest/)
-
-Comprehensive test suite.
-
-**Test Coverage:**
-- Smart card notifier
-- Certificate validation
-- Complete token/profile tests
-- GPO tests
-- Container tests
-- Package tests
-- Authentication package tests
-- Credential provider tests
-- SSP tests
-- Stored credential management
-- Smart card module tests
-- Online database tests
-
-**Issue:** No automated execution, CI/CD integration missing.
-
 #### 10. **EIDAuthenticateSetup** (WiX) - **LEGACY**
 **Path:** [EIDAuthenticateSetup/](EIDAuthenticateSetup/)
 
@@ -411,23 +390,6 @@ Enable/disable via:
 - Mix of SEH and C++ exceptions
 - Unclear exception safety guarantees
 
-#### 7. Testing Issues
-
-**Current State:**
-- Comprehensive test suite exists ([EIDTest/](EIDTest/))
-- No automated execution
-- No CI/CD integration
-- Manual/interactive tests
-- Requires elevation
-
-**Needed:**
-- Automated test execution
-- Unit tests for core components
-- Mock interfaces for testability
-- CI/CD integration
-- Code coverage reporting
-
----
 
 ### 🟢 LOW PRIORITY
 
@@ -789,7 +751,6 @@ The project is a **good candidate for systematic refactoring** while maintaining
      - EIDConfigurationWizard.exe (276 KB)
      - EIDConfigurationWizardElevated.exe (145 KB)
      - EIDLogManager.exe (187 KB)
-     - EIDTest.exe (369 KB)
      - EIDCardLibrary.lib (6.2 MB)
 
 #### Build Warnings (To Address Later):
@@ -848,11 +809,6 @@ According to Phase 1 roadmap:
 #### Test Results:
 
 **Executables Tested:**
-1. ✅ **EIDTest.exe** (369 KB)
-   - Launches successfully
-   - GUI appears, process runs
-   - PE32+ x64, Windows 6.00 (Vista+) target confirmed
-
 2. ✅ **EIDConfigurationWizard.exe** (276 KB)
    - Launches without errors
    - PE32+ x64, GUI application

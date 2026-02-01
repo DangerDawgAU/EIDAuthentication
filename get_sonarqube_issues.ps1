@@ -65,7 +65,7 @@ $hotspots = $hotspots | Where-Object { $_.status -ne 'REVIEWED' }
 
 Write-Host "Successfully fetched $($hotspots.Count) security hotspots (excluding reviewed/remediated/closed)."
 
-# Create individual markdown files for each issue, organized by severity
+# Create individual markdown files for each issue, organized by severity and category
 # Map SonarQube severities to user-friendly categories
 $severityMap = @{
     'BLOCKER' = 'Blocker'
@@ -75,6 +75,13 @@ $severityMap = @{
     'INFO' = 'Info'
 }
 
+# Map SonarQube issue types to categories
+$categoryMap = @{
+    'VULNERABILITY' = 'Security'
+    'BUG' = 'Reliability'
+    'CODE_SMELL' = 'Maintainability'
+}
+
 foreach ($issue in $issues) {
     $originalSeverity = $issue.severity
     $mappedSeverity = $severityMap[$originalSeverity]
@@ -82,17 +89,29 @@ foreach ($issue in $issues) {
         $mappedSeverity = $originalSeverity
     }
 
+    $issueType = $issue.type
+    $mappedCategory = $categoryMap[$issueType]
+    if (-not $mappedCategory) {
+        $mappedCategory = $issueType
+    }
+
     $severityDir = Join-Path -Path $outputDir -ChildPath "issues\$mappedSeverity"
     if (-not (Test-Path -Path $severityDir)) {
         New-Item -ItemType Directory -Path $severityDir -Force
     }
 
+    $categoryDir = Join-Path -Path $severityDir -ChildPath $mappedCategory
+    if (-not (Test-Path -Path $categoryDir)) {
+        New-Item -ItemType Directory -Path $categoryDir -Force
+    }
+
     $issueKey = $issue.key
-    $issueFile = Join-Path -Path $severityDir -ChildPath "$issueKey.md"
+    $issueFile = Join-Path -Path $categoryDir -ChildPath "$issueKey.md"
     $issueContent = @"
 # $($issue.message)
 
 **Severity:** $mappedSeverity
+**Category:** $mappedCategory
 **Component:** $($issue.component)
 **Line:** $($issue.line)
 **Status:** $($issue.status)
@@ -103,15 +122,18 @@ foreach ($issue in $issues) {
     $issueContent | Out-File -FilePath $issueFile -Encoding utf8
 }
 
-Write-Host "Created markdown files for each issue in respective severity folders under $outputDir\issues"
+Write-Host "Created markdown files for each issue in respective severity and category folders under $outputDir\issues"
 
-# Create individual markdown files for each security hotspot, organized by severity
+# Create individual markdown files for each security hotspot, organized by severity and category
 # Map SonarQube hotspot vulnerability probabilities to user-friendly categories
 $hotspotSeverityMap = @{
     'HIGH' = 'High'
     'MEDIUM' = 'Medium'
     'LOW' = 'Low'
 }
+
+# All security hotspots belong to the Security category
+$hotspotCategory = 'Security'
 
 foreach ($hotspot in $hotspots) {
     $originalSeverity = $hotspot.vulnerabilityProbability
@@ -125,12 +147,18 @@ foreach ($hotspot in $hotspots) {
         New-Item -ItemType Directory -Path $severityDir -Force
     }
 
+    $categoryDir = Join-Path -Path $severityDir -ChildPath $hotspotCategory
+    if (-not (Test-Path -Path $categoryDir)) {
+        New-Item -ItemType Directory -Path $categoryDir -Force
+    }
+
     $hotspotKey = $hotspot.key
-    $hotspotFile = Join-Path -Path $severityDir -ChildPath "$hotspotKey.md"
+    $hotspotFile = Join-Path -Path $categoryDir -ChildPath "$hotspotKey.md"
     $hotspotContent = @"
 # $($hotspot.ruleKey)
 
 **Severity:** $mappedSeverity
+**Category:** $hotspotCategory
 **Component:** $($hotspot.component)
 **Line:** $($hotspot.line)
 **Status:** $($hotspot.status)
@@ -141,5 +169,5 @@ foreach ($hotspot in $hotspots) {
     $hotspotContent | Out-File -FilePath $hotspotFile -Encoding utf8
 }
 
-Write-Host "Created markdown files for each security hotspot in respective severity folders under $outputDir\hotspots"
+Write-Host "Created markdown files for each security hotspot in respective severity and category folders under $outputDir\hotspots"
 Write-Host "Total: $($issues.Count) open issues and $($hotspots.Count) unreviewed security hotspots processed (remediated/closed items excluded)."

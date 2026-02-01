@@ -55,7 +55,7 @@ build.bat Release        # Release build (x64 assumed)
 The build script performs the following steps:
 
 1. **Clean** - Removes previous build artifacts from `x64\[Configuration]`
-2. **Build Solution** - Compiles all 8 C++ projects:
+2. **Build Solution** - Compiles all 7 C++ projects:
    - EIDCardLibrary (C++ static library)
    - EIDAuthenticationPackage (C++ LSA authentication DLL)
    - EIDCredentialProvider (C++ Credential Provider v2 DLL)
@@ -63,7 +63,6 @@ The build script performs the following steps:
    - EIDConfigurationWizard (C++ GUI configuration tool)
    - EIDConfigurationWizardElevated (C++ elevated operations tool)
    - EIDLogManager (C++ log management utility)
-   - EIDTest (C++ testing and debugging tool)
 3. **Build Installer** - Creates NSIS installer (Release builds only)
 
 ### Build Output
@@ -77,7 +76,6 @@ The build script performs the following steps:
 - `EIDConfigurationWizard.exe` (277 KB) - Configuration wizard
 - `EIDConfigurationWizardElevated.exe` (145 KB) - Elevated wizard
 - `EIDLogManager.exe` (187 KB) - Log manager
-- `EIDTest.exe` (371 KB) - Test utility
 
 **Installer:** `Installer\EIDInstallx64.exe` (688 KB)
 
