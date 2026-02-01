@@ -976,10 +976,8 @@ BOOL CStoredCredentialManager::GetResponseFromChallenge(__in PBYTE pChallenge, _
 	{
 	case eidpdtClearText:
 		return GetResponseFromSignatureChallenge(pChallenge,dwChallengeSize,pCertContext,Pin,pSymetricKey,usSize);
-		break;
 	case eidpdtCrypted:
 		return GetResponseFromCryptedChallenge(pChallenge,dwChallengeSize,pCertContext,Pin,pSymetricKey,usSize);
-		break;
 	}
 	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Type not implemented");
 	return FALSE;
@@ -1303,13 +1301,6 @@ BOOL CStoredCredentialManager::GenerateSymetricKeyAndEncryptIt(__in HCRYPTPROV h
 			__leave;
 		}
 		// save
-		/*dwSize = sizeof(DWORD);
-		if (!CryptGetKeyParam(*phKey, KP_BLOCKLEN, (PBYTE) &dwBlockLen, &dwSize, 0))
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CryptGetKeyParam", GetLastError());
-			__leave;
-		}*/
 		dwBlockLen = 0;
 		fStatus = CryptEncrypt(hKey, hHash,TRUE,0,nullptr,&dwBlockLen, 0);
 		if(!fStatus)
@@ -1433,13 +1424,10 @@ BOOL CStoredCredentialManager::GetPasswordFromChallengeResponse(__in DWORD dwRid
 	{
 	case eidpdtClearText:
 		return GetPasswordFromSignatureChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
-		break;
 	case eidpdtCrypted:
 		return GetPasswordFromCryptedChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
-		break;
 	case eidpdtDPAPI:
 		return GetPasswordFromDPAPIChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
-		break;
 	}
 	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Type not implemented");
 	return FALSE;
@@ -1619,28 +1607,7 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RetrievePrivateData 0x%08x",dwError);
 			__leave;
 		}
-		/*
-		DWORD dwSize = 0;
-		if (!CertGetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, nullptr, &dwSize))
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%x returned by CertGetCertificateContextProperty", GetLastError());
-			__leave;
-		}
-		pKeyProvInfo = (PCRYPT_KEY_PROV_INFO) EIDAlloc(dwSize);
-		if (!pKeyProvInfo)
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%x returned by malloc", GetLastError());
-			__leave;
-		}
-		if (!CertGetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, (PBYTE) pKeyProvInfo, &dwSize))
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%x returned by CertGetCertificateContextProperty", GetLastError());
-			__leave;
-		}*/
-		pCertContextVerif = CertCreateCertificateContext(X509_ASN_ENCODING, 
+		pCertContextVerif = CertCreateCertificateContext(X509_ASN_ENCODING,
 			(PBYTE)pEidPrivateData->Data + pEidPrivateData->dwCertificatOffset, pEidPrivateData->dwCertificatSize);
 		if (!pCertContextVerif)
 		{

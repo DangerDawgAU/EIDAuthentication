@@ -100,10 +100,6 @@ PVOID EIDAllocEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction,DWORD dwSize)
 		memory = malloc(dwSize);
 #endif		
 	}
-	//if (TraceAllocation)
-	//{
-	//	EIDCardLibraryTraceEx(szFile, dwLine, szFunction, WINEVENT_LEVEL_VERBOSE, L"Allocation of %p",memory);
-	//}
 	return memory;
 }
 VOID EIDFreeEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction,PVOID buffer)
@@ -111,10 +107,6 @@ VOID EIDFreeEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction,PVOID buffer)
 	UNREFERENCED_PARAMETER(szFile);
 	UNREFERENCED_PARAMETER(dwLine);
 	UNREFERENCED_PARAMETER(szFunction);
-	//if (TraceAllocation)
-	//{
-	//	EIDCardLibraryTraceEx(szFile, dwLine, szFunction, WINEVENT_LEVEL_VERBOSE, L"Freeing of %p",buffer);
-	//}
 	if (MyFreeHeap)
 	{
 #ifdef _DEBUG
@@ -340,7 +332,6 @@ HRESULT EIDUnlockLogonPack(
         // set up the Logon structure within the EID_INTERACTIVE_UNLOCK_LOGON
         //
         EID_INTERACTIVE_LOGON* pkilOut = &pkiulOut->Logon;
-		//KERB_INTERACTIVE_LOGON* pkilOut = &pkiulOut->Logon;
 
         pkilOut->MessageType = pkilIn->MessageType;
 		pkilOut->Flags = pkilIn->Flags;
@@ -624,7 +615,6 @@ VOID EIDDebugPrintEIDUnlockLogonStruct(UCHAR dwLevel, PEID_INTERACTIVE_UNLOCK_LO
 	{
 		wcsncpy_s(Buffer,1000,pUnlockLogon->Logon.Pin.Buffer,pUnlockLogon->Logon.Pin.Length/2);
 		Buffer[pUnlockLogon->Logon.Pin.Length/2]=0;
-		//EIDCardLibraryTrace(dwLevel,L"Pin '%s'",Buffer);
 	}
 	else
 	{
@@ -714,8 +704,6 @@ BOOL IsCurrentUser(PTSTR szUserName)
 	BOOL fReturn;
 	PWSTR szCurrentUserName;
 	DWORD dwSize;
-	// GetUserName return SYSTEM
-	//DWORD dwSessionId = WTSGetActiveConsoleSessionId();
 	fReturn = WTSQuerySessionInformation(WTS_CURRENT_SERVER_HANDLE, WTS_CURRENT_SESSION, WTSUserName, &szCurrentUserName, &dwSize);
 	if (!fReturn)
 	{

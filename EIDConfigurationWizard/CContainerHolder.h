@@ -43,7 +43,7 @@ enum CheckType {
 class CContainerHolderTest
 {
 public:
-	CContainerHolderTest(CContainer* pContainer);
+	explicit CContainerHolderTest(CContainer* pContainer);
 	virtual ~CContainerHolderTest();
 	void Release();
 	CContainer* GetContainer();

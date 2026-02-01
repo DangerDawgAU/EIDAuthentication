@@ -334,14 +334,19 @@ NTSTATUS CSecurityContext::BuildNegociateMessage(PSecBufferDesc Buffer)
 	memcpy(message->Signature, EID_MESSAGE_SIGNATURE, 8);
 	message->MessageType = EIDMTNegociate;
 	message->Version = EID_MESSAGE_VERSION;
-	memcpy(Hash, _pCredential->_rgbHashOfCert, CERT_HASH_LENGTH);
-	memcpy(message->Hash, _pCredential->_rgbHashOfCert, CERT_HASH_LENGTH);
+	memcpy_s(Hash, sizeof(Hash), _pCredential->_rgbHashOfCert, CERT_HASH_LENGTH);
+	memcpy_s(message->Hash, sizeof(message->Hash), _pCredential->_rgbHashOfCert, CERT_HASH_LENGTH);
 	_State = EIDMSNegociate;
 	return SEC_I_CONTINUE_NEEDED;
 }
 
 NTSTATUS CSecurityContext::ReceiveNegociateMessage(PSecBufferDesc Buffer)
 {
+	if (Buffer->pBuffers[0].cbBuffer < sizeof(EID_NEGOCIATE_MESSAGE))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INSUFFICIENT_MEMORY");
+		return SEC_E_INSUFFICIENT_MEMORY;
+	}
 	PEID_NEGOCIATE_MESSAGE message = (PEID_NEGOCIATE_MESSAGE) Buffer->pBuffers[0].pvBuffer;
 	if (message->MessageType != EIDMTNegociate)
 	{
@@ -353,8 +358,8 @@ NTSTATUS CSecurityContext::ReceiveNegociateMessage(PSecBufferDesc Buffer)
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"STATUS_INVALID_SIGNATURE");
 		return STATUS_INVALID_SIGNATURE;
 	}
-	
-	memcpy(Hash, message->Hash, CERT_HASH_LENGTH);
+
+	memcpy_s(Hash, sizeof(Hash), message->Hash, CERT_HASH_LENGTH);
 	_State = EIDMSNegociate;
 	return STATUS_SUCCESS;
 }

@@ -138,7 +138,7 @@ BOOL PopulateListViewListData(HWND hWndListView)
 
 //  Creates a new icon as a copy of the passed-in icon, overlayed with a shortcut image. 
 
-#define DEBUGH(hbitmap) if( OpenClipboard ( NULL ) ) \
+#define DEBUGH(hbitmap) if( OpenClipboard ( nullptr ) ) \
 {\
 EmptyClipboard();\
 SetClipboardData(CF_BITMAP,hbitmap);\
@@ -452,9 +452,15 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 					{
 						pCredentialList = new CContainerHolderFactory<CContainerHolderTest>;
 						pCredentialList->SetUsageScenario(CPUS_INVALID,0);
-						SetCursor(LoadCursor(NULL,MAKEINTRESOURCE(IDC_WAIT)));
+#pragma warning(push)
+#pragma warning(disable: 4302)
+						SetCursor(LoadCursorW(nullptr,MAKEINTRESOURCEW(IDC_WAIT)));
+#pragma warning(pop)
 						pCredentialList->ConnectNotification(szReader,szCard,0);
-						SetCursor(LoadCursor(NULL,MAKEINTRESOURCE(IDC_ARROW)));
+#pragma warning(push)
+#pragma warning(disable: 4302)
+						SetCursor(LoadCursorW(nullptr,MAKEINTRESOURCEW(IDC_ARROW)));
+#pragma warning(pop)
 					}
 					
 					if (pCredentialList->HasContainerHolder())
@@ -497,7 +503,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				if (pCredentialList)
 				{
 					delete pCredentialList;
-					pCredentialList = NULL;
+					pCredentialList = nullptr;
 				}
 				ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_04CHECKS));
 				if (!fShowNewCertificatePanel)
@@ -510,7 +516,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				if (pCredentialList)
 				{
 					delete pCredentialList;
-					pCredentialList = NULL;
+					pCredentialList = nullptr;
 				}
 				break;
 				
@@ -593,9 +599,15 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 						{
 							NMHDR nmh;
 							nmh.code = PSN_SETACTIVE;
-							SetCursor(LoadCursor(NULL,MAKEINTRESOURCE(IDC_WAIT)));
+#pragma warning(push)
+#pragma warning(disable: 4302)
+							SetCursor(LoadCursorW(nullptr,MAKEINTRESOURCEW(IDC_WAIT)));
+#pragma warning(pop)
 							pCredentialList->ConnectNotification(szReader,szCard,0);
-							SetCursor(LoadCursor(NULL,MAKEINTRESOURCE(IDC_ARROW)));
+#pragma warning(push)
+#pragma warning(disable: 4302)
+							SetCursor(LoadCursorW(nullptr,MAKEINTRESOURCEW(IDC_ARROW)));
+#pragma warning(pop)
 							SendMessage(hWnd, WM_NOTIFY, 0, (LPARAM)&nmh);
 						}
 						else

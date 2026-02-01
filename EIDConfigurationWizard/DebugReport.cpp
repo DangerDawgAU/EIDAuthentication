@@ -43,7 +43,7 @@ BOOL TestLogon(HWND hMainWnd)
 	DWORD dwFlag = CREDUIWIN_AUTHPACKAGE_ONLY | CREDUIWIN_ENUMERATE_CURRENT_USER;
 	RetrieveNegotiateAuthPackage(&authPackage);
 	
-	CoInitializeEx(NULL,COINIT_APARTMENTTHREADED); 
+	CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
 	TCHAR szTitle[256] = TEXT("");
 	TCHAR szMessage[256] = TEXT("");
 	TCHAR szCaption[256] = TEXT("");
@@ -61,7 +61,7 @@ BOOL TestLogon(HWND hMainWnd)
 	{
 		err = LsaConnectUntrusted(&hLsa);
 		/* Find the setuid package and call it */
-		err = LsaLogonUser(hLsa, &Origin, (SECURITY_LOGON_TYPE)  Interactive , authPackage, authBuffer,authBufferSize,NULL, &Source, (PVOID*)&Profile, &ProfileLen, &Luid, &Token, &Quota, &stat);
+		err = LsaLogonUser(hLsa, &Origin, (SECURITY_LOGON_TYPE)  Interactive , authPackage, authBuffer,authBufferSize,nullptr, &Source, (PVOID*)&Profile, &ProfileLen, &Luid, &Token, &Quota, &stat);
 		DWORD dwSize = sizeof(MSV1_0_INTERACTIVE_PROFILE);
 		LsaDeregisterLogonProcess(hLsa);
 		if (err)
@@ -71,9 +71,6 @@ BOOL TestLogon(HWND hMainWnd)
 		}
 		else
 		{
-			/*LoadString(g_hinst, IDS_05CREDINFOCONFIRMTITLE, szTitle, ARRAYSIZE(szTitle));
-			LoadString(g_hinst, IDS_05CREDINFOCONFIRMMESSAGE, szMessage, ARRAYSIZE(szMessage));
-			MessageBox(hMainWnd,szMessage,szTitle,0);*/
 			fReturn = TRUE;
 			
 			LsaFreeReturnBuffer(Profile);
@@ -92,7 +89,7 @@ BOOL TestLogon(HWND hMainWnd)
 	//{
 	//	//MessageBoxWin32(GetLastError());
 	//}
-	//CredUIConfirmCredentials(NULL,FALSE);
+	//CredUIConfirmCredentials(nullptr,FALSE);
 	SetLastError(dwError);
 	return fReturn;
 }
@@ -117,12 +114,12 @@ VOID WINAPI ProcessEvents(PEVENT_TRACE pEvent)
 		TCHAR szLocalDate[255], szLocalTime[255];
 		_stprintf_s(szLocalDate, ARRAYSIZE(szLocalDate),TEXT("%04d-%02d-%02d"),st.wYear,st.wMonth,st.wDay);
 		_stprintf_s(szLocalTime, ARRAYSIZE(szLocalTime),TEXT("%02d:%02d:%02d"),st.wHour,st.wMinute,st.wSecond);
-		WriteFile ( hInternalLogWriteHandle, szLocalDate, (DWORD)_tcslen(szLocalDate) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
-		WriteFile ( hInternalLogWriteHandle, TEXT(";"), 1 * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
-		WriteFile ( hInternalLogWriteHandle, szLocalTime, (DWORD)_tcslen(szLocalTime) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
-		WriteFile ( hInternalLogWriteHandle, TEXT(";"), 1 * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
-		WriteFile ( hInternalLogWriteHandle, pEvent->MofData, (DWORD)_tcslen((PTSTR) pEvent->MofData) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
-		WriteFile ( hInternalLogWriteHandle, TEXT("\r\n"), 2 * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
+		WriteFile ( hInternalLogWriteHandle, szLocalDate, (DWORD)_tcslen(szLocalDate) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
+		WriteFile ( hInternalLogWriteHandle, TEXT(";"), 1 * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
+		WriteFile ( hInternalLogWriteHandle, szLocalTime, (DWORD)_tcslen(szLocalTime) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
+		WriteFile ( hInternalLogWriteHandle, TEXT(";"), 1 * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
+		WriteFile ( hInternalLogWriteHandle, pEvent->MofData, (DWORD)_tcslen((PTSTR) pEvent->MofData) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
+		WriteFile ( hInternalLogWriteHandle, TEXT("\r\n"), 2 * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
 	  }
   }
 
@@ -156,12 +153,12 @@ void ExportOneTraceFile(PTSTR szTraceFile)
 		DWORD dwWritten;
 		TCHAR szBuffer[256];
 		_tcscpy_s(szBuffer,ARRAYSIZE(szBuffer),TEXT("================================================\r\n"));
-		WriteFile ( hInternalLogWriteHandle, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
-		WriteFile ( hInternalLogWriteHandle, szTraceFile, (DWORD)_tcslen(szTraceFile) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
+		WriteFile ( hInternalLogWriteHandle, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
+		WriteFile ( hInternalLogWriteHandle, szTraceFile, (DWORD)_tcslen(szTraceFile) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
 		_tcscpy_s(szBuffer,ARRAYSIZE(szBuffer),TEXT("\r\n"));
-		WriteFile ( hInternalLogWriteHandle, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
+		WriteFile ( hInternalLogWriteHandle, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
 		_tcscpy_s(szBuffer,ARRAYSIZE(szBuffer),TEXT("================================================\r\n"));
-		WriteFile ( hInternalLogWriteHandle, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
+		WriteFile ( hInternalLogWriteHandle, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
 		rc = ProcessTrace(&handle, 1, 0, 0);
 		if (rc != ERROR_SUCCESS && rc != ERROR_CANCELLED)
 		{
@@ -186,11 +183,11 @@ HANDLE StartReport(PTSTR szLogFile)
 		//  Creates the new file to write to for the upper-case version.
 		hOutput = CreateFile((LPTSTR) szLogFile, // file name 
 							   GENERIC_WRITE,        // open for write 
-							   0,                    // do not share 
-							   NULL,                 // default security 
+							   0,                    // do not share
+							   nullptr,                 // default security
 							   CREATE_ALWAYS,        // overwrite existing
-							   FILE_ATTRIBUTE_NORMAL,// normal file 
-							   NULL);                // no template 
+							   FILE_ATTRIBUTE_NORMAL,// normal file
+							   nullptr);                // no template
 		if (hOutput == INVALID_HANDLE_VALUE) 
 		{ 
 			dwError = GetLastError();
@@ -232,7 +229,7 @@ BOOL DoTheActionToBeTraced()
 {
 	DWORD dwError;
 	BOOL fSuccess = FALSE;
-	PCCERT_CONTEXT pCertContext = NULL;
+	PCCERT_CONTEXT pCertContext = nullptr;
 	__try
 	{
 		
@@ -256,7 +253,7 @@ BOOL DoTheActionToBeTraced()
 		// call for a test
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Test Logon");
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"===============");
-		if (!TestLogon(NULL))
+		if (!TestLogon(nullptr))
 		{
 			dwError = GetLastError();
 			if (dwError == ERROR_CANCELLED)
@@ -315,7 +312,7 @@ BOOL CreateDebugReport(PTSTR szLogFile)
 			szNamedPipeName[_tcslen(szNamedPipeName)] = alphanum[dis(gen)];
 		}
 
-		hNamedPipe = CreateNamedPipe(szNamedPipeName,PIPE_ACCESS_DUPLEX,0,PIPE_UNLIMITED_INSTANCES,0,0,0,NULL);
+		hNamedPipe = CreateNamedPipe(szNamedPipeName,PIPE_ACCESS_DUPLEX,0,PIPE_UNLIMITED_INSTANCES,0,0,0,nullptr);
 		if (hNamedPipe == INVALID_HANDLE_VALUE)
 		{
 			dwError = GetLastError();
@@ -326,18 +323,18 @@ BOOL CreateDebugReport(PTSTR szLogFile)
 		// launch the wizard elevated
 		SHELLEXECUTEINFO shExecInfo;
 		TCHAR szName[1024];
-		GetModuleFileName(GetModuleHandle(NULL),szName, ARRAYSIZE(szName));
+		GetModuleFileName(GetModuleHandle(nullptr),szName, ARRAYSIZE(szName));
 
 		shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 		shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-		shExecInfo.hwnd = NULL;
+		shExecInfo.hwnd = nullptr;
 		shExecInfo.lpVerb = TEXT("runas");
 		shExecInfo.lpFile = szName;
 		// sending the named pipe name so the other process can connect
 		shExecInfo.lpParameters = szParameter;
-		shExecInfo.lpDirectory = NULL;
+		shExecInfo.lpDirectory = nullptr;
 		shExecInfo.nShow = SW_NORMAL;
-		shExecInfo.hInstApp = NULL;
+		shExecInfo.hInstApp = nullptr;
 
 		if (!ShellExecuteEx(&shExecInfo))
 		{
@@ -346,21 +343,21 @@ BOOL CreateDebugReport(PTSTR szLogFile)
 		}
 		else
 		{
-			if (! (ConnectNamedPipe(hNamedPipe, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED)))
+			if (! (ConnectNamedPipe(hNamedPipe, nullptr) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED)))
 			{
 				dwError = GetLastError();
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CreateNamedPipe 0x%08X", GetLastError());
 				__leave;
 			}
 			// send to the process the log file name
-			WriteFile(hNamedPipe,szLogFile,(DWORD) ((_tcslen(szLogFile) +1) * sizeof(TCHAR)),&dwWrite,NULL);
+			WriteFile(hNamedPipe,szLogFile,(DWORD) ((_tcslen(szLogFile) +1) * sizeof(TCHAR)),&dwWrite,nullptr);
 			Sleep(1000);
 			// do the action ...
 			DoTheActionToBeTraced();
 			Sleep(1000);
 			// send to the process the order to stop
 			// an empty line will do it
-			WriteFile(hNamedPipe,TEXT("\n"),2 * sizeof(TCHAR),NULL,NULL);
+			WriteFile(hNamedPipe,TEXT("\n"),2 * sizeof(TCHAR),nullptr,nullptr);
 			DisconnectNamedPipe(hNamedPipe);
 			// then wait to its stop to have the file (if we don't, the file can be not written)
 			if (WaitForSingleObject(shExecInfo.hProcess, INFINITE) == WAIT_OBJECT_0)
@@ -392,7 +389,7 @@ VOID CreateReport(PTSTR szNamedPipeName)
 	DWORD dwRead;
 	__try
 	{
-		hPipe = CreateFile( szNamedPipeName,GENERIC_READ |GENERIC_WRITE,0,NULL,OPEN_EXISTING, 0,NULL);
+		hPipe = CreateFile( szNamedPipeName,GENERIC_READ |GENERIC_WRITE,0,nullptr,OPEN_EXISTING, 0,nullptr);
 		if (hPipe == INVALID_HANDLE_VALUE)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"INVALID_HANDLE_VALUE 1");
@@ -406,14 +403,14 @@ VOID CreateReport(PTSTR szNamedPipeName)
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"WaitNamedPipe 0x%08X",GetLastError());
 				__leave;
 			}
-			hPipe = CreateFile( szNamedPipeName,GENERIC_READ |GENERIC_WRITE,0,NULL,OPEN_EXISTING, 0,NULL);
+			hPipe = CreateFile( szNamedPipeName,GENERIC_READ |GENERIC_WRITE,0,nullptr,OPEN_EXISTING, 0,nullptr);
 		}
 		if (hPipe == INVALID_HANDLE_VALUE)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"INVALID_HANDLE_VALUE 2 0X%08X",GetLastError());
 			__leave;
 		}
-		if (!ReadFile(hPipe,szFile,ARRAYSIZE(szFile) * sizeof(TCHAR), &dwRead,NULL))
+		if (!ReadFile(hPipe,szFile,ARRAYSIZE(szFile) * sizeof(TCHAR), &dwRead,nullptr))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"ReadFile 0X%08X",GetLastError());
 			__leave;
@@ -425,7 +422,7 @@ VOID CreateReport(PTSTR szNamedPipeName)
 		hReport = StartReport(szFile);
 		
 		// fait for <Enter> to quit
-		if (!ReadFile(hPipe,szFile,1 * sizeof(TCHAR), &dwRead,NULL))
+		if (!ReadFile(hPipe,szFile,1 * sizeof(TCHAR), &dwRead,nullptr))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"ReadFile 0X%08X",GetLastError());
 			__leave;

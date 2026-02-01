@@ -125,15 +125,7 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPAR
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Activate");
 				//this is an interior page
 				ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_05LIST));
-				PopulateListViewListData(GetDlgItem(hWnd, IDC_05LIST));	
-				//if (pCredentialList->GetContainerHolderAt(dwCurrentCredential)->GetIconIndex())
-				//{
-					PropSheet_SetWizButtons(hWnd, PSWIZB_NEXT |	PSWIZB_BACK);
-				//}
-				//else
-				//{
-				//	PropSheet_SetWizButtons(hWnd, PSWIZB_BACK);
-				//}
+				PopulateListViewListData(GetDlgItem(hWnd, IDC_05LIST));
 				// load string from ressource
 				break;
 			case PSN_WIZFINISH :

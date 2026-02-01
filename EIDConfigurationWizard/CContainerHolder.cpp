@@ -115,29 +115,12 @@ BOOL CContainerHolderTest::IsTrusted()
 }
 BOOL CContainerHolderTest::SupportEncryption()
 {
-	/*BOOL fReturn = FALSE;
-	PCCERT_CONTEXT pCertContext = _pContainer->GetCertificate();
-	if (pCertContext)
-	{
-		fReturn = CanEncryptPassword(NULL,0,pCertContext);
-		CertFreeCertificateContext(pCertContext);
-	}
-	return fReturn;*/
 	return _pContainer->GetKeySpec() == AT_KEYEXCHANGE;
 }
 HRESULT CContainerHolderTest::SetUsageScenario(__in CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,__in DWORD dwFlags)
 {
 	return S_OK;
 }
-
-/*
-BOOL CContainerHolderTest::HasCurrentUserName()
-{
-	TCHAR szUserName[1024] = TEXT("");
-	DWORD dwSize = ARRAYSIZE(szUserName);
-	GetUserName(szUserName, &dwSize);
-	return _tcscmp(_pContainer->GetUserName(),szUserName)==0;
-}*/
 
 CContainer* CContainerHolderTest::GetContainer()
 {
@@ -158,19 +141,16 @@ int CContainerHolderTest::GetImage(DWORD dwCheckNum)
 			return CHECK_SUCCESS;
 		else
 			return CHECK_FAILED;
-		break;
 	case CHECK_TRUST:
 		if (_IsTrusted)
 			return CHECK_SUCCESS;
 		else
 			return CHECK_FAILED;
-		break;
 	case CHECK_CRYPTO:
 		if (_SupportEncryption)
 			return CHECK_SUCCESS;
 		else
 			return CHECK_WARNING;
-		break;
 	}
 	return 0;
 }
@@ -178,7 +158,7 @@ PTSTR CContainerHolderTest::GetDescription(DWORD dwCheckNum)
 {
 	DWORD dwWords = 1024;
 	PTSTR szDescription = (PTSTR) EIDAlloc(dwWords * sizeof(TCHAR));
-	if (!szDescription) return NULL;
+	if (!szDescription) return nullptr;
 	szDescription[0] = 0;
 	switch(dwCheckNum)
 	{
@@ -213,7 +193,7 @@ PTSTR CContainerHolderTest::GetSolveDescription(DWORD dwCheckNum)
 {
 	DWORD dwWords = 1024;
 	PTSTR szDescription = (PTSTR) EIDAlloc(dwWords * sizeof(TCHAR));
-	if (!szDescription) return NULL;
+	if (!szDescription) return nullptr;
 	szDescription[0] = 0;
 	switch(dwCheckNum)
 	{
@@ -264,16 +244,16 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 			{
 				SHELLEXECUTEINFO shExecInfo;
 				TCHAR szName[1024];
-				GetModuleFileName(GetModuleHandle(NULL),szName, ARRAYSIZE(szName));
+				GetModuleFileName(GetModuleHandle(nullptr),szName, ARRAYSIZE(szName));
 				shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 				shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-				shExecInfo.hwnd = NULL;
+				shExecInfo.hwnd = nullptr;
 				shExecInfo.lpVerb = TEXT("runas");
 				shExecInfo.lpFile = szName;
 				shExecInfo.lpParameters = TEXT("ENABLESIGNATUREONLY");
-				shExecInfo.lpDirectory = NULL;
+				shExecInfo.lpDirectory = nullptr;
 				shExecInfo.nShow = SW_NORMAL;
-				shExecInfo.hInstApp = NULL;
+				shExecInfo.hInstApp = nullptr;
 
 				if (!ShellExecuteEx(&shExecInfo))
 				{
@@ -309,7 +289,7 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 				SHELLEXECUTEINFO shExecInfo;
 				TCHAR szName[1024];
 				TCHAR szParameters[8000] = TEXT("TRUST ");
-				GetModuleFileName(GetModuleHandle(NULL),szName, ARRAYSIZE(szName));
+				GetModuleFileName(GetModuleHandle(nullptr),szName, ARRAYSIZE(szName));
 				PCCERT_CONTEXT pCertContext = _pContainer->GetCertificate();
 				DWORD dwSize = ARRAYSIZE(szParameters) - 6;
 				if (CryptBinaryToString(pCertContext->pbCertEncoded,pCertContext->cbCertEncoded, CRYPT_STRING_BASE64, szParameters + 6,&dwSize))
@@ -318,13 +298,13 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 					shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 
 					shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-					shExecInfo.hwnd = NULL;
+					shExecInfo.hwnd = nullptr;
 					shExecInfo.lpVerb = TEXT("runas");
 					shExecInfo.lpFile = szName;
 					shExecInfo.lpParameters = szParameters;
-					shExecInfo.lpDirectory = NULL;
+					shExecInfo.lpDirectory = nullptr;
 					shExecInfo.nShow = SW_NORMAL;
-					shExecInfo.hInstApp = NULL;
+					shExecInfo.hInstApp = nullptr;
 
 					if (!ShellExecuteEx(&shExecInfo))
 					{
@@ -363,17 +343,17 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 			{
 				SHELLEXECUTEINFO shExecInfo;
 				TCHAR szName[1024];
-				GetModuleFileName(GetModuleHandle(NULL),szName, ARRAYSIZE(szName));
+				GetModuleFileName(GetModuleHandle(nullptr),szName, ARRAYSIZE(szName));
 				shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 
 				shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-				shExecInfo.hwnd = NULL;
+				shExecInfo.hwnd = nullptr;
 				shExecInfo.lpVerb = TEXT("runas");
 				shExecInfo.lpFile = szName;
 				shExecInfo.lpParameters = TEXT("ENABLENOEKU");
-				shExecInfo.lpDirectory = NULL;
+				shExecInfo.lpDirectory = nullptr;
 				shExecInfo.nShow = SW_NORMAL;
-				shExecInfo.hInstApp = NULL;
+				shExecInfo.hInstApp = nullptr;
 
 				if (!ShellExecuteEx(&shExecInfo))
 				{
@@ -406,17 +386,17 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 			{
 				SHELLEXECUTEINFO shExecInfo;
 				TCHAR szName[1024];
-				GetModuleFileName(GetModuleHandle(NULL),szName, ARRAYSIZE(szName));
+				GetModuleFileName(GetModuleHandle(nullptr),szName, ARRAYSIZE(szName));
 				shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 
 				shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-				shExecInfo.hwnd = NULL;
+				shExecInfo.hwnd = nullptr;
 				shExecInfo.lpVerb = TEXT("runas");
 				shExecInfo.lpFile = szName;
 				shExecInfo.lpParameters = TEXT("ENABLETIMEINVALID");
-				shExecInfo.lpDirectory = NULL;
+				shExecInfo.lpDirectory = nullptr;
 				shExecInfo.nShow = SW_NORMAL;
-				shExecInfo.hInstApp = NULL;
+				shExecInfo.hInstApp = nullptr;
 
 				if (!ShellExecuteEx(&shExecInfo))
 				{

@@ -48,7 +48,7 @@ CSmartCardConnectionNotifier::CSmartCardConnectionNotifier(ISmartCardConnectionN
 
 CSmartCardConnectionNotifier::~CSmartCardConnectionNotifier() 
 {
-	if (_hThread != NULL) 
+	if (_hThread != nullptr)
 	{
 		Stop();
 	}
@@ -72,7 +72,7 @@ HRESULT CSmartCardConnectionNotifier::Start()
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Thread already launched");
 		return E_FAIL;
 	}
-	_hThread = CreateThread(nullptr, 0, CSmartCardConnectionNotifier::_ThreadProc, (LPVOID) this, 0, nullptr);
+	_hThread = CreateThread(NULL, 0, CSmartCardConnectionNotifier::_ThreadProc, (LPVOID) this, 0, NULL);
     if (_hThread == nullptr)
     {
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to launch the thread : %d",GetLastError());
@@ -108,7 +108,6 @@ HRESULT CSmartCardConnectionNotifier::Stop()
 				}
 			}
 			WaitForSingleObject(_hThread,INFINITE);
-			//TerminateThread(_hThread,0);
 		}
 		else
 		{
@@ -336,7 +335,6 @@ LONG CSmartCardConnectionNotifier::GetReaderStates(SCARD_READERSTATE rgscState[M
 	DWORD					dwNewListToOldList[MAXIMUM_SMARTCARD_READERS];
 	LPTSTR					szReader[MAXIMUM_SMARTCARD_READERS];
 	
-	//EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 	// initialise matrix
 	for ( dwI = 1; dwI < MAXIMUM_SMARTCARD_READERS; dwI++ )
 	{
@@ -383,7 +381,6 @@ LONG CSmartCardConnectionNotifier::GetReaderStates(SCARD_READERSTATE rgscState[M
 
 	// Track events on found readers.
 	
-	//EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Count new entries");
 	if (Status == SCARD_S_SUCCESS) {
 		// Flag Reader removed or added
 		szRdr = szListReaders;
@@ -464,7 +461,6 @@ LONG CSmartCardConnectionNotifier::GetReaderStates(SCARD_READERSTATE rgscState[M
 		}
 	}
 	SCardFreeMemory(_hSCardContext,szListReaders);
-	//EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Leave");
 	return SCARD_S_SUCCESS;
 }
 

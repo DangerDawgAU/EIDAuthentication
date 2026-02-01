@@ -69,7 +69,7 @@ class CClassFactory : public IClassFactory
     STDMETHOD (QueryInterface)(REFIID riid, void** ppv) 
     {
         HRESULT hr;
-        if (ppv != NULL)
+        if (ppv != nullptr)
         {
             if (IID_IClassFactory == riid || IID_IUnknown == riid)
             {
@@ -79,7 +79,7 @@ class CClassFactory : public IClassFactory
             }
             else
             {
-                *ppv = NULL;
+                *ppv = nullptr;
                 hr = E_NOINTERFACE;
             }
         }

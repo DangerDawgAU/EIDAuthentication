@@ -1,4 +1,4 @@
-// EIDLogManager.cpp : définit le point d'entrée pour l'application.
+// EIDLogManager.cppï¿½: dï¿½finit le point d'entrï¿½e pour l'application.
 //
 
 #include "stdafx.h"
@@ -29,7 +29,7 @@
 
 #define CLSCTX_INPROC_SERVER  1
 
-// Variables globales :
+// Variables globalesï¿½:
 HINSTANCE hInst;								// instance actuelle
 
 INT_PTR CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -42,7 +42,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
- 	DialogBox(hInst, MAKEINTRESOURCE(IDD_EIDLOGMANAGER_DIALOG), NULL, WndProc);
+ 	DialogBox(hInst, MAKEINTRESOURCE(IDD_EIDLOGMANAGER_DIALOG), nullptr, WndProc);
 }
 
 void SaveLog(HWND hDlg);
@@ -75,7 +75,7 @@ void ShowHideCrashDumpButtons(HWND hDlg)
 		EnableWindow(GetDlgItem(hDlg,IDC_DISABLECRASHDUMP), FALSE);
 	}
 }
-// Gestionnaire de messages pour la boîte de dialogue À propos de.
+// Gestionnaire de messages pour la boï¿½te de dialogue ï¿½ propos de.
 INT_PTR CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	UNREFERENCED_PARAMETER(lParam);
@@ -98,10 +98,6 @@ INT_PTR CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 					{
 						MessageBoxWin32Ex(GetLastError(), hDlg);
 					}
-					/*else
-					{
-						MessageBoxWin32Ex(0, hDlg);
-					}*/
 					ShowHideLogButtons(hDlg);
 					break;	
 				case IDC_DISABLELOG:
@@ -109,10 +105,6 @@ INT_PTR CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 					{
 						MessageBoxWin32Ex(GetLastError(), hDlg);
 					}
-					/*else
-					{
-						MessageBoxWin32Ex(0, hDlg);
-					}*/
 					ShowHideLogButtons(hDlg);
 					break;
 				case IDC_SAVELOG:
@@ -139,7 +131,7 @@ INT_PTR CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return (INT_PTR)FALSE;
 }
 
-HANDLE hFile = NULL;
+HANDLE hFile = nullptr;
 
 VOID WINAPI ProcessEvents(PEVENT_TRACE pEvent)
 {
@@ -198,12 +190,12 @@ void ExportOneTraceFile(PTSTR szTraceFile)
 		DWORD dwWritten;
 		TCHAR szBuffer[256];
 		_tcscpy_s(szBuffer,ARRAYSIZE(szBuffer),TEXT("================================================\r\n"));
-		WriteFile ( hFile, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
-		WriteFile ( hFile, szTraceFile, (DWORD)_tcslen(szTraceFile) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
+		WriteFile ( hFile, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
+		WriteFile ( hFile, szTraceFile, (DWORD)_tcslen(szTraceFile) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
 		_tcscpy_s(szBuffer,ARRAYSIZE(szBuffer),TEXT("\r\n"));
-		WriteFile ( hFile, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
+		WriteFile ( hFile, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
 		_tcscpy_s(szBuffer,ARRAYSIZE(szBuffer),TEXT("================================================\r\n"));
-		WriteFile ( hFile, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
+		WriteFile ( hFile, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
 		rc = ProcessTrace(&handle, 1, 0, 0);
 		if (rc != ERROR_SUCCESS && rc != ERROR_CANCELLED)
 		{

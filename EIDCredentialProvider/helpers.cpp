@@ -71,7 +71,7 @@ HRESULT FieldDescriptorCoAllocCopy(
         }
         else
         {
-            pcpfd->pszLabel = NULL;
+            pcpfd->pszLabel = nullptr;
             hr = S_OK;
         }
     }
@@ -86,7 +86,7 @@ HRESULT FieldDescriptorCoAllocCopy(
     else
     {
         CoTaskMemFree(pcpfd);  
-        *ppcpfd = NULL;
+        *ppcpfd = nullptr;
     }
 
 
@@ -115,7 +115,7 @@ HRESULT FieldDescriptorCopy(
     }
     else
     {
-        cpfd.pszLabel = NULL;
+        cpfd.pszLabel = nullptr;
         hr = S_OK;
     }
 
@@ -138,7 +138,7 @@ static HRESULT ProtectAndCopyString(
                                     PWSTR* ppwzProtected
                                     )
 {
-    *ppwzProtected = NULL;
+    *ppwzProtected = nullptr;
 
     HRESULT hr = E_FAIL;
 
@@ -149,7 +149,7 @@ static HRESULT ProtectAndCopyString(
     // to encrypt, must include the NULL terminator!
     DWORD cchProtected = 0;
 	PWSTR pwzProtected = L"";
-    if (!CredProtectW(FALSE, pwzToProtect, (DWORD)wcslen(pwzToProtect)+1, pwzProtected, &cchProtected, NULL))
+	   if (!CredProtectW(FALSE, pwzToProtect, (DWORD)wcslen(pwzToProtect)+1, pwzProtected, &cchProtected, nullptr))
     {
         DWORD dwErr = GetLastError();
 
@@ -161,7 +161,7 @@ static HRESULT ProtectAndCopyString(
             if (pwzProtected)
             {
                 // The second call to CredProtect actually encrypts the string.
-                if (CredProtectW(FALSE, pwzToProtect, (DWORD)wcslen(pwzToProtect)+1, pwzProtected, &cchProtected, NULL))
+                if (CredProtectW(FALSE, pwzToProtect, (DWORD)wcslen(pwzToProtect)+1, pwzProtected, &cchProtected, nullptr))
                 {
                     *ppwzProtected = pwzProtected;
                     hr = S_OK;
@@ -200,7 +200,7 @@ HRESULT ProtectIfNecessaryAndCopyPassword(
                                           PWSTR* ppwzProtectedPassword
                                           )
 {
-    *ppwzProtectedPassword = NULL;
+    *ppwzProtectedPassword = nullptr;
 
     HRESULT hr;
 
@@ -264,7 +264,7 @@ static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT messa
 					{
 						GetWindowTextW(GetDlgItem(hwndDlg,IDC_USERNAME),szUserName,ARRAYSIZE(szUserName));
 						GetWindowTextW(GetDlgItem(hwndDlg,IDC_PASSWORD),szPassword,ARRAYSIZE(szPassword));
-						if (!LogonUser(szUserName,NULL,szPassword,LOGON32_LOGON_INTERACTIVE,LOGON32_PROVIDER_DEFAULT,&hToken))
+						if (!LogonUser(szUserName,nullptr,szPassword,LOGON32_LOGON_INTERACTIVE,LOGON32_PROVIDER_DEFAULT,&hToken))
 						{
 							MessageBoxWin32(GetLastError());
 							__leave;
@@ -308,12 +308,12 @@ static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT messa
 					if (wcscmp(item.szID, L"idinfo") == 0)
 					{
 						// launch the password reset wizard
-						HMODULE keymgrDll = NULL;
+						HMODULE keymgrDll = nullptr;
 						WCHAR szUserName[256];
 						PBYTE pbBuffer;
 						NET_API_STATUS nStatus;
 						GetWindowTextW(GetDlgItem(hwndDlg,IDC_USERNAME),szUserName,ARRAYSIZE(szUserName));
-						nStatus = NetUserGetInfo(NULL,szUserName,0,&pbBuffer);
+						nStatus = NetUserGetInfo(nullptr,szUserName,0,&pbBuffer);
 						if (nStatus == NERR_Success)
 						{
 							NetApiBufferFree(pbBuffer);
@@ -329,7 +329,7 @@ static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT messa
 								{
 									__leave;
 								}
-								MyPRShowRestoreFromMsginaW(NULL,NULL,szUserName,NULL);
+								MyPRShowRestoreFromMsginaW(0,0,szUserName,0);
 							}
 							__finally
 							{

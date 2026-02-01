@@ -388,12 +388,6 @@ extern "C"
 				// tried to unload the package, but according to MS source code,
 				// this function can only be called when the initialisation is in progress
 				// it trigger an NT exception 0x80090316 (SEC_E_BAD_PKGID)
-				/*status = MyLsaDispatchTable->UnloadPackage();
-				if (status != STATUS_SUCCESS)
-				{
-					pBuffer->dwError = LsaNtStatusToWinError(status);
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unload 0x%08X",status);
-				}*/
 				status = STATUS_SUCCESS;
 				break;
 			case EIDCMGetStoredCredentialRid:

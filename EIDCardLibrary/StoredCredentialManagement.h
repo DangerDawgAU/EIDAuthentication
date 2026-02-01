@@ -17,6 +17,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "EIDCardLibrary.h"
 
  
 typedef enum EID_PRIVATE_DATA_TYPE
@@ -26,7 +27,6 @@ typedef enum EID_PRIVATE_DATA_TYPE
 	eidpdtDPAPI = 3,
 
 }*PEID_PRIVATE_DATA_TYPE;
-#define CERT_HASH_LENGTH 32  // SHA-256 hash length (security upgrade from SHA-1)
 typedef struct _EID_PRIVATE_DATA
 {
 	EID_PRIVATE_DATA_TYPE dwType;

@@ -31,7 +31,7 @@ class CSecurityContext
 
 public:
 	static CSecurityContext* CSecurityContext::CreateContext(CCredential* pCredential);
-	CSecurityContext(CCredential* pCredential);
+	explicit CSecurityContext(CCredential* pCredential);
 	static BOOL Delete(ULONG_PTR pHandle);
 	static CSecurityContext* GetContextFromHandle(ULONG_PTR);
 	NTSTATUS InitializeSecurityContextInput(PSecBufferDesc);
@@ -71,5 +71,5 @@ public:
 private:
 	static CUsermodeContext* CUsermodeContext::GetContextFromHandle(ULONG_PTR Handle);
 	HANDLE Handle;
-	CUsermodeContext(PEID_SSP_CALLBACK_MESSAGE pMessage);
+	explicit CUsermodeContext(PEID_SSP_CALLBACK_MESSAGE pMessage);
 };

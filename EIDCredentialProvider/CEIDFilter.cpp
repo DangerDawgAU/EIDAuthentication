@@ -49,20 +49,5 @@ HRESULT CEIDFilter::Filter(
 	UNREFERENCED_PARAMETER(rgclsidProviders);
 	UNREFERENCED_PARAMETER(rgbAllow);
 	UNREFERENCED_PARAMETER(cProviders);
-	/*BOOL fFilter = FALSE;
-	if (cpus == CPUS_LOGON || cpus == CPUS_UNLOCK_WORKSTATION)
-	{
-		fFilter = (GetPolicyValue(scforceoption) == 1);
-	}
-	if (fFilter)
-	{
-		for (DWORD dwI = 0; dwI < cProviders; dwI++)
-		{
-			if (rgclsidProviders[dwI] == CLSID_PasswordCredentialProvider)
-			{
-				rgbAllow[dwI] = FALSE;
-			}
-		}
-	}*/
 	return S_OK;
 }

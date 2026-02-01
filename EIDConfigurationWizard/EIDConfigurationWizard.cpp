@@ -59,7 +59,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	{
 		TCHAR szMessage[256] = TEXT("");
 		LoadString(g_hinst,IDS_EIDNOTAVAILABLE, szMessage, ARRAYSIZE(szMessage));
-		MessageBox(NULL,szMessage,TEXT("Error"),MB_ICONERROR);
+		MessageBox(nullptr,szMessage,TEXT("Error"),MB_ICONERROR);
 		return -1;
 	}
 	// check that the user is not connected to a domain
@@ -67,7 +67,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	{
 		TCHAR szMessage[2000] = TEXT("");
 		LoadString(g_hinst,IDS_NODOMAINACCOUNT, szMessage, ARRAYSIZE(szMessage));
-		MessageBox(NULL,szMessage,TEXT("Error"),MB_ICONERROR);
+		MessageBox(nullptr,szMessage,TEXT("Error"),MB_ICONERROR);
 		return -1;
 	}
 	g_hinst = hInstance;
@@ -88,16 +88,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 				_tcscpy_s(szUserName,dwUserNameSize, pszCommandLine[1]);
 			}
 		}
-		/*else if (_tcscmp(pszCommandLine[0],TEXT("DIALOGREMOVEPOLICY")) == 0)
-		{
-			DialogRemovePolicy();
-			return 0;
-		} 
-		else if (_tcscmp(pszCommandLine[0],TEXT("DIALOGFORCEPOLICY")) == 0)
-		{
-			DialogForceSmartCardLogonPolicy();
-			return 0;
-		} */
 		else if (_tcscmp(pszCommandLine[0],TEXT("ENABLESIGNATUREONLY")) == 0)
 		{
 			DWORD dwValue = 1;
@@ -129,9 +119,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 				return 0;
 			}
 			DWORD dwSize = 0;
-			CryptStringToBinary(pszCommandLine[1],0,CRYPT_STRING_BASE64,NULL,&dwSize,NULL,NULL);
+			CryptStringToBinary(pszCommandLine[1],0,CRYPT_STRING_BASE64,nullptr,&dwSize,nullptr,nullptr);
 			PBYTE pbCertificate = (PBYTE) EIDAlloc(dwSize);
-			CryptStringToBinary(pszCommandLine[1],0,CRYPT_STRING_BASE64,pbCertificate,&dwSize,NULL,NULL);
+			CryptStringToBinary(pszCommandLine[1],0,CRYPT_STRING_BASE64,pbCertificate,&dwSize,nullptr,nullptr);
 			PCCERT_CONTEXT pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING,pbCertificate, dwSize);
 			if (pCertContext)
 			{
@@ -195,14 +185,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	ZeroMemory(&psh,sizeof(PROPSHEETHEADER));
 	psh.dwSize = sizeof(psh);
 	psh.hInstance = hInstance;
-	psh.hwndParent = NULL;
+	psh.hwndParent = nullptr;
 	psh.phpage = ahpsp;
 	psh.dwFlags = PSH_WIZARD | PSH_AEROWIZARD | PSH_USEHICON ;
 	psh.pszbmWatermark = 0;
 	psh.pszbmHeader = 0;
 	psh.nStartPage = 1;
 	psh.nPages = ARRAYSIZE(ahpsp);
-	psh.hIcon = NULL;
+	psh.hIcon = nullptr;
 	psh.pszCaption = MAKEINTRESOURCE(IDS_CAPTION);
 
 	HMODULE hDll = EIDLoadSystemLibrary(TEXT("imageres.dll"));
