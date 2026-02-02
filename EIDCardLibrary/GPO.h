@@ -18,6 +18,8 @@
 */
 
 
+#pragma once
+
 enum GPOPolicy
 {
   AllowSignatureOnlyKeys,
@@ -35,8 +37,13 @@ enum GPOPolicy
   scforceoption,
   scremoveoption,
   EnforceCSPWhitelist,  // Security: block CSP providers not in whitelist
-} ;
+};
 
+// Validates that a GPOPolicy enum value is within valid bounds to prevent array overflow
+static BOOL IsValidPolicy(GPOPolicy policy)
+{
+  return (policy >= AllowSignatureOnlyKeys && policy <= EnforceCSPWhitelist);
+}
 
 DWORD GetPolicyValue(GPOPolicy Policy);
 BOOL SetPolicyValue(GPOPolicy Policy, DWORD dwValue);

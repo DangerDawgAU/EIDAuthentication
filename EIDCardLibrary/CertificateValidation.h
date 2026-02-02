@@ -18,6 +18,16 @@
 */
 
 
+struct ChainValidationParams {
+    CERT_ENHKEY_USAGE EnhkeyUsage;
+    CERT_USAGE_MATCH CertUsage;
+    CERT_CHAIN_PARA ChainPara;
+    CERT_CHAIN_POLICY_PARA ChainPolicy;
+    CERT_CHAIN_POLICY_STATUS PolicyStatus;
+};
+
+void InitChainValidationParams(ChainValidationParams* params);
+
 PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo);
 BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFlag = 0);
 BOOL HasCertificateRightEKU(__in PCCERT_CONTEXT pCertContext);

@@ -168,34 +168,39 @@ void RemoveValueFromMultiSz(HKEY hKey, PTSTR szKey, PTSTR szValue, PTSTR szData)
 
 
 
-BOOL RegisterTheSecurityPackage()
+BOOL IsSecurityPackageLoaded(LPCTSTR szPackageName)
 {
 	NTSTATUS Status;
 	DWORD dwNbPackage;
 	PSecPkgInfo pPackageInfo;
 	BOOL fFound = FALSE;
+
+	Status = EnumerateSecurityPackages(&dwNbPackage, &pPackageInfo);
+	if (Status == SEC_E_OK)
+	{
+		for(DWORD dwI = 0; dwI < dwNbPackage; dwI++)
+		{
+			PTSTR szPackage = pPackageInfo[dwI].Name;
+			if (_tcscmp(szPackage, szPackageName) == 0)
+			{
+				fFound = TRUE;
+				break;
+			}
+		}
+		FreeContextBuffer(pPackageInfo);
+	}
+	return fFound;
+}
+
+BOOL RegisterTheSecurityPackage()
+{
+	NTSTATUS Status;
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
 	__try
 	{
-		
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Starting...");
-		Status = EnumerateSecurityPackages(&dwNbPackage, &pPackageInfo);
-		if (Status != SEC_E_OK)
-		{
-			dwError = LsaNtStatusToWinError(Status);
-			__leave;
-		}
-		for(DWORD dwI = 0; dwI < dwNbPackage; dwI++)
-		{
-			PTSTR szPackage = pPackageInfo[dwI].Name;
-			if (_tcscmp(szPackage, AUTHENTICATIONPACKAGENAMET) == 0)
-			{
-				fFound = TRUE;
-			}
-		}
-		FreeContextBuffer(pPackageInfo);
-		if (fFound)
+		if (IsSecurityPackageLoaded(AUTHENTICATIONPACKAGENAMET))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"The security package was loaded before");
 			dwError = ERROR_FAIL_NOACTION_REBOOT;
@@ -222,31 +227,13 @@ BOOL RegisterTheSecurityPackage()
 BOOL UnRegisterTheSecurityPackage()
 {
 	NTSTATUS Status;
-	DWORD dwNbPackage;
-	PSecPkgInfo pPackageInfo;
-	BOOL fFound = FALSE;
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
 	__try
 	{
 		// maybe use lsacallpackage to run UnloadPackage inside the SSP
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Starting...");
-		Status = EnumerateSecurityPackages(&dwNbPackage, &pPackageInfo);
-		if (Status != SEC_E_OK)
-		{
-			dwError = LsaNtStatusToWinError(Status);
-			__leave;
-		}
-		for(DWORD dwI = 0; dwI < dwNbPackage; dwI++)
-		{
-			PTSTR szPackage = pPackageInfo[dwI].Name;
-			if (_tcscmp(szPackage, AUTHENTICATIONPACKAGENAMET) == 0)
-			{
-				fFound = TRUE;
-			}
-		}
-		FreeContextBuffer(pPackageInfo);
-		if (!fFound)
+		if (!IsSecurityPackageLoaded(AUTHENTICATIONPACKAGENAMET))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"The security package was not loaded before");
 			fReturn = TRUE;

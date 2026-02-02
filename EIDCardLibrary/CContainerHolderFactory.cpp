@@ -93,14 +93,11 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 		return FALSE;
 	}
 
-	size_t ulNameLen = _tcslen(szReaderName);
-	LPTSTR szMainContainerName = (LPTSTR) EIDAlloc((DWORD)(sizeof(TCHAR)*(ulNameLen + 6)));
+	LPTSTR szMainContainerName = BuildContainerNameFromReader(szReaderName);
 	if (!szMainContainerName)
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"szMainContainerName %d",GetLastError());
 		return FALSE;
 	}
-	_stprintf_s(szMainContainerName,(ulNameLen + 6), _T("\\\\.\\%s\\"), szReaderName);
 	
 	// if policy 
 	if (GetPolicyValue(AllowSignatureOnlyKeys) || _cpus == CPUS_INVALID)

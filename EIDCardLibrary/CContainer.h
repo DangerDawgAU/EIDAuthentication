@@ -51,14 +51,15 @@ class CContainer
 	PEID_INTERACTIVE_LOGON AllocateLogonStruct(PWSTR szPin, PDWORD pdwSize);
 //	PEID_MSGINA_AUTHENTICATION CContainer::AllocateGinaStruct(PWSTR szPin, PDWORD pdwSize);
   private:
+ static LPTSTR ValidateAndCopyString(LPCTSTR szSource, DWORD maxLength, LPCWSTR szFieldName);
 
-	LPTSTR					_szReaderName;
-	LPTSTR					_szCardName;
-	LPTSTR					_szProviderName;
-	LPTSTR					_szContainerName;
-	LPTSTR					_szUserName;
-	DWORD					_KeySpec;
-	USHORT					_ActivityCount;
-	PCCERT_CONTEXT			_pCertContext;
-	DWORD					_dwRid;
+ LPTSTR					_szReaderName;
+ LPTSTR					_szCardName;
+ LPTSTR					_szProviderName;
+ LPTSTR					_szContainerName;
+ LPTSTR					_szUserName;
+ DWORD					_KeySpec;
+ USHORT					_ActivityCount;
+ PCCERT_CONTEXT			_pCertContext;
+ DWORD					_dwRid;
 };

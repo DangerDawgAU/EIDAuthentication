@@ -57,23 +57,12 @@ HRESULT FieldDescriptorCoAllocCopy(
     HRESULT hr;
     DWORD cbStruct = sizeof(CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR);
 
-    CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR* pcpfd = 
+    CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR* pcpfd =
         (CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR*)CoTaskMemAlloc(cbStruct);
 
     if (pcpfd)
     {
-        pcpfd->dwFieldID = rcpfd.dwFieldID;
-        pcpfd->cpft = rcpfd.cpft;
-
-        if (rcpfd.pszLabel)
-        {
-            hr = SHStrDupW(rcpfd.pszLabel, &pcpfd->pszLabel);
-        }
-        else
-        {
-            pcpfd->pszLabel = nullptr;
-            hr = S_OK;
-        }
+        hr = FieldDescriptorCopy(rcpfd, pcpfd);
     }
     else
     {
@@ -85,10 +74,9 @@ HRESULT FieldDescriptorCoAllocCopy(
     }
     else
     {
-        CoTaskMemFree(pcpfd);  
+        CoTaskMemFree(pcpfd);
         *ppcpfd = nullptr;
     }
-
 
     return hr;
 }
