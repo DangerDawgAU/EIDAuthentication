@@ -27,6 +27,26 @@
 
 #pragma comment(lib,"Crypt32")
 
+void InitChainValidationParams(ChainValidationParams* params)
+{
+    params->EnhkeyUsage.cUsageIdentifier = 0;
+    params->EnhkeyUsage.rgpszUsageIdentifier = nullptr;
+    params->CertUsage.dwType = USAGE_MATCH_TYPE_AND;
+    params->CertUsage.Usage = params->EnhkeyUsage;
+    
+    memset(&params->ChainPara, 0, sizeof(CERT_CHAIN_PARA));
+    params->ChainPara.cbSize = sizeof(CERT_CHAIN_PARA);
+    params->ChainPara.RequestedUsage = params->CertUsage;
+    
+    memset(&params->ChainPolicy, 0, sizeof(CERT_CHAIN_POLICY_PARA));
+    params->ChainPolicy.cbSize = sizeof(CERT_CHAIN_POLICY_PARA);
+    
+    memset(&params->PolicyStatus, 0, sizeof(CERT_CHAIN_POLICY_STATUS));
+    params->PolicyStatus.cbSize = sizeof(CERT_CHAIN_POLICY_STATUS);
+    params->PolicyStatus.lChainIndex = -1;
+    params->PolicyStatus.lElementIndex = -1;
+}
+
 PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 {
 	// for TS Smart Card redirection
@@ -294,32 +314,13 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 	BOOL fValidation = FALSE;
 
 	PCCERT_CHAIN_CONTEXT     pChainContext     = nullptr;
-	CERT_ENHKEY_USAGE        EnhkeyUsage       = {0};
-	CERT_USAGE_MATCH         CertUsage         = {0};  
-	CERT_CHAIN_PARA          ChainPara         = {0};
-	CERT_CHAIN_POLICY_PARA   ChainPolicy       = {0};
-	CERT_CHAIN_POLICY_STATUS PolicyStatus      = {0};
+	ChainValidationParams    params;
 	LPSTR					szOid;
 	HCERTCHAINENGINE		hChainEngine		= HCCE_LOCAL_MACHINE;
 	DWORD dwError = 0;
 	//---------------------------------------------------------
-    // Initialize data structures for chain building.
-	EnhkeyUsage.cUsageIdentifier = 0;
-	EnhkeyUsage.rgpszUsageIdentifier=nullptr;
-	CertUsage.dwType = USAGE_MATCH_TYPE_AND;
-    CertUsage.Usage  = EnhkeyUsage;
-
-	memset(&ChainPara, 0, sizeof(CERT_CHAIN_PARA));
-    ChainPara.cbSize = sizeof(CERT_CHAIN_PARA);
-    ChainPara.RequestedUsage=CertUsage;
-
-	memset(&ChainPolicy, 0, sizeof(CERT_CHAIN_POLICY_PARA));
-    ChainPolicy.cbSize = sizeof(CERT_CHAIN_POLICY_PARA);
-
-	memset(&PolicyStatus, 0, sizeof(CERT_CHAIN_POLICY_STATUS));
-    PolicyStatus.cbSize = sizeof(CERT_CHAIN_POLICY_STATUS);
-    PolicyStatus.lChainIndex = -1;
-    PolicyStatus.lElementIndex = -1;
+	   // Initialize data structures for chain building.
+	InitChainValidationParams(&params);
 
 	if (dwFlag & EID_CERTIFICATE_FLAG_USERSTORE)
 	{
@@ -329,10 +330,10 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 	__try
 	{
 		// Always enforce Smart Card Logon EKU - certificates without this EKU must not authenticate
-		EnhkeyUsage.cUsageIdentifier = 1;
+		params.EnhkeyUsage.cUsageIdentifier = 1;
 		szOid = szOID_KP_SMARTCARD_LOGON;
-		EnhkeyUsage.rgpszUsageIdentifier=& szOid;
-		CertUsage.dwType = USAGE_MATCH_TYPE_OR;
+		params.EnhkeyUsage.rgpszUsageIdentifier = &szOid;
+		params.CertUsage.dwType = USAGE_MATCH_TYPE_OR;
 		if (!HasCertificateRightEKU(pCertContext))
 		{
 			dwError = GetLastError();
@@ -348,7 +349,7 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 		DWORD dwChainFlags = CERT_CHAIN_ENABLE_PEER_TRUST;
 
 		if(!CertGetCertificateChain(
-			hChainEngine,pCertContext,nullptr,nullptr,&ChainPara,dwChainFlags,nullptr,&pChainContext))
+			hChainEngine,pCertContext,nullptr,nullptr,&params.ChainPara,dwChainFlags,nullptr,&pChainContext))
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CertGetCertificateChain", GetLastError());
@@ -390,7 +391,7 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Chain has soft failures (0x%08x) - continuing",dwStatus);
 		}
 
-		if(!CertVerifyCertificateChainPolicy(CERT_CHAIN_POLICY_BASE, pChainContext, &ChainPolicy, &PolicyStatus))
+		if(!CertVerifyCertificateChainPolicy(CERT_CHAIN_POLICY_BASE, pChainContext, &params.ChainPolicy, &params.PolicyStatus))
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Certificate chain policy verification failed");
@@ -398,20 +399,20 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 			__leave;
 		}
 
-		if(PolicyStatus.dwError)
+		if(params.PolicyStatus.dwError)
 		{
 			// Soft policy failures for self-managed PKI
-			if (PolicyStatus.dwError == CERT_E_VALIDITYPERIODNESTING ||
-			    PolicyStatus.dwError == CRYPT_E_NO_REVOCATION_CHECK ||
-			    PolicyStatus.dwError == CRYPT_E_REVOCATION_OFFLINE)
+			if (params.PolicyStatus.dwError == CERT_E_VALIDITYPERIODNESTING ||
+			    params.PolicyStatus.dwError == CRYPT_E_NO_REVOCATION_CHECK ||
+			    params.PolicyStatus.dwError == CRYPT_E_REVOCATION_OFFLINE)
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Policy soft failure (0x%08x) - continuing", PolicyStatus.dwError);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Policy soft failure (0x%08x) - continuing", params.PolicyStatus.dwError);
 			}
 			else
 			{
-				dwError = PolicyStatus.dwError;
+				dwError = params.PolicyStatus.dwError;
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Certificate chain policy check failed");
-				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Policy error %s (0x%08x)",GetTrustErrorText(PolicyStatus.dwError),PolicyStatus.dwError);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Policy error %s (0x%08x)",GetTrustErrorText(params.PolicyStatus.dwError),params.PolicyStatus.dwError);
 				__leave;
 			}
 		}
@@ -446,11 +447,7 @@ BOOL MakeTrustedCertifcate(PCCERT_CONTEXT pCertContext)
 
 	BOOL fReturn = FALSE;
 	PCCERT_CHAIN_CONTEXT     pChainContext     = nullptr;
-	CERT_ENHKEY_USAGE        EnhkeyUsage       = {0};
-	CERT_USAGE_MATCH         CertUsage         = {0};  
-	CERT_CHAIN_PARA          ChainPara         = {0};
-	CERT_CHAIN_POLICY_PARA   ChainPolicy       = {0};
-	CERT_CHAIN_POLICY_STATUS PolicyStatus      = {0};
+	ChainValidationParams     params;
 	LPSTR					szOid;
 	HCERTSTORE hRootStore = nullptr;
 	HCERTSTORE hTrustStore = nullptr;
@@ -463,39 +460,25 @@ BOOL MakeTrustedCertifcate(PCCERT_CONTEXT pCertContext)
 
 	//---------------------------------------------------------
     // Initialize data structures for chain building.
+	InitChainValidationParams(&params);
 
 	if (GetPolicyValue(AllowCertificatesWithNoEKU))
 	{
-		EnhkeyUsage.cUsageIdentifier = 0;
-		EnhkeyUsage.rgpszUsageIdentifier=nullptr;
+		params.EnhkeyUsage.cUsageIdentifier = 0;
+		params.EnhkeyUsage.rgpszUsageIdentifier = nullptr;
 	}
 	else
 	{
-		EnhkeyUsage.cUsageIdentifier = 1;
+		params.EnhkeyUsage.cUsageIdentifier = 1;
 		szOid = szOID_KP_SMARTCARD_LOGON;
-		EnhkeyUsage.rgpszUsageIdentifier=& szOid;
+		params.EnhkeyUsage.rgpszUsageIdentifier = &szOid;
 	}
 
-	CertUsage.dwType = USAGE_MATCH_TYPE_AND;
-    CertUsage.Usage  = EnhkeyUsage;
-
-	memset(&ChainPara, 0, sizeof(CERT_CHAIN_PARA));
-    ChainPara.cbSize = sizeof(CERT_CHAIN_PARA);
-    ChainPara.RequestedUsage=CertUsage;
-
-	memset(&ChainPolicy, 0, sizeof(CERT_CHAIN_POLICY_PARA));
-    ChainPolicy.cbSize = sizeof(CERT_CHAIN_POLICY_PARA);
-
-	memset(&PolicyStatus, 0, sizeof(CERT_CHAIN_POLICY_STATUS));
-    PolicyStatus.cbSize = sizeof(CERT_CHAIN_POLICY_STATUS);
-    PolicyStatus.lChainIndex = -1;
-    PolicyStatus.lElementIndex = -1;
-
-    //-------------------------------------------------------------------
+	   //-------------------------------------------------------------------
     // Build a chain using CertGetCertificateChain
     __try
 	{
-		fReturn = CertGetCertificateChain(hChainEngine,pCertContext,nullptr,nullptr,&ChainPara,CERT_CHAIN_ENABLE_PEER_TRUST,nullptr,&pChainContext);
+		fReturn = CertGetCertificateChain(hChainEngine,pCertContext,nullptr,nullptr,&params.ChainPara,CERT_CHAIN_ENABLE_PEER_TRUST,nullptr,&pChainContext);
 		if (!fReturn)
 		{
 			dwError = GetLastError();

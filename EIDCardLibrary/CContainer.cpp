@@ -39,6 +39,30 @@ constexpr DWORD MAX_READER_NAME_LENGTH = 256;
 constexpr DWORD MAX_CARD_NAME_LENGTH = 256;
 constexpr DWORD MAX_PROVIDER_NAME_LENGTH = 256;
 
+LPTSTR CContainer::ValidateAndCopyString(LPCTSTR szSource, DWORD maxLength, LPCWSTR szFieldName)
+{
+	if (szSource == nullptr)
+	{
+		return nullptr;
+	}
+
+	size_t len = _tcsnlen(szSource, maxLength + 1);
+	if (len <= maxLength)
+	{
+		LPTSTR szResult = (LPTSTR) EIDAlloc((DWORD)(sizeof(TCHAR) * (len + 1)));
+		if (szResult)
+		{
+			_tcscpy_s(szResult, len + 1, szSource);
+			return szResult;
+		}
+	}
+	else
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"%s name exceeds max length", szFieldName);
+	}
+	return nullptr;
+}
+
 CContainer::CContainer(LPCTSTR szReaderName, LPCTSTR szCardName, LPCTSTR szProviderName, LPCTSTR szContainerName, DWORD KeySpec,__in USHORT ActivityCount,PCCERT_CONTEXT pCertContext)
 {
 	_dwRid = 0;
@@ -51,77 +75,10 @@ CContainer::CContainer(LPCTSTR szReaderName, LPCTSTR szCardName, LPCTSTR szProvi
 	_ActivityCount = ActivityCount;
 	_pCertContext = pCertContext;
 
-	// Validate and copy reader name with length check
-	if (szReaderName != nullptr)
-	{
-		size_t len = _tcsnlen(szReaderName, MAX_READER_NAME_LENGTH + 1);
-		if (len <= MAX_READER_NAME_LENGTH)
-		{
-			_szReaderName = (LPTSTR) EIDAlloc ((DWORD)(sizeof(TCHAR)*(len+1)));
-			if (_szReaderName)
-			{
-				_tcscpy_s(_szReaderName, len+1, szReaderName);
-			}
-		}
-		else
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Reader name exceeds max length");
-		}
-	}
-
-	// Validate and copy provider name with length check
-	if (szProviderName != nullptr)
-	{
-		size_t len = _tcsnlen(szProviderName, MAX_PROVIDER_NAME_LENGTH + 1);
-		if (len <= MAX_PROVIDER_NAME_LENGTH)
-		{
-			_szProviderName = (LPTSTR) EIDAlloc ((DWORD)(sizeof(TCHAR)*(len+1)));
-			if (_szProviderName)
-			{
-				_tcscpy_s(_szProviderName, len+1, szProviderName);
-			}
-		}
-		else
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Provider name exceeds max length");
-		}
-	}
-
-	// Validate and copy container name with length check
-	if (szContainerName != nullptr)
-	{
-		size_t len = _tcsnlen(szContainerName, MAX_CONTAINER_NAME_LENGTH + 1);
-		if (len <= MAX_CONTAINER_NAME_LENGTH)
-		{
-			_szContainerName = (LPTSTR) EIDAlloc ((DWORD)(sizeof(TCHAR)*(len+1)));
-			if (_szContainerName)
-			{
-				_tcscpy_s(_szContainerName, len+1, szContainerName);
-			}
-		}
-		else
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Container name exceeds max length");
-		}
-	}
-
-	// Validate and copy card name with length check
-	if (szCardName != nullptr)
-	{
-		size_t len = _tcsnlen(szCardName, MAX_CARD_NAME_LENGTH + 1);
-		if (len <= MAX_CARD_NAME_LENGTH)
-		{
-			_szCardName = (LPTSTR) EIDAlloc ((DWORD)(sizeof(TCHAR)*(len+1)));
-			if (_szCardName)
-			{
-				_tcscpy_s(_szCardName, len+1, szCardName);
-			}
-		}
-		else
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Card name exceeds max length");
-		}
-	}
+	_szReaderName = ValidateAndCopyString(szReaderName, MAX_READER_NAME_LENGTH, L"Reader");
+	_szProviderName = ValidateAndCopyString(szProviderName, MAX_PROVIDER_NAME_LENGTH, L"Provider");
+	_szContainerName = ValidateAndCopyString(szContainerName, MAX_CONTAINER_NAME_LENGTH, L"Container");
+	_szCardName = ValidateAndCopyString(szCardName, MAX_CARD_NAME_LENGTH, L"Card");
 }
 
 CContainer::~CContainer()

@@ -30,6 +30,23 @@
 #pragma comment (lib,"Scarddlg")
 #pragma comment (lib,"Rpcrt4")
 
+LPTSTR BuildContainerNameFromReader(LPCTSTR szReaderName)
+{
+	if (!szReaderName)
+	{
+		return nullptr;
+	}
+
+	size_t ulNameLen = _tcslen(szReaderName);
+	LPTSTR szContainerName = (LPTSTR) EIDAlloc((DWORD)(sizeof(TCHAR) * (ulNameLen + 6)));
+	if (!szContainerName)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"EIDAlloc failed in BuildContainerNameFromReader");
+		return nullptr;
+	}
+	_stprintf_s(szContainerName, (ulNameLen + 6), _T("\\\\.\\%s\\"), szReaderName);
+	return szContainerName;
+}
 
 BOOL SchGetProviderNameFromCardName(__in LPCTSTR szCardName, __out LPTSTR szProviderName, __out PDWORD pdwProviderNameLen)
 {
@@ -372,15 +389,13 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 				__leave;
 			}
 			// container name from card name
-			size_t ulNameLen = _tcslen(pCertificateInfo->szReader);
-			szContainerName = (LPTSTR) EIDAlloc( (DWORD) (ulNameLen + 6) * sizeof(TCHAR));
+			szContainerName = BuildContainerNameFromReader(pCertificateInfo->szReader);
 			if (!szContainerName)
 			{
 				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"EIDAlloc 0x%08X", dwError);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"BuildContainerNameFromReader failed");
 				__leave;
 			}
-			_stprintf_s(szContainerName,(ulNameLen + 6), _T("\\\\.\\%s\\"), pCertificateInfo->szReader);
 		}
 		else
 		{
@@ -1100,15 +1115,13 @@ BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName)
 			__leave;
 		}
 
-		size_t ulNameLen = _tcslen(szReaderName);
-		szMainContainerName = (LPTSTR) EIDAlloc((DWORD)(ulNameLen + 6) * sizeof(TCHAR));
+		szMainContainerName = BuildContainerNameFromReader(szReaderName);
 		if (!szMainContainerName)
 		{
 			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc 0x%08x",dwError);
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"BuildContainerNameFromReader failed");
 			__leave;
 		}
-		_stprintf_s(szMainContainerName,(ulNameLen + 6), _T("\\\\.\\%s\\"), szReaderName);
 
 		bStatus = CryptAcquireContext(&HMainCryptProv,
 					szMainContainerName,
@@ -1339,15 +1352,13 @@ BOOL ImportFileToSmartCard(PTSTR szFileName, PTSTR szPassword, PTSTR szReaderNam
 			__leave;
 		}
 		// container name from card name
-		szContainerName = (LPTSTR) EIDAlloc((DWORD)(_tcslen(szReaderName) + 6) * sizeof(TCHAR));
+		szContainerName = BuildContainerNameFromReader(szReaderName);
 		if (!szContainerName)
 		{
-			//dwError = GetLastError();
 			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc 0x%08x",dwError);
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"BuildContainerNameFromReader failed");
 			__leave;
 		}
-		_stprintf_s(szContainerName,(_tcslen(szReaderName) + 6), _T("\\\\.\\%s\\"), szReaderName);
 		pCertContext = CertEnumCertificatesInStore(hCS, nullptr);
 		while( pCertContext )
 		{

@@ -29,7 +29,9 @@
   */
 class CEIDFilter : public ICredentialProviderFilter
 {
-	public:
+public:
+	CEIDFilter(const CEIDFilter&) = delete;
+	CEIDFilter& operator=(const CEIDFilter&) = delete;
 	CEIDFilter();
 	// IUnknown
     STDMETHOD_(ULONG, AddRef)()

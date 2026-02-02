@@ -31,20 +31,17 @@ enum CheckType {
 };
 
 // Image result constants for GetImage function
-#define CHECK_SUCCESS 1
-#define CHECK_FAILED 2
-#define CHECK_WARNING 3
-
-#define CHECK_SIGNATUREONLY CheckType::CHECK_SIGNATUREONLY
-#define CHECK_TRUST CheckType::CHECK_TRUST
-#define CHECK_CRYPTO CheckType::CHECK_CRYPTO
-#define CHECK_MAX CheckType::CHECK_MAX
+constexpr int CHECK_SUCCESS = 1;
+constexpr int CHECK_FAILED = 2;
+constexpr int CHECK_WARNING = 3;
 
 class CContainerHolderTest
 {
 public:
 	explicit CContainerHolderTest(CContainer* pContainer);
 	virtual ~CContainerHolderTest();
+	CContainerHolderTest(const CContainerHolderTest&) = delete;
+	CContainerHolderTest& operator=(const CContainerHolderTest&) = delete;
 	void Release();
 	CContainer* GetContainer();
 	int GetIconIndex();

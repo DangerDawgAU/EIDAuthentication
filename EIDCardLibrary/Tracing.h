@@ -34,11 +34,11 @@ WINEVENT_LEVEL_VERBOSE Detailed trace events.
 
 #pragma once
 
-#define WINEVENT_LEVEL_CRITICAL 1
-#define WINEVENT_LEVEL_ERROR    2
-#define WINEVENT_LEVEL_WARNING  3
-#define WINEVENT_LEVEL_INFO     4
-#define WINEVENT_LEVEL_VERBOSE  5
+constexpr UCHAR WINEVENT_LEVEL_CRITICAL = 1;
+constexpr UCHAR WINEVENT_LEVEL_ERROR    = 2;
+constexpr UCHAR WINEVENT_LEVEL_WARNING  = 3;
+constexpr UCHAR WINEVENT_LEVEL_INFO     = 4;
+constexpr UCHAR WINEVENT_LEVEL_VERBOSE  = 5;
 
 void EIDCardLibraryTracingRegister();
 void EIDCardLibraryTracingUnRegister();
@@ -70,9 +70,9 @@ BOOL StopLogging();
 
 // Security audit logging for security-relevant events
 // These events are logged with elevated visibility for security monitoring
-#define SECURITY_AUDIT_SUCCESS    0
-#define SECURITY_AUDIT_FAILURE    1
-#define SECURITY_AUDIT_WARNING    2
+constexpr UCHAR SECURITY_AUDIT_SUCCESS  = 0;
+constexpr UCHAR SECURITY_AUDIT_FAILURE  = 1;
+constexpr UCHAR SECURITY_AUDIT_WARNING  = 2;
 
 #define EIDSecurityAudit(dwAuditType, ...) \
 	EIDSecurityAuditEx(__FILE__,__LINE__,__FUNCTION__, dwAuditType, __VA_ARGS__);

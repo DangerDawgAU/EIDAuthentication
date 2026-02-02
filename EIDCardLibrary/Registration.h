@@ -32,5 +32,6 @@ BOOL IsLoggingEnabled();
 void EnableCrashDump(PTSTR szPath);
 void DisableCrashDump();
 BOOL IsCrashDumpEnabled();
+BOOL IsSecurityPackageLoaded(LPCTSTR szPackageName);
 BOOL RegisterTheSecurityPackage();
 BOOL UnRegisterTheSecurityPackage();

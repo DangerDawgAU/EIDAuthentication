@@ -27,11 +27,11 @@ BOOL AskForCard(LPWSTR szReader, DWORD ReaderLength,LPWSTR szCard,DWORD CardLeng
 
 BOOL SchGetProviderNameFromCardName(__in LPCTSTR szCardName, __out LPTSTR szProviderName, __out PDWORD pdwProviderNameLen);
 
-#define UI_CERTIFICATE_INFO_SAVEON_USERSTORE 0
-#define UI_CERTIFICATE_INFO_SAVEON_SYSTEMSTORE 1
-#define UI_CERTIFICATE_INFO_SAVEON_SYSTEMSTORE_MY 2
-#define UI_CERTIFICATE_INFO_SAVEON_FILE 3
-#define UI_CERTIFICATE_INFO_SAVEON_SMARTCARD 4
+constexpr DWORD UI_CERTIFICATE_INFO_SAVEON_USERSTORE = 0;
+constexpr DWORD UI_CERTIFICATE_INFO_SAVEON_SYSTEMSTORE = 1;
+constexpr DWORD UI_CERTIFICATE_INFO_SAVEON_SYSTEMSTORE_MY = 2;
+constexpr DWORD UI_CERTIFICATE_INFO_SAVEON_FILE = 3;
+constexpr DWORD UI_CERTIFICATE_INFO_SAVEON_SMARTCARD = 4;
 
 typedef struct _UI_CERTIFICATE_INFO
 {
@@ -62,3 +62,6 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO CertificateInfo);
 BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName);
 BOOL ImportFileToSmartCard(PTSTR szFileName, PTSTR szPassword, PTSTR szReaderName, PTSTR szCardname);
 PCCERT_CONTEXT FindCertificateFromHash(PCRYPT_DATA_BLOB pCertInfo);
+
+// Returns allocated string "\\.\\<readerName>\\" - caller must EIDFree
+LPTSTR BuildContainerNameFromReader(LPCTSTR szReaderName);

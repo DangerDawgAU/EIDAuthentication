@@ -37,14 +37,6 @@
 
 #pragma comment(lib,"Dbghelp")
 
-#define WINEVENT_LEVEL_CRITICAL 1
-#define WINEVENT_LEVEL_ERROR    2
-#define WINEVENT_LEVEL_WARNING  3
-#define WINEVENT_LEVEL_INFO     4
-#define WINEVENT_LEVEL_VERBOSE  5
-
-#define EVENT_CONTROL_CODE_ENABLE_PROVIDER 1
-
 REGHANDLE hPub;
 BOOL bFirst = TRUE;
 WCHAR Section[100];
@@ -429,13 +421,13 @@ void EIDSecurityAuditEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR dw
 	// Determine audit type prefix for easy filtering
 	switch (dwAuditType)
 	{
-	case 0:  // SECURITY_AUDIT_SUCCESS
+	case SECURITY_AUDIT_SUCCESS:
 		pwszAuditPrefix = L"[SECURITY-AUDIT-SUCCESS]";
 		break;
-	case 1:  // SECURITY_AUDIT_FAILURE
+	case SECURITY_AUDIT_FAILURE:
 		pwszAuditPrefix = L"[SECURITY-AUDIT-FAILURE]";
 		break;
-	case 2:  // SECURITY_AUDIT_WARNING
+	case SECURITY_AUDIT_WARNING:
 		pwszAuditPrefix = L"[SECURITY-AUDIT-WARNING]";
 		break;
 	default:

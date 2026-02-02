@@ -42,7 +42,9 @@
   */
 class CEIDCredential : public ICredentialProviderCredential
 {
-    public:
+public:
+	CEIDCredential(const CEIDCredential&) = delete;
+	CEIDCredential& operator=(const CEIDCredential&) = delete;
     // IUnknown
     STDMETHOD_(ULONG, AddRef)()
     {

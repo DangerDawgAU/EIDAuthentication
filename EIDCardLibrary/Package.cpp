@@ -56,12 +56,12 @@
 #pragma comment(lib, "Netapi32.lib")
 #pragma comment(lib, "Wtsapi32.lib")
 
-#define DEBUG_MARKUP "MySmartLogonHeapCheck"
+constexpr char DEBUG_MARKUP[] = "MySmartLogonHeapCheck";
 
 PLSA_ALLOCATE_LSA_HEAP MyAllocateHeap = nullptr;
 PLSA_FREE_LSA_HEAP MyFreeHeap = nullptr;
 PLSA_IMPERSONATE_CLIENT MyImpersonate = nullptr;
-BOOL TraceAllocation = TRUE;
+const BOOL TraceAllocation = TRUE;
 
 void SetAlloc(PLSA_ALLOCATE_LSA_HEAP AllocateLsaHeap)
 {

@@ -34,7 +34,9 @@ class CMessageCredential;
   */
 class CEIDProvider : public ICredentialProvider, public ISmartCardConnectionNotifierRef
 {
-  public:
+public:
+	CEIDProvider(const CEIDProvider&) = delete;
+	CEIDProvider& operator=(const CEIDProvider&) = delete;
     // IUnknown
     STDMETHOD_(ULONG, AddRef)()
     {

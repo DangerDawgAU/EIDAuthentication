@@ -61,7 +61,7 @@ GPOInfo MyGPOInfo[] =
 DWORD GetPolicyValue( GPOPolicy Policy)
 {
 	// Validate Policy enum bounds to prevent array overflow
-	if ((int)Policy < 0 || (int)Policy >= ARRAYSIZE(MyGPOInfo))
+	if (!IsValidPolicy(Policy))
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Invalid policy index %d", (int)Policy);
 		return 0;
@@ -196,7 +196,7 @@ BOOL SetRemovePolicyValue(DWORD dwActivate)
 BOOL SetPolicyValue(GPOPolicy Policy, DWORD dwValue)
 {
 	// Validate Policy enum bounds to prevent array overflow
-	if ((int)Policy < 0 || (int)Policy >= ARRAYSIZE(MyGPOInfo))
+	if (!IsValidPolicy(Policy))
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Invalid policy index %d", (int)Policy);
 		return FALSE;
