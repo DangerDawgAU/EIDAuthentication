@@ -192,8 +192,12 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 			CryptReleaseContext(hProv, 0);
 			hProv = NULL;
 		}
+		else
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Failed to allocate memory for container name");
+		}
 		dwFlags = CRYPT_NEXT;
-		dwContainerNameLen = 1024;
+		dwContainerNameLen = ARRAYSIZE(szContainerName);
 		EIDFree(szWideContainerName);
 	}
 	if (dwFlags == CRYPT_FIRST)
@@ -214,7 +218,7 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 						&DataSize,
 						0))
 				{
-					CreateItemFromCertificateBlob(hProv, szReaderName,szCardName,szProviderName,
+					CreateItemFromCertificateBlob(HCryptProv, szReaderName,szCardName,szProviderName,
 						szMainContainerName, pKeySpecs[i],ActivityCount, Data, DataSize);
 					}
 				CryptDestroyKey(hKey);
@@ -360,9 +364,10 @@ BOOL CContainerHolderFactory<T>::CreateItemFromCertificateBlob(__in HCRYPTPROV h
 	return fReturn;
 }
 
-template <typename T> 
+template <typename T>
 BOOL CContainerHolderFactory<T>::DisconnectNotification(LPCTSTR szReaderName)
 {
+	this->Lock();
 	std::list<T*>::iterator l_iter = _CredentialList.begin();
 	while(l_iter!=_CredentialList.end())
 	{
@@ -394,12 +399,14 @@ BOOL CContainerHolderFactory<T>::DisconnectNotification(LPCTSTR szReaderName)
 			EIDFree(szWideReaderName);
 		}
 	}
+	this->Unlock();
 	return TRUE;
 }
 
-template <typename T> 
+template <typename T>
 BOOL CContainerHolderFactory<T>::CleanList()
 {
+	this->Lock();
 	std::list<T*>::iterator l_iter = _CredentialList.begin();
 	while(l_iter!=_CredentialList.end())
 	{
@@ -407,30 +414,40 @@ BOOL CContainerHolderFactory<T>::CleanList()
 		l_iter = _CredentialList.erase(l_iter);
 		item->Release();
 	}
+	this->Unlock();
 	return TRUE;
 }
 
-template <typename T> 
+template <typename T>
 BOOL CContainerHolderFactory<T>::HasContainerHolder()
 {
-	return _CredentialList.size()>0;
+	this->Lock();
+	BOOL result = _CredentialList.size() > 0;
+	this->Unlock();
+	return result;
 }
 
 
-template <typename T> 
+template <typename T>
 DWORD CContainerHolderFactory<T>::ContainerHolderCount()
 {
-	return (DWORD) _CredentialList.size();
+	this->Lock();
+	DWORD count = (DWORD) _CredentialList.size();
+	this->Unlock();
+	return count;
 }
 
-template <typename T> 
+template <typename T>
 T* CContainerHolderFactory<T>::GetContainerHolderAt(DWORD dwIndex)
 {
-	if (dwIndex >= _CredentialList.size())
+	this->Lock();
+	T* result = nullptr;
+	if (dwIndex < _CredentialList.size())
 	{
-		return nullptr;
+		std::list<T*>::iterator it = _CredentialList.begin();
+		std::advance(it, dwIndex);
+		result = *it;
 	}
-	std::list<T*>::iterator it = _CredentialList.begin();
-	std::advance(it, dwIndex);
-	return *it;
+	this->Unlock();
+	return result;
 }
