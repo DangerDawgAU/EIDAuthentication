@@ -529,13 +529,11 @@ DWORD CSecurityContext::GetRid()
 
 PWSTR CSecurityContext::GetUserName()
 {
-	PWSTR szString = nullptr;
 	if (!szUserName)
 		return nullptr;
+	DWORD dwLen = (DWORD) wcslen(szUserName) + 1;
+	PWSTR szString = (PWSTR) EIDAlloc(dwLen * sizeof(WCHAR));
 	if (!szString) return nullptr;
-	DWORD dwLen = (DWORD) wcslen(szString) + 1;
-	szString = (PWSTR) EIDAlloc(dwLen * sizeof(WCHAR));
-	
 	wcscpy_s(szString,dwLen,szUserName);
 	return szString;
 }

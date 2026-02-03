@@ -47,20 +47,7 @@ public:
 	CMessageCredential(const CMessageCredential&) = delete;
 	CMessageCredential& operator=(const CMessageCredential&) = delete;
     // IUnknown
-    STDMETHOD_(ULONG, AddRef)()
-    {
-        return _cRef++;
-    }
-    
-    STDMETHOD_(ULONG, Release)()
-    {
-        LONG cRef = _cRef--;
-        if (!cRef)
-        {
-            delete this;
-        }
-        return cRef;
-    }
+    IMPL_IUNKNOWN_ADDREF_RELEASE()
 
     STDMETHOD (QueryInterface)(REFIID riid, void** ppv)
     {

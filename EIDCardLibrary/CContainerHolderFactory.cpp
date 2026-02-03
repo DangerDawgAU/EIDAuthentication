@@ -264,33 +264,10 @@ BOOL CContainerHolderFactory<T>::CreateItemFromCertificateBlob(__in HCRYPTPROV h
 			__leave;
 		}
 		
-		CRYPT_KEY_PROV_INFO KeyProvInfo;
-		memset(&KeyProvInfo, 0, sizeof(CRYPT_KEY_PROV_INFO));
-		// this flag enable cache for futher call to CryptAcquireCertificatePrivateKey
-		KeyProvInfo.dwFlags = CERT_SET_KEY_CONTEXT_PROP_ID;
-		KeyProvInfo.dwKeySpec = KeySpec;
-		KeyProvInfo.dwProvType = PROV_RSA_FULL;
-		KeyProvInfo.pwszContainerName = (LPTSTR) szWideContainerName;
-		KeyProvInfo.pwszProvName = (LPTSTR) szProviderName;
-		fReturn = CertSetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, 0, &KeyProvInfo);
+		fReturn = SetupCertificateContextWithKeyInfo(pCertContext, hProv, szProviderName, szWideContainerName, KeySpec);
 		if (!fReturn)
 		{
 			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertSetCertificateContextProperty CERT_KEY_PROV_INFO_PROP_ID 0x%08x",dwError);
-			__leave;
-		}
-
-		// we provide the context to cache it
-		CERT_KEY_CONTEXT keyContext;
-		memset(&keyContext, 0, sizeof(CERT_KEY_CONTEXT));
-		keyContext.cbSize = sizeof(CERT_KEY_CONTEXT);
-		keyContext.hCryptProv = hProv;
-		keyContext.dwKeySpec = KeySpec;
-		fReturn = CertSetCertificateContextProperty(pCertContext, CERT_KEY_CONTEXT_PROP_ID, 0, &keyContext);
-		if (!fReturn)
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertSetCertificateContextProperty CERT_KEY_CONTEXT_PROP_ID 0x%08x",dwError);
 			__leave;
 		}
 		// important : the hprov will be used later and free if the certificatecontext is free

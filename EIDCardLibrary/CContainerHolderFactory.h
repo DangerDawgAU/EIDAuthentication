@@ -18,7 +18,10 @@
 */
 
 
+#include <windows.h>
+#include <wincrypt.h>
 #include <credentialprovider.h>
+#include <list>
 
 template <typename T> 
 

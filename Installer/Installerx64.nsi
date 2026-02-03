@@ -137,7 +137,14 @@ Section "Uninstall"
 
   ; Unregister all components first (from System32)
   ${DisableX64FSRedirection}
-  ExecWait 'rundll32.exe "$SYSDIR\EIDAuthenticationPackage.dll",DllUnRegister'
+  DetailPrint "Unregistering components..."
+  ExecWait 'rundll32.exe "$SYSDIR\EIDAuthenticationPackage.dll",DllUnRegister' $0
+  ${If} $0 != 0
+    DetailPrint "Warning: DllUnRegister returned error code $0 - continuing with manual cleanup"
+  ${EndIf}
+
+  ; Re-enable FS redirection before running PowerShell
+  ${EnableX64FSRedirection}
 
   ; Remove certificates created by the software
   DetailPrint "Removing certificates..."
@@ -153,9 +160,15 @@ Section "Uninstall"
   Delete "$DESKTOP\EID Authentication Configuration.lnk"
 
   ; Delete System32 files (LSA-locked, require reboot)
+  ${DisableX64FSRedirection}
   Delete /REBOOTOK "$SYSDIR\EIDAuthenticationPackage.dll"
   Delete /REBOOTOK "$SYSDIR\EIDCredentialProvider.dll"
   Delete /REBOOTOK "$SYSDIR\EIDPasswordChangeNotification.dll"
+
+  ; Delete ETW log files
+  Delete /REBOOTOK "$SYSDIR\LogFiles\WMI\EIDCredentialProvider.etl"
+
+  ${EnableX64FSRedirection}
 
   ; Delete Program Files installation - DLLs
   Delete "$INSTDIR\EIDAuthenticationPackage.dll"
@@ -195,8 +208,15 @@ Section "Uninstall"
   ; Remove crash dump configuration for lsass.exe
   DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\lsass.exe"
 
-  ; Remove smart card removal policy keys (if any exist)
-  DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\SmartCardRemovalPolicy"
+  ; Remove GPO policy values set by the Configuration Wizard
+  DeleteRegKey HKLM "SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider"
+  DeleteRegValue HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon" "scremoveoption"
+  DeleteRegValue HKLM "Software\Microsoft\Windows\CurrentVersion\Policies\System" "scforceoption"
+
+  ; Reset ScPolicySvc service to demand-start (installer may have set it to auto-start)
+  DetailPrint "Resetting Smart Card Removal Policy service..."
+  nsExec::ExecToLog 'sc config ScPolicySvc start= demand'
+  nsExec::ExecToLog 'sc stop ScPolicySvc'
 
   ; Remove uninstall information
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication"

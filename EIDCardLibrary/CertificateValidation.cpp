@@ -24,6 +24,7 @@
 #include "Tracing.h"
 #include "GPO.h"
 #include "CertificateValidation.h"
+#include "CertificateUtilities.h"
 
 #pragma comment(lib,"Crypt32")
 
@@ -127,31 +128,9 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 			__leave;
 		}
 		// save reference to CSP (else we can't access private key)
-		CRYPT_KEY_PROV_INFO KeyProvInfo;
-		memset(&KeyProvInfo, 0, sizeof(CRYPT_KEY_PROV_INFO));
-		// this flag enable cache for futher call to CryptAcquireCertificatePrivateKey
-		KeyProvInfo.dwFlags = CERT_SET_KEY_CONTEXT_PROP_ID;
-		KeyProvInfo.pwszProvName = szProviderName;
-		KeyProvInfo.pwszContainerName = szContainerName;
-		KeyProvInfo.dwProvType = PROV_RSA_FULL;
-		KeyProvInfo.dwKeySpec = pCspInfo->KeySpec;
-
-		if (!CertSetCertificateContextProperty(pCertContext,CERT_KEY_PROV_INFO_PROP_ID,0,&KeyProvInfo))
+		if (!SetupCertificateContextWithKeyInfo(pCertContext, hProv, szProviderName, szContainerName, pCspInfo->KeySpec))
 		{
 			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertSetCertificateContextProperty CERT_KEY_PROV_INFO_PROP_ID 0x%08x",dwError);
-			__leave;
-		}
-		// we provide the context to cache it
-		CERT_KEY_CONTEXT keyContext;
-		memset(&keyContext, 0, sizeof(CERT_KEY_CONTEXT));
-		keyContext.cbSize = sizeof(CERT_KEY_CONTEXT);
-		keyContext.hCryptProv = hProv;
-		keyContext.dwKeySpec = pCspInfo->KeySpec;
-		if (!CertSetCertificateContextProperty(pCertContext, CERT_KEY_CONTEXT_PROP_ID, 0, &keyContext))
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertSetCertificateContextProperty CERT_KEY_CONTEXT_PROP_ID 0x%08x",dwError);
 			__leave;
 		}
 		// important : the hprov will be freed if the certificatecontext is freed, and that's a problem

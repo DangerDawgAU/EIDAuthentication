@@ -30,6 +30,37 @@
 #pragma comment (lib,"Scarddlg")
 #pragma comment (lib,"Rpcrt4")
 
+BOOL SetupCertificateContextWithKeyInfo(
+    __in PCCERT_CONTEXT pCertContext, __in HCRYPTPROV hProv,
+    __in LPCWSTR pwszProviderName, __in LPCWSTR pwszContainerName, __in DWORD dwKeySpec)
+{
+	CRYPT_KEY_PROV_INFO KeyProvInfo;
+	memset(&KeyProvInfo, 0, sizeof(CRYPT_KEY_PROV_INFO));
+	KeyProvInfo.dwFlags = CERT_SET_KEY_CONTEXT_PROP_ID;
+	KeyProvInfo.pwszProvName = (LPWSTR)pwszProviderName;
+	KeyProvInfo.pwszContainerName = (LPWSTR)pwszContainerName;
+	KeyProvInfo.dwProvType = PROV_RSA_FULL;
+	KeyProvInfo.dwKeySpec = dwKeySpec;
+
+	if (!CertSetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, 0, &KeyProvInfo))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CertSetCertificateContextProperty CERT_KEY_PROV_INFO_PROP_ID 0x%08x", GetLastError());
+		return FALSE;
+	}
+
+	CERT_KEY_CONTEXT keyContext;
+	memset(&keyContext, 0, sizeof(CERT_KEY_CONTEXT));
+	keyContext.cbSize = sizeof(CERT_KEY_CONTEXT);
+	keyContext.hCryptProv = hProv;
+	keyContext.dwKeySpec = dwKeySpec;
+	if (!CertSetCertificateContextProperty(pCertContext, CERT_KEY_CONTEXT_PROP_ID, 0, &keyContext))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CertSetCertificateContextProperty CERT_KEY_CONTEXT_PROP_ID 0x%08x", GetLastError());
+		return FALSE;
+	}
+	return TRUE;
+}
+
 LPTSTR BuildContainerNameFromReader(LPCTSTR szReaderName)
 {
 	if (!szReaderName)

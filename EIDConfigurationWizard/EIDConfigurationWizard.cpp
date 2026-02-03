@@ -11,6 +11,7 @@
 #include "../EIDCardLibrary/Registration.h"
 #include "../EIDCardLibrary/CertificateUtilities.h"
 #include "../EIDCardLibrary/CertificateValidation.h"
+#include "../EIDCardLibrary/GPO.h"
 
 #include "../EIDCardLibrary/CommonManifest.h"
 
@@ -78,26 +79,17 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		}
 		else if (_tcscmp(pszCommandLine[0],TEXT("ENABLESIGNATUREONLY")) == 0)
 		{
-			DWORD dwValue = 1;
-			RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-				TEXT("SOFTWARE\\Policies\\Microsoft\\Windows\\SmartCardCredentialProvider"),
-				TEXT("AllowSignatureOnlyKeys"), REG_DWORD, &dwValue,sizeof(dwValue));
+			SetPolicyValue(AllowSignatureOnlyKeys, 1);
 			return 0;
 		}
 		else if (_tcscmp(pszCommandLine[0],TEXT("ENABLENOEKU")) == 0)
 		{
-			DWORD dwValue = 1;
-			RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-				TEXT("SOFTWARE\\Policies\\Microsoft\\Windows\\SmartCardCredentialProvider"),
-				TEXT("AllowCertificatesWithNoEKU"), REG_DWORD, &dwValue,sizeof(dwValue));
+			SetPolicyValue(AllowCertificatesWithNoEKU, 1);
 			return 0;
 		}
 		else if (_tcscmp(pszCommandLine[0],TEXT("ENABLETIMEINVALID")) == 0)
 		{
-			DWORD dwValue = 1;
-			RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-				TEXT("SOFTWARE\\Policies\\Microsoft\\Windows\\SmartCardCredentialProvider"),
-				TEXT("AllowTimeInvalidCertificates"), REG_DWORD, &dwValue,sizeof(dwValue));
+			SetPolicyValue(AllowTimeInvalidCertificates, 1);
 			return 0;
 		}
 		else if (_tcscmp(pszCommandLine[0],TEXT("TRUST")) == 0)
