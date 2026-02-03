@@ -70,7 +70,8 @@ CEIDCredential::~CEIDCredential()
         }
         else
         {
-            // TODO: Determine how to handle count error here.
+            // If length calculation fails, use maximum length to ensure memory is cleared
+            SecureZeroMemory(_rgFieldStrings[SFI_PIN], 128 * sizeof(*_rgFieldStrings[SFI_PIN]));
         }
     }
     for (int i = 0; i < ARRAYSIZE(_rgFieldStrings); i++)

@@ -69,7 +69,6 @@ CContainerHolderTest::CContainerHolderTest(CContainer* pContainer)
 	_pContainer = pContainer;
 	_IsTrusted = IsTrusted();
 	_SupportEncryption = SupportEncryption();
-	//_HasCurrentUserName = HasCurrentUserName();
 }
 
 CContainerHolderTest::~CContainerHolderTest()

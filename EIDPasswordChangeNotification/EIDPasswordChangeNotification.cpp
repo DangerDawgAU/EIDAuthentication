@@ -47,7 +47,7 @@ This function initializes the DLL.
 BOOL WINAPI InitializeChangeNotify()
 {
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-	// if we don't set this, the library think that we are in a test process
+	// if we don't set this, the library thinks that we are in a test process
 	// note : impersonation is not needed, that's why it is set to nothing
 	SetImpersonate(Impersonate);
 	return TRUE;

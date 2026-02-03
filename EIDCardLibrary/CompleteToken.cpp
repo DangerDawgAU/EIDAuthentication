@@ -290,7 +290,6 @@ BOOL GetPrimaryGroupSidFromUserSid(PSID UserSID, PSID *PrimaryGroupSID)
 	*PrimaryGroupSID = EIDAlloc(GetLengthSid(UserSID));
 	CopySid(GetLengthSid(UserSID),*PrimaryGroupSID,UserSID);
 	SubAuthorityCount = *GetSidSubAuthorityCount(*PrimaryGroupSID);
-	// last SubAuthority = RID
 	*GetSidSubAuthority(*PrimaryGroupSID, SubAuthorityCount-1) = DOMAIN_GROUP_RID_USERS;
 	return TRUE;
 }
