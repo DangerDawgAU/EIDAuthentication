@@ -337,7 +337,7 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 
 		// Reject chains that exceed a reasonable depth for smart card authentication
 		// Typical chains are 2-3 levels (Root -> [Intermediate] -> End Entity)
-		#define MAX_CHAIN_DEPTH 5
+		constexpr DWORD MAX_CHAIN_DEPTH = 5;
 		if (pChainContext->cChain > 0 && pChainContext->rgpChain[0]->cElement > MAX_CHAIN_DEPTH)
 		{
 			dwError = static_cast<DWORD>(CERT_E_CHAINING);

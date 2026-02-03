@@ -412,7 +412,7 @@ HRESULT RetrieveNegotiateAuthPackage(ULONG * pulAuthPackage)
         LSA_STRING lsaszPackageName;
 		
 		TCHAR szExeName[256];
-		DWORD dwNumChar = GetModuleFileName(NULL, szExeName, ARRAYSIZE(szExeName));
+		DWORD dwNumChar = GetModuleFileName(nullptr, szExeName, ARRAYSIZE(szExeName));
 		// mstsc.exe
 		if (dwNumChar >= 9 && _tcsicmp(szExeName + dwNumChar - 9, TEXT("mstsc.exe")) == 0)
 		{

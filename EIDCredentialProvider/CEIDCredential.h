@@ -51,7 +51,7 @@ public:
     STDMETHOD (QueryInterface)(REFIID riid, void** ppv)
     {
         HRESULT hr;
-        if (ppv != NULL)
+        if (ppv != nullptr)
         {
             if (IID_IUnknown == riid ||
                 IID_ICredentialProviderCredential == riid)
@@ -62,7 +62,7 @@ public:
             }
             else
             {
-                *ppv = NULL;
+                *ppv = nullptr;
                 hr = E_NOINTERFACE;
             }
         }

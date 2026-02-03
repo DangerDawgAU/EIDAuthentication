@@ -290,7 +290,7 @@ void EIDCredentialProviderDllRegister()
 		nullptr, REG_SZ, TEXT("EidCredentialProvider"),sizeof(TEXT("EidCredentialProvider")));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
 		TEXT("CLSID\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"), 
-		NULL, REG_SZ, TEXT("EidCredentialProvider"),sizeof(TEXT("EidCredentialProvider")));
+		nullptr, REG_SZ, TEXT("EidCredentialProvider"),sizeof(TEXT("EidCredentialProvider")));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
 		TEXT("CLSID\\{B4866A0A-DB08-4835-A26F-414B46F3244C}\\InprocServer32"),
 		nullptr, REG_SZ, TEXT("EidCredentialProvider.dll"),sizeof(TEXT("EidCredentialProvider.dll")));

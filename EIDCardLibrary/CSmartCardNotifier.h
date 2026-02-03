@@ -27,7 +27,7 @@
 class ISmartCardConnectionNotifierRef
 {
 	public:
-	virtual ~ISmartCardConnectionNotifierRef() {}
+	virtual ~ISmartCardConnectionNotifierRef() = default;
 	virtual void Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message,__in LPCTSTR Reader,__in_opt LPCTSTR CardName, __in_opt USHORT ActivityCount) 
 	{
 		UNREFERENCED_PARAMETER(Message);

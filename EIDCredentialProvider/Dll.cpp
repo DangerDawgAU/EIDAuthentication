@@ -36,7 +36,7 @@ static LONG g_cRef = 0;   // global dll reference count
 extern HRESULT CEIDProvider_CreateInstance(REFIID riid, void** ppv);
 extern HRESULT CEIDFilter_CreateInstance(REFIID riid, void** ppv);
 
-HINSTANCE g_hinst = NULL;   // global dll hinstance
+HINSTANCE g_hinst = nullptr;   // global dll hinstance
 
 class CClassFactory : public IClassFactory
 {
@@ -118,7 +118,7 @@ class CClassFactory : public IClassFactory
 
   private:
      CClassFactory() : _cRef(1) {}
-    ~CClassFactory(){}
+    ~CClassFactory() = default;
 
   private:
     LONG _cRef;

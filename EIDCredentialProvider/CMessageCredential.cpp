@@ -242,7 +242,7 @@ HRESULT CMessageCredential::GetBitmapValue(
 	if ((SFI_TILEIMAGE == dwFieldID) && phbmp)
     {	
 		HBITMAP hbmp = LoadBitmap(HINST_THISDLL, MAKEINTRESOURCE(IDB_TILE_IMAGE));
-		if (hbmp != NULL)
+		if (hbmp != nullptr)
 		{
 			hr = S_OK;
 			*phbmp = hbmp;

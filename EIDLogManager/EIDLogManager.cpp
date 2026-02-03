@@ -151,12 +151,12 @@ VOID WINAPI ProcessEvents(PEVENT_TRACE pEvent)
 		TCHAR szLocalDate[255], szLocalTime[255];
 		_stprintf_s(szLocalDate, ARRAYSIZE(szLocalDate),TEXT("%04d-%02d-%02d"),st.wYear,st.wMonth,st.wDay);
 		_stprintf_s(szLocalTime, ARRAYSIZE(szLocalTime),TEXT("%02d:%02d:%02d"),st.wHour,st.wMinute,st.wSecond);
-		WriteFile ( hFile, szLocalDate, (DWORD)_tcslen(szLocalDate) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
-		WriteFile ( hFile, TEXT(";"), 1 * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
-		WriteFile ( hFile, szLocalTime, (DWORD)_tcslen(szLocalTime) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
-		WriteFile ( hFile, TEXT(";"), 1 * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
-		WriteFile ( hFile, pEvent->MofData, (DWORD)_tcslen((PTSTR) pEvent->MofData) * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
-		WriteFile ( hFile, TEXT("\r\n"), 2 * (DWORD)sizeof(TCHAR), &dwWritten, NULL);
+		WriteFile ( hFile, szLocalDate, (DWORD)_tcslen(szLocalDate) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
+		WriteFile ( hFile, TEXT(";"), 1 * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
+		WriteFile ( hFile, szLocalTime, (DWORD)_tcslen(szLocalTime) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
+		WriteFile ( hFile, TEXT(";"), 1 * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
+		WriteFile ( hFile, pEvent->MofData, (DWORD)_tcslen((PTSTR) pEvent->MofData) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
+		WriteFile ( hFile, TEXT("\r\n"), 2 * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
 	  }
   }
 
@@ -214,11 +214,11 @@ void SaveLog(HWND hDlg)
 {
 	IFileSaveDialog *pSaveDialog;
 	
-	LPOLESTR pszPath = NULL;
+	LPOLESTR pszPath = nullptr;
     __try
 	{
-		HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog, 
-									  NULL, 
+		HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog,
+									  nullptr,
 									  CLSCTX_INPROC_SERVER, 
 									  IID_PPV_ARGS(&pSaveDialog));
 
@@ -255,7 +255,7 @@ void SaveLog(HWND hDlg)
 	
 		
 
-		hFile = CreateFile(pszPath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+		hFile = CreateFile(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, 0, nullptr);
 		if (hFile == INVALID_HANDLE_VALUE)
 		{
 			__leave;

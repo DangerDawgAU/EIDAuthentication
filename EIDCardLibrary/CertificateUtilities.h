@@ -25,7 +25,7 @@
 #include <tchar.h>
 
 PCCERT_CONTEXT SelectFirstCertificateWithPrivateKey();
-PCCERT_CONTEXT SelectCertificateWithPrivateKey(HWND hWnd = NULL);
+PCCERT_CONTEXT SelectCertificateWithPrivateKey(HWND hWnd = nullptr);
 
 BOOL AskForCard(LPWSTR szReader, DWORD ReaderLength,LPWSTR szCard,DWORD CardLength);
 

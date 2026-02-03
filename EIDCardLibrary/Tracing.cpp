@@ -61,7 +61,7 @@ static BOOL g_csTraceInitialized = FALSE;
 
 BOOL LookUpErrorMessage(PWSTR buf, int cch, DWORD err)
 {
-	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, 0, err, 0, buf, cch, 0)) {
+	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, err, 0, buf, cch, 0)) {
         return TRUE;
     }
     else 

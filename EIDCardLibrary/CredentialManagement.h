@@ -57,7 +57,7 @@ public:
 	static CCredential* CreateCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_INFO pCertInfo,PWSTR szPin, ULONG CredentialUseFlags);
 	BOOL Check(PLUID LogonId)
 	{
-		return (LogonId != NULL) && (_LogonId.HighPart == LogonId->HighPart) && (_LogonId.LowPart == LogonId->LowPart);
+		return (LogonId != nullptr) && (_LogonId.HighPart == LogonId->HighPart) && (_LogonId.LowPart == LogonId->LowPart);
 	}
 	~CCredential();
 	LUID _LogonId;

@@ -119,8 +119,8 @@ BOOL SetRemovePolicyValue(DWORD dwActivate)
 	TCHAR szValue[2];
 	LONG lReturn;
 	DWORD dwError = 0;
-	SC_HANDLE hService = NULL;
-	SC_HANDLE hServiceManager = NULL;
+	SC_HANDLE hService = nullptr;
+	SC_HANDLE hServiceManager = nullptr;
 	SERVICE_STATUS ServiceStatus;
 	
 	_stprintf_s(szValue, ARRAYSIZE(szValue), TEXT("%d"),dwActivate);

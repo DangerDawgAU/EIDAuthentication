@@ -45,7 +45,7 @@ class CContainer
 	void FreeCSPInfo(PEID_SMARTCARD_CSP_INFO);
 
 	BOOL Erase();
-	BOOL ViewCertificate(HWND hWnd = NULL);
+	BOOL ViewCertificate(HWND hWnd = nullptr);
 
 	BOOL TriggerRemovePolicy();
 	PEID_INTERACTIVE_LOGON AllocateLogonStruct(PWSTR szPin, PDWORD pdwSize);
