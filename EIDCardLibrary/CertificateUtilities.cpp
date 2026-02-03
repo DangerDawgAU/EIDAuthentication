@@ -895,7 +895,6 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			}
 			if (CertAddCertificateContextToStore(hCertStore,pNewCertificateContext,CERT_STORE_ADD_ALWAYS,nullptr))
 			{
-				//CryptUIDlgViewContext(CERT_STORE_CERTIFICATE_CONTEXT,pNewCertificateContext,NULL,NULL,0,NULL));
 			}
 			else
 			{
@@ -997,7 +996,6 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			}
 			if (CertAddCertificateContextToStore(hCertStore,pNewCertificateContext,CERT_STORE_ADD_ALWAYS,nullptr))
 			{
-				//CryptUIDlgViewContext(CERT_STORE_CERTIFICATE_CONTEXT,pNewCertificateContext,NULL,NULL,0,NULL));
 			}
 			else
 			{
@@ -1017,7 +1015,6 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			}
 			if (CertAddCertificateContextToStore(hCertStore,pNewCertificateContext,CERT_STORE_ADD_ALWAYS,nullptr))
 			{
-				//CryptUIDlgViewContext(CERT_STORE_CERTIFICATE_CONTEXT,pNewCertificateContext,NULL,NULL,0,NULL));
 			}
 			else
 			{
@@ -1243,7 +1240,6 @@ BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName)
 	return fReturn;
 }
 
-// see http://msdn.microsoft.com/en-us/library/windows/desktop/aa387401%28v=vs.85%29.aspx
 typedef struct _RSAPRIVATEKEY {
 	BLOBHEADER blobheader;
 	RSAPUBKEY rsapubkey;

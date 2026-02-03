@@ -739,7 +739,6 @@ extern "C"
 						Status = STATUS_BAD_VALIDATION_CLASS;
 						__leave;
 					}
-					//EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"PIN = %s",pwzPinUncrypted);
 					// the PIN was crypted - use the uncrypted PIN
 					*pResultingPin = pwzPinUncrypted;
 				}

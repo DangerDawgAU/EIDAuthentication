@@ -262,10 +262,8 @@ HRESULT UnicodeStringInitWithString(
 
 //
 // The following function is intended to be used ONLY with the Kerb*Pack functions.  It does
-// no bounds-checking because its callers have precise requirements and are written to respect 
+// no bounds-checking because its callers have precise requirements and are written to respect
 // its limitations.
-// You can read more about the UNICODE_STRING type at:
-// http://msdn.microsoft.com/library/default.asp?url=/library/en-us/secauthn/security/unicode_string.asp
 //
 static void _UnicodeStringPackedUnicodeStringCopy(
     const UNICODE_STRING& rus,
@@ -293,9 +291,6 @@ static void _UnicodeStringPackedUnicodeStringCopy(
 //
 // rkiulIn.Logon.Password.Length = 16
 // rkiulIn.Logon.Password.Buffer = sizeof(KERB_INTERACTIVE_UNLOCK_LOGON) + 14 + 10
-// 
-// THere's more information on this at:
-// http://msdn.microsoft.com/msdnmag/issues/05/06/SecurityBriefs/#void
 //
 
 HRESULT EIDUnlockLogonPack(

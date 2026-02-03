@@ -571,8 +571,6 @@ BOOL CStoredCredentialManager::UpdateCredential(__in PLUID pLuid, __in PUNICODE_
 		// SECURITY FIX: Validate UserName->Length before memcpy to prevent buffer overflow (CWE-120)
 		if (UserName->Buffer && UserName->Length)
 		{
-			// Ensure we don't overflow szUser buffer (256 WCHARs = 512 bytes)
-			// Leave room for null terminator
 			if (UserName->Length >= sizeof(szUser))
 			{
 				dwError = ERROR_BUFFER_OVERFLOW;
@@ -887,28 +885,6 @@ NTSTATUS CompletePrimaryCredential(__in PLSA_UNICODE_STRING AuthenticatingAuthor
 						__in PWSTR szPassword,
 						__out  PSECPKG_PRIMARY_CRED PrimaryCredentials)
 {
-
-	// futur : use MSV1_0_SUPPLEMENTAL_CREDENTIAL instead of clear password ?
-	
-	// general comment about the SECPKG_PRIMARY_CRED structure and DPAPI
-	// grabbed from the kerberos SSP output :
-	// Password logon :
-	//  2 credentials added through AddCredentials (and not LsaApLogonUserEx2)
-	//    password = the password in clear
-	//    flag = 0x10000009 ( PRIMARY_CRED_CLEAR_PASSWORD | PRIMARY_CRED_CACHED_LOGON )
-	//    password = the password in clear
-	//    flag = 0x00000001 ( PRIMARY_CRED_CLEAR_PASSWORD )
-	//
-	// smart card logon :
-	//  2 credentials added through AddCredentials (and not LsaApLogonUserEx2)
-	//    password = the PIN in clear
-	//    flag = 0x10000048 ( PRIMARY_CRED_INTERACTIVE_SMARTCARD_LOGON | PRIMARY_CRED_CACHED_LOGON )
-	//    password = the PIN in clear
-	//    flag = 0x00000040 ( PRIMARY_CRED_INTERACTIVE_SMARTCARD_LOGON )
-	//
-	// grabbed from the MSV_10 output :
-	//     password = the password in clear
-	//     flag = 0x0A000001 ( PRIMARY_CRED_CLEAR_PASSWORD )
 
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 	memset(PrimaryCredentials, 0, sizeof(SECPKG_PRIMARY_CRED));

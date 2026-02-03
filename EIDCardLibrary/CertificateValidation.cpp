@@ -74,8 +74,6 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 	DWORD DataSize = ARRAYSIZE(Data);
 	LPTSTR szContainerName = pCspInfo->bBuffer + pCspInfo->nContainerNameOffset;
 	LPTSTR szProviderName = pCspInfo->bBuffer + pCspInfo->nCSPNameOffset;
-//	LPTSTR szReaderName = pCspInfo->bBuffer + pCspInfo->nReaderNameOffset;
-//	LPTSTR szCardName = pCspInfo->bBuffer + pCspInfo->nCardNameOffset;
 	HCRYPTKEY phUserKey = NULL;  // Windows handle type - keep as NULL
 	BOOL fResult;
 	BOOL fSuccess = FALSE;
@@ -155,10 +153,9 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 		}
 		if (phUserKey)
 			CryptDestroyKey(phUserKey);
-		if (hProv) 
+		if (hProv)
 			CryptReleaseContext(hProv,0);
 	}
-	// for TS Smart Card redirection
 	EIDRevertToSelf();
 	SetLastError(dwError);
 	return pCertContext;

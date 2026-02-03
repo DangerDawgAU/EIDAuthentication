@@ -79,7 +79,7 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 	TCHAR szValue[2]=TEXT("0");
 	DWORD size2 = sizeof(szValue);
 	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,MyGPOInfo[Policy].Key,0, KEY_READ, &key)==ERROR_SUCCESS){
-		// for the scremoveoption : DWORD value stored as PTSTR !!!!
+		// scremoveoption: DWORD value stored as PTSTR
 		if (Policy == scremoveoption && RegQueryValueEx(key,MyGPOInfo[Policy].Value,nullptr, &type,(LPBYTE) &szValue, &size2)==ERROR_SUCCESS)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Policy %s found = %s",MyGPOInfo[Policy].Value,szValue);

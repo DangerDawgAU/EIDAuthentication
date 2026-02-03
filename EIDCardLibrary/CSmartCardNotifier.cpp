@@ -142,9 +142,7 @@ DWORD WINAPI CSmartCardConnectionNotifier::_ThreadProc(LPVOID lpParameter)
 
 // try to know if there are an existing card or wait for this card
 // then call ValidateCard
-// TRUE = Validate
-// FALSE = Not Validate or error
-LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion() 
+LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 {
 
 	LONG					Status;
@@ -439,7 +437,6 @@ LONG CSmartCardConnectionNotifier::GetReaderStates(SCARD_READERSTATE rgscState[M
 		else
 		{
 			// update the pointer in szListReaders
-			//rgscState[dwI].szReader = szReader[dwOldListToNewList[dwI]];
 		}
 	}
 	
@@ -454,7 +451,6 @@ LONG CSmartCardConnectionNotifier::GetReaderStates(SCARD_READERSTATE rgscState[M
 
 			rgscState[dwPreviousRdrCount].szReader = (LPWSTR) EIDAlloc((DWORD)(sizeof(WCHAR)*(wcslen(szReader[dwI])+1)));
 			wcscpy_s((WCHAR*) rgscState[dwPreviousRdrCount].szReader,wcslen(szReader[dwI])+1,szReader[dwI]);
-			//rgscState[dwPreviousRdrCount].szReader =  szReader[dwI];
 			rgscState[dwPreviousRdrCount].dwCurrentState = SCARD_STATE_UNAWARE;
 			rgscState[dwPreviousRdrCount].dwEventState = SCARD_STATE_UNAWARE;
 			dwPreviousRdrCount++;

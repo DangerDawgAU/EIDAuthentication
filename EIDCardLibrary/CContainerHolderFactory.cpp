@@ -385,7 +385,6 @@ BOOL CContainerHolderFactory<T>::DisconnectNotification(LPCTSTR szReaderName)
 			if(container->IsOnReader(szWideReaderName))
 			{
 				l_iter = _CredentialList.erase(l_iter);
-				//delete item;
 				item->Release();
 			}
 			else
