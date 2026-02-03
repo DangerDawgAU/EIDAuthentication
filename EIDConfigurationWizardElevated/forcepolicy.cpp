@@ -31,7 +31,8 @@ INT_PTR CALLBACK WndProc_ForcePolicy(HWND hWnd, UINT message, WPARAM wParam, LPA
 		{
 		case IDOK:
 			SetPolicyValue(scforceoption,IsDlgButtonChecked(hWnd, IDC_FORCEENABLE));
-			// fall through
+			EndDialog(hWnd, 0);
+			return TRUE;
 		case IDCANCEL:
 			EndDialog(hWnd, 0);
 			return TRUE;

@@ -22,7 +22,7 @@
 
 #include <windows.h>
 #include <credentialprovider.h>
-#include "../EIDCardLibrary/Tracing.h"
+#include "helpers.h"
 
 /**
   * Used to filter password credential when smart card logon is mandatory
@@ -34,24 +34,7 @@ public:
 	CEIDFilter& operator=(const CEIDFilter&) = delete;
 	CEIDFilter();
 	// IUnknown
-    STDMETHOD_(ULONG, AddRef)()
-    {
-        InterlockedIncrement(&_cRef);
-		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"AddRef %X (%d)",this,_cRef);
-		return _cRef;
-    }
-    
-    STDMETHOD_(ULONG, Release)()
-    {
-		LONG cRef = InterlockedDecrement(&_cRef);
-		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Release %X (%d)",this,_cRef);
-		
-		if (!cRef)
-		{
-            delete this;
-        }
-        return cRef;
-    }
+    IMPL_IUNKNOWN_ADDREF_RELEASE()
 
     STDMETHOD (QueryInterface)(REFIID riid, void** ppv)
     {

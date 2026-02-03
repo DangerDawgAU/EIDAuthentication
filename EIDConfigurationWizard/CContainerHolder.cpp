@@ -224,6 +224,34 @@ PTSTR CContainerHolderTest::GetSolveDescription(DWORD dwCheckNum)
 	return szDescription;
 }
 
+static BOOL RunElevatedWithParam(LPCTSTR szParameters, DWORD& dwError)
+{
+	SHELLEXECUTEINFO shExecInfo;
+	TCHAR szName[1024];
+	GetModuleFileName(GetModuleHandle(nullptr), szName, ARRAYSIZE(szName));
+	shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+	shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+	shExecInfo.hwnd = nullptr;
+	shExecInfo.lpVerb = TEXT("runas");
+	shExecInfo.lpFile = szName;
+	shExecInfo.lpParameters = szParameters;
+	shExecInfo.lpDirectory = nullptr;
+	shExecInfo.nShow = SW_NORMAL;
+	shExecInfo.hInstApp = nullptr;
+
+	if (!ShellExecuteEx(&shExecInfo))
+	{
+		dwError = GetLastError();
+		return FALSE;
+	}
+	if (WaitForSingleObject(shExecInfo.hProcess, INFINITE) == WAIT_OBJECT_0)
+	{
+		return TRUE;
+	}
+	dwError = GetLastError();
+	return FALSE;
+}
+
 BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 {
 	BOOL fReturn = FALSE;
@@ -234,42 +262,12 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 		{
 			if (IsElevated())
 			{
-				DWORD dwValue = 1;
-				dwError = RegSetKeyValue(HKEY_LOCAL_MACHINE, 
-					TEXT("SOFTWARE\\Policies\\Microsoft\\Windows\\SmartCardCredentialProvider"),
-					TEXT("AllowSignatureOnlyKeys"), REG_DWORD, &dwValue,sizeof(dwValue));
-				fReturn = (dwError == 0);
+				fReturn = SetPolicyValue(AllowSignatureOnlyKeys, 1);
+				if (!fReturn) dwError = GetLastError();
 			}
 			else
 			{
-				SHELLEXECUTEINFO shExecInfo;
-				TCHAR szName[1024];
-				GetModuleFileName(GetModuleHandle(nullptr),szName, ARRAYSIZE(szName));
-				shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-				shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-				shExecInfo.hwnd = nullptr;
-				shExecInfo.lpVerb = TEXT("runas");
-				shExecInfo.lpFile = szName;
-				shExecInfo.lpParameters = TEXT("ENABLESIGNATUREONLY");
-				shExecInfo.lpDirectory = nullptr;
-				shExecInfo.nShow = SW_NORMAL;
-				shExecInfo.hInstApp = nullptr;
-
-				if (!ShellExecuteEx(&shExecInfo))
-				{
-					dwError = GetLastError();
-				}
-				else
-				{
-					if (WaitForSingleObject(shExecInfo.hProcess, INFINITE) == WAIT_OBJECT_0)
-					{
-						fReturn = TRUE;
-					}
-					else
-					{
-						dwError = GetLastError();
-					}
-				}
+				fReturn = RunElevatedWithParam(TEXT("ENABLESIGNATUREONLY"), dwError);
 			}
 		}
 		break;
@@ -285,42 +283,12 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 			}
 			else
 			{
-				//elevate
-				SHELLEXECUTEINFO shExecInfo;
-				TCHAR szName[1024];
 				TCHAR szParameters[8000] = TEXT("TRUST ");
-				GetModuleFileName(GetModuleHandle(nullptr),szName, ARRAYSIZE(szName));
 				PCCERT_CONTEXT pCertContext = _pContainer->GetCertificate();
 				DWORD dwSize = ARRAYSIZE(szParameters) - 6;
 				if (CryptBinaryToString(pCertContext->pbCertEncoded,pCertContext->cbCertEncoded, CRYPT_STRING_BASE64, szParameters + 6,&dwSize))
 				{
-					
-					shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-
-					shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-					shExecInfo.hwnd = nullptr;
-					shExecInfo.lpVerb = TEXT("runas");
-					shExecInfo.lpFile = szName;
-					shExecInfo.lpParameters = szParameters;
-					shExecInfo.lpDirectory = nullptr;
-					shExecInfo.nShow = SW_NORMAL;
-					shExecInfo.hInstApp = nullptr;
-
-					if (!ShellExecuteEx(&shExecInfo))
-					{
-						dwError = GetLastError();
-					}
-					else
-					{
-						if (WaitForSingleObject(shExecInfo.hProcess, INFINITE) == WAIT_OBJECT_0)
-						{
-							fReturn = TRUE;
-						}
-						else
-						{
-							dwError = GetLastError();
-						}
-					}
+					fReturn = RunElevatedWithParam(szParameters, dwError);
 				}
 				else
 				{
@@ -333,86 +301,24 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 		{
 			if (IsElevated())
 			{
-				DWORD dwValue = 1;
-				dwError = RegSetKeyValue(HKEY_LOCAL_MACHINE, 
-					TEXT("SOFTWARE\\Policies\\Microsoft\\Windows\\SmartCardCredentialProvider"),
-					TEXT("AllowCertificatesWithNoEKU"), REG_DWORD, &dwValue,sizeof(dwValue));
-				fReturn = (dwError == 0);
+				fReturn = SetPolicyValue(AllowCertificatesWithNoEKU, 1);
+				if (!fReturn) dwError = GetLastError();
 			}
 			else
 			{
-				SHELLEXECUTEINFO shExecInfo;
-				TCHAR szName[1024];
-				GetModuleFileName(GetModuleHandle(nullptr),szName, ARRAYSIZE(szName));
-				shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-
-				shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-				shExecInfo.hwnd = nullptr;
-				shExecInfo.lpVerb = TEXT("runas");
-				shExecInfo.lpFile = szName;
-				shExecInfo.lpParameters = TEXT("ENABLENOEKU");
-				shExecInfo.lpDirectory = nullptr;
-				shExecInfo.nShow = SW_NORMAL;
-				shExecInfo.hInstApp = nullptr;
-
-				if (!ShellExecuteEx(&shExecInfo))
-				{
-					dwError = GetLastError();
-				}
-				else
-				{
-					if (WaitForSingleObject(shExecInfo.hProcess, INFINITE) == WAIT_OBJECT_0)
-					{
-						fReturn = TRUE;
-					}
-					else
-					{
-						dwError = GetLastError();
-					}
-				}
+				fReturn = RunElevatedWithParam(TEXT("ENABLENOEKU"), dwError);
 			}
 		}
 		else if (_dwTrustError & CERT_TRUST_IS_NOT_TIME_VALID)
 		{
 			if (IsElevated())
 			{
-				DWORD dwValue = 1;
-				dwError = RegSetKeyValue(HKEY_LOCAL_MACHINE, 
-					TEXT("SOFTWARE\\Policies\\Microsoft\\Windows\\SmartCardCredentialProvider"),
-					TEXT("AllowTimeInvalidCertificates"), REG_DWORD, &dwValue,sizeof(dwValue));
-				fReturn = (dwError == 0);
+				fReturn = SetPolicyValue(AllowTimeInvalidCertificates, 1);
+				if (!fReturn) dwError = GetLastError();
 			}
 			else
 			{
-				SHELLEXECUTEINFO shExecInfo;
-				TCHAR szName[1024];
-				GetModuleFileName(GetModuleHandle(nullptr),szName, ARRAYSIZE(szName));
-				shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-
-				shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
-				shExecInfo.hwnd = nullptr;
-				shExecInfo.lpVerb = TEXT("runas");
-				shExecInfo.lpFile = szName;
-				shExecInfo.lpParameters = TEXT("ENABLETIMEINVALID");
-				shExecInfo.lpDirectory = nullptr;
-				shExecInfo.nShow = SW_NORMAL;
-				shExecInfo.hInstApp = nullptr;
-
-				if (!ShellExecuteEx(&shExecInfo))
-				{
-					dwError = GetLastError();
-				}
-				else
-				{
-					if (WaitForSingleObject(shExecInfo.hProcess, INFINITE) == WAIT_OBJECT_0)
-					{
-						fReturn = TRUE;
-					}
-					else
-					{
-						dwError = GetLastError();
-					}
-				}
+				fReturn = RunElevatedWithParam(TEXT("ENABLETIMEINVALID"), dwError);
 			}
 		}
 	}

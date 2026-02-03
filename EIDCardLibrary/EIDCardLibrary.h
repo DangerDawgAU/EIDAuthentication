@@ -20,16 +20,24 @@
 
 #pragma once
 
+// Suppress C4005 warnings for macro redefinitions from Windows SDK
+// These warnings occur because Windows SDK headers (ntstatus.h, winnt.h, WinCred.h, etc.)
+// define the same macros in different orders when included from different paths.
+#pragma warning(push)
+#pragma warning(disable:4005)
+
 #include <ntsecapi.h>
 
 constexpr const char* AUTHENTICATIONPACKAGENAME = "EIDAuthenticationPackage";
 constexpr const wchar_t* AUTHENTICATIONPACKAGENAMEW = L"EIDAuthenticationPackage";
 #define AUTHENTICATIONPACKAGENAMET TEXT("EIDAuthenticationPackage")
 
-
-#ifndef CERT_HASH_LENGTH
+// The Windows SDK (WinCred.h) defines CERT_HASH_LENGTH as 20 (SHA-1), but we use SHA-256 (32)
+// Undefine first to ensure our definition takes precedence without warnings
+#undef CERT_HASH_LENGTH
 #define CERT_HASH_LENGTH 32  // SHA-256 hashes are used for cert hashes (security upgrade from SHA-1)
-#endif
+
+#pragma warning(pop)
 
 #define EIDAlloc(value) EIDAllocEx(__FILE__,__LINE__,__FUNCTION__,value)
 #define EIDFree(value) EIDFreeEx(__FILE__,__LINE__,__FUNCTION__,value)

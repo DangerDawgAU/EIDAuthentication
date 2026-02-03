@@ -354,106 +354,47 @@ void EIDConfigurationWizardDllUnRegister()
 
 BOOL EnableLogging()
 {
-	DWORD64 qdwValue;
-	DWORD dwValue;
+	struct RegEntry { LPCTSTR szSubKey; LPCTSTR szValueName; DWORD dwType; const void* pData; DWORD cbData; };
+
+	static const TCHAR szBaseKey[] = TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider");
+	static const TCHAR szGuidKey[] = TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider\\{B4866A0A-DB08-4835-A26F-414B46F3244C}");
+	static const TCHAR szGuidValue[] = TEXT("{B4866A0A-DB08-4835-A26F-414B46F3244C}");
+	static const TCHAR szFileName[] = TEXT("c:\\windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl");
+	static const DWORD dw0 = 0, dw1 = 1, dw5 = 5, dw8 = 8, dw64 = 64, dw4864 = 4864;
+	static const DWORD64 qw0 = 0;
+
+	static const RegEntry entries[] = {
+		{ szBaseKey, TEXT("Guid"),            REG_SZ,    szGuidValue, sizeof(szGuidValue) },
+		{ szBaseKey, TEXT("FileName"),        REG_SZ,    szFileName,  sizeof(szFileName) },
+		{ szBaseKey, TEXT("FileMax"),         REG_DWORD, &dw8,   sizeof(DWORD) },
+		{ szBaseKey, TEXT("Start"),           REG_DWORD, &dw1,   sizeof(DWORD) },
+		{ szBaseKey, TEXT("BufferSize"),      REG_DWORD, &dw8,   sizeof(DWORD) },
+		{ szBaseKey, TEXT("FlushTimer"),      REG_DWORD, &dw0,   sizeof(DWORD) },
+		{ szBaseKey, TEXT("MaximumBuffers"),  REG_DWORD, &dw0,   sizeof(DWORD) },
+		{ szBaseKey, TEXT("MinimumBuffers"),  REG_DWORD, &dw0,   sizeof(DWORD) },
+		{ szBaseKey, TEXT("ClockType"),       REG_DWORD, &dw1,   sizeof(DWORD) },
+		{ szBaseKey, TEXT("MaxFileSize"),     REG_DWORD, &dw64,  sizeof(DWORD) },
+		{ szBaseKey, TEXT("LogFileMode"),     REG_DWORD, &dw4864,sizeof(DWORD) },
+		{ szBaseKey, TEXT("FileCounter"),     REG_DWORD, &dw5,   sizeof(DWORD) },
+		{ szBaseKey, TEXT("Status"),          REG_DWORD, &dw0,   sizeof(DWORD) },
+		{ szGuidKey, TEXT("Enabled"),         REG_DWORD, &dw1,   sizeof(DWORD) },
+		{ szGuidKey, TEXT("EnableLevel"),     REG_DWORD, &dw5,   sizeof(DWORD) },
+		{ szGuidKey, TEXT("EnableProperty"),  REG_DWORD, &dw0,   sizeof(DWORD) },
+		{ szGuidKey, TEXT("Status"),          REG_DWORD, &dw0,   sizeof(DWORD) },
+		{ szGuidKey, TEXT("MatchAllKeyword"), REG_QWORD, &qw0,   sizeof(DWORD64) },
+		{ szGuidKey, TEXT("MatchAnyKeyword"), REG_QWORD, &qw0,   sizeof(DWORD64) },
+	};
+
 	LONG err = 0;
 	BOOL fReturn = FALSE;
 	__try
 	{
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"), 
-			TEXT("Guid"), REG_SZ, TEXT("{B4866A0A-DB08-4835-A26F-414B46F3244C}"),sizeof(TEXT("{B4866A0A-DB08-4835-A26F-414B46F3244C}")));
-		if (err != ERROR_SUCCESS) __leave;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"), 
-			TEXT("FileName"), REG_SZ, TEXT("c:\\windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl"),sizeof(TEXT("c:\\windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl")));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 8;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"), 
-			TEXT("FileMax"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 1;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"), 
-			TEXT("Start"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 8;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"), 
-			TEXT("BufferSize"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 0;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"), 
-			TEXT("FlushTimer"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 0;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"), 
-			TEXT("MaximumBuffers"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 0;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"), 
-			TEXT("MinimumBuffers"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 1;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"), 
-			TEXT("ClockType"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 64;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"), 
-			TEXT("MaxFileSize"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 4864;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"), 
-			TEXT("LogFileMode"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 5;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"), 
-			TEXT("FileCounter"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 0;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"), 
-			TEXT("Status"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-
-		dwValue = 1;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"), 
-			TEXT("Enabled"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 5;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"), 
-			TEXT("EnableLevel"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 0;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"), 
-			TEXT("EnableProperty"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		dwValue = 0;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"), 
-			TEXT("Status"), REG_DWORD,&dwValue,sizeof(DWORD));
-		if (err != ERROR_SUCCESS) __leave;
-		qdwValue = 0;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"), 
-			TEXT("MatchAllKeyword"), REG_QWORD,&qdwValue,sizeof(DWORD64));
-		if (err != ERROR_SUCCESS) __leave;
-		qdwValue = 0;
-		err = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-			TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"), 
-			TEXT("MatchAnyKeyword"), REG_QWORD,&qdwValue,sizeof(DWORD64));
-		if (err != ERROR_SUCCESS) __leave;
+		for (int i = 0; i < _countof(entries); i++)
+		{
+			err = RegSetKeyValue(HKEY_LOCAL_MACHINE, entries[i].szSubKey,
+				entries[i].szValueName, entries[i].dwType, entries[i].pData, entries[i].cbData);
+			if (err != ERROR_SUCCESS) __leave;
+		}
 		if (!StartLogging())
 		{
 			err = GetLastError();

@@ -20,6 +20,10 @@
 
 #pragma once
 
+#include <windows.h>
+#include <wincrypt.h>
+#include <tchar.h>
+
 PCCERT_CONTEXT SelectFirstCertificateWithPrivateKey();
 PCCERT_CONTEXT SelectCertificateWithPrivateKey(HWND hWnd = NULL);
 
@@ -62,6 +66,11 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO CertificateInfo);
 BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName);
 BOOL ImportFileToSmartCard(PTSTR szFileName, PTSTR szPassword, PTSTR szReaderName, PTSTR szCardname);
 PCCERT_CONTEXT FindCertificateFromHash(PCRYPT_DATA_BLOB pCertInfo);
+
+// Sets CERT_KEY_PROV_INFO_PROP_ID and CERT_KEY_CONTEXT_PROP_ID on a certificate context.
+BOOL SetupCertificateContextWithKeyInfo(
+    __in PCCERT_CONTEXT pCertContext, __in HCRYPTPROV hProv,
+    __in LPCWSTR pwszProviderName, __in LPCWSTR pwszContainerName, __in DWORD dwKeySpec);
 
 // Returns allocated string "\\.\\<readerName>\\" - caller must EIDFree
 LPTSTR BuildContainerNameFromReader(LPCTSTR szReaderName);
