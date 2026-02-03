@@ -75,10 +75,11 @@ CCredential::CCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_INFO pCertInfo,PWS
 	// certinfo
 	if (pCertInfo)
 	{
-		for (int i = 0; i < CERT_HASH_LENGTH; i++)
-		{
-			_rgbHashOfCert[i] = pCertInfo->rgbHashOfCert[i];
-		}
+		// Windows SDK defines CERT_CREDENTIAL_INFO.rgbHashOfCert with the SDK's CERT_HASH_LENGTH (20 bytes for SHA-1)
+		// Our internal CERT_HASH_LENGTH is 32 (SHA-256). Only copy what the SDK structure actually contains.
+		constexpr size_t SDK_CERT_HASH_LENGTH = 20;
+		memset(_rgbHashOfCert, 0, sizeof(_rgbHashOfCert));
+		memcpy_s(_rgbHashOfCert, sizeof(_rgbHashOfCert), pCertInfo->rgbHashOfCert, SDK_CERT_HASH_LENGTH);
 		_pCertInfo = (PCERT_CREDENTIAL_INFO) EIDAlloc(pCertInfo->cbSize);
 		memcpy(_pCertInfo, pCertInfo, pCertInfo->cbSize);
 	}

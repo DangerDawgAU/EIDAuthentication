@@ -243,7 +243,8 @@ typedef enum _EID_MESSAGE_TYPE
 } EID_MESSAGE_TYPE;
 
 constexpr DWORD EID_MESSAGE_VERSION = 1;
-constexpr const char* EID_MESSAGE_SIGNATURE = "EIDAuth";
+// Signature is exactly 8 bytes (7 chars + null terminator) to match message Signature[8] fields
+constexpr char EID_MESSAGE_SIGNATURE[8] = "EIDAuth";
 
 typedef enum _EID_SSP_CALLER
 {
