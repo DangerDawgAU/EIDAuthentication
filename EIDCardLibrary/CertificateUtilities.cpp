@@ -146,7 +146,7 @@ PCCERT_CONTEXT SelectCertificateWithPrivateKey(HWND hWnd)
 		PBYTE dwKeySpec = nullptr;
 		DWORD dwSize = 0;
 		// open a temp store and copy context which have a private key
-		hStore = CertOpenStore(CERT_STORE_PROV_MEMORY,X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,NULL,0,NULL);
+		hStore = CertOpenStore(CERT_STORE_PROV_MEMORY,X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,NULL,0,nullptr);
 
 		if (hStore)
 		{
@@ -302,7 +302,7 @@ BOOL AskForCard(LPWSTR szReader, DWORD ReaderLength,LPWSTR szCard,DWORD CardLeng
 			// Provide user-friendly error message for common cases
 			if (lReturn == SCARD_E_NO_SERVICE)
 			{
-				MessageBox(NULL,
+				MessageBox(nullptr,
 					L"The Smart Card service is not running.\n\n"
 					L"This typically means:\n"
 					L"1. No smart card reader is installed on this system\n"
@@ -500,7 +500,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"EIDAlloc 0x%08X", dwError);
 			__leave;
 		}
-		if (!CertStrToName(X509_ASN_ENCODING,pCertificateInfo->szSubject,CERT_X500_NAME_STR,NULL,(PBYTE)SubjectIssuerBlob.pbData,&SubjectIssuerBlob.cbData,NULL))
+		if (!CertStrToName(X509_ASN_ENCODING,pCertificateInfo->szSubject,CERT_X500_NAME_STR,nullptr,(PBYTE)SubjectIssuerBlob.pbData,&SubjectIssuerBlob.cbData,nullptr))
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"CertStrToName 0x%08X", dwError);

@@ -52,7 +52,7 @@ public:
         }
         else
         {
-            *ppv = NULL;
+            *ppv = nullptr;
             hr = E_NOINTERFACE;
         }
         return hr;

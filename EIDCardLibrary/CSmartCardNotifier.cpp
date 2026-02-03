@@ -72,7 +72,7 @@ HRESULT CSmartCardConnectionNotifier::Start()
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Thread already launched");
 		return E_FAIL;
 	}
-	_hThread = CreateThread(NULL, 0, CSmartCardConnectionNotifier::_ThreadProc, (LPVOID) this, 0, NULL);
+	_hThread = CreateThread(nullptr, 0, CSmartCardConnectionNotifier::_ThreadProc, (LPVOID) this, 0, nullptr);
     if (_hThread == nullptr)
     {
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to launch the thread : %d",GetLastError());

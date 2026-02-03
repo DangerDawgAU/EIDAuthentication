@@ -90,8 +90,9 @@ BOOL IsCurrentUserBelongToADomain()
 		} else {
 
 			// Call should have failed due to zero-length buffer.
-			if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-			__leave;
+			if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+				__leave;
+			}
 		}
 
 		// Allocate buffer for user information in the token.

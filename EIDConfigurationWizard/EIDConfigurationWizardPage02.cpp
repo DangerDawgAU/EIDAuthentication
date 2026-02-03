@@ -21,8 +21,8 @@ void CheckIfCardHasADriver(HWND hWnd)
 		// Establish a context.
 		// It will be assigned to the structure's hSCardContext field.
 		lReturn = SCardEstablishContext(SCARD_SCOPE_USER,
-										NULL,
-										NULL,
+										nullptr,
+										nullptr,
 										&hSC );
 		if ( SCARD_S_SUCCESS != lReturn )
 		{
@@ -30,7 +30,7 @@ void CheckIfCardHasADriver(HWND hWnd)
 			__leave;
 		}
 		DWORD dwReaderCount = SCARD_AUTOALLOCATE;
-		lReturn = SCardListReaders(hSC, NULL,  (LPTSTR)&szReaders, &dwReaderCount);
+		lReturn = SCardListReaders(hSC, nullptr,  (LPTSTR)&szReaders, &dwReaderCount);
 		if ( SCARD_S_SUCCESS != lReturn )
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Failed SCardListReaders 0x%08X",lReturn);
@@ -57,14 +57,14 @@ void CheckIfCardHasADriver(HWND hWnd)
 					__leave;
 				}
 				// get the ATR
-				lReturn = SCardStatus(hCard, (PTSTR) &szTempReader, &dwTempReaderSize, NULL, NULL, (PBYTE)&pbAtr, &dwAtrSize);
+				lReturn = SCardStatus(hCard, (PTSTR) &szTempReader, &dwTempReaderSize, nullptr, nullptr, (PBYTE)&pbAtr, &dwAtrSize);
 				if ( SCARD_S_SUCCESS != lReturn )
 				{
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Failed SCardStatus 0x%08X",lReturn);
 					__leave;
 				}
 				// get the name
-				lReturn = SCardListCards(hSC, pbAtr, NULL, 0, (PTSTR) &szCards, &dwzCardsSize);
+				lReturn = SCardListCards(hSC, pbAtr, nullptr, 0, (PTSTR) &szCards, &dwzCardsSize);
 				if ( SCARD_S_SUCCESS != lReturn )
 				{
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Failed SCardListCards 0x%08X",lReturn);
@@ -127,7 +127,7 @@ INT_PTR CALLBACK	WndProc_02ENABLE(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			LoadString(g_hinst,IDS_02EXISTINGNOTE, szNote, ARRAYSIZE(szNote));
 			Button_SetNote(GetDlgItem(hWnd,IDC_02EXISTING),szNote);
 		}
-		if (!LsaEIDHasStoredCredential(NULL))
+		if (!LsaEIDHasStoredCredential(nullptr))
 		{
 			EnableWindow(GetDlgItem(hWnd,IDC_01DELETE), FALSE);
 		}
@@ -169,7 +169,7 @@ INT_PTR CALLBACK	WndProc_02ENABLE(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				DWORD dwSize = ARRAYSIZE(szParameter) - (DWORD) _tcsclen(szParameter);
 				GetUserName(szParameter + ARRAYSIZE(szParameter) - dwSize, &dwSize);
 
-				GetModuleFileName(GetModuleHandle(NULL),szName, ARRAYSIZE(szName));
+				GetModuleFileName(GetModuleHandle(nullptr),szName, ARRAYSIZE(szName));
 				shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 
 				shExecInfo.fMask = NULL;
@@ -211,7 +211,7 @@ INT_PTR CALLBACK	WndProc_02ENABLE(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				LoadString(g_hinst,IDS_AREYOUSURE,szMessage,ARRAYSIZE(szMessage));
 				if (IDYES == MessageBox(hWnd,szMessage,TEXT(""),MB_ICONWARNING|MB_YESNO))
 				{
-					if (!LsaEIDRemoveStoredCredential(NULL))
+					if (!LsaEIDRemoveStoredCredential(nullptr))
 					{
 						MessageBoxWin32Ex(GetLastError(),hWnd);
 						break;

@@ -359,7 +359,7 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					certViewInfo.szTitle = szTitle;
 					certViewInfo.pCertContext = pRootCertificate;
 					certViewInfo.cPurposes = 0;
-					certViewInfo.rgszPurposes = 0;
+					certViewInfo.rgszPurposes = nullptr;
 					certViewInfo.pCryptProviderData = nullptr;
 					certViewInfo.hWVTStateData = nullptr;
 					certViewInfo.fpCryptProviderDataTrustedUsage = FALSE;

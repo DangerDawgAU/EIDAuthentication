@@ -149,14 +149,14 @@ HWND hWndTemp;
 HICON MiniIcon(HICON SourceIcon)
 {	
 	ICONINFO SourceIconInfo,  TargetIconInfo ;
-	HICON TargetIcon = NULL;
+	HICON TargetIcon = nullptr;
 	BITMAP SourceBitmapInfo;
-	HDC SourceDC = NULL,
-	  TargetDC = NULL,
-	  ScreenDC = NULL;
-	HBITMAP OldSourceBitmap = NULL,
-	  OldTargetBitmap = NULL;
-	HMODULE hDll = NULL;
+	HDC SourceDC = nullptr,
+	  TargetDC = nullptr,
+	  ScreenDC = nullptr;
+	HBITMAP OldSourceBitmap = nullptr,
+	  OldTargetBitmap = nullptr;
+	HMODULE hDll = nullptr;
 	__try
 	{
 		/* Get information about the source icon and shortcut overlay */
@@ -170,28 +170,28 @@ HICON MiniIcon(HICON SourceIcon)
 		
 
 		TargetIconInfo = SourceIconInfo;
-		TargetIconInfo.hbmMask = NULL;
-		TargetIconInfo.hbmColor = NULL;
+		TargetIconInfo.hbmMask = nullptr;
+		TargetIconInfo.hbmColor = nullptr;
 
 		/* Setup the source, shortcut and target masks */
-		SourceDC = CreateCompatibleDC(NULL);
-		if (NULL == SourceDC) __leave;
+		SourceDC = CreateCompatibleDC(nullptr);
+		if (nullptr == SourceDC) __leave;
 		OldSourceBitmap = (HBITMAP) SelectObject(SourceDC, SourceIconInfo.hbmMask);
-		if (NULL == OldSourceBitmap) __leave;
+		if (nullptr == OldSourceBitmap) __leave;
 
-		TargetDC = CreateCompatibleDC(NULL);
-		if (NULL == TargetDC) __leave;
+		TargetDC = CreateCompatibleDC(nullptr);
+			if (nullptr == TargetDC) __leave;
 		TargetIconInfo.hbmMask = CreateCompatibleBitmap(TargetDC, GetSystemMetrics(SM_CXICON),
 														GetSystemMetrics(SM_CYICON));
-		if (NULL == TargetIconInfo.hbmMask) __leave;
-		ScreenDC = GetDC(NULL);
-		if (NULL == ScreenDC) __leave;
-		TargetIconInfo.hbmColor = CreateCompatibleBitmap(ScreenDC, GetSystemMetrics(SM_CXICON),
+		if (nullptr == TargetIconInfo.hbmMask) __leave;
+	ScreenDC = GetDC(nullptr);
+	if (nullptr == ScreenDC) __leave;
+	TargetIconInfo.hbmColor = CreateCompatibleBitmap(ScreenDC, GetSystemMetrics(SM_CXICON),
 														 GetSystemMetrics(SM_CYICON));
-		ReleaseDC(NULL, ScreenDC);
-		if (NULL == TargetIconInfo.hbmColor) __leave;
-		OldTargetBitmap = (HBITMAP) SelectObject(TargetDC, TargetIconInfo.hbmMask);
-		if (NULL == OldTargetBitmap) __leave;
+	ReleaseDC(nullptr, ScreenDC);
+	if (nullptr == TargetIconInfo.hbmColor) __leave;
+	OldTargetBitmap = (HBITMAP) SelectObject(TargetDC, TargetIconInfo.hbmMask);
+	if (nullptr == OldTargetBitmap) __leave;
 
 		/* Create the target mask by ANDing the source and shortcut masks */
 		if (! BitBlt(TargetDC, 0, 0, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON),
@@ -204,8 +204,8 @@ HICON MiniIcon(HICON SourceIcon)
 		{
 			__leave;
 		}
-		if (NULL == SelectObject(SourceDC, SourceIconInfo.hbmColor) ||
-			NULL == SelectObject(TargetDC, TargetIconInfo.hbmColor))
+		if (nullptr == SelectObject(SourceDC, SourceIconInfo.hbmColor) ||
+			nullptr == SelectObject(TargetDC, TargetIconInfo.hbmColor))
 		{
 		  __leave;
 		}
@@ -304,14 +304,14 @@ BOOL InitListViewCheckIcon(HWND hWndListView)
 
 HICON LoadModIcon(int Num)
 {
-	HMODULE hDll2 = NULL;
-	HRSRC hResInfo = NULL;
-	HGLOBAL hGlobal = NULL;
-	HRSRC hResInfo2 = NULL;
-	HGLOBAL hGlobal2 = NULL;
+	HMODULE hDll2 = nullptr;
+	HRSRC hResInfo = nullptr;
+	HGLOBAL hGlobal = nullptr;
+	HRSRC hResInfo2 = nullptr;
+	HGLOBAL hGlobal2 = nullptr;
 	int iResourceNum;
-	HICON hCertOK = NULL, hOK = NULL;
-	HICON hCertNOK = NULL, hNOK = NULL;
+	HICON hCertOK = nullptr, hOK = nullptr;
+	HICON hCertNOK = nullptr, hNOK = nullptr;
 	__try
 	{
 		hDll2 = EIDLoadSystemLibrary(TEXT("imageres.dll"));

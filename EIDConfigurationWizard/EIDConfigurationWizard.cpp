@@ -168,8 +168,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	psh.hwndParent = nullptr;
 	psh.phpage = ahpsp;
 	psh.dwFlags = PSH_WIZARD | PSH_AEROWIZARD | PSH_USEHICON ;
-	psh.pszbmWatermark = 0;
-	psh.pszbmHeader = 0;
+	psh.pszbmWatermark = nullptr;
+	psh.pszbmHeader = nullptr;
 	psh.nStartPage = 1;
 	psh.nPages = ARRAYSIZE(ahpsp);
 	psh.hIcon = nullptr;
