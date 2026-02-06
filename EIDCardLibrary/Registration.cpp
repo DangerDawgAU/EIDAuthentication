@@ -26,6 +26,8 @@
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/guid.h"
 #include "../EIDCardLibrary/Tracing.h"
+#include "../EIDCardLibrary/StringConversion.h"
+#include <string>
 
 
 /** Used to append a string to a multi string reg key */
@@ -261,128 +263,128 @@ BOOL UnRegisterTheSecurityPackage()
 
 void EIDAuthenticationPackageDllRegister()
 {
-	AppendValueToMultiSz(HKEY_LOCAL_MACHINE, TEXT("SYSTEM\\CurrentControlSet\\Control\\Lsa"), TEXT("Security Packages"), AUTHENTICATIONPACKAGENAMET);
+	AppendValueToMultiSz(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Lsa", L"Security Packages", AUTHENTICATIONPACKAGENAMET);
 }
 
 void EIDAuthenticationPackageDllUnRegister()
 {
-	RemoveValueFromMultiSz(HKEY_LOCAL_MACHINE, TEXT("SYSTEM\\CurrentControlSet\\Control\\Lsa"), TEXT("Security Packages"), AUTHENTICATIONPACKAGENAMET);
+	RemoveValueFromMultiSz(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Lsa", L"Security Packages", AUTHENTICATIONPACKAGENAMET);
 }
 
 void EIDPasswordChangeNotificationDllRegister()
 {
-	AppendValueToMultiSz(HKEY_LOCAL_MACHINE, TEXT("SYSTEM\\CurrentControlSet\\Control\\Lsa"), TEXT("Notification Packages"), TEXT("EIDPasswordChangeNotification"));
+	AppendValueToMultiSz(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Lsa", L"Notification Packages", L"EIDPasswordChangeNotification");
 }
 
 void EIDPasswordChangeNotificationDllUnRegister()
 {
-	RemoveValueFromMultiSz(HKEY_LOCAL_MACHINE, TEXT("SYSTEM\\CurrentControlSet\\Control\\Lsa"), TEXT("Notification Packages"), TEXT("EIDPasswordChangeNotification"));
+	RemoveValueFromMultiSz(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Lsa", L"Notification Packages", L"EIDPasswordChangeNotification");
 }
 
 
 void EIDCredentialProviderDllRegister()
 {
 	RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-		TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Authentication\\Credential Providers\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"), 
-		nullptr, REG_SZ, TEXT("EidCredentialProvider"),sizeof(TEXT("EidCredentialProvider")));
+		L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Authentication\\Credential Providers\\{B4866A0A-DB08-4835-A26F-414B46F3244C}", 
+		nullptr, REG_SZ, L"EidCredentialProvider",sizeof(L"EidCredentialProvider"));
 	RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-		TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Authentication\\Credential Provider Filters\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"), 
-		nullptr, REG_SZ, TEXT("EidCredentialProvider"),sizeof(TEXT("EidCredentialProvider")));
+		L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Authentication\\Credential Provider Filters\\{B4866A0A-DB08-4835-A26F-414B46F3244C}", 
+		nullptr, REG_SZ, L"EidCredentialProvider",sizeof(L"EidCredentialProvider"));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
-		TEXT("CLSID\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"), 
-		nullptr, REG_SZ, TEXT("EidCredentialProvider"),sizeof(TEXT("EidCredentialProvider")));
+		L"CLSID\\{B4866A0A-DB08-4835-A26F-414B46F3244C}", 
+		nullptr, REG_SZ, L"EidCredentialProvider",sizeof(L"EidCredentialProvider"));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
-		TEXT("CLSID\\{B4866A0A-DB08-4835-A26F-414B46F3244C}\\InprocServer32"),
-		nullptr, REG_SZ, TEXT("EidCredentialProvider.dll"),sizeof(TEXT("EidCredentialProvider.dll")));
+		L"CLSID\\{B4866A0A-DB08-4835-A26F-414B46F3244C}\\InprocServer32",
+		nullptr, REG_SZ, L"EidCredentialProvider.dll",sizeof(L"EidCredentialProvider.dll"));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
-		TEXT("CLSID\\{B4866A0A-DB08-4835-A26F-414B46F3244C}\\InprocServer32"),
-		TEXT("ThreadingModel"),REG_SZ, TEXT("Apartment"),sizeof(TEXT("Apartment")));
+		L"CLSID\\{B4866A0A-DB08-4835-A26F-414B46F3244C}\\InprocServer32",
+		L"ThreadingModel",REG_SZ, L"Apartment",sizeof(L"Apartment"));
 }
 
 BOOL LsaEIDRemoveAllStoredCredential();
 
 void EIDCredentialProviderDllUnRegister()
 {
-	RegDeleteTree(HKEY_CLASSES_ROOT, TEXT("CLSID\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"));
+	RegDeleteTree(HKEY_CLASSES_ROOT, L"CLSID\\{B4866A0A-DB08-4835-A26F-414B46F3244C}");
 	RegDeleteTree(HKEY_LOCAL_MACHINE, 
-		TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Authentication\\Credential Providers\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"));
+		L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Authentication\\Credential Providers\\{B4866A0A-DB08-4835-A26F-414B46F3244C}");
 	RegDeleteTree(HKEY_LOCAL_MACHINE, 
-		TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Authentication\\Credential Provider Filters\\{B4866A0A-DB08-4835-A26F-414B46F3244C}"));
+		L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Authentication\\Credential Provider Filters\\{B4866A0A-DB08-4835-A26F-414B46F3244C}");
 	LsaEIDRemoveAllStoredCredential();
 }
 
 void EIDConfigurationWizardDllRegister()
 {
 	RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-		TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ControlPanel\\NameSpace\\{F5D846B4-14B0-11DE-B23C-27A355D89593}"),
-		nullptr,REG_SZ, TEXT("EIDConfigurationWizard"),sizeof(TEXT("EIDConfigurationWizard")));
+		L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ControlPanel\\NameSpace\\{F5D846B4-14B0-11DE-B23C-27A355D89593}",
+		nullptr,REG_SZ, L"EIDConfigurationWizard",sizeof(L"EIDConfigurationWizard"));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
-		TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}"), 
-		nullptr, REG_SZ, TEXT("EIDConfigurationWizard"),sizeof(TEXT("EIDConfigurationWizard")));
+		L"CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}", 
+		nullptr, REG_SZ, L"EIDConfigurationWizard",sizeof(L"EIDConfigurationWizard"));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
-		TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}"),
-		TEXT("System.ApplicationName"),REG_SZ, TEXT("EID.EIDConfigurationWizard"),sizeof(TEXT("EID.EIDConfigurationWizard")));
+		L"CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}",
+		L"System.ApplicationName",REG_SZ, L"EID.EIDConfigurationWizard",sizeof(L"EID.EIDConfigurationWizard"));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
-		TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}"),
-		TEXT("System.ControlPanel.Category"),REG_SZ, TEXT("10"),sizeof(TEXT("10")));
+		L"CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}",
+		L"System.ControlPanel.Category",REG_SZ, L"10",sizeof(L"10"));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
-		TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}"),
-		TEXT("LocalizedString"),REG_EXPAND_SZ, TEXT("Smart Card Logon"),sizeof(TEXT("Smart Card Logon")));
+		L"CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}",
+		L"LocalizedString",REG_EXPAND_SZ, L"Smart Card Logon",sizeof(L"Smart Card Logon"));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
-		TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}"),
-		TEXT("InfoTip"),REG_EXPAND_SZ, TEXT("Smart Card Logon"),sizeof(TEXT("Smart Card Logon")));
+		L"CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}",
+		L"InfoTip",REG_EXPAND_SZ, L"Smart Card Logon",sizeof(L"Smart Card Logon"));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
-		TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}\\DefaultIcon"),
-		nullptr,REG_EXPAND_SZ, TEXT("%SystemRoot%\\system32\\imageres.dll,-58"),
-			sizeof(TEXT("%SystemRoot%\\system32\\imageres.dll,-58")));
+		L"CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}\\DefaultIcon",
+		nullptr,REG_EXPAND_SZ, L"%SystemRoot%\\system32\\imageres.dll,-58",
+			sizeof(L"%SystemRoot%\\system32\\imageres.dll,-58"));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
-		TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}\\Shell\\Open\\Command"),
-		nullptr,REG_EXPAND_SZ, TEXT("%SystemRoot%\\system32\\EIDConfigurationWizard.exe"),
-			sizeof(TEXT("%SystemRoot%\\system32\\EIDConfigurationWizard.exe")));
+		L"CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}\\Shell\\Open\\Command",
+		nullptr,REG_EXPAND_SZ, L"%SystemRoot%\\system32\\EIDConfigurationWizard.exe",
+			sizeof(L"%SystemRoot%\\system32\\EIDConfigurationWizard.exe"));
 	RegSetKeyValue(	HKEY_CLASSES_ROOT, 
-		TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}"),
-		TEXT("System.Software.TasksFileUrl"),REG_SZ, TEXT("%SystemRoot%\\system32\\EIDConfigurationWizard.exe,-68"),sizeof(TEXT("%SystemRoot%\\system32\\EIDConfigurationWizard.exe,-68")));
+		L"CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}",
+		L"System.Software.TasksFileUrl",REG_SZ, L"%SystemRoot%\\system32\\EIDConfigurationWizard.exe,-68",sizeof(L"%SystemRoot%\\system32\\EIDConfigurationWizard.exe,-68"));
 	
 
 }
 
 void EIDConfigurationWizardDllUnRegister()
 {
-	RegDeleteTree(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ControlPanel\\NameSpace\\{F5D846B4-14B0-11DE-B23C-27A355D89593}"));
-	RegDeleteTree(HKEY_CLASSES_ROOT, TEXT("CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}"));
+	RegDeleteTree(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ControlPanel\\NameSpace\\{F5D846B4-14B0-11DE-B23C-27A355D89593}");
+	RegDeleteTree(HKEY_CLASSES_ROOT, L"CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}");
 }
 
 BOOL EnableLogging()
 {
 	struct RegEntry { LPCTSTR szSubKey; LPCTSTR szValueName; DWORD dwType; const void* pData; DWORD cbData; };
 
-	static const TCHAR szBaseKey[] = TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider");
-	static const TCHAR szGuidKey[] = TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider\\{B4866A0A-DB08-4835-A26F-414B46F3244C}");
-	static const TCHAR szGuidValue[] = TEXT("{B4866A0A-DB08-4835-A26F-414B46F3244C}");
-	static const TCHAR szFileName[] = TEXT("c:\\windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl");
+	static const TCHAR szBaseKey[] = L"SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider";
+	static const TCHAR szGuidKey[] = L"SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider\\{B4866A0A-DB08-4835-A26F-414B46F3244C}";
+	static const TCHAR szGuidValue[] = L"{B4866A0A-DB08-4835-A26F-414B46F3244C}";
+	static const TCHAR szFileName[] = L"c:\\windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl";
 	static const DWORD dw0 = 0, dw1 = 1, dw5 = 5, dw8 = 8, dw64 = 64, dw4864 = 4864;
 	static const DWORD64 qw0 = 0;
 
 	static const RegEntry entries[] = {
-		{ szBaseKey, TEXT("Guid"),            REG_SZ,    szGuidValue, sizeof(szGuidValue) },
-		{ szBaseKey, TEXT("FileName"),        REG_SZ,    szFileName,  sizeof(szFileName) },
-		{ szBaseKey, TEXT("FileMax"),         REG_DWORD, &dw8,   sizeof(DWORD) },
-		{ szBaseKey, TEXT("Start"),           REG_DWORD, &dw1,   sizeof(DWORD) },
-		{ szBaseKey, TEXT("BufferSize"),      REG_DWORD, &dw8,   sizeof(DWORD) },
-		{ szBaseKey, TEXT("FlushTimer"),      REG_DWORD, &dw0,   sizeof(DWORD) },
-		{ szBaseKey, TEXT("MaximumBuffers"),  REG_DWORD, &dw0,   sizeof(DWORD) },
-		{ szBaseKey, TEXT("MinimumBuffers"),  REG_DWORD, &dw0,   sizeof(DWORD) },
-		{ szBaseKey, TEXT("ClockType"),       REG_DWORD, &dw1,   sizeof(DWORD) },
-		{ szBaseKey, TEXT("MaxFileSize"),     REG_DWORD, &dw64,  sizeof(DWORD) },
-		{ szBaseKey, TEXT("LogFileMode"),     REG_DWORD, &dw4864,sizeof(DWORD) },
-		{ szBaseKey, TEXT("FileCounter"),     REG_DWORD, &dw5,   sizeof(DWORD) },
-		{ szBaseKey, TEXT("Status"),          REG_DWORD, &dw0,   sizeof(DWORD) },
-		{ szGuidKey, TEXT("Enabled"),         REG_DWORD, &dw1,   sizeof(DWORD) },
-		{ szGuidKey, TEXT("EnableLevel"),     REG_DWORD, &dw5,   sizeof(DWORD) },
-		{ szGuidKey, TEXT("EnableProperty"),  REG_DWORD, &dw0,   sizeof(DWORD) },
-		{ szGuidKey, TEXT("Status"),          REG_DWORD, &dw0,   sizeof(DWORD) },
-		{ szGuidKey, TEXT("MatchAllKeyword"), REG_QWORD, &qw0,   sizeof(DWORD64) },
-		{ szGuidKey, TEXT("MatchAnyKeyword"), REG_QWORD, &qw0,   sizeof(DWORD64) },
+		{ szBaseKey, L"Guid",            REG_SZ,    szGuidValue, sizeof(szGuidValue) },
+		{ szBaseKey, L"FileName",        REG_SZ,    szFileName,  sizeof(szFileName) },
+		{ szBaseKey, L"FileMax",         REG_DWORD, &dw8,   sizeof(DWORD) },
+		{ szBaseKey, L"Start",           REG_DWORD, &dw1,   sizeof(DWORD) },
+		{ szBaseKey, L"BufferSize",      REG_DWORD, &dw8,   sizeof(DWORD) },
+		{ szBaseKey, L"FlushTimer",      REG_DWORD, &dw0,   sizeof(DWORD) },
+		{ szBaseKey, L"MaximumBuffers",  REG_DWORD, &dw0,   sizeof(DWORD) },
+		{ szBaseKey, L"MinimumBuffers",  REG_DWORD, &dw0,   sizeof(DWORD) },
+		{ szBaseKey, L"ClockType",       REG_DWORD, &dw1,   sizeof(DWORD) },
+		{ szBaseKey, L"MaxFileSize",     REG_DWORD, &dw64,  sizeof(DWORD) },
+		{ szBaseKey, L"LogFileMode",     REG_DWORD, &dw4864,sizeof(DWORD) },
+		{ szBaseKey, L"FileCounter",     REG_DWORD, &dw5,   sizeof(DWORD) },
+		{ szBaseKey, L"Status",          REG_DWORD, &dw0,   sizeof(DWORD) },
+		{ szGuidKey, L"Enabled",         REG_DWORD, &dw1,   sizeof(DWORD) },
+		{ szGuidKey, L"EnableLevel",     REG_DWORD, &dw5,   sizeof(DWORD) },
+		{ szGuidKey, L"EnableProperty",  REG_DWORD, &dw0,   sizeof(DWORD) },
+		{ szGuidKey, L"Status",          REG_DWORD, &dw0,   sizeof(DWORD) },
+		{ szGuidKey, L"MatchAllKeyword", REG_QWORD, &qw0,   sizeof(DWORD64) },
+		{ szGuidKey, L"MatchAnyKeyword", REG_QWORD, &qw0,   sizeof(DWORD64) },
 	};
 
 	LONG err = 0;
@@ -415,7 +417,7 @@ BOOL DisableLogging()
 	LONG lReturn = 0;
 	__try
 	{
-		lReturn = RegDeleteTree(HKEY_LOCAL_MACHINE, TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"));
+		lReturn = RegDeleteTree(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider");
 		if (lReturn) __leave;
 		if (!StopLogging())
 		{
@@ -436,7 +438,7 @@ BOOL IsLoggingEnabled()
 	HKEY hkResult;
 	DWORD Status;
 	BOOL fReturn = FALSE;
-	Status=RegOpenKeyEx(HKEY_LOCAL_MACHINE,TEXT("SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider"),0,KEY_READ|KEY_QUERY_VALUE|KEY_WRITE,&hkResult);
+	Status=RegOpenKeyEx(HKEY_LOCAL_MACHINE,L"SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider",0,KEY_READ|KEY_QUERY_VALUE|KEY_WRITE,&hkResult);
 	if (Status == ERROR_SUCCESS) {
 		fReturn = TRUE;
 		RegCloseKey(hkResult);
@@ -452,7 +454,7 @@ BOOL Is64BitOS()
    using LPFN_ISWOW64PROCESS = BOOL (WINAPI*)(HANDLE, PBOOL); 
 
    LPFN_ISWOW64PROCESS
-      fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(GetModuleHandle(TEXT("kernel32")),"IsWow64Process");
+      fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(GetModuleHandle(L"kernel32"),"IsWow64Process");
  
    if (fnIsWow64Process && !fnIsWow64Process(GetCurrentProcess(),&bIs64BitOS))
    {
@@ -475,12 +477,12 @@ void EnableCrashDump(PTSTR szPath)
 	HKEY hkResult = nullptr;
 	__try
 	{
-		Status=RegCreateKeyEx(HKEY_LOCAL_MACHINE,TEXT("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps\\lsass.exe"),
+		Status=RegCreateKeyEx(HKEY_LOCAL_MACHINE,L"SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps\\lsass.exe",
 			0,nullptr,0,KEY_READ|KEY_QUERY_VALUE|KEY_WRITE|dwFlag,nullptr,&hkResult,nullptr);
 		if (Status != ERROR_SUCCESS) {MessageBoxWin32(Status); __leave;}
-		Status = RegSetValueEx(hkResult,TEXT("DumpFolder"),0,REG_SZ, (PBYTE) szPath,((DWORD)sizeof(TCHAR))*((DWORD)_tcslen(szPath)+1));
+		Status = RegSetValueEx(hkResult,L"DumpFolder",0,REG_SZ, (PBYTE) szPath,((DWORD)sizeof(TCHAR))*((DWORD)_tcslen(szPath)+1));
 		if (Status != ERROR_SUCCESS) {MessageBoxWin32(Status); __leave;}
-		Status = RegSetValueEx(hkResult,TEXT("DumpType"),0, REG_DWORD, (PBYTE)&dwDumpType,sizeof(dwDumpType));
+		Status = RegSetValueEx(hkResult,L"DumpType",0, REG_DWORD, (PBYTE)&dwDumpType,sizeof(dwDumpType));
 		if (Status != ERROR_SUCCESS) {MessageBoxWin32(Status); __leave;}
 	}
 	__finally
@@ -501,9 +503,9 @@ void DisableCrashDump()
 		dwFlag = KEY_WOW64_64KEY;
 	}
 #endif
-	Status=RegOpenKeyEx(HKEY_LOCAL_MACHINE,TEXT("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps"),0,KEY_READ|KEY_QUERY_VALUE|KEY_WRITE|dwFlag,&hkResult);
+	Status=RegOpenKeyEx(HKEY_LOCAL_MACHINE,L"SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps",0,KEY_READ|KEY_QUERY_VALUE|KEY_WRITE|dwFlag,&hkResult);
 	if (Status == ERROR_SUCCESS) {
-		RegDeleteKey(hkResult, TEXT("lsass.exe"));
+		RegDeleteKey(hkResult, L"lsass.exe");
 		RegCloseKey(hkResult);
 	}
 }
@@ -520,7 +522,7 @@ BOOL IsCrashDumpEnabled()
 		dwFlag = KEY_WOW64_64KEY;
 	}
 #endif
-	Status=RegOpenKeyEx(HKEY_LOCAL_MACHINE,TEXT("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps\\lsass.exe"),0,KEY_READ|KEY_QUERY_VALUE|KEY_WRITE|dwFlag,&hkResult);
+	Status=RegOpenKeyEx(HKEY_LOCAL_MACHINE,L"SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps\\lsass.exe",0,KEY_READ|KEY_QUERY_VALUE|KEY_WRITE|dwFlag,&hkResult);
 	if (Status == ERROR_SUCCESS) {
 		fReturn = TRUE;
 		RegCloseKey(hkResult);

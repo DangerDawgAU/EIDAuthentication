@@ -35,12 +35,14 @@
 #include "EidCardLibrary.h"
 #include "Tracing.h"
 #include "CertificateValidation.h"
+#include "StringConversion.h"
+#include <string>
 
 constexpr LPCTSTR CREDENTIALPROVIDER = MS_ENH_RSA_AES_PROV;
 constexpr DWORD CREDENTIALKEYLENGTH = 256;
 constexpr ALG_ID CREDENTIALCRYPTALG = CALG_AES_256;
 constexpr LPCWSTR CREDENTIAL_LSAPREFIX = L"L$_EID_";
-constexpr LPCTSTR CREDENTIAL_CONTAINER = TEXT("EIDCredential");
+constexpr LPCWSTR CREDENTIAL_CONTAINER = L"EIDCredential";
 
 #pragma comment(lib,"Crypt32")
 #pragma comment(lib,"advapi32")
@@ -1123,7 +1125,7 @@ BOOL CStoredCredentialManager::GetResponseFromSignatureChallenge(__in PBYTE pbCh
 	HCRYPTHASH hHash = NULL;  // Windows handle type - keep as NULL
 	DWORD dwPinLen = 0;
 	DWORD dwError = 0;
-	LPCTSTR sDescription = TEXT("");
+	LPCWSTR sDescription = L"";
 	PCRYPT_KEY_PROV_INFO pKeyProvInfo = nullptr;
 	__try
 	{
@@ -1633,7 +1635,7 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 			__leave;
 		}
 
-		if (!CryptVerifySignature(hHash, pResponse, dwResponseSize, hKey, TEXT(""), 0))
+		if (!CryptVerifySignature(hHash, pResponse, dwResponseSize, hKey, L"", 0))
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%x returned by CryptVerifySignature", GetLastError());
@@ -1777,7 +1779,7 @@ BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD 
 			__leave;
 		}
 
-		if (!CryptVerifySignature(hHash, pResponse, dwResponseSize, hKey, TEXT(""), 0))
+		if (!CryptVerifySignature(hHash, pResponse, dwResponseSize, hKey, L"", 0))
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%x returned by CryptVerifySignature", GetLastError());
@@ -1923,7 +1925,7 @@ BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid
 			__leave;
 		}
 
-		if (!CryptVerifySignature(hHash, pResponse, dwResponseSize, hKey, TEXT(""), 0))
+		if (!CryptVerifySignature(hHash, pResponse, dwResponseSize, hKey, L"", 0))
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%x returned by CryptVerifySignature", GetLastError());
@@ -2252,7 +2254,7 @@ SamIFree_SAMPR_USER_INFO_BUFFER MySamIFree;
 
 NTSTATUS LoadSamSrv()
 {
-	samsrvDll = EIDLoadSystemLibrary(TEXT("samsrv.dll"));
+	samsrvDll = EIDLoadSystemLibrary(L"samsrv.dll");
 	if (!samsrvDll)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"LoadSam failed 0x%08x",GetLastError());
