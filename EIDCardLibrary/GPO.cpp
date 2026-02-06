@@ -22,7 +22,7 @@
 #include <tchar.h>
 // needed to avoid LNK2001 with the gpedit.h file (IID_IGroupPolicyObject)
 #include <initguid.h>
-#include <Gpedit.h>
+#include <gpedit.h>
 #include "GPO.h"
 #include "Tracing.h"
 

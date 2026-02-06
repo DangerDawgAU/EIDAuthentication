@@ -6,8 +6,8 @@
 #include <tchar.h>
 #include <wmistr.h>
 #include <evntrace.h>
-#include <Shobjidl.h>
-#include <Shlobj.h>
+#include <shobjidl.h>
+#include <shlobj.h>
 #include "../EIDCardLibrary/Registration.h"
 #include "../EIDCardLibrary/Tracing.h"
 
@@ -169,8 +169,7 @@ void ExportOneTraceFile(PTSTR szTraceFile)
 	ULONG rc;
 	EVENT_TRACE_LOGFILE trace;
 	memset(&trace,0, sizeof(EVENT_TRACE_LOGFILE));
-	trace.LoggerName = TEXT("EIDCredentialProvider"); 
-	//trace.LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
+	trace.LoggerName = TEXT("EIDCredentialProvider");
 	trace.LogFileName = szTraceFile;
 	trace.EventCallback = (PEVENT_CALLBACK) (ProcessEvents);
 	handle = OpenTrace(&trace);

@@ -1,7 +1,7 @@
 
 #include <windows.h>
 #include <tchar.h>
-#include <credentialProvider.h>
+#include <credentialprovider.h>
 #include "global.h"
 #include "EIDConfigurationWizard.h"
 #include "../EIDCardLibrary/CContainer.h"

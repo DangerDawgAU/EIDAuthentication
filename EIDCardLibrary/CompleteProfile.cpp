@@ -25,11 +25,11 @@
 #define SECURITY_WIN32
 #include <sspi.h>
 
-#include <Ntsecapi.h>
-#include <NtSecPkg.h>
-#include <SubAuth.h>
+#include <ntsecapi.h>
+#include <ntsecpkg.h>
+#include <subauth.h>
 #include <lm.h>
-#include <Sddl.h>
+#include <sddl.h>
 
 #include "Tracing.h"
 #include "EIDCardLibrary.h"

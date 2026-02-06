@@ -21,14 +21,14 @@
 #include <windows.h>
 #include <tchar.h>
 #include <stdio.h>
-#include <Evntprov.h>
+#include <evntprov.h>
 #include <crtdbg.h>
-#include <Wmistr.h>
-#include <Evntrace.h>
+#include <wmistr.h>
+#include <evntrace.h>
 // load lib on the Vista tracing function
-#include <DelayImp.h>
+#include <delayimp.h>
 #define _CRTDBG_MAPALLOC
-#include <Dbghelp.h>
+#include <dbghelp.h>
 #include <winhttp.h>
 
 #include "EIDCardLibrary.h"
@@ -61,7 +61,7 @@ static BOOL g_csTraceInitialized = FALSE;
 
 BOOL LookUpErrorMessage(PWSTR buf, int cch, DWORD err)
 {
-	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, err, 0, buf, cch, 0)) {
+	if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, nullptr, err, 0, buf, cch, nullptr)) {
         return TRUE;
     }
     else 
@@ -209,7 +209,7 @@ void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR
 					// MiniDumpNormal captures only essential debugging info without sensitive data
 					BOOL fStatus = MiniDumpWriteDump(GetCurrentProcess(),
 										GetCurrentProcessId(),
-										fileHandle, MiniDumpNormal, (pExceptPtrs != 0) ? &dumpExceptionInfo: nullptr,nullptr,nullptr);
+										fileHandle, MiniDumpNormal, (pExceptPtrs != nullptr) ? &dumpExceptionInfo : nullptr, nullptr, nullptr);
 					if (!fStatus)
 					{
 						EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__,WINEVENT_LEVEL_WARNING,L"Unable to write minidump file 0x%08X", GetLastError());
@@ -346,7 +346,6 @@ BOOL StartLogging()
 		Properties.TraceProperties.LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES) + 1024;
 		Properties.TraceProperties.MaximumFileSize = 8;
 		_tcscpy_s(Properties.LogFileName,1024,TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl"));
-		//_tcscpy_s(Properties.LoggerName,1024,TEXT("EIDCredentialProvider"));
 		DeleteFile(Properties.LogFileName);
 		err = StartTrace(&SessionHandle, TEXT("EIDCredentialProvider"), &(Properties.TraceProperties));
 		if (err != ERROR_SUCCESS)

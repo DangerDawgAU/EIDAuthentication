@@ -5,8 +5,8 @@
 #include <assert.h>
 #define SECURITY_WIN32
 #include <sspi.h>
-#include <WinCred.h>
-#include <Ntsecapi.h>
+#include <wincred.h>
+#include <ntsecapi.h>
 #include <ntsecpkg.h>
 #include <lm.h>
 #include <set>

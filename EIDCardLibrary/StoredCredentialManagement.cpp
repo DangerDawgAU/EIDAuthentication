@@ -26,10 +26,10 @@
 #include <sspi.h>
 
 #include <shlobj.h>
-#include <Ntsecapi.h>
+#include <ntsecapi.h>
 #include <lm.h>
 
-#include <Ntsecpkg.h>
+#include <ntsecpkg.h>
 #include <strsafe.h>
 
 #include "EidCardLibrary.h"

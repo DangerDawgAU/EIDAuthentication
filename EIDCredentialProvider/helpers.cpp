@@ -32,7 +32,7 @@
 #include "../EIDCardLibrary/Tracing.h"
 #include "../EIDCardLibrary/Package.h"
 
-#include <CodeAnalysis/warnings.h>
+#include <codeanalysis/warnings.h>
 
 #pragma warning(push)
 #pragma warning(disable : 4995)

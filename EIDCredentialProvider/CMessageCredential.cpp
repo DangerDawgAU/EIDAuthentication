@@ -27,7 +27,7 @@
 #include "../EIDCardLibrary/GPO.h"
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 
-#include <CodeAnalysis/warnings.h>
+#include <codeanalysis/warnings.h>
 #pragma warning(push)
 #pragma warning(disable : 4995)
 #include <shlwapi.h>
