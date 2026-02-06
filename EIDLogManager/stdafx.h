@@ -9,7 +9,7 @@
 
 #define WIN32_LEAN_AND_MEAN             // Exclure les en-t�tes Windows rarement utilis�s
 // Fichiers d'en-t�te Windows�:
-#include <windows.h>
+#include <Windows.h>
 
 // Fichiers d'en-t�te C RunTime
 #include <stdlib.h>

@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include <windows.h>
+#include <Windows.h>
 #include <credentialprovider.h>
 #include "helpers.h"
 

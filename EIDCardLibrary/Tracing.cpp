@@ -18,7 +18,7 @@
 */
 
 
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
 #include <stdio.h>
 #include <evntprov.h>
@@ -28,7 +28,7 @@
 // load lib on the Vista tracing function
 #include <delayimp.h>
 #define _CRTDBG_MAPALLOC
-#include <dbghelp.h>
+#include <DbgHelp.h>
 #include <winhttp.h>
 
 #include "EIDCardLibrary.h"

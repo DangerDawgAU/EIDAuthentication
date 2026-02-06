@@ -22,7 +22,7 @@
 // for GetSerialization.
 
 #pragma once
-#include <windows.h>
+#include <Windows.h>
 #include "common.h"
 #include "../EIDCardLibrary/Tracing.h"
 

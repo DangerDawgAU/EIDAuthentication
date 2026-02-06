@@ -18,11 +18,11 @@
 */
 
 
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
-#include <cryptuiapi.h>
-#include <accctrl.h>
-#include <aclapi.h>
+#include <CryptUIApi.h>
+#include <AccCtrl.h>
+#include <AclAPI.h>
 #include "EIDCardLibrary.h"
 #include "CertificateUtilities.h"
 #include "Tracing.h"

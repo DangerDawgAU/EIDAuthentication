@@ -1,5 +1,5 @@
-#include <windows.h>
-#include <commctrl.h>
+#include <Windows.h>
+#include <CommCtrl.h>
 
 #include "../EIDCardLibrary/CContainer.h"
 #include "../EIDCardLibrary/CContainerHolderFactory.h"

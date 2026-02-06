@@ -27,16 +27,16 @@
 #include "EIDCredentialProvider.h"
 #include <intsafe.h>
 #include <wincred.h>
-#include <lm.h>
+#include <LM.h>
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/Tracing.h"
 #include "../EIDCardLibrary/Package.h"
 
-#include <codeanalysis/warnings.h>
+#include <CodeAnalysis/Warnings.h>
 
 #pragma warning(push)
 #pragma warning(disable : 4995)
-#include <shlwapi.h>
+#include <Shlwapi.h>
 #pragma warning(pop)
 #pragma warning(push)
 #pragma warning(disable : 4995)

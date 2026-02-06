@@ -1,4 +1,4 @@
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "EIDConfigurationWizardElevated.h"

@@ -20,15 +20,15 @@
 
 #include <ntstatus.h>
 #define WIN32_NO_STATUS
-#include <windows.h>
+#include <Windows.h>
 
 #define SECURITY_WIN32
 #include <sspi.h>
 
-#include <ntsecapi.h>
-#include <ntsecpkg.h>
-#include <subauth.h>
-#include <lm.h>
+#include <NTSecAPI.h>
+#include <NTSecPKG.h>
+#include <SubAuth.h>
+#include <LM.h>
 #include <sddl.h>
 
 #include "Tracing.h"

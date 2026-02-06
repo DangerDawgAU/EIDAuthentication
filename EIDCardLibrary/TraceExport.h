@@ -18,7 +18,7 @@
 */
 
 #pragma once
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
 
 void ExportOneTraceFile(HANDLE hOutputFile, PTSTR szTraceFile);

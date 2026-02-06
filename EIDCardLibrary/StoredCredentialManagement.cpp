@@ -20,16 +20,16 @@
 
 #include <ntstatus.h>
 #define WIN32_NO_STATUS
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
 #define SECURITY_WIN32
 #include <sspi.h>
 
 #include <shlobj.h>
-#include <ntsecapi.h>
-#include <lm.h>
+#include <NTSecAPI.h>
+#include <LM.h>
 
-#include <ntsecpkg.h>
+#include <NTSecPKG.h>
 #include <strsafe.h>
 
 #include "EidCardLibrary.h"

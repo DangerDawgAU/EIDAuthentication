@@ -22,15 +22,15 @@
 
 #include "CMessageCredential.h"
 #include "EIDCredentialProvider.h"
-#include <unknwn.h>
+#include <Unknwn.h>
 #include "../EIDCardLibrary/guid.h"
 #include "../EIDCardLibrary/GPO.h"
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 
-#include <codeanalysis/warnings.h>
+#include <CodeAnalysis/Warnings.h>
 #pragma warning(push)
 #pragma warning(disable : 4995)
-#include <shlwapi.h>
+#include <Shlwapi.h>
 #pragma warning(pop)
 
 // CMessageCredential ////////////////////////////////////////////////////////

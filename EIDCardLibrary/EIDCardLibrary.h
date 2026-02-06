@@ -26,7 +26,7 @@
 #pragma warning(push)
 #pragma warning(disable:4005)
 
-#include <ntsecapi.h>
+#include <NTSecAPI.h>
 
 constexpr const char* AUTHENTICATIONPACKAGENAME = "EIDAuthenticationPackage";
 constexpr const wchar_t* AUTHENTICATIONPACKAGENAMEW = L"EIDAuthenticationPackage";

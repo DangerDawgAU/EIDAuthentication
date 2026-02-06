@@ -1,5 +1,5 @@
 
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
 #include <credentialprovider.h>
 #include "global.h"

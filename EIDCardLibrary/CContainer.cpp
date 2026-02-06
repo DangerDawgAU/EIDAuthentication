@@ -18,9 +18,9 @@
 */
 
 
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
-#include <cryptuiapi.h>
+#include <CryptUIApi.h>
 
 #include "EIDCardLibrary.h"
 #include "Tracing.h"

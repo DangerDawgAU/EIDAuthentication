@@ -4,7 +4,7 @@
 #include "stdafx.h"
 #include "EIDLogManager.h"
 #include <tchar.h>
-#include <shobjidl.h>
+#include <ShObjIdl.h>
 #include <shlobj.h>
 #include "../EIDCardLibrary/Registration.h"
 #include "../EIDCardLibrary/Tracing.h"

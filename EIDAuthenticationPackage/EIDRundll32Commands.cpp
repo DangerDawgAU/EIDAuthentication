@@ -18,8 +18,8 @@
 */
 
 
-#include <windows.h>
-#include <msiquery.h>
+#include <Windows.h>
+#include <MsiQuery.h>
 
 #pragma comment(lib,"Msi.lib")
 

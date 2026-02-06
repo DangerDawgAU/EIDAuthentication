@@ -18,7 +18,7 @@
 */
 
 
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
 #define SECURITY_WIN32
 #include <sspi.h>

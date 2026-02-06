@@ -23,7 +23,7 @@
 #pragma once
 #include <ntstatus.h>
 #define WIN32_NO_STATUS
-#include <windows.h>
+#include <Windows.h>
 
 #include "helpers.h"
 #include "dll.h"

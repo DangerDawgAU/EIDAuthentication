@@ -23,23 +23,23 @@
 
 #include <ntstatus.h>
 #define WIN32_NO_STATUS
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
 #include <intsafe.h>
 #include <wincred.h>
-#include <lm.h>
+#include <LM.h>
 
-#include <ntsecapi.h>
+#include <NTSecAPI.h>
 #define SECURITY_WIN32
 #include <sspi.h>
-#include <ntsecpkg.h>
-#include <wtsapi32.h>
+#include <NTSecPKG.h>
+#include <WtsApi32.h>
 #include <security.h>
 
-#include <codeanalysis/warnings.h>
+#include <CodeAnalysis/Warnings.h>
 #pragma warning(push)
 #pragma warning(disable : 4995)
-#include <shlwapi.h>
+#include <Shlwapi.h>
 #pragma warning(pop)
 #pragma warning(push)
 #pragma warning(disable : 4995)

@@ -1,6 +1,6 @@
 #include <ntstatus.h>
 #define WIN32_NO_STATUS 1
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
 #include <strsafe.h>
 #pragma warning(push)
