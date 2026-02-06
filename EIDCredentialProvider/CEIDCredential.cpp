@@ -63,7 +63,7 @@ CEIDCredential::~CEIDCredential()
     {
         // CoTaskMemFree (below) deals with NULL, but StringCchLength does not.
         size_t lenPin;
-        HRESULT hr = StringCchLengthW(_rgFieldStrings[SFI_PIN], 128, &(lenPin));
+        HRESULT hr = StringCchLengthW(_rgFieldStrings[SFI_PIN], 128, &lenPin);
         if (SUCCEEDED(hr))
         {
             SecureZeroMemory(_rgFieldStrings[SFI_PIN], lenPin * sizeof(*_rgFieldStrings[SFI_PIN]));
@@ -193,7 +193,7 @@ HRESULT CEIDCredential::SetDeselected()
     {
         // CoTaskMemFree (below) deals with NULL, but StringCchLength does not.
         size_t lenPin;
-        hr = StringCchLengthW(_rgFieldStrings[SFI_PIN], 128, &(lenPin));
+        hr = StringCchLengthW(_rgFieldStrings[SFI_PIN], 128, &lenPin);
         if (SUCCEEDED(hr))
         {
             SecureZeroMemory(_rgFieldStrings[SFI_PIN], lenPin * sizeof(*_rgFieldStrings[SFI_PIN]));
@@ -502,7 +502,7 @@ HRESULT EIDUnlockLogonInit(
             if (SUCCEEDED(hr))
             {
                 // Set a MessageType based on the usage scenario.
-                pkil->MessageType = EID_INTERACTIVE_LOGON_SUBMIT_TYPE_VANILLIA;
+                pkil->MessageType = EID_INTERACTIVE_LOGON_SUBMIT_TYPE_VANILLA;
     pkil->CspDataLength = 0;
     pkil->CspData = nullptr;
     pkil->Flags = 0;

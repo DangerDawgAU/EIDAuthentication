@@ -322,7 +322,7 @@ BOOL CContainerHolderFactory<T>::CreateItemFromCertificateBlob(__in HCRYPTPROV h
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetUsernameFromRid 0x%08x",dwError);
 				__leave;
 			}
-			if (((_dwFlags & CREDUIWIN_ENUMERATE_CURRENT_USER) || (_cpus == CPUS_UNLOCK_WORKSTATION)))
+			if ((_dwFlags & CREDUIWIN_ENUMERATE_CURRENT_USER) || (_cpus == CPUS_UNLOCK_WORKSTATION))
 			{
 				fSuccess = IsCurrentUser(szUsername);
 				if (!fSuccess)
@@ -332,7 +332,7 @@ BOOL CContainerHolderFactory<T>::CreateItemFromCertificateBlob(__in HCRYPTPROV h
 					__leave;
 				}
 			}
-			if ((_dwFlags & CREDUIWIN_ENUMERATE_ADMINS))
+			if (_dwFlags & CREDUIWIN_ENUMERATE_ADMINS)
 			{
 				fSuccess = IsAdmin(szUsername);
 				if (!fSuccess)
@@ -355,9 +355,9 @@ BOOL CContainerHolderFactory<T>::CreateItemFromCertificateBlob(__in HCRYPTPROV h
 	__finally
 	{
 		if (szUsername) EIDFree(szUsername);
-		if (!fReturn)
+		if (!fReturn && pCertContext)
 		{
-			if (pCertContext) CertFreeCertificateContext(pCertContext);
+			CertFreeCertificateContext(pCertContext);
 		}
 	}
 	SetLastError(dwError);

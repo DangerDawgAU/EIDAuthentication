@@ -168,7 +168,7 @@ void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR
 		EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__,WINEVENT_LEVEL_WARNING,L"New Exception");
 		if (fMustCrash)
 		{
-			// crash on debug to allow kernel debugger to break were the exception was triggered 
+			// crash on debug to allow kernel debugger to break where the exception was triggered
 			return EXCEPTION_CONTINUE_SEARCH;
 		}
 		else

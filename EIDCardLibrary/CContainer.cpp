@@ -135,13 +135,10 @@ PTSTR CContainer::GetUserName()
 	{
 		if (pKeyProvInfo)
 			EIDFree(pKeyProvInfo);
-		if (!fReturn)
+		if (!fReturn && _szUserName)
 		{
-			if (_szUserName)
-			{
-				EIDFree(_szUserName);
-				_szUserName = nullptr;
-			}
+			EIDFree(_szUserName);
+			_szUserName = nullptr;
 		}
 	}
 	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"GetUserNameFromCertificate = %s",_szUserName);
@@ -417,7 +414,7 @@ PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSi
 						+ wcslen(_szProviderName)+1
 						+ wcslen(_szReaderName)+1);
 		DWORD dwCspDataLength = sizeof(EID_SMARTCARD_CSP_INFO)
-						+ (dwCspBufferLength) * sizeof(WCHAR);
+						+ dwCspBufferLength * sizeof(WCHAR);
 		dwTotalSize = (DWORD) (sizeof(EID_INTERACTIVE_LOGON) 
 						+ wcslen(szUserName) * sizeof(WCHAR)
 						+ wcslen(szDomainName) * sizeof(WCHAR)
@@ -431,7 +428,7 @@ PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSi
 			__leave;
 		}
 		memset(pRequest, 0, dwTotalSize);
-		pRequest->MessageType = EID_INTERACTIVE_LOGON_SUBMIT_TYPE_VANILLIA;
+		pRequest->MessageType = EID_INTERACTIVE_LOGON_SUBMIT_TYPE_VANILLA;
 		pRequest->Flags = 0;
 		_ASSERTE( _CrtCheckMemory( ) );
 		PVOID pPointer = (PUCHAR) pRequest + sizeof(EID_INTERACTIVE_LOGON);
@@ -481,7 +478,7 @@ PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSi
 		pRequest->UserName.Buffer = (PWSTR) ((PUCHAR) pRequest->UserName.Buffer - (ULONG_PTR) pRequest);
 		pRequest->LogonDomainName.Buffer = (PWSTR) ((PUCHAR) pRequest->LogonDomainName.Buffer - (ULONG_PTR) pRequest);
 		pRequest->CspData = (pRequest->CspData - (ULONG_PTR) pRequest);
-		// sucess !
+		// success !
 		_ASSERTE( _CrtCheckMemory( ) );
 		pReturn = pRequest;
 		if (pdwSize) *pdwSize = dwTotalSize;

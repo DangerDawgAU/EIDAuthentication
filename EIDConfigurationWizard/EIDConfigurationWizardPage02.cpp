@@ -221,26 +221,35 @@ INT_PTR CALLBACK	WndProc_02ENABLE(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				}
 			}
 			break;
+		default:
+			break;
 		}
 		break;
 	case WM_NOTIFY :
-        LPNMHDR pnmh = (LPNMHDR)lParam;
-        switch(pnmh->code)
-        {
-			case PSN_SETACTIVE :
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Activate");
-				//this is an interior page
-				PropSheet_SetWizButtons(hWnd, 0);
-				break;
-			case NM_CLICK:
-			case NM_RETURN:
-				{
-					PNMLINK pNMLink = (PNMLINK)lParam;
+		{
+			LPNMHDR pnmh = (LPNMHDR)lParam;
+			switch(pnmh->code)
+			{
+				case PSN_SETACTIVE :
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Activate");
+					//this is an interior page
+					PropSheet_SetWizButtons(hWnd, 0);
+					break;
+				case NM_CLICK:
+				case NM_RETURN:
+					{
+						PNMLINK pNMLink = (PNMLINK)lParam;
 						LITEM item = pNMLink->item;
 						// Online database link removed - internet functionality disabled
 						break;
-				}
+					}
+				default:
+					break;
+			}
+			break;
 		}
+	default:
+		break;
     }
 	return FALSE;
 }

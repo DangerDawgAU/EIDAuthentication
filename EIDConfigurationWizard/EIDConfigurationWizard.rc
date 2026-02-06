@@ -181,7 +181,7 @@ IDD_06TESTRESULTOK DIALOGEX 0, 0, 273, 209
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 FONT 9, "Segoe UI", 0, 0, 0x0
 BEGIN
-    LTEXT           "The test was successfull. You can now use your smartcard to logon.",IDC_STC7,40,16,228,22
+    LTEXT           "The test was successful. You can now use your smart card to logon.",IDC_STC7,40,16,228,22
     ICON            "",IDC_06SHIELD,10,10,20,20
 END
 
@@ -189,7 +189,7 @@ IDD_07TESTRESULTNOTOK DIALOGEX 0, 0, 273, 209
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 FONT 9, "Segoe UI", 0, 0, 0x0
 BEGIN
-    LTEXT           "The test was unsuccessfull. You can run the test again.",IDC_STC6,39,6,211,22
+    LTEXT           "The test was unsuccessful. You can run the test again.",IDC_STC6,39,6,211,22
     LTEXT           "Error description",IDC_WIZARDERROR,39,41,225,33
     LTEXT           "Detail :",IDC_STATIC,39,27,105,9
     ICON            "",IDC_07SHIELD,10,10,20,20
@@ -231,7 +231,7 @@ BEGIN
     IDS_04CHANGESIGNATUREPOLICY "Change the windows policy"
     IDS_AREYOUSURE          "Are you sure ?"
     IDS_EIDNOTAVAILABLE     "Authentication package not available"
-    IDS_TITLE0              "Credential managment"
+    IDS_TITLE0              "Credential management"
     IDS_TITLE1              "Configure smart card logon"
     IDS_TITLE2              "Configure a smart card"
     IDS_TITLE3              "Check the status of the smart card"
@@ -274,7 +274,7 @@ BEGIN
     IDS_02EXISTINGNOTE      "Choose this option if you want to use a smart card already configured"
     IDS_02NEWNOTE           "Choose this option if you are using a blank smart card"
     IDS_TITLE5              "Test result"
-    IDS_CHECKDRIVERONLINE   "EIDAuthenticate detected that the smart card you provided (ATR: %s) don't have a driver. Would you like to check our online database for solutions ?"
+    IDS_CHECKDRIVERONLINE   "EIDAuthenticate detected that the smart card you provided (ATR: %s) doesn't have a driver. Would you like to check our online database for solutions ?"
     IDS_TURNREMOVALPOLICY   "Turn the removal policy on or off"
     IDS_TURNFORCEPOLICY     "Turn the force smart card policy on or off"
 END

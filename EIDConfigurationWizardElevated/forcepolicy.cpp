@@ -36,7 +36,12 @@ INT_PTR CALLBACK WndProc_ForcePolicy(HWND hWnd, UINT message, WPARAM wParam, LPA
 		case IDCANCEL:
 			EndDialog(hWnd, 0);
 			return TRUE;
+		default:
+			break;
 		}
+		break;
+	default:
+		break;
 	}
 	return FALSE;
 }

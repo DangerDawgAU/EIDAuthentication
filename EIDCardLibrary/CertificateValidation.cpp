@@ -143,13 +143,10 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 	}
 	__finally
 	{
-		if (!fSuccess)
+		if (!fSuccess && pCertContext)
 		{
-			if (pCertContext) 
-			{
-				CertFreeCertificateContext(pCertContext);
-				pCertContext = nullptr;
-			}
+			CertFreeCertificateContext(pCertContext);
+			pCertContext = nullptr;
 		}
 		if (phUserKey)
 			CryptDestroyKey(phUserKey);

@@ -224,7 +224,7 @@ HRESULT UnicodeStringInitWithString(
     if (pwz)
     {
         size_t lenString;
-        hr = StringCchLengthW(pwz, USHORT_MAX, &(lenString));
+        hr = StringCchLengthW(pwz, USHORT_MAX, &lenString);
 
         if (SUCCEEDED(hr))
         {
@@ -895,7 +895,7 @@ BOOL LsaEIDCreateStoredCredential(__in_opt PWSTR szUsername, __in PWSTR szPasswo
 		pBuffer->dwCertificateSize = (USHORT) pContext->cbCertEncoded;
 		pBuffer->fEncryptPassword = fEncryptPassword;
 
-		pBuffer->pbCertificate = (PBYTE) pPointer;
+		pBuffer->pbCertificate = pPointer;
 		memcpy(pPointer, pContext->pbCertEncoded, pBuffer->dwCertificateSize);
 		pPointer += pBuffer->dwCertificateSize;
 	
@@ -989,7 +989,7 @@ DWORD LsaEIDGetRIDFromStoredCredential(__in PCCERT_CONTEXT pContext)
 		pBuffer->szPassword = nullptr;
 		pBuffer->dwCertificateSize = (USHORT) pContext->cbCertEncoded;
 		pPointer = (PBYTE) &(pBuffer[1]);
-		pBuffer->pbCertificate = (PBYTE) pPointer;
+		pBuffer->pbCertificate = pPointer;
 		memcpy(pPointer, pContext->pbCertEncoded, pContext->cbCertEncoded);
 		pPointer += pContext->cbCertEncoded;
 	
