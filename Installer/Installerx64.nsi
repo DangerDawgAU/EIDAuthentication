@@ -44,6 +44,10 @@
   !insertmacro MUI_LANGUAGE "English"
   !insertmacro MUI_LANGUAGE "French"
 
+;--------------------------------
+;Variables for size calculation
+
+  Var /GLOBAL InstallSize
 
 ;--------------------------------
 ;Installer Sections
@@ -51,21 +55,42 @@
 Section "Core" SecCore
   SectionIn RO
 
+  ; Initialize install size counter
+  StrCpy $InstallSize 0
+
   ; Create installation directory
   SetOutPath "$INSTDIR"
 
   ; Install DLL files to Program Files
   FILE "..\x64\Release\EIDAuthenticationPackage.dll"
+  Push "$INSTDIR\EIDAuthenticationPackage.dll"
+  Call AddFileSize
+
   FILE "..\x64\Release\EIDCredentialProvider.dll"
+  Push "$INSTDIR\EIDCredentialProvider.dll"
+  Call AddFileSize
+
   FILE "..\x64\Release\EIDPasswordChangeNotification.dll"
+  Push "$INSTDIR\EIDPasswordChangeNotification.dll"
+  Call AddFileSize
 
   ; Install all executable files
   FILE "..\x64\Release\EIDConfigurationWizard.exe"
+  Push "$INSTDIR\EIDConfigurationWizard.exe"
+  Call AddFileSize
+
   FILE "..\x64\Release\EIDConfigurationWizardElevated.exe"
+  Push "$INSTDIR\EIDConfigurationWizardElevated.exe"
+  Call AddFileSize
+
   FILE "..\x64\Release\EIDLogManager.exe"
+  Push "$INSTDIR\EIDLogManager.exe"
+  Call AddFileSize
 
   ; Install support files
   FILE "CleanupCertificates.ps1"
+  Push "$INSTDIR\CleanupCertificates.ps1"
+  Call AddFileSize
 
   ; Copy DLLs to System32 (required for LSA and Credential Provider)
   ${DisableX64FSRedirection}
@@ -96,6 +121,12 @@ Section "Core" SecCore
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "Publisher" "EID Authentication"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "NoRepair" 1
+
+  ; Convert total install size from bytes to KB and write to registry
+  IntOp $InstallSize $InstallSize / 1024
+  ; Add ~100 KB for uninstaller and directory structures
+  IntOp $InstallSize $InstallSize + 100
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "EstimatedSize" $InstallSize
 
   ; Register authentication package (from System32)
   ExecWait 'rundll32.exe "$SYSDIR\EIDAuthenticationPackage.dll",DllRegister'
@@ -228,6 +259,29 @@ Section "Uninstall"
 
 SectionEnd
 
+;--------------------------------
+;Helper function to calculate file size and add to total
+
+Function AddFileSize
+  ; This function receives a file path on the stack
+  ; Adds the file size to the $InstallSize variable
+
+  Pop $0  ; File path
+
+  ; Get file size by opening and seeking to end
+  FileOpen $1 $0 "r"
+
+  ${If} $1 != ""
+    FileSeek $1 0 END $2  ; Seek to end, get position (file size in bytes)
+    FileClose $1
+
+    ; Add file size to running total
+    IntOp $InstallSize $InstallSize + $2
+  ${EndIf}
+FunctionEnd
+
+;--------------------------------
+;Initializer function
 
 Function .onInit
   ${If} ${RunningX64}
