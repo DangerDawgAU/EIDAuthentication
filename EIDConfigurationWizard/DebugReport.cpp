@@ -3,6 +3,7 @@
 #include <wincred.h>
 #include <NTSecAPI.h>
 #include <random>
+#include <string>
 
 #include "global.h"
 #include "EIDConfigurationWizard.h"
@@ -11,11 +12,16 @@
 #include "../EIDCardLibrary/TraceExport.h"
 #include "../EIDCardLibrary/Package.h"
 #include "../EIDCardLibrary/Tracing.h"
+#include "../EIDCardLibrary/StringConversion.h"
 // OnlineDatabase.h removed - internet reporting functionality disabled
 #include "../EIDCardLibrary/EIDAuthenticateVersion.h"
 
 #include "../EIDCardLibrary/CContainer.h"
+#include "../EIDCardLibrary/StringConversion.h"
+#include <string>
 #include "../EIDCardLibrary/CContainerHolderFactory.h"
+#include "../EIDCardLibrary/StringConversion.h"
+#include <string>
 
 #include "CContainerHolder.h"
 #pragma comment(lib,"Credui")
@@ -43,9 +49,9 @@ BOOL TestLogon(HWND hMainWnd)
 	RetrieveNegotiateAuthPackage(&authPackage);
 	
 	CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
-	TCHAR szTitle[256] = TEXT("");
-	TCHAR szMessage[256] = TEXT("");
-	TCHAR szCaption[256] = TEXT("");
+	TCHAR szTitle[256] = L"";
+	TCHAR szMessage[256] = L"";
+	TCHAR szCaption[256] = L"";
 	LoadString(g_hinst, IDS_05CREDINFOCAPTION, szCaption, ARRAYSIZE(szCaption));
 	credUiInfo.pszCaptionText = szCaption;
 	credUiInfo.pszMessageText = szMessage;
@@ -200,7 +206,7 @@ BOOL CreateDebugReport(PTSTR szLogFile)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
-	TCHAR szNamedPipeName[256] = TEXT("\\\\.\\pipe\\EIDAuthenticateWizard");
+	TCHAR szNamedPipeName[256] = L"\\\\.\\pipe\\EIDAuthenticateWizard";
 	HANDLE hNamedPipe = INVALID_HANDLE_VALUE;
 	TCHAR szParameter[356];
 	DWORD dwWrite;
@@ -233,7 +239,7 @@ BOOL CreateDebugReport(PTSTR szLogFile)
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CreateNamedPipe 0x%08X", GetLastError());
 			__leave;
 		}
-		_stprintf_s(szParameter,ARRAYSIZE(szParameter),TEXT("REPORT %s"),szNamedPipeName);
+		_stprintf_s(szParameter,ARRAYSIZE(szParameter),L"REPORT %s",szNamedPipeName);
 		// launch the wizard elevated
 		SHELLEXECUTEINFO shExecInfo;
 		TCHAR szName[1024];
@@ -242,7 +248,7 @@ BOOL CreateDebugReport(PTSTR szLogFile)
 		shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 		shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 		shExecInfo.hwnd = nullptr;
-		shExecInfo.lpVerb = TEXT("runas");
+		shExecInfo.lpVerb = L"runas";
 		shExecInfo.lpFile = szName;
 		// sending the named pipe name so the other process can connect
 		shExecInfo.lpParameters = szParameter;
@@ -271,7 +277,7 @@ BOOL CreateDebugReport(PTSTR szLogFile)
 			Sleep(1000);
 			// send to the process the order to stop
 			// an empty line will do it
-			WriteFile(hNamedPipe,TEXT("\n"),2 * sizeof(TCHAR),nullptr,nullptr);
+			WriteFile(hNamedPipe,L"\n",2 * sizeof(TCHAR),nullptr,nullptr);
 			DisconnectNamedPipe(hNamedPipe);
 			// then wait to its stop to have the file (if we don't, the file can be not written)
 			if (WaitForSingleObject(shExecInfo.hProcess, INFINITE) == WAIT_OBJECT_0)
@@ -344,7 +350,7 @@ VOID CreateReport(PTSTR szNamedPipeName)
 		// disable the logging
 		StopLogging();
 		// get the text
-		ExportOneTraceFile(hInternalLogWriteHandle, TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl"));
+		ExportOneTraceFile(hInternalLogWriteHandle, L"c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl");
 	}
 	__finally
 	{

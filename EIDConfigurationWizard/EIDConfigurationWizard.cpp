@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <tchar.h>
 #include <credentialprovider.h>
+#include <string>
 
 #include "EIDConfigurationWizard.h"
 #include "global.h"
@@ -12,8 +13,8 @@
 #include "../EIDCardLibrary/CertificateUtilities.h"
 #include "../EIDCardLibrary/CertificateValidation.h"
 #include "../EIDCardLibrary/GPO.h"
-
 #include "../EIDCardLibrary/CommonManifest.h"
+#include "../EIDCardLibrary/StringConversion.h"
 
 INT_PTR CALLBACK	WndProc_01MAIN(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	WndProc_02ENABLE(HWND, UINT, WPARAM, LPARAM);
@@ -46,17 +47,15 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	// check that the authentication package is loaded
 	if (!IsEIDPackageAvailable())
 	{
-		TCHAR szMessage[256] = TEXT("");
-		LoadString(g_hinst,IDS_EIDNOTAVAILABLE, szMessage, ARRAYSIZE(szMessage));
-		MessageBox(nullptr,szMessage,TEXT("Error"),MB_ICONERROR);
+		std::wstring szMessage = EID::LoadStringW(g_hinst, IDS_EIDNOTAVAILABLE);
+		MessageBox(nullptr, szMessage.c_str(), L"Error", MB_ICONERROR);
 		return -1;
 	}
 	// check that the user is not connected to a domain
 	if (IsCurrentUserBelongToADomain())
 	{
-		TCHAR szMessage[2000] = TEXT("");
-		LoadString(g_hinst,IDS_NODOMAINACCOUNT, szMessage, ARRAYSIZE(szMessage));
-		MessageBox(nullptr,szMessage,TEXT("Error"),MB_ICONERROR);
+		std::wstring szMessage = EID::LoadStringW(g_hinst, IDS_NODOMAINACCOUNT);
+		MessageBox(nullptr, szMessage.c_str(), L"Error", MB_ICONERROR);
 		return -1;
 	}
 	g_hinst = hInstance;
@@ -69,7 +68,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	if (iNumArgs >= 1)
 	{
 		
-		if (_tcscmp(pszCommandLine[0],TEXT("NEW_USERNAME")) == 0)
+		if (_tcscmp(pszCommandLine[0],L"NEW_USERNAME") == 0)
 		{
 			fGotoNewScreen = TRUE;
 			if (iNumArgs > 1)
@@ -77,22 +76,22 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 				_tcscpy_s(szUserName,dwUserNameSize, pszCommandLine[1]);
 			}
 		}
-		else if (_tcscmp(pszCommandLine[0],TEXT("ENABLESIGNATUREONLY")) == 0)
+		else if (_tcscmp(pszCommandLine[0],L"ENABLESIGNATUREONLY") == 0)
 		{
 			SetPolicyValue(AllowSignatureOnlyKeys, 1);
 			return 0;
 		}
-		else if (_tcscmp(pszCommandLine[0],TEXT("ENABLENOEKU")) == 0)
+		else if (_tcscmp(pszCommandLine[0],L"ENABLENOEKU") == 0)
 		{
 			SetPolicyValue(AllowCertificatesWithNoEKU, 1);
 			return 0;
 		}
-		else if (_tcscmp(pszCommandLine[0],TEXT("ENABLETIMEINVALID")) == 0)
+		else if (_tcscmp(pszCommandLine[0],L"ENABLETIMEINVALID") == 0)
 		{
 			SetPolicyValue(AllowTimeInvalidCertificates, 1);
 			return 0;
 		}
-		else if (_tcscmp(pszCommandLine[0],TEXT("TRUST")) == 0)
+		else if (_tcscmp(pszCommandLine[0],L"TRUST") == 0)
 		{
 			if (iNumArgs < 2)
 			{
@@ -111,7 +110,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			EIDFree(pbCertificate);
 			return 0;
 		} 
-		else if(_tcscmp(pszCommandLine[0],TEXT("REPORT")) == 0)
+		else if(_tcscmp(pszCommandLine[0],L"REPORT") == 0)
 		{
 			if (iNumArgs < 2)
 			{
@@ -175,7 +174,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	psh.hIcon = nullptr;
 	psh.pszCaption = MAKEINTRESOURCE(IDS_CAPTION);
 
-	HMODULE hDll = EIDLoadSystemLibrary(TEXT("imageres.dll"));
+	HMODULE hDll = EIDLoadSystemLibrary(L"imageres.dll");
 	if (hDll)
 	{
 		psh.hIcon = LoadIcon(hDll, MAKEINTRESOURCE(58));

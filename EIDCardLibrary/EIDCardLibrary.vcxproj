@@ -167,6 +167,7 @@
     <ClCompile Include="Registration.cpp" />
     <ClCompile Include="smartcardmodule.cpp" />
     <ClCompile Include="StoredCredentialManagement.cpp" />
+    <ClCompile Include="StringConversion.cpp" />
     <ClCompile Include="Tracing.cpp" />
     <ClCompile Include="TraceExport.cpp" />
   </ItemGroup>
@@ -187,6 +188,7 @@
     <ClInclude Include="Registration.h" />
     <ClInclude Include="SmartCardModule.h" />
     <ClInclude Include="StoredCredentialManagement.h" />
+    <ClInclude Include="StringConversion.h" />
     <ClInclude Include="Tracing.h" />
     <ClInclude Include="TraceExport.h" />
   </ItemGroup>
