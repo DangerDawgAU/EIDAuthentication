@@ -449,7 +449,7 @@ BOOL Is64BitOS()
    BOOL bIs64BitOS = FALSE;
 
    // We check if the OS is 64 Bit
-   typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL); 
+   using LPFN_ISWOW64PROCESS = BOOL (WINAPI*)(HANDLE, PBOOL); 
 
    LPFN_ISWOW64PROCESS
       fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(GetModuleHandle(TEXT("kernel32")),"IsWow64Process");

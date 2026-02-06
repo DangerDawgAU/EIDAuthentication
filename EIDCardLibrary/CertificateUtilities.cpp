@@ -1240,7 +1240,7 @@ BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName)
 	return fReturn;
 }
 
-typedef struct _RSAPRIVATEKEY {
+struct RSAPRIVKEY {
 	BLOBHEADER blobheader;
 	RSAPUBKEY rsapubkey;
 #ifdef _DEBUG
@@ -1253,7 +1253,8 @@ typedef struct _RSAPRIVATEKEY {
 	BYTE coefficient[BITLEN_TO_CHECK/16];
 	BYTE privateExponent[BITLEN_TO_CHECK/8];
 #endif
-} RSAPRIVKEY, *PRSAPRIVKEY;
+};
+using PRSAPRIVKEY = RSAPRIVKEY*;
 
 
 BOOL CheckRSAKeyLength(PTSTR szContainerName, PTSTR szProviderName, RSAPRIVKEY* pbData)

@@ -1230,14 +1230,14 @@ BOOL CStoredCredentialManager::GetResponseFromSignatureChallenge(__in PBYTE pbCh
 }
 
 
-typedef struct _KEY_BLOB {
+struct KEY_BLOB {
   BYTE   bType;
   BYTE   bVersion;
   WORD   reserved;
   ALG_ID aiKeyAlg;
   ULONG cb;
   BYTE Data[CREDENTIALKEYLENGTH/8];
-} KEY_BLOB;
+};
 
 // create a symetric key which can be used to crypt data and
 // which is saved and protected by the public key
@@ -2170,34 +2170,35 @@ BOOL CStoredCredentialManager::HasStoredCredential(__in DWORD dwRid)
 //////////////////////////////////////////////////////////////
 
 
-typedef struct _ENCRYPTED_LM_OWF_PASSWORD {
+struct ENCRYPTED_LM_OWF_PASSWORD {
     unsigned char data[16];
-} ENCRYPTED_LM_OWF_PASSWORD,
-  *PENCRYPTED_LM_OWF_PASSWORD,
-  ENCRYPTED_NT_OWF_PASSWORD,
-  *PENCRYPTED_NT_OWF_PASSWORD;
+};
+using PENCRYPTED_LM_OWF_PASSWORD = ENCRYPTED_LM_OWF_PASSWORD*;
+using ENCRYPTED_NT_OWF_PASSWORD = ENCRYPTED_LM_OWF_PASSWORD;
+using PENCRYPTED_NT_OWF_PASSWORD = ENCRYPTED_NT_OWF_PASSWORD*;
 
-typedef struct _SAMPR_USER_INTERNAL1_INFORMATION {
+struct SAMPR_USER_INTERNAL1_INFORMATION {
     ENCRYPTED_NT_OWF_PASSWORD  EncryptedNtOwfPassword;
     ENCRYPTED_LM_OWF_PASSWORD  EncryptedLmOwfPassword;
     unsigned char              NtPasswordPresent;
     unsigned char              LmPasswordPresent;
     unsigned char              PasswordExpired;
-} SAMPR_USER_INTERNAL1_INFORMATION,
-  *PSAMPR_USER_INTERNAL1_INFORMATION;
+};
+using PSAMPR_USER_INTERNAL1_INFORMATION = SAMPR_USER_INTERNAL1_INFORMATION*;
 
-typedef enum _USER_INFORMATION_CLASS {
+enum USER_INFORMATION_CLASS {
     UserInternal1Information = 18,
-} USER_INFORMATION_CLASS, *PUSER_INFORMATION_CLASS;
+};
+using PUSER_INFORMATION_CLASS = USER_INFORMATION_CLASS*;
 
-typedef PSAMPR_USER_INTERNAL1_INFORMATION PSAMPR_USER_INFO_BUFFER;
+using PSAMPR_USER_INFO_BUFFER = PSAMPR_USER_INTERNAL1_INFORMATION;
 
-typedef WCHAR * PSAMPR_SERVER_NAME;
-typedef PVOID SAMPR_HANDLE;
+using PSAMPR_SERVER_NAME = WCHAR*;
+using SAMPR_HANDLE = PVOID;
 
 
 // opnum 0
-typedef NTSTATUS  (NTAPI *SamrConnect) (
+using SamrConnect = NTSTATUS (NTAPI*)(
     __in PSAMPR_SERVER_NAME ServerName,
     __out SAMPR_HANDLE * ServerHandle,
     __in DWORD DesiredAccess,
@@ -2205,12 +2206,12 @@ typedef NTSTATUS  (NTAPI *SamrConnect) (
     );
 
 // opnum 1
-typedef NTSTATUS  (NTAPI *SamrCloseHandle) (
+using SamrCloseHandle = NTSTATUS (NTAPI*)(
     __inout SAMPR_HANDLE * SamHandle
     );
 
 // opnum 7
-typedef NTSTATUS  (NTAPI *SamrOpenDomain) (
+using SamrOpenDomain = NTSTATUS (NTAPI*)(
     __in SAMPR_HANDLE ServerHandle,
     __in DWORD   DesiredAccess,
     __in PSID DomainId,
@@ -2219,7 +2220,7 @@ typedef NTSTATUS  (NTAPI *SamrOpenDomain) (
 
 
 		// opnum 34
-typedef NTSTATUS  (NTAPI *SamrOpenUser) (
+using SamrOpenUser = NTSTATUS (NTAPI*)(
     __in SAMPR_HANDLE DomainHandle,
     __in DWORD   DesiredAccess,
     __in DWORD   UserId,
@@ -2227,14 +2228,14 @@ typedef NTSTATUS  (NTAPI *SamrOpenUser) (
     );
 
 // opnum 36
-typedef NTSTATUS  (NTAPI *SamrQueryInformationUser) (
+using SamrQueryInformationUser = NTSTATUS (NTAPI*)(
     __in SAMPR_HANDLE UserHandle,
     __in USER_INFORMATION_CLASS  UserInformationClass,
 	__out PSAMPR_USER_INFO_BUFFER * Buffer
     );
 
-typedef NTSTATUS  (NTAPI *SamIFree_SAMPR_USER_INFO_BUFFER) (
-	__in PSAMPR_USER_INFO_BUFFER Buffer, 
+using SamIFree_SAMPR_USER_INFO_BUFFER = NTSTATUS (NTAPI*)(
+	__in PSAMPR_USER_INFO_BUFFER Buffer,
 	__in USER_INFORMATION_CLASS UserInformationClass
 	);
 

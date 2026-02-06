@@ -27,11 +27,8 @@
 #include "../EIDCardLibrary/StoredCredentialManagement.h"
 #include "../EIDCardLibrary/Registration.h"//#include "../EIDCardLibrary/XPCompatibility.h"
 
-typedef NTSTATUS
-(NTAPI LSA_IMPERSONATE_CLIENT) (
-    VOID
-    );
-typedef LSA_IMPERSONATE_CLIENT * PLSA_IMPERSONATE_CLIENT;
+using LSA_IMPERSONATE_CLIENT = NTSTATUS (NTAPI)(VOID);
+using PLSA_IMPERSONATE_CLIENT = LSA_IMPERSONATE_CLIENT*;
 void SetImpersonate(PLSA_IMPERSONATE_CLIENT Impersonate);
 
 NTSTATUS NTAPI Impersonate (VOID)

@@ -3,35 +3,36 @@
 **Smart card authentication for Windows standalone/local accounts**
 
 [![License](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20Vista%2B-lightgrey.svg)]()
-[![Build](https://img.shields.io/badge/build-VS%202025%20(v143)-purple.svg)]()
+[![Platform](https://img.shields.io/badge/platform-Windows%20Vista%20SP1+-lightgrey.svg)]()
+[![Build](https://img.shields.io/badge/build-VS%202025%20(v145)-purple.svg)]()
 
 ---
 
 ## Overview
 
-EID Authentication enables **smart card-based login** for Windows local accounts (non-domain joined computers). Originally created by certified security experts, it integrates deeply with Windows security mechanisms while providing a user-friendly configuration interface.
+EID Authentication provides **smart card-based login** for Windows local accounts on non-domain joined computers. This solution integrates with Windows security mechanisms including LSA (Local Security Authority) and the Credential Provider framework, enabling organizations and individuals to replace password-based authentication with smart card authentication.
 
-### What It Does
+### Key Features
 
-- **Replace passwords with smart cards** for Windows local account login
-- **LSA Authentication Package** for deep Windows security integration
-- **Credential Provider v2** for modern Windows login screen integration
-- **Password Change Notification** for synchronized credential management
-- **Configuration Wizard** for easy smart card enrollment
+- **Smart card login** for Windows local accounts
+- **LSA Authentication Package** for Windows security integration
+- **Credential Provider v2** for Windows login screen support
+- **Password Change Notification** for credential synchronization
+- **Configuration Wizard** for smart card enrollment
 
-### What's New (2026)
+### 2026 Updates
 
-This fork has been **extensively modernized and cleaned up**:
+This fork has been **extensively modernized**:
 
-- ✅ Windows XP/GINA support removed (Vista SP1+ only)
-- ✅ Upgraded to Visual Studio 2025 (Platform Toolset v145)
-- ✅ Migrated from WiX to NSIS installer
-- ✅ Dead code cleanup (~2,000 lines removed)
-- ✅ Automatic Smart Card service configuration
-- ✅ Improved error messages and user guidance
-- ✅ Build automation scripts
-- ✅ Comprehensive documentation
+- Windows XP/GINA support removed (now Vista SP1+ only)
+- Upgraded to Visual Studio 2025 (Platform Toolset v145)
+- Migrated from WiX to NSIS installer
+- Dead code cleanup (~2,000 lines removed)
+- Automatic Smart Card service configuration
+- Improved error messages and user guidance
+- Build automation scripts
+- Comprehensive documentation
+- Security hardening with 143 issues remediated
 
 ---
 
@@ -74,7 +75,7 @@ cd Installer
 "C:\Program Files (x86)\NSIS\makensis.exe" Installerx64.nsi
 ```
 
-**Output:** `Installer\EIDInstallx64.exe` (699 KB)
+**Output:** `Installer\EIDInstallx64.exe`
 
 ### Installation
 
@@ -83,7 +84,7 @@ cd Installer
 3. **Run Configuration Wizard** from desktop shortcut
 4. **Enroll your smart card** following the wizard
 
-**Note:** For testing without a physical smart card reader, run `Installer\InstallVirtualSmartCard.ps1` as Administrator to create a TPM-based virtual smart card.
+For testing without a physical smart card reader, run `Installer\InstallVirtualSmartCard.ps1` as Administrator to create a TPM-based virtual smart card.
 
 ---
 
@@ -178,17 +179,17 @@ The system uses a challenge-response protocol for smart card authentication:
 ```
 EIDAuthentication/
 ├── EIDAuthenticationPackage/    # LSA authentication package
-├── EIDCardLibrary/               # Shared smart card library
-├── EIDConfigurationWizard/       # User configuration GUI
+├── EIDCardLibrary/              # Shared smart card library
+├── EIDConfigurationWizard/      # User configuration GUI
 ├── EIDConfigurationWizardElevated/  # Elevated policy helpers
-├── EIDCredentialProvider/        # Credential Provider v2
-├── EIDLogManager/                # Logging management tool
+├── EIDCredentialProvider/       # Credential Provider v2
+├── EIDLogManager/               # Logging management tool
 ├── EIDPasswordChangeNotification/   # Password filter DLL
-├── Installer/                    # NSIS installer scripts
-├── build.bat                     # Build automation script
-├── notes.md                      # Development notes and history
-├── DEPLOYMENT.md                 # Deployment guide
-└── README.md                     # This file
+├── Installer/                   # NSIS installer scripts
+├── build.bat                    # Build automation script
+├── notes.md                     # Development notes and history
+├── DEPLOYMENT.md                # Deployment guide
+└── README.md                    # This file
 ```
 
 ### Build Configuration
@@ -211,6 +212,7 @@ EIDAuthentication/
 build.bat Release x64
 ```
 
+---
 
 ## Deployment
 
@@ -282,7 +284,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions.
 **Solution:**
 1. Verify registration: Check `HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Authentication Packages`
 2. Reboot if just installed
-3. Check Event Viewer → Windows Logs → System for LSA errors
+3. Check Event Viewer -> Windows Logs -> System for LSA errors
 
 ### Build Fails with "Platform Toolset Not Found"
 
@@ -399,7 +401,7 @@ Contributions welcome! Areas for improvement:
 - [ ] Fix compiler warnings (C4996, C4311, C4302, C4005)
 - [ ] Translate French comments to English
 - [ ] Add multi-card support
-- [ ] Implement biometric authentication (removed in this fork)
+- [ ] Implement biometric authentication
 - [ ] Support Windows Hello integration
 - [ ] Improve error messages and logging
 - [ ] Add automated tests
@@ -409,8 +411,9 @@ Contributions welcome! Areas for improvement:
 ## Credits
 
 - **Original Author:** Vincent Le Toux (2009)
-- **Fork Maintainer:** @uberlinuxguy (GitHub)
-- **Modernization:** @andrysky (2026 updates)
+- **Fork Maintainer:** Jason Williams (@uberlinuxguy)
+- **2026 Modernization:** DangerDawgAU (77 commits)
+- **Contributors:** Andry, chantzish
 - **Source:** [SourceForge](https://sourceforge.net/projects/eidauthenticate/)
 
 ---
@@ -430,31 +433,41 @@ See [LICENSE](LICENSE) for full text.
 - **Issue Tracker:** [GitHub Issues](https://github.com/uberlinuxguy/EIDAuthentication/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/uberlinuxguy/EIDAuthentication/discussions)
 - **CPDK Download:** [Microsoft](https://www.microsoft.com/en-us/download/details.aspx?id=30688)
-- **VSCode Setup:** [Microsoft Docs](https://code.visualstudio.com/docs/cpp/config-msvc)
 
 ---
 
 ## Changelog
 
-### 2026-01-11 - Major Modernization
+### 2026 - Major Modernization (DangerDawgAU)
 
-- ✅ Removed Windows XP/GINA support
-- ✅ Upgraded to Visual Studio 2025 (v145 toolset)
-- ✅ Migrated from WiX to NSIS installer
-- ✅ Removed ~2,000 lines of dead code (Belgian EID SDK, WinBio, etc.)
-- ✅ Added automatic Smart Card service configuration
-- ✅ Improved error messages with user guidance
-- ✅ Created build automation (`build.bat`)
-- ✅ Added virtual smart card support script
-- ✅ Comprehensive documentation overhaul
+- Removed Windows XP/GINA support
+- Upgraded to Visual Studio 2025 (v145 toolset)
+- Migrated from WiX to NSIS installer
+- Removed ~2,000 lines of dead code (Belgian EID SDK, WinBio, etc.)
+- Added automatic Smart Card service configuration
+- Improved error messages with user guidance
+- Created build automation (`build.bat`)
+- Added virtual smart card support script
+- Comprehensive documentation overhaul
+- Security hardening: 143 vulnerabilities fixed
 
-### 2009-2020 - Original Development
+### 2025 - Fork Revival (Jason Williams)
 
-- Initial release by Vincent Le Toux
+- Forked from SourceForge to GitHub
+- Initial modernization efforts
+- Build system updates
+
+### 2023 - Updates (Andry)
+
+- Minor fixes and updates
+
+### 2019 - Contribution (chantzish)
+
+- Initial GitHub contribution
+
+### 2009 - Original Development (Vincent Le Toux)
+
+- Initial release
 - LSA package and Credential Provider implementation
 - GINA support for Windows XP
 - WiX installer
-
----
-
-**Made with ❤️ for Windows security enthusiasts**

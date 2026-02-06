@@ -37,7 +37,7 @@ constexpr DWORD UI_CERTIFICATE_INFO_SAVEON_SYSTEMSTORE_MY = 2;
 constexpr DWORD UI_CERTIFICATE_INFO_SAVEON_FILE = 3;
 constexpr DWORD UI_CERTIFICATE_INFO_SAVEON_SMARTCARD = 4;
 
-typedef struct _UI_CERTIFICATE_INFO
+struct UI_CERTIFICATE_INFO
 {
 	LPTSTR szSubject;
 	PCCERT_CONTEXT pRootCertificate;
@@ -54,12 +54,13 @@ typedef struct _UI_CERTIFICATE_INFO
 	BOOL bIsCA;
 	SYSTEMTIME StartTime;
 	SYSTEMTIME EndTime;
-	
+
 	// used to return new certificate context if needed
 	// need to free it if returned
 	BOOL fReturnCerticateContext;
 	PCCERT_CONTEXT pNewCertificate;
-} UI_CERTIFICATE_INFO, * PUI_CERTIFICATE_INFO;
+};
+using PUI_CERTIFICATE_INFO = UI_CERTIFICATE_INFO*;
 
 PCCERT_CONTEXT GetCertificateWithPrivateKey();
 BOOL CreateCertificate(PUI_CERTIFICATE_INFO CertificateInfo);

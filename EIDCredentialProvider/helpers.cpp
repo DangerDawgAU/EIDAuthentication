@@ -229,7 +229,7 @@ HRESULT ProtectIfNecessaryAndCopyPassword(
     return hr;
 }
 
-typedef BOOL (NTAPI * PRShowRestoreFromMsginaW) (DWORD, DWORD, PWSTR, DWORD);
+using PRShowRestoreFromMsginaW = BOOL (NTAPI*)(DWORD, DWORD, PWSTR, DWORD);
 static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 { 
  

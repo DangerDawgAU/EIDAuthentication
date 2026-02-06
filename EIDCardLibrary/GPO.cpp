@@ -33,11 +33,11 @@
 TCHAR szMainGPOKey[] = _T("SOFTWARE\\Policies\\Microsoft\\Windows\\SmartCardCredentialProvider");
 TCHAR szRemoveGPOKey[] = _T("Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon");
 TCHAR szForceGPOKey[] = _T("Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System");
-typedef struct _GPOInfo
+struct GPOInfo
 {
 	LPCTSTR Key;
 	LPCTSTR Value;
-} GPOInfo;
+};
 
 GPOInfo MyGPOInfo[] =
 {
