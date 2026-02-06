@@ -348,8 +348,10 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 			DWORD dwStatus = pChainContext->TrustStatus.dwErrorStatus;
 
 			// Soft failures: non-security-critical conditions that allow continuation
-			// Revocation failures are now hard failures - certificates must have verifiable revocation status
+			// Revocation status unknown is a soft failure - this system is locally administered
+			// without access to CRL/OCSP infrastructure
 			DWORD dwSoftFailures = CERT_TRUST_IS_NOT_TIME_NESTED |
+			                       CERT_TRUST_REVOCATION_STATUS_UNKNOWN |
 			                       CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT |
 			                       CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT |
 			                       CERT_TRUST_HAS_NOT_PERMITTED_NAME_CONSTRAINT |
