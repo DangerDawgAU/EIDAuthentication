@@ -24,7 +24,7 @@
 #include "../EIDCardLibrary/Package.h"
 #include "../EIDCardLibrary/Tracing.h"
 #include <lm.h>
-#include <WinCred.h>
+#include <wincred.h>
 
 
 template <typename T> 

@@ -40,10 +40,10 @@ public:
     // IUnknown
     IMPL_IUNKNOWN_ADDREF_RELEASE()
 
-    STDMETHOD (QueryInterface)(REFIID riid, void** ppv)
+    STDMETHOD (QueryInterface)(REFIID riid, void** ppv) override
     {
         HRESULT hr;
-        if (IID_IUnknown == riid || 
+        if (IID_IUnknown == riid ||
             IID_ICredentialProvider == riid)
         {
             *ppv = this;
@@ -59,25 +59,25 @@ public:
     }
 
   public:
-    IFACEMETHODIMP SetUsageScenario(CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus, DWORD dwFlags);
-    IFACEMETHODIMP SetSerialization(const CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION* pcpcs);
+    IFACEMETHODIMP SetUsageScenario(CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus, DWORD dwFlags) override;
+    IFACEMETHODIMP SetSerialization(const CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION* pcpcs) override;
 
-    IFACEMETHODIMP Advise(__in ICredentialProviderEvents* pcpe, UINT_PTR upAdviseContext);
-    IFACEMETHODIMP UnAdvise();
+    IFACEMETHODIMP Advise(__in ICredentialProviderEvents* pcpe, UINT_PTR upAdviseContext) override;
+    IFACEMETHODIMP UnAdvise() override;
 
-    IFACEMETHODIMP GetFieldDescriptorCount(__out DWORD* pdwCount);
-    IFACEMETHODIMP GetFieldDescriptorAt(DWORD dwIndex,  __deref_out CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR** ppcpfd);
+    IFACEMETHODIMP GetFieldDescriptorCount(__out DWORD* pdwCount) override;
+    IFACEMETHODIMP GetFieldDescriptorAt(DWORD dwIndex, __deref_out CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR** ppcpfd) override;
 
     IFACEMETHODIMP GetCredentialCount(__out DWORD* pdwCount,
                                       __out DWORD* pdwDefault,
-                                      __out BOOL* pbAutoLogonWithDefault);
-    IFACEMETHODIMP GetCredentialAt(DWORD dwIndex, 
-                                   __out ICredentialProviderCredential** ppcpc);
+                                      __out BOOL* pbAutoLogonWithDefault) override;
+    IFACEMETHODIMP GetCredentialAt(DWORD dwIndex,
+                                   __out ICredentialProviderCredential** ppcpc) override;
 
     friend HRESULT CEIDProvider_CreateInstance(REFIID riid, __deref_out void** ppv);
 
 public:
-	virtual void Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in LPCTSTR szReader,__in_opt LPCTSTR szCardName, __in_opt USHORT ActivityCount);
+	void Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in LPCTSTR szReader, __in_opt LPCTSTR szCardName, __in_opt USHORT ActivityCount) override;
 
   protected:
     CEIDProvider();

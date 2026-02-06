@@ -29,7 +29,7 @@
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/Package.h"
 
-#include <CodeAnalysis/warnings.h>
+#include <codeanalysis/warnings.h>
 #pragma warning(push)
 #pragma warning(disable : 4995)
 #include <shlwapi.h>
@@ -547,7 +547,6 @@ HRESULT CEIDCredential::GetSerialization(
         if (SUCCEEDED(hr))
         {
             EID_INTERACTIVE_UNLOCK_LOGON kiul;
-			//KERB_INTERACTIVE_UNLOCK_LOGON kiul;
 
             // Initialize kiul with weak references to our credential.
             hr = EIDUnlockLogonInit(wsz, _rgFieldStrings[SFI_USERNAME], pwzProtectedPin, _cpus,  &kiul);

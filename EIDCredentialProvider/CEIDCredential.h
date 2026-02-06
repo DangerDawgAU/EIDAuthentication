@@ -48,7 +48,7 @@ public:
     // IUnknown
     IMPL_IUNKNOWN_ADDREF_RELEASE()
 
-    STDMETHOD (QueryInterface)(REFIID riid, void** ppv)
+    STDMETHOD (QueryInterface)(REFIID riid, void** ppv) override
     {
         HRESULT hr;
         if (ppv != nullptr)
@@ -74,36 +74,36 @@ public:
     }
   public:
     // ICredentialProviderCredential
-    IFACEMETHODIMP Advise(ICredentialProviderCredentialEvents* pcpce);
-    IFACEMETHODIMP UnAdvise();
+    IFACEMETHODIMP Advise(ICredentialProviderCredentialEvents* pcpce) override;
+    IFACEMETHODIMP UnAdvise() override;
 
-    IFACEMETHODIMP SetSelected(BOOL* pbAutoLogon);
-    IFACEMETHODIMP SetDeselected();
+    IFACEMETHODIMP SetSelected(BOOL* pbAutoLogon) override;
+    IFACEMETHODIMP SetDeselected() override;
 
     IFACEMETHODIMP GetFieldState(DWORD dwFieldID,
                                  CREDENTIAL_PROVIDER_FIELD_STATE* pcpfs,
-                                 CREDENTIAL_PROVIDER_FIELD_INTERACTIVE_STATE* pcpfis);
+                                 CREDENTIAL_PROVIDER_FIELD_INTERACTIVE_STATE* pcpfis) override;
 
-    IFACEMETHODIMP GetStringValue(DWORD dwFieldID, PWSTR* ppwsz);
-    IFACEMETHODIMP GetBitmapValue(DWORD dwFieldID, HBITMAP* phbmp);
-    IFACEMETHODIMP GetCheckboxValue(DWORD dwFieldID, BOOL* pbChecked, PWSTR* ppwszLabel);
-    IFACEMETHODIMP GetComboBoxValueCount(DWORD dwFieldID, DWORD* pcItems, DWORD* pdwSelectedItem);
-    IFACEMETHODIMP GetComboBoxValueAt(DWORD dwFieldID, DWORD dwItem, PWSTR* ppwszItem);
-    IFACEMETHODIMP GetSubmitButtonValue(DWORD dwFieldID, DWORD* pdwAdjacentTo);
+    IFACEMETHODIMP GetStringValue(DWORD dwFieldID, PWSTR* ppwsz) override;
+    IFACEMETHODIMP GetBitmapValue(DWORD dwFieldID, HBITMAP* phbmp) override;
+    IFACEMETHODIMP GetCheckboxValue(DWORD dwFieldID, BOOL* pbChecked, PWSTR* ppwszLabel) override;
+    IFACEMETHODIMP GetComboBoxValueCount(DWORD dwFieldID, DWORD* pcItems, DWORD* pdwSelectedItem) override;
+    IFACEMETHODIMP GetComboBoxValueAt(DWORD dwFieldID, DWORD dwItem, PWSTR* ppwszItem) override;
+    IFACEMETHODIMP GetSubmitButtonValue(DWORD dwFieldID, DWORD* pdwAdjacentTo) override;
 
-    IFACEMETHODIMP SetStringValue(DWORD dwFieldID, PCWSTR pwz);
-    IFACEMETHODIMP SetCheckboxValue(DWORD dwFieldID, BOOL bChecked);
-    IFACEMETHODIMP SetComboBoxSelectedValue(DWORD dwFieldID, DWORD dwSelectedItem);
-    IFACEMETHODIMP CommandLinkClicked(DWORD dwFieldID);
+    IFACEMETHODIMP SetStringValue(DWORD dwFieldID, PCWSTR pwz) override;
+    IFACEMETHODIMP SetCheckboxValue(DWORD dwFieldID, BOOL bChecked) override;
+    IFACEMETHODIMP SetComboBoxSelectedValue(DWORD dwFieldID, DWORD dwSelectedItem) override;
+    IFACEMETHODIMP CommandLinkClicked(DWORD dwFieldID) override;
 
-    IFACEMETHODIMP GetSerialization(CREDENTIAL_PROVIDER_GET_SERIALIZATION_RESPONSE* pcpgsr, 
-                                    CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION* pcpcs, 
-                                    PWSTR* ppwszOptionalStatusText, 
-                                    CREDENTIAL_PROVIDER_STATUS_ICON* pcpsiOptionalStatusIcon);
-    IFACEMETHODIMP ReportResult(NTSTATUS ntsStatus, 
+    IFACEMETHODIMP GetSerialization(CREDENTIAL_PROVIDER_GET_SERIALIZATION_RESPONSE* pcpgsr,
+                                    CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION* pcpcs,
+                                    PWSTR* ppwszOptionalStatusText,
+                                    CREDENTIAL_PROVIDER_STATUS_ICON* pcpsiOptionalStatusIcon) override;
+    IFACEMETHODIMP ReportResult(NTSTATUS ntsStatus,
                                 NTSTATUS ntsSubstatus,
-                                PWSTR* ppwszOptionalStatusText, 
-                                CREDENTIAL_PROVIDER_STATUS_ICON* pcpsiOptionalStatusIcon);
+                                PWSTR* ppwszOptionalStatusText,
+                                CREDENTIAL_PROVIDER_STATUS_ICON* pcpsiOptionalStatusIcon) override;
 
   public:
     HRESULT Initialize();

@@ -23,12 +23,12 @@
 
 #include <windows.h>
 #include <tchar.h>
-#include <Ntsecapi.h>
+#include <ntsecapi.h>
 #define SECURITY_WIN32
 #include <sspi.h>
 
 #include <ntsecpkg.h>
-#include <WinCred.h>
+#include <wincred.h>
 #include <list>
 
 #include "../EIDCardLibrary/EIDCardLibrary.h"

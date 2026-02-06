@@ -596,7 +596,7 @@ MgScCardWriteFile(
 
 BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, PDWORD pdwAttempts)
 {
-	MGSC_CONTEXT pContext = {0};
+	MGSC_CONTEXT pContext = {};
 	SCARDCONTEXT hSCardContext = NULL;
 	SCARDHANDLE hSCardHandle = NULL;
 	BYTE bAtr[32];

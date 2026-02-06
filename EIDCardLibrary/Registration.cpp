@@ -475,7 +475,7 @@ void EnableCrashDump(PTSTR szPath)
 	}
 #endif
 	DWORD Status;
-	HKEY hkResult = 0;
+	HKEY hkResult = nullptr;
 	__try
 	{
 		Status=RegCreateKeyEx(HKEY_LOCAL_MACHINE,TEXT("SOFTWARE\\Microsoft\\Windows\\Windows Error Reporting\\LocalDumps\\lsass.exe"),

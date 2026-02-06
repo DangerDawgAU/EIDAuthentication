@@ -1,6 +1,6 @@
 #include <windows.h>
 #include <tchar.h>
-#include <Cryptuiapi.h>
+#include <cryptuiapi.h>
 #include <shobjidl.h>
 #include "global.h"
 #include "EIDConfigurationWizard.h"

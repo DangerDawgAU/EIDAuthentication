@@ -27,16 +27,16 @@
 #include <tchar.h>
 #include <intsafe.h>
 #include <wincred.h>
-#include <Lm.h>
+#include <lm.h>
 
-#include <Ntsecapi.h>
+#include <ntsecapi.h>
 #define SECURITY_WIN32
 #include <sspi.h>
 #include <ntsecpkg.h>
-#include <Wtsapi32.h>
+#include <wtsapi32.h>
 #include <security.h>
 
-#include <CodeAnalysis/warnings.h>
+#include <codeanalysis/warnings.h>
 #pragma warning(push)
 #pragma warning(disable : 4995)
 #include <shlwapi.h>
@@ -858,7 +858,7 @@ BOOL LsaEIDCreateStoredCredential(__in_opt PWSTR szUsername, __in PWSTR szPasswo
 		}
 	
 		dwPasswordSize = (DWORD) (wcslen(szPassword) + 1) * sizeof(WCHAR);
-		dwBufferSize = (DWORD) (sizeof(EID_CALLPACKAGE_BUFFER) + dwPasswordSize + pContext->cbCertEncoded); //+ dwProviderSize + dwContainerSize;
+		dwBufferSize = (DWORD) (sizeof(EID_CALLPACKAGE_BUFFER) + dwPasswordSize + pContext->cbCertEncoded);
 
 		pBuffer = (PEID_CALLPACKAGE_BUFFER) EIDAlloc(dwBufferSize);
 		if( !pBuffer) 

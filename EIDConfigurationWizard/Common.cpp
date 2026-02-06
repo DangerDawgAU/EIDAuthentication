@@ -1,6 +1,6 @@
 #include <windows.h>
 #include <tchar.h>
-#include <Lm.h>
+#include <lm.h>
 
 #include "../EIDCardLibrary/GPO.h"
 #include "../EIDCardLibrary/Tracing.h"

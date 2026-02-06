@@ -1,6 +1,6 @@
 #include <windows.h>
 #include <tchar.h>
-#include <Commctrl.h>
+#include <commctrl.h>
 #include <shellapi.h>
 
 #include "global.h"

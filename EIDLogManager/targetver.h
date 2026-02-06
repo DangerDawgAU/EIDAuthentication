@@ -1,8 +1,8 @@
 #pragma once
 
-// Si vous incluez SDKDDKVer.h, cela définit la dernière plateforme Windows disponible.
+// Si vous incluez SDKDDKVer.h, cela dï¿½finit la derniï¿½re plateforme Windows disponible.
 
-// Si vous souhaitez générer votre application pour une plateforme Windows précédente, incluez WinSDKVer.h et
-// définissez la macro _WIN32_WINNT à la plateforme que vous souhaitez prendre en charge avant d'inclure SDKDDKVer.h.
+// Si vous souhaitez gï¿½nï¿½rer votre application pour une plateforme Windows prï¿½cï¿½dente, incluez WinSDKVer.h et
+// dï¿½finissez la macro _WIN32_WINNT ï¿½ la plateforme que vous souhaitez prendre en charge avant d'inclure SDKDDKVer.h.
 
-#include <SDKDDKVer.h>
+#include <sdkddkver.h>

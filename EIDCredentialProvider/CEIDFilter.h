@@ -36,10 +36,10 @@ public:
 	// IUnknown
     IMPL_IUNKNOWN_ADDREF_RELEASE()
 
-    STDMETHOD (QueryInterface)(REFIID riid, void** ppv)
+    STDMETHOD (QueryInterface)(REFIID riid, void** ppv) override
     {
         HRESULT hr;
-        if (IID_IUnknown == riid || 
+        if (IID_IUnknown == riid ||
             IID_ICredentialProviderFilter == riid)
         {
             *ppv = this;
@@ -54,8 +54,8 @@ public:
         return hr;
     }
 public:
-	IFACEMETHODIMP Filter(CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus, DWORD dwFlags, GUID *rgclsidProviders, BOOL *rgbAllow, DWORD cProviders);
-	IFACEMETHODIMP UpdateRemoteCredential(const CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION *pcpcsIn, CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION *pcpcsOut);
+	IFACEMETHODIMP Filter(CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus, DWORD dwFlags, GUID *rgclsidProviders, BOOL *rgbAllow, DWORD cProviders) override;
+	IFACEMETHODIMP UpdateRemoteCredential(const CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION *pcpcsIn, CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION *pcpcsOut) override;
     
 private:
 	LONG                        _cRef;                  // Reference counter.

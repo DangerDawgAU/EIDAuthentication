@@ -20,9 +20,9 @@
 
 #include <windows.h>
 #include <tchar.h>
-#include <Cryptuiapi.h>
-#include <AccCtrl.h>
-#include <Aclapi.h>
+#include <cryptuiapi.h>
+#include <accctrl.h>
+#include <aclapi.h>
 #include "EIDCardLibrary.h"
 #include "CertificateUtilities.h"
 #include "Tracing.h"
@@ -354,7 +354,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 {
 	BOOL fReturn = FALSE;
 	CERT_INFO CertInfo = {0};
-	CertInfo.rgExtension = 0;
+	CertInfo.rgExtension = nullptr;
 	CERT_NAME_BLOB SubjectIssuerBlob = {0};
 	HCRYPTPROV hCryptProvNewCertificate = NULL, hCryptProvRootCertificate = NULL;  // Windows handle types - keep as NULL
 	PCCERT_CONTEXT pNewCertificateContext = nullptr;

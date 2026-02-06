@@ -20,7 +20,7 @@
 #include <ntstatus.h>
 #define WIN32_NO_STATUS 1
 #include <windows.h>
-#include <Ntsecapi.h>
+#include <ntsecapi.h>
 
 
 #include "../EIDCardLibrary/Tracing.h"

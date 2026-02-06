@@ -49,7 +49,6 @@ class CContainer
 
 	BOOL TriggerRemovePolicy();
 	PEID_INTERACTIVE_LOGON AllocateLogonStruct(PWSTR szPin, PDWORD pdwSize);
-//	PEID_MSGINA_AUTHENTICATION CContainer::AllocateGinaStruct(PWSTR szPin, PDWORD pdwSize);
   private:
  static LPTSTR ValidateAndCopyString(LPCTSTR szSource, DWORD maxLength, LPCWSTR szFieldName);
 

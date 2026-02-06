@@ -18,15 +18,13 @@
 */
 
 
-//#include <stdio.h>
-//#include <winnt.h>
 #include <ntstatus.h>
 #define WIN32_NO_STATUS 1
 
 #include <windows.h>
 
 #include <winscard.h>
-#include <Ntsecapi.h>
+#include <ntsecapi.h>
 
 
 #define SECURITY_WIN32

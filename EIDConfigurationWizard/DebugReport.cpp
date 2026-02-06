@@ -3,7 +3,7 @@
 #include <wincred.h>
 #include <ntsecapi.h>
 #include <wmistr.h>
-#include <Evntrace.h>
+#include <evntrace.h>
 #include <random>
 
 #include "global.h"
@@ -48,7 +48,6 @@ BOOL TestLogon(HWND hMainWnd)
 	TCHAR szMessage[256] = TEXT("");
 	TCHAR szCaption[256] = TEXT("");
 	LoadString(g_hinst, IDS_05CREDINFOCAPTION, szCaption, ARRAYSIZE(szCaption));
-	//LoadString(g_hinst, IDS_05CREDINFOMESSAGE, szMessage, ARRAYSIZE(szMessage));
 	credUiInfo.pszCaptionText = szCaption;
 	credUiInfo.pszMessageText = szMessage;
 	credUiInfo.cbSize = sizeof(credUiInfo);
@@ -79,15 +78,11 @@ BOOL TestLogon(HWND hMainWnd)
 		}
 		CoTaskMemFree(authBuffer);
 	}
-	else //if (result == ERROR_CANCELLED)
+	else
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CredUIPromptForWindowsCredentials error 0x%08X", result);
 		dwError = result;
 	}
-	//else
-	//{
-	//	//MessageBoxWin32(GetLastError());
-	//}
 	SetLastError(dwError);
 	return fReturn;
 }
@@ -156,7 +151,7 @@ void ExportOneTraceFile(PTSTR szTraceFile)
 		WriteFile ( hInternalLogWriteHandle, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
 		_tcscpy_s(szBuffer,ARRAYSIZE(szBuffer),TEXT("================================================\r\n"));
 		WriteFile ( hInternalLogWriteHandle, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
-		rc = ProcessTrace(&handle, 1, 0, 0);
+		rc = ProcessTrace(&handle, 1, nullptr, nullptr);
 		if (rc != ERROR_SUCCESS && rc != ERROR_CANCELLED)
 		{
 			if (rc ==  0x00001069)

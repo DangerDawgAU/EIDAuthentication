@@ -19,7 +19,7 @@
 
 
 #include <windows.h>
-#include <Msiquery.h>
+#include <msiquery.h>
 
 #pragma comment(lib,"Msi.lib")
 

@@ -203,7 +203,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	{
 		MessageBoxWin32(GetLastError());
 	}
-	//_CrtDumpMemoryLeaks();
     return 0;
 
 }

@@ -23,16 +23,16 @@
 
 #include <windows.h>
 #include <tchar.h>
-#include <Ntsecapi.h>
+#include <ntsecapi.h>
 #define SECURITY_WIN32
 #include <sspi.h>
-#include <Sddl.h>
+#include <sddl.h>
 #include <ntsecpkg.h>
-#include <WinCred.h>
-#include <Lm.h>
+#include <wincred.h>
+#include <lm.h>
 #include <list>
 
-#include <Imagehlp.h>
+#include <imagehlp.h>
 #pragma comment(lib,"imagehlp")
 
 #include "../EIDCardLibrary/EIDCardLibrary.h"

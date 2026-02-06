@@ -29,8 +29,6 @@
 constexpr DWORD TIMEOUT = 300;
 
 #pragma comment(lib,"Winscard")
-//#define  _CRTDBG_MAP_ALLOC
-//#include <crtdbg.h>
 
 
 
