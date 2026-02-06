@@ -454,12 +454,9 @@ BOOL Is64BitOS()
    LPFN_ISWOW64PROCESS
       fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(GetModuleHandle(TEXT("kernel32")),"IsWow64Process");
  
-   if (nullptr != fnIsWow64Process)
+   if (fnIsWow64Process && !fnIsWow64Process(GetCurrentProcess(),&bIs64BitOS))
    {
-      if (!fnIsWow64Process(GetCurrentProcess(),&bIs64BitOS))
-      {
-         //error
-      }
+      //error
    }
    return bIs64BitOS;
 }

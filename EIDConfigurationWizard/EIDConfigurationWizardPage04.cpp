@@ -80,6 +80,8 @@ BOOL PopulateListViewCheckData(HWND hWndListViewList, HWND hWndListViewCheck)
 		case CHECK_CRYPTO:
 			LoadString(g_hinst,IDS_04TESTCRYPTO, szMessage, ARRAYSIZE(szMessage));
 			break;
+		default:
+			break;
 		}
 		grp.pszHeader = szMessage;
 		grp.cchHeader = (int) (grp.pszHeader?_tcslen(grp.pszHeader):0);
@@ -438,9 +440,10 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 		return TRUE;
 		break;
 	case WM_NOTIFY :
-        LPNMHDR pnmh = (LPNMHDR)lParam;
-        switch(pnmh->code)
-        {
+		{
+			LPNMHDR pnmh = (LPNMHDR)lParam;
+			switch(pnmh->code)
+			{
 			case PSN_SETACTIVE :
 				// list view
 				{
@@ -620,7 +623,14 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 						}
 					}
 				}
+				break;
+			default:
+				break;
+			}
+			break;
 		}
+	default:
+		break;
     }
 	return FALSE;
 }

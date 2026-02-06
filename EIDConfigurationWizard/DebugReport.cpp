@@ -54,13 +54,13 @@ BOOL TestLogon(HWND hMainWnd)
 	credUiInfo.hbmBanner = nullptr;
 	credUiInfo.hwndParent = hMainWnd;
 
-	DWORD result = CredUIPromptForWindowsCredentials(&(credUiInfo), 0, &(authPackage), 
-					nullptr, 0, &authBuffer, &authBufferSize, &(save), dwFlag);
+	DWORD result = CredUIPromptForWindowsCredentials(&credUiInfo, 0, &authPackage,
+					nullptr, 0, &authBuffer, &authBufferSize, &save, dwFlag);
 	if (result == ERROR_SUCCESS)
 	{
 		err = LsaConnectUntrusted(&hLsa);
 		/* Find the setuid package and call it */
-		err = LsaLogonUser(hLsa, &Origin, (SECURITY_LOGON_TYPE)  Interactive , authPackage, authBuffer,authBufferSize,nullptr, &Source, (PVOID*)&Profile, &ProfileLen, &Luid, &Token, &Quota, &stat);
+		err = LsaLogonUser(hLsa, &Origin, Interactive, authPackage, authBuffer,authBufferSize,nullptr, &Source, (PVOID*)&Profile, &ProfileLen, &Luid, &Token, &Quota, &stat);
 		DWORD dwSize = sizeof(MSV1_0_INTERACTIVE_PROFILE);
 		LsaDeregisterLogonProcess(hLsa);
 		if (err)
@@ -173,7 +173,7 @@ HANDLE StartReport(PTSTR szLogFile)
 	__try
 	{
 		//  Creates the new file to write to for the upper-case version.
-		hOutput = CreateFile((LPTSTR) szLogFile, // file name 
+		hOutput = CreateFile(szLogFile, // file name 
 							   GENERIC_WRITE,        // open for write 
 							   0,                    // do not share
 							   nullptr,                 // default security

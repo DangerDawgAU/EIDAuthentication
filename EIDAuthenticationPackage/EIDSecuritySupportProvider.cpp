@@ -340,7 +340,7 @@ extern "C"
 		PLUID LogonIdToUse; 
 		__try
 		{
-			if ((CredentialUseFlags & (SECPKG_CRED_BOTH)) == 0)
+			if ((CredentialUseFlags & SECPKG_CRED_BOTH) == 0)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"flag not ok");
 				Status = SEC_E_UNKNOWN_CREDENTIALS;

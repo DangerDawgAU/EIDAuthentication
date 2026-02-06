@@ -551,8 +551,8 @@ BOOL CStoredCredentialManager::UpdateCredential(__in PLUID pLuid, __in PUNICODE_
 			__leave;
 		}
 		GetComputerName(szComputer,&dwSize);
-		if (!((pLogonSessionData->LogonDomain.Length == dwSize * sizeof(WCHAR)
-			&& memcmp(pLogonSessionData->LogonDomain.Buffer,szComputer, dwSize * sizeof(WCHAR)) == 0)))
+		if (!(pLogonSessionData->LogonDomain.Length == dwSize * sizeof(WCHAR)
+			&& memcmp(pLogonSessionData->LogonDomain.Buffer,szComputer, dwSize * sizeof(WCHAR)) == 0))
 		{
 			dwError = ERROR_NONE_MAPPED;
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"not a local account '%wZ'", &(pLogonSessionData->LogonDomain));
@@ -954,9 +954,10 @@ BOOL CStoredCredentialManager::GetResponseFromChallenge(__in PBYTE pChallenge, _
 		return GetResponseFromSignatureChallenge(pChallenge,dwChallengeSize,pCertContext,Pin,pSymetricKey,usSize);
 	case eidpdtCrypted:
 		return GetResponseFromCryptedChallenge(pChallenge,dwChallengeSize,pCertContext,Pin,pSymetricKey,usSize);
+	default:
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Type not implemented");
+		return FALSE;
 	}
-	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Type not implemented");
-	return FALSE;
 }
 BOOL CStoredCredentialManager::GetResponseFromCryptedChallenge(__in PBYTE pChallenge, __in DWORD dwChallengeSize, __in PCCERT_CONTEXT pCertContext, __in PWSTR Pin, __out PBYTE *pSymetricKey, __out DWORD *usSize)
 {
@@ -1404,9 +1405,10 @@ BOOL CStoredCredentialManager::GetPasswordFromChallengeResponse(__in DWORD dwRid
 		return GetPasswordFromCryptedChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
 	case eidpdtDPAPI:
 		return GetPasswordFromDPAPIChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
+	default:
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Type not implemented");
+		return FALSE;
 	}
-	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Type not implemented");
-	return FALSE;
 }
 
 BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)

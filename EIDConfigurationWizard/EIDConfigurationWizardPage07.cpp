@@ -64,10 +64,13 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, WPARAM wPara
 						pCredentialList = nullptr;
 					}
 					break;
+				default:
+					break;
 			}
 			break;
 		// WM_COMMAND handler removed - internet reporting button (IDC_07SENDREPORT) disabled
-		
+		default:
+			break;
 	}
 	return FALSE;
 }

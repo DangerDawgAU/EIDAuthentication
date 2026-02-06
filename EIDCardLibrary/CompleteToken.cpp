@@ -150,7 +150,7 @@ NTSTATUS UserNameToToken(__in PLSA_UNICODE_STRING AccountName,
 		TokenInformation->User.User.Sid = (PSID)Offset;
 		CopySid(GetLengthSid(UserSid),Offset,UserSid);
 		DebugPrintSid(UserName,UserSid);
-		TokenInformation->User.User.Attributes = 0; // cf msdn, no attributes definied for users sid
+		TokenInformation->User.User.Attributes = 0; // cf msdn, no attributes defined for users sid
 		Offset += GetLengthSid(UserSid);
 
 		TokenInformation->PrimaryGroup.PrimaryGroup = (PSID)Offset;
@@ -179,8 +179,8 @@ NTSTATUS UserNameToToken(__in PLSA_UNICODE_STRING AccountName,
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Group 2");
 		for (i=0; i<NumberOfLocalGroups; i++)
 		{
-			// get the attributes of group since the struct doesn't containt attributes
-			if (*GetSidSubAuthority(pGroupSid[NumberOfGroups+i],0)!=SECURITY_BUILTIN_DOMAIN_RID)
+				// get the attributes of group since the struct doesn't contain attributes
+				if (*GetSidSubAuthority(pGroupSid[NumberOfGroups+i],0)!=SECURITY_BUILTIN_DOMAIN_RID)
 			{
 				pTokenGroups->Groups[NumberOfGroups+i].Attributes=SE_GROUP_ENABLED|SE_GROUP_ENABLED_BY_DEFAULT;
 			}

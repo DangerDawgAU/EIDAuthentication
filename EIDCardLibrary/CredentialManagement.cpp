@@ -189,15 +189,12 @@ CSecurityContext::CSecurityContext(CCredential* pCredential)
 	dwRid = 0;
 	pCertContext = nullptr;
 	szUserName = nullptr;
-	if (pCredential)
+	if (pCredential && pCredential->_pCertInfo)
 	{
-		if (pCredential->_pCertInfo)
-		{
-			CRYPT_DATA_BLOB blob;
-			blob.pbData = pCredential->_pCertInfo->rgbHashOfCert;
-			blob.cbData = CERT_HASH_LENGTH;
-			pCertContext = FindCertificateFromHash(&blob);
-		}
+		CRYPT_DATA_BLOB blob;
+		blob.pbData = pCredential->_pCertInfo->rgbHashOfCert;
+		blob.cbData = CERT_HASH_LENGTH;
+		pCertContext = FindCertificateFromHash(&blob);
 	}
 }
 
@@ -210,7 +207,7 @@ BOOL CSecurityContext::Delete(ULONG_PTR phContext)
 	std::list<CSecurityContext*>::iterator iter;
 	for ( iter = Contexts.begin( ); iter != Contexts.end( ); iter++ )
 	{
-		CSecurityContext* currentContext = (CSecurityContext*) *iter;
+		CSecurityContext* currentContext = *iter;
 		if (currentContext == testedContext)
 		{
 			toDelete = testedContext;
@@ -237,7 +234,7 @@ CSecurityContext* CSecurityContext::GetContextFromHandle(ULONG_PTR context)
 	std::list<CSecurityContext*>::iterator iter;
 	for ( iter = Contexts.begin( ); iter != Contexts.end( ); iter++ )
 	{
-		CSecurityContext* currentContext = (CSecurityContext*) *iter;
+		CSecurityContext* currentContext = *iter;
 		if (currentContext == testedContext)
 		{
 			result = currentContext;
@@ -335,8 +332,9 @@ NTSTATUS CSecurityContext::BuildNegociateMessage(PSecBufferDesc Buffer)
 	memcpy(message->Signature, EID_MESSAGE_SIGNATURE, 8);
 	message->MessageType = EIDMTNegociate;
 	message->Version = EID_MESSAGE_VERSION;
-	memcpy_s(Hash, sizeof(Hash), _pCredential->_rgbHashOfCert, CERT_HASH_LENGTH);
-	memcpy_s(message->Hash, sizeof(message->Hash), _pCredential->_rgbHashOfCert, CERT_HASH_LENGTH);
+	static_assert(sizeof(Hash) == sizeof(_pCredential->_rgbHashOfCert), "Hash buffer sizes must match");
+	memcpy_s(Hash, sizeof(Hash), _pCredential->_rgbHashOfCert, sizeof(Hash));
+	memcpy_s(message->Hash, sizeof(message->Hash), _pCredential->_rgbHashOfCert, sizeof(message->Hash));
 	_State = EIDMSNegociate;
 	return SEC_I_CONTINUE_NEEDED;
 }
@@ -360,7 +358,8 @@ NTSTATUS CSecurityContext::ReceiveNegociateMessage(PSecBufferDesc Buffer)
 		return STATUS_INVALID_SIGNATURE;
 	}
 
-	memcpy_s(Hash, sizeof(Hash), message->Hash, CERT_HASH_LENGTH);
+	static_assert(sizeof(Hash) == sizeof(message->Hash), "Hash buffer sizes must match");
+	memcpy_s(Hash, sizeof(Hash), message->Hash, sizeof(Hash));
 	_State = EIDMSNegociate;
 	return STATUS_SUCCESS;
 }

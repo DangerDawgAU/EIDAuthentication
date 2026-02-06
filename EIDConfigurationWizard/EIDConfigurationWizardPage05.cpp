@@ -114,19 +114,22 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPAR
 				PropSheet_SetWizButtons(hWnd, PSWIZB_FINISH | PSWIZB_BACK);
 			}
 			break;
+		default:
+			break;
 		}
 		break;
 
 	case WM_NOTIFY :
-        LPNMHDR pnmh = (LPNMHDR)lParam;
-        switch(pnmh->code)
-        {
+		{
+			LPNMHDR pnmh = (LPNMHDR)lParam;
+			switch(pnmh->code)
+			{
 			case PSN_SETACTIVE :
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Activate");
 				//this is an interior page
 				ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_05LIST));
 				PopulateListViewListData(GetDlgItem(hWnd, IDC_05LIST));
-				// load string from ressource
+				// load string from resource
 				break;
 			case PSN_WIZFINISH :
 			case PSN_WIZNEXT:
@@ -153,7 +156,7 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPAR
 						}
 						else
 						{
-							ShowInvalidPasswordBalloon((hWnd));
+							ShowInvalidPasswordBalloon(hWnd);
 						}
 						SetWindowLongPtr(hWnd,DWLP_MSGRESULT,(LONG_PTR)IDD_05PASSWORD);
 					}
@@ -175,7 +178,15 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPAR
 						PropSheet_SetCurSelByID(hWnd, IDD_07TESTRESULTNOTOK);
 						return TRUE;
 					}
-					// go by default to the success page
+					// Test succeeded - go to the success page
+					if (pnmh->code == PSN_WIZFINISH)
+					{
+						// For PSN_WIZFINISH, explicitly navigate to success page and prevent wizard from closing
+						PropSheet_SetCurSelByID(hWnd, IDD_06TESTRESULTOK);
+						SetWindowLongPtr(hWnd, DWLP_MSGRESULT, TRUE);
+						return TRUE;
+					}
+					// For PSN_WIZNEXT, wizard naturally proceeds to next page (success page)
 				}
 				break;
 			case PSN_RESET:
@@ -214,17 +225,19 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPAR
 				}
 				break;
 			case NM_DBLCLK:
-				if (pnmh->idFrom == IDC_05LIST && pCredentialList)
+				if (pnmh->idFrom == IDC_05LIST && pCredentialList &&
+					((LPNMITEMACTIVATE)lParam)->iItem >= 0 && (DWORD)((LPNMITEMACTIVATE)lParam)->iItem < pCredentialList->ContainerHolderCount())
 				{
-					if (((LPNMITEMACTIVATE)lParam)->iItem >= 0 && (DWORD)((LPNMITEMACTIVATE)lParam)->iItem < pCredentialList->ContainerHolderCount())
-					{
-						pCredentialList->GetContainerHolderAt(((LPNMITEMACTIVATE)lParam)->iItem)->GetContainer()->ViewCertificate(hWnd);
-					}
+					pCredentialList->GetContainerHolderAt(((LPNMITEMACTIVATE)lParam)->iItem)->GetContainer()->ViewCertificate(hWnd);
 				}
 				break;
-			
+			default:
+				break;
+			}
+			break;
 		}
-
+	default:
+		break;
     }
 	return FALSE;
 }

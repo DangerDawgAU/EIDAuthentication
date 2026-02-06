@@ -32,6 +32,7 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, WPARAM wParam, 
 		break;
 	// WM_COMMAND handler removed - internet reporting button (IDC_06UPDATEDATABASE) disabled
 	case WM_NOTIFY :
+		{
 			LPNMHDR pnmh = (LPNMHDR)lParam;
 			switch(pnmh->code)
 			{
@@ -52,7 +53,13 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, WPARAM wParam, 
 					pCredentialList = nullptr;
 				}
 				break;
+			default:
+				break;
 			}
+			break;
+		}
+	default:
+		break;
 	}
 	return FALSE;
 }

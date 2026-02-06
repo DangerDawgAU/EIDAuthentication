@@ -202,12 +202,9 @@ HRESULT ProtectIfNecessaryAndCopyPassword(
         // If the password is already encrypted, we should not encrypt it again.
         // An encrypted password may be received through SetSerialization in the 
         // CPUS_LOGON scenario during a Terminal Services connection, for instance.
-        if(CredIsProtectedW(pwzPassword, &protectionType))
+        if(CredIsProtectedW(pwzPassword, &protectionType) && CredUnprotected != protectionType)
         {
-            if(CredUnprotected != protectionType)
-            {
-                bCredAlreadyEncrypted = true;
-            }
+            bCredAlreadyEncrypted = true;
         }
 
         // Passwords should not be encrypted in the CPUS_CREDUI scenario.  We
@@ -281,7 +278,9 @@ static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT messa
                 return TRUE; 
 			case IDC_CANCEL:
 				EndDialog(hwndDlg,0);
-                return TRUE; 
+                return TRUE;
+			default:
+				break;
             }
 			break;
 			// g_hLink is the handle of the SysLink control.
@@ -332,8 +331,12 @@ static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT messa
 					}
 					break;
 				}
+			default:
+				break;
 			}
-
+			break;
+		default:
+			break;
 	}
 	return FALSE;
 }

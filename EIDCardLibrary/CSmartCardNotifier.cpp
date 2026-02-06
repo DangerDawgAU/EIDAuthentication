@@ -61,7 +61,7 @@ HRESULT CSmartCardConnectionNotifier::Start()
 	if(nullptr == _CallBack)
 	{
 		// no callback defined : don't launch
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No callback definied");
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No callback defined");
 		return E_FAIL;
 	}
 	if (_hThread != nullptr)
@@ -219,11 +219,10 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 			for ( dwI=0; dwI < dwRdrCount; dwI++)
 			{
 				
-				if (!(SCARD_STATE_MUTE & rgscState[dwI].dwEventState))
+				// Report the status for all the reader where a change has been detected.
+				if (!(SCARD_STATE_MUTE & rgscState[dwI].dwEventState) &&
+					(SCARD_STATE_CHANGED & rgscState[dwI].dwEventState))
 				{
-					// Report the status for all the reader where a change has been detected.
-					if ((0 != ( SCARD_STATE_CHANGED & rgscState[dwI].dwEventState)))
-					{
 						EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"SCardGetStatusChange :0x%08X",rgscState[dwI].dwEventState);
 						if ( (SCARD_STATE_PRESENT  & rgscState[dwI].dwEventState) &&
 								!(SCARD_STATE_PRESENT & rgscState[dwI].dwCurrentState))
@@ -261,7 +260,6 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 								Callback(EIDCPRSDisconnected,rgscState[dwI].szReader, nullptr, 0);
 								rgscState[dwI].dwCurrentState = SCARD_STATE_EMPTY;
 						}
-					}				
 				}
 				// Memorize the current state.
 				rgscState[dwI].dwCurrentState = rgscState[dwI].dwEventState;
@@ -288,12 +286,10 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 			// if the system cancelled our notification, we need to notify
 			// that a card has been removed
 			// so it can be added again
-			if (Status == SCARD_E_SYSTEM_CANCELLED)
+			if (Status == SCARD_E_SYSTEM_CANCELLED &&
+				(SCARD_STATE_PRESENT & rgscState[dwI].dwEventState))
 			{
-				if (SCARD_STATE_PRESENT  & rgscState[dwI].dwEventState)
-				{
-					Callback(EIDCPRSDisconnected,rgscState[dwI].szReader, nullptr, 0);
-				}
+				Callback(EIDCPRSDisconnected,rgscState[dwI].szReader, nullptr, 0);
 			}
 			EIDFree((PVOID)rgscState[dwI].szReader);
 		}

@@ -30,6 +30,8 @@ INT_PTR CALLBACK	WndProc_RemovePolicy(HWND hWnd, UINT message, WPARAM wParam, LP
 		case 3:
 			CheckRadioButton(hWnd, IDC_NOACTION, IDC_DISCONNECT, IDC_DISCONNECT);
 			break;
+		default:
+			break;
 		}
 		SetIcon(hWnd);
 		break;
@@ -60,7 +62,12 @@ INT_PTR CALLBACK	WndProc_RemovePolicy(HWND hWnd, UINT message, WPARAM wParam, LP
 		case IDCANCEL:
 			EndDialog(hWnd, 0);
 			return TRUE;
+		default:
+			break;
 		}
+		break;
+	default:
+		break;
 	}
 	return FALSE;
 }

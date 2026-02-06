@@ -168,8 +168,10 @@ BOOL WINAPI DllMain(
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
         break;
+    default:
+        break;
     }
-    
+
     g_hinst = hinstDll;
     return TRUE;
 

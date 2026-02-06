@@ -306,14 +306,14 @@ extern "C"
 				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"EIDCMCreateStoredCredential");
 				if (!MatchUserOrIsAdmin(pBuffer->dwRid))
 				{
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Not autorized");
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Not authorized");
 					break;
 				}
-				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Has Autorization for rid = 0x%x", pBuffer->dwRid);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Has Authorization for rid = 0x%x", pBuffer->dwRid);
 				pPointer = (PBYTE) pBuffer->szPassword - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
 				pBuffer->szPassword = (PWSTR) pPointer;
-				pPointer = (PBYTE) pBuffer->pbCertificate - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
-				pBuffer->pbCertificate = (PBYTE) pPointer;
+				pPointer = pBuffer->pbCertificate - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
+				pBuffer->pbCertificate = pPointer;
 				pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, pBuffer->pbCertificate, pBuffer->dwCertificateSize);
 				if (!pCertContext)
 				{
@@ -336,10 +336,10 @@ extern "C"
 				if (!MatchUserOrIsAdmin(pBuffer->dwRid))
 				{
 					pBuffer->dwError = GetLastError();
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Not autorized");
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Not authorized");
 					break;
 				}
-				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Has Autorization for rid = 0x%x", pBuffer->dwRid);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Has Authorization for rid = 0x%x", pBuffer->dwRid);
 				fStatus = CStoredCredentialManager::Instance()->RemoveStoredCredential(pBuffer->dwRid);
 				if (!fStatus)
 				{
@@ -352,10 +352,10 @@ extern "C"
 				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"EIDCMHasStoredCredential");
 				if (!MatchUserOrIsAdmin(pBuffer->dwRid))
 				{
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Not autorized");
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Not authorized");
 					break;
 				}
-				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Has Autorization for rid = 0x%x", pBuffer->dwRid);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Has Authorization for rid = 0x%x", pBuffer->dwRid);
 				fStatus = CStoredCredentialManager::Instance()->HasStoredCredential(pBuffer->dwRid);
 				if (!fStatus)
 				{
@@ -373,10 +373,10 @@ extern "C"
 				if (!MatchUserOrIsAdmin(0))
 				{
 					pBuffer->dwError = GetLastError();
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Not autorized");
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Not authorized");
 					break;
 				}
-				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Has Autorization for rid = 0x%x", pBuffer->dwRid);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Has Authorization for rid = 0x%x", pBuffer->dwRid);
 				fStatus = CStoredCredentialManager::Instance()->RemoveAllStoredCredential();
 				if (!fStatus)
 				{
@@ -392,11 +392,11 @@ extern "C"
 				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"EIDCMGetStoredCredentialRid");
 				if (!MatchUserOrIsAdmin(0))
 				{
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Not autorized");
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Not authorized");
 					break;
 				}
-				pPointer = (PBYTE) pBuffer->pbCertificate - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
-				pBuffer->pbCertificate = (PBYTE) pPointer;
+				pPointer = pBuffer->pbCertificate - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
+				pBuffer->pbCertificate = pPointer;
 				pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, pBuffer->pbCertificate, pBuffer->dwCertificateSize);
 				if (!pCertContext)
 				{
@@ -498,9 +498,9 @@ extern "C"
 			StatusReturned = MyLsaDispatchTable->AllocateClientBuffer(ClientRequest, sizeof(EID_MSGINA_AUTHENTICATION_CHALLENGE_ANSWER) + dwChallengeSize, ProtocolReturnBuffer);
 			if (StatusReturned == STATUS_SUCCESS) 
 			{
-				if (pbChallenge) 
+				if (pbChallenge)
 				{
-					response.pbChallenge = (PBYTE)((PUCHAR)*ProtocolReturnBuffer + sizeof(EID_MSGINA_AUTHENTICATION_CHALLENGE_ANSWER));
+					response.pbChallenge = (PUCHAR)*ProtocolReturnBuffer + sizeof(EID_MSGINA_AUTHENTICATION_CHALLENGE_ANSWER);
 				}
 				StatusReturned = MyLsaDispatchTable->CopyToClientBuffer(ClientRequest, sizeof(EID_MSGINA_AUTHENTICATION_CHALLENGE_ANSWER), *ProtocolReturnBuffer, &response);
 				if (StatusReturned == STATUS_SUCCESS && pbChallenge) 

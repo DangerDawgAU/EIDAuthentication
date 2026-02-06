@@ -145,7 +145,7 @@ HRESULT CMessageCredential::GetFieldState(
     )
 {
     HRESULT hr;
-    // Make sure the field and other paramters are valid.
+    // Make sure the field and other parameters are valid.
     if (dwFieldID < ARRAYSIZE(_rgFieldStatePairs) && pcpfs && pcpfis)
     {
         *pcpfis = _rgFieldStatePairs[dwFieldID].cpfis;

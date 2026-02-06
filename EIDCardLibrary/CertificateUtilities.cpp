@@ -450,6 +450,9 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			case UI_CERTIFICATE_INFO_SAVEON_SYSTEMSTORE: // machine
 			case UI_CERTIFICATE_INFO_SAVEON_SMARTCARD: // smart card
 				dwFlag |= CRYPT_MACHINE_KEYSET;
+				break;
+			default:
+				break;
 		}
 		// create container
 		if (!CryptAcquireContext(
@@ -475,6 +478,9 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			case UI_CERTIFICATE_INFO_SAVEON_SYSTEMSTORE: // machine
 			case UI_CERTIFICATE_INFO_SAVEON_FILE: // file
 				dwFlag |= CRYPT_EXPORTABLE;
+				break;
+			default:
+				break;
 		}
 		// Key Size
 		dwFlag |= pCertificateInfo->dwKeySizeInBits * 0x10000;
@@ -1042,13 +1048,15 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 				__leave;
 			}
 			break;
+		default:
+			break;
 		}
 		if (pCertificateInfo->fReturnCerticateContext)
 		{
 			pCertificateInfo->pNewCertificate = CertDuplicateCertificateContext(pNewCertificateContext);
 		}
-		// don't destroy the container is creation is successfull
-		if (pCertificateInfo->dwSaveon != UI_CERTIFICATE_INFO_SAVEON_FILE) 
+		// don't destroy the container is creation is successful
+		if (pCertificateInfo->dwSaveon != UI_CERTIFICATE_INFO_SAVEON_FILE)
 			bDestroyContainer = FALSE;
 		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Success");
 		fReturn = TRUE;

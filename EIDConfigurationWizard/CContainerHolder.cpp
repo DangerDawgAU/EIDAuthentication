@@ -150,6 +150,8 @@ int CContainerHolderTest::GetImage(DWORD dwCheckNum)
 			return CHECK_SUCCESS;
 		else
 			return CHECK_WARNING;
+	default:
+		break;
 	}
 	return 0;
 }
@@ -183,6 +185,8 @@ PTSTR CContainerHolderTest::GetDescription(DWORD dwCheckNum)
 			LoadString(g_hinst,IDS_04ENCRYPTIONOK,szDescription, dwWords);
 		else
 			LoadString(g_hinst,IDS_04ENCRYPTIONNOK,szDescription, dwWords);
+		break;
+	default:
 		break;
 	}
 	return szDescription;
@@ -218,6 +222,8 @@ PTSTR CContainerHolderTest::GetSolveDescription(DWORD dwCheckNum)
 				LoadString(g_hinst,IDS_04TRUSTENABLETIMEINVALID,szDescription, dwWords);
 			}
 		}
+		break;
+	default:
 		break;
 	}
 	return szDescription;
@@ -320,6 +326,9 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 				fReturn = RunElevatedWithParam(TEXT("ENABLETIMEINVALID"), dwError);
 			}
 		}
+		break;
+	default:
+		break;
 	}
 	SetLastError(dwError);
 	return fReturn;
