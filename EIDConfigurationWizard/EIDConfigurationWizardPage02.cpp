@@ -2,11 +2,13 @@
 #include <tchar.h>
 #include <CommCtrl.h>
 #include <shellapi.h>
+#include <string>
 
 #include "global.h"
 #include "EIDConfigurationWizard.h"
 #include "../EIDCardLibrary/CertificateUtilities.h"
 #include "../EIDCardLibrary/Tracing.h"
+#include "../EIDCardLibrary/StringConversion.h"
 // OnlineDatabase.h removed - internet reporting functionality disabled
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/Package.h"
@@ -121,11 +123,11 @@ INT_PTR CALLBACK	WndProc_02ENABLE(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			Button_SetElevationRequiredState(GetDlgItem(hWnd,IDC_02NEW),TRUE);
 		}
 		{
-			TCHAR szNote[256] = TEXT("");
-			LoadString(g_hinst,IDS_02NEWNOTE, szNote, ARRAYSIZE(szNote));
-			Button_SetNote(GetDlgItem(hWnd,IDC_02NEW),szNote);
-			LoadString(g_hinst,IDS_02EXISTINGNOTE, szNote, ARRAYSIZE(szNote));
-			Button_SetNote(GetDlgItem(hWnd,IDC_02EXISTING),szNote);
+			std::wstring szNote = EID::LoadStringW(g_hinst, IDS_02NEWNOTE);
+			
+			Button_SetNote(GetDlgItem(hWnd, IDC_02NEW), szNote.c_str());
+			
+			Button_SetNote(GetDlgItem(hWnd, IDC_02EXISTING), szNote.c_str());
 		}
 		if (!LsaEIDHasStoredCredential(nullptr))
 		{
@@ -207,9 +209,9 @@ INT_PTR CALLBACK	WndProc_02ENABLE(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			break;
 		case IDC_01DELETE:
 			{
-				TCHAR szMessage[256] = TEXT("");
-				LoadString(g_hinst,IDS_AREYOUSURE,szMessage,ARRAYSIZE(szMessage));
-				if (IDYES == MessageBox(hWnd,szMessage,TEXT(""),MB_ICONWARNING|MB_YESNO))
+				std::wstring szMessage;
+				szMessage = EID::LoadStringW(g_hinst, IDS_AREYOUSURE);
+				if (IDYES == MessageBox(hWnd, szMessage.c_str(), L"",MB_ICONWARNING|MB_YESNO))
 				{
 					if (!LsaEIDRemoveStoredCredential(nullptr))
 					{

@@ -34,6 +34,8 @@
 #include "EIDCardLibrary.h"
 #include "Tracing.h"
 #include "guid.h"
+#include "StringConversion.h"
+#include <string>
 
 #pragma comment(lib,"Dbghelp")
 
@@ -176,15 +178,15 @@ void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR
 			// may contain sensitive information - generate a dump only if the debugging is active
 			if (IsTracingEnabled)
 			{
-				HANDLE fileHandle = CreateFile (TEXT("c:\\EIDAuthenticateDump.dmp"), GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+				HANDLE fileHandle = CreateFile (L"c:\\EIDAuthenticateDump.dmp", GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 				if (fileHandle == INVALID_HANDLE_VALUE)
 				{
 					if (GetLastError() == 0x5)
 					{
 						EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__,WINEVENT_LEVEL_WARNING,L"Unable to create minidump file c:\\EIDAuthenticate.dmp");
-						TCHAR szFileName[MAX_PATH];
-						GetTempPath(MAX_PATH, szFileName);
-						_tcscat_s(szFileName, MAX_PATH, TEXT("EIDAuthenticateDump.dmp"));
+						wchar_t szFileName[MAX_PATH];
+						GetTempPathW(MAX_PATH, szFileName);
+						wcscat_s(szFileName, MAX_PATH, L"EIDAuthenticateDump.dmp");
 						EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__,WINEVENT_LEVEL_WARNING,L"Trying to create dump file %s",szFileName);
 						fileHandle = CreateFile (szFileName, GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 					}
@@ -302,9 +304,9 @@ void EIDCardLibraryDumpMemoryEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, 
  */
 void MessageBoxWin32Ex2(DWORD status, HWND hWnd, LPCSTR szFile, DWORD dwLine) {
 	LPVOID Error;
-	TCHAR szMessage[1024];
-	TCHAR szTitle[1024];
-	_stprintf_s(szTitle,ARRAYSIZE(szTitle),TEXT("%hs(%d)"),szFile, dwLine);
+	wchar_t szMessage[1024];
+	wchar_t szTitle[1024];
+	swprintf_s(szTitle,ARRAYSIZE(szTitle),L"%hs(%d)",szFile, dwLine);
 	if (status >= WINHTTP_ERROR_BASE && status <= WINHTTP_ERROR_LAST)
 	{
 		// winhttp error message
@@ -317,7 +319,7 @@ void MessageBoxWin32Ex2(DWORD status, HWND hWnd, LPCSTR szFile, DWORD dwLine) {
 		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
 			nullptr,status,0,(LPTSTR)&Error,0,nullptr);
 	}
-	_stprintf_s(szMessage,ARRAYSIZE(szMessage),TEXT("0x%08X - %s"),status,(wchar_t *) Error);
+	swprintf_s(szMessage,ARRAYSIZE(szMessage),L"0x%08X - %s",status,(wchar_t *) Error);
 	EIDCardLibraryTraceEx(szFile, dwLine, "MessageBoxWin32Ex2", WINEVENT_LEVEL_INFO, L"%s", szMessage);
 	MessageBox(hWnd,szMessage, szTitle ,MB_ICONASTERISK);
 	LocalFree(Error);
@@ -345,9 +347,9 @@ BOOL StartLogging()
 		Properties.TraceProperties.LogFileNameOffset = sizeof(EVENT_TRACE_PROPERTIES);
 		Properties.TraceProperties.LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES) + 1024;
 		Properties.TraceProperties.MaximumFileSize = 8;
-		_tcscpy_s(Properties.LogFileName,1024,TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl"));
+		wcscpy_s(Properties.LogFileName,1024,L"c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl");
 		DeleteFile(Properties.LogFileName);
-		err = StartTrace(&SessionHandle, TEXT("EIDCredentialProvider"), &(Properties.TraceProperties));
+		err = StartTrace(&SessionHandle, L"EIDCredentialProvider", &(Properties.TraceProperties));
 		if (err != ERROR_SUCCESS)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"StartTrace 0x%08x", err);
@@ -387,7 +389,7 @@ BOOL StopLogging()
 		Properties.TraceProperties.LogFileNameOffset = sizeof(EVENT_TRACE_PROPERTIES);
 		Properties.TraceProperties.LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES) + 1024 * sizeof(TCHAR);
 		Properties.TraceProperties.MaximumFileSize = 8;
-		err = ControlTrace(0, TEXT("EIDCredentialProvider"), &(Properties.TraceProperties),EVENT_TRACE_CONTROL_STOP);
+		err = ControlTrace(0, L"EIDCredentialProvider", &(Properties.TraceProperties),EVENT_TRACE_CONTROL_STOP);
 		if (err != ERROR_SUCCESS && err != 0x00001069)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"ControlTrace 0x%08x", err);

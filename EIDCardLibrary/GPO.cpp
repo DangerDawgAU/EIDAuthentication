@@ -25,37 +25,39 @@
 #include <GPEdit.h>
 #include "GPO.h"
 #include "Tracing.h"
+#include "StringConversion.h"
+#include <string>
 
 #pragma comment(lib,"Advapi32")
 
 /** Used to manage policy key retrieval */
 
-TCHAR szMainGPOKey[] = _T("SOFTWARE\\Policies\\Microsoft\\Windows\\SmartCardCredentialProvider");
-TCHAR szRemoveGPOKey[] = _T("Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon");
-TCHAR szForceGPOKey[] = _T("Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System");
+constexpr LPCWSTR szMainGPOKey = L"SOFTWARE\\Policies\\Microsoft\\Windows\\SmartCardCredentialProvider";
+constexpr LPCWSTR szRemoveGPOKey = L"Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon";
+constexpr LPCWSTR szForceGPOKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System";
 struct GPOInfo
 {
-	LPCTSTR Key;
-	LPCTSTR Value;
+	LPCWSTR Key;
+	LPCWSTR Value;
 };
 
 GPOInfo MyGPOInfo[] =
 {
-  {szMainGPOKey, _T("AllowSignatureOnlyKeys") },
-  {szMainGPOKey, _T("AllowCertificatesWithNoEKU") },
-  {szMainGPOKey, _T("AllowTimeInvalidCertificates") },
-  {szMainGPOKey, _T("AllowIntegratedUnblock") },
-  {szMainGPOKey, _T("ReverseSubject") },
-  {szMainGPOKey, _T("X509HintsNeeded") },
-  {szMainGPOKey, _T("IntegratedUnblockPromptString") },
-  {szMainGPOKey, _T("CertPropEnabledString") },
-  {szMainGPOKey, _T("CertPropRootEnabledString") },
-  {szMainGPOKey, _T("RootsCleanupOption") },
-  {szMainGPOKey, _T("FilterDuplicateCertificates") },
-  {szMainGPOKey, _T("ForceReadingAllCertificates") },
-  {szForceGPOKey, _T("scforceoption") },
-  {szRemoveGPOKey, _T("scremoveoption") },
-  {szMainGPOKey, _T("EnforceCSPWhitelist") }  // Security: block CSPs not in whitelist
+  {szMainGPOKey, L"AllowSignatureOnlyKeys" },
+  {szMainGPOKey, L"AllowCertificatesWithNoEKU" },
+  {szMainGPOKey, L"AllowTimeInvalidCertificates" },
+  {szMainGPOKey, L"AllowIntegratedUnblock" },
+  {szMainGPOKey, L"ReverseSubject" },
+  {szMainGPOKey, L"X509HintsNeeded" },
+  {szMainGPOKey, L"IntegratedUnblockPromptString" },
+  {szMainGPOKey, L"CertPropEnabledString" },
+  {szMainGPOKey, L"CertPropRootEnabledString" },
+  {szMainGPOKey, L"RootsCleanupOption" },
+  {szMainGPOKey, L"FilterDuplicateCertificates" },
+  {szMainGPOKey, L"ForceReadingAllCertificates" },
+  {szForceGPOKey, L"scforceoption" },
+  {szRemoveGPOKey, L"scremoveoption" },
+  {szMainGPOKey, L"EnforceCSPWhitelist" }  // Security: block CSPs not in whitelist
 };
 
 // Validates that a GPOPolicy enum value is within valid bounds to prevent array overflow
@@ -76,7 +78,7 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 	DWORD value = 0;
 	DWORD size = sizeof(DWORD);
 	DWORD type=REG_SZ;
-	TCHAR szValue[2]=TEXT("0");
+	wchar_t szValue[2] = L"0";
 	DWORD size2 = sizeof(szValue);
 	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,MyGPOInfo[Policy].Key,0, KEY_READ, &key)==ERROR_SUCCESS){
 		// scremoveoption: DWORD value stored as PTSTR
@@ -116,19 +118,19 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 
 BOOL SetRemovePolicyValue(DWORD dwActivate)
 {
-	TCHAR szValue[2];
+	wchar_t szValue[2];
 	LONG lReturn;
 	DWORD dwError = 0;
 	SC_HANDLE hService = nullptr;
 	SC_HANDLE hServiceManager = nullptr;
 	SERVICE_STATUS ServiceStatus;
-	
-	_stprintf_s(szValue, ARRAYSIZE(szValue), TEXT("%d"),dwActivate);
+
+	swprintf_s(szValue, ARRAYSIZE(szValue), L"%d", dwActivate);
 	__try
 	{
-		lReturn = RegSetKeyValue(HKEY_LOCAL_MACHINE, 
+		lReturn = RegSetKeyValue(HKEY_LOCAL_MACHINE,
 			MyGPOInfo[scremoveoption].Key,
-			MyGPOInfo[scremoveoption].Value, REG_SZ, szValue,sizeof(TCHAR)*ARRAYSIZE(szValue));
+			MyGPOInfo[scremoveoption].Value, REG_SZ, szValue, sizeof(wchar_t)*ARRAYSIZE(szValue));
 		if ( lReturn != ERROR_SUCCESS)
 		{
 			dwError = lReturn;
@@ -140,7 +142,7 @@ BOOL SetRemovePolicyValue(DWORD dwActivate)
 			dwError = GetLastError();
 			__leave;
 		}
-		hService = OpenService(hServiceManager, TEXT("ScPolicySvc"), SERVICE_CHANGE_CONFIG | SERVICE_START | SERVICE_STOP | SERVICE_QUERY_STATUS);
+		hService = OpenService(hServiceManager, L"ScPolicySvc", SERVICE_CHANGE_CONFIG | SERVICE_START | SERVICE_STOP | SERVICE_QUERY_STATUS);
 		if (!hService)
 		{
 			dwError = GetLastError();

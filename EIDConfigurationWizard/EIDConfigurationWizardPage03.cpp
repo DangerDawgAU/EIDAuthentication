@@ -6,6 +6,8 @@
 #include "EIDConfigurationWizard.h"
 #include "../EIDCardLibrary/CertificateUtilities.h"
 #include "../EIDCardLibrary/Tracing.h"
+#include "../EIDCardLibrary/StringConversion.h"
+#include <string>
 
 // used to know what root certicate we are refering
 // null = unknown
@@ -41,14 +43,13 @@ VOID ValidateCertificateValidity(HWND hWnd, PCCERT_CONTEXT pRootCert)
 	if (wCAExpiryYear > 0 && wCertExpiryYear > wCAExpiryYear)
 	{
 		// Show warning - certificate will expire after root CA
-		TCHAR szWarning[256] = TEXT("");
-		LoadString(g_hinst, IDS_03VALIDITYWARNING, szWarning, ARRAYSIZE(szWarning));
-		SetWindowText(GetDlgItem(hWnd, IDC_03VALIDITYWARNING), szWarning);
+		std::wstring szWarning = EID::LoadStringW(g_hinst, IDS_03VALIDITYWARNING);
+		EID::SetWindowTextW(GetDlgItem(hWnd, IDC_03VALIDITYWARNING), szWarning);
 		// Set text color to red (we'll use a simple approach - just show the text)
 	}
 	else
 	{
-		SetWindowText(GetDlgItem(hWnd, IDC_03VALIDITYWARNING), TEXT(""));
+		EID::SetWindowTextW(GetDlgItem(hWnd, IDC_03VALIDITYWARNING), L"");
 	}
 }
 
@@ -56,28 +57,27 @@ BOOL SelectFile(HWND hWnd)
 {
 	// select file to open
 	PWSTR szFileName = nullptr;
-	TCHAR szSpecContainer[256] = TEXT("");
-	TCHAR szSpecAll[256] = TEXT("");
-	LoadString(g_hinst,IDS_03CONTAINERFILES,szSpecContainer,ARRAYSIZE(szSpecContainer));
-	LoadString(g_hinst,IDS_03ALLFILES,szSpecAll,ARRAYSIZE(szSpecAll));
+	std::wstring szSpecContainer = EID::LoadStringW(g_hinst, IDS_03CONTAINERFILES);
+	std::wstring szSpecAll = EID::LoadStringW(g_hinst, IDS_03ALLFILES);
 	OPENFILENAME ofn;
-	TCHAR szFile[MAX_PATH], szFilter[256];
-	_stprintf_s(szFilter, 256, TEXT("%s%c*.pfx;*.p12%c%s%c*.*%c"),szSpecContainer,0,0,szSpecAll,0,0);
+	wchar_t szFile[MAX_PATH] = { 0 };
+	std::wstring szFilter = EID::Format(L"%s%c*.pfx;*.p12%c%s%c*.*%c",
+	                                     szSpecContainer.c_str(), 0, 0,
+	                                     szSpecAll.c_str(), 0, 0);
 	ZeroMemory(&ofn, sizeof(ofn));
 	ofn.lStructSize = sizeof(ofn);
 	ofn.hwndOwner = hWnd;
 	ofn.lpstrFile = szFile;
-	ofn.lpstrFile[0] = '\0';
-	ofn.nMaxFile = sizeof(szFile);
-	ofn.lpstrFilter = szFilter;
+	ofn.nMaxFile = ARRAYSIZE(szFile);
+	ofn.lpstrFilter = szFilter.c_str();
 	ofn.nFilterIndex = 1;
 	ofn.lpstrFileTitle = nullptr;
 	ofn.nMaxFileTitle = 0;
 	ofn.lpstrInitialDir = nullptr;
 	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-	if (GetOpenFileName(&ofn)==TRUE) 
+	if (GetOpenFileName(&ofn)==TRUE)
 	{
-		SetWindowText(GetDlgItem(hWnd,IDC_03FILENAME),szFile);
+		EID::SetWindowTextW(GetDlgItem(hWnd,IDC_03FILENAME), szFile);
 		CheckDlgButton(hWnd,IDC_03IMPORT,BST_CHECKED);
 		CheckDlgButton(hWnd,IDC_03USETHIS,BST_UNCHECKED);
 		CheckDlgButton(hWnd,IDC_03_CREATE,BST_UNCHECKED);
@@ -89,11 +89,10 @@ BOOL SelectFile(HWND hWnd)
 BOOL CreateRootCertificate()
 {
 	BOOL fReturn;
-	TCHAR szComputerName[MAX_COMPUTERNAME_LENGTH + 1 ];
-	TCHAR szSubject[MAX_COMPUTERNAME_LENGTH + 4];
-	DWORD dwSize = ARRAYSIZE(szComputerName);
-	GetComputerName(szComputerName, &dwSize);
-	_stprintf_s(szSubject,ARRAYSIZE(szSubject),TEXT("CN=%s"),szComputerName);
+	wchar_t szComputerNameBuf[MAX_COMPUTERNAME_LENGTH + 1];
+	DWORD dwSize = ARRAYSIZE(szComputerNameBuf);
+	GetComputerName(szComputerNameBuf, &dwSize);
+	std::wstring szSubject = EID::Format(L"CN=%s", szComputerNameBuf);
 	UI_CERTIFICATE_INFO CertificateInfo;
 	memset(&CertificateInfo, 0, sizeof(CertificateInfo));
 	CertificateInfo.dwSaveon = UI_CERTIFICATE_INFO_SAVEON_SYSTEMSTORE;
@@ -105,7 +104,7 @@ BOOL CreateRootCertificate()
 	GetSystemTime(&(CertificateInfo.EndTime));
 	CertificateInfo.EndTime.wYear += 10;
 	CertificateInfo.fReturnCerticateContext = TRUE;
-	CertificateInfo.szSubject = szSubject;
+	CertificateInfo.szSubject = (PWSTR)szSubject.c_str();
 	fReturn = CreateCertificate(&CertificateInfo);
 	DWORD dwError = GetLastError();
 	if (fReturn)
@@ -125,8 +124,7 @@ BOOL CreateSmartCardCertificate(PCCERT_CONTEXT pCertificate, PWSTR szReader, PWS
 {
 	BOOL fReturn;
 	UI_CERTIFICATE_INFO CertificateInfo;
-	TCHAR szSubject[256];
-	_stprintf_s(szSubject,ARRAYSIZE(szSubject),TEXT("CN=%s"),szUserName);
+	std::wstring szSubject = EID::Format(L"CN=%s", szUserName);
 	memset(&CertificateInfo, 0, sizeof(CertificateInfo));
 	CertificateInfo.dwSaveon = UI_CERTIFICATE_INFO_SAVEON_SMARTCARD;
 	CertificateInfo.szReader = szReader;
@@ -134,7 +132,7 @@ BOOL CreateSmartCardCertificate(PCCERT_CONTEXT pCertificate, PWSTR szReader, PWS
 	CertificateInfo.dwKeyType = AT_KEYEXCHANGE;
 	CertificateInfo.bHasSmartCardAuthentication = TRUE;
 	CertificateInfo.pRootCertificate = pCertificate;
-	CertificateInfo.szSubject = szSubject;
+	CertificateInfo.szSubject = (PWSTR)szSubject.c_str();
 	GetSystemTime(&(CertificateInfo.StartTime));
 	GetSystemTime(&(CertificateInfo.EndTime));
 	// Use configurable validity period
@@ -156,34 +154,34 @@ BOOL CreateSmartCardCertificate(PCCERT_CONTEXT pCertificate, PWSTR szReader, PWS
 
 VOID UpdateCertificatePanel(HWND hWnd)
 {
-	TCHAR szBuffer[1024];
-	TCHAR szBuffer2[1024];
-	TCHAR szMessage[256] = TEXT("");
-	TCHAR szLocalDate[255], szLocalTime[255];
+	wchar_t szBuffer[1024];
+	wchar_t szBuffer2[1024];
+	wchar_t szLocalDate[255];
+	wchar_t szLocalTime[255];
 	SYSTEMTIME st;
 	SendDlgItemMessage(hWnd,IDC_03CERTIFICATEPANEL,LB_RESETCONTENT,0,0);
-	// object : 
+	// object :
 	CertGetNameString(pRootCertificate,CERT_NAME_SIMPLE_DISPLAY_TYPE,0,nullptr,szBuffer2,ARRAYSIZE(szBuffer2));
-	LoadString(g_hinst, IDS_03OBJECT, szMessage, ARRAYSIZE(szMessage));
-	_stprintf_s(szBuffer, ARRAYSIZE(szBuffer), szMessage,  szBuffer2);
-	SendDlgItemMessage(hWnd,IDC_03CERTIFICATEPANEL,LB_ADDSTRING,0,(LPARAM) szBuffer);
+	std::wstring szMessage = EID::LoadStringW(g_hinst, IDS_03OBJECT);
+	std::wstring szBuf = EID::Format(szMessage.c_str(), szBuffer2);
+	SendDlgItemMessage(hWnd,IDC_03CERTIFICATEPANEL,LB_ADDSTRING,0,(LPARAM) szBuf.c_str());
 	// delivered :
 	FileTimeToSystemTime( &(pRootCertificate->pCertInfo->NotBefore), &st );
 	GetDateFormat( LOCALE_USER_DEFAULT, DATE_LONGDATE, &st, nullptr, szLocalDate, ARRAYSIZE(szLocalDate));
-	   GetTimeFormat( LOCALE_USER_DEFAULT, 0, &st, nullptr, szLocalTime, ARRAYSIZE(szLocalTime) );
+	GetTimeFormat( LOCALE_USER_DEFAULT, 0, &st, nullptr, szLocalTime, ARRAYSIZE(szLocalTime));
 
-	LoadString(g_hinst, IDS_03DELIVERED, szMessage, ARRAYSIZE(szMessage));
-	_stprintf_s(szBuffer, ARRAYSIZE(szBuffer), szMessage, szLocalDate, szLocalTime);
-	SendDlgItemMessage(hWnd,IDC_03CERTIFICATEPANEL,LB_ADDSTRING,0,(LPARAM) szBuffer);
+	szMessage = EID::LoadStringW(g_hinst, IDS_03DELIVERED);
+	szBuf = EID::Format(szMessage.c_str(), szLocalDate, szLocalTime);
+	SendDlgItemMessage(hWnd,IDC_03CERTIFICATEPANEL,LB_ADDSTRING,0,(LPARAM) szBuf.c_str());
 
 	// expires :
 	FileTimeToSystemTime( &(pRootCertificate->pCertInfo->NotAfter), &st );
 	GetDateFormat( LOCALE_USER_DEFAULT, DATE_LONGDATE, &st, nullptr, szLocalDate, ARRAYSIZE(szLocalDate));
-	   GetTimeFormat( LOCALE_USER_DEFAULT, 0, &st, nullptr, szLocalTime, ARRAYSIZE(szLocalTime) );
+	GetTimeFormat( LOCALE_USER_DEFAULT, 0, &st, nullptr, szLocalTime, ARRAYSIZE(szLocalTime));
 
-	LoadString(g_hinst, IDS_03EXPIRES, szMessage, ARRAYSIZE(szMessage));
-	_stprintf_s(szBuffer, ARRAYSIZE(szBuffer), szMessage, szLocalDate, szLocalTime);
-	SendDlgItemMessage(hWnd,IDC_03CERTIFICATEPANEL,LB_ADDSTRING,0,(LPARAM) szBuffer);
+	szMessage = EID::LoadStringW(g_hinst, IDS_03EXPIRES);
+	szBuf = EID::Format(szMessage.c_str(), szLocalDate, szLocalTime);
+	SendDlgItemMessage(hWnd,IDC_03CERTIFICATEPANEL,LB_ADDSTRING,0,(LPARAM) szBuf.c_str());
 
 	// select option
 	CheckDlgButton(hWnd,IDC_03IMPORT,BST_UNCHECKED);
@@ -210,7 +208,7 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				PropSheet_SetWizButtons(hWnd, PSWIZB_BACK | PSWIZB_NEXT);
 				// Initialize certificate validity years control
 				SetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, DEFAULT_CERT_VALIDITY_YEARS, FALSE);
-				SetWindowText(GetDlgItem(hWnd, IDC_03VALIDITYWARNING), TEXT(""));
+				EID::SetWindowTextW(GetDlgItem(hWnd, IDC_03VALIDITYWARNING), L"");
 				if (pRootCertificate)
 				{
 					CertFreeCertificateContext(pRootCertificate);
@@ -307,11 +305,9 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				else if (IsDlgButtonChecked(hWnd,IDC_03IMPORT))
 				{
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"IDC_03IMPORT");
-					TCHAR szFileName[1024] = TEXT("");
-					TCHAR szPassword[1024] = TEXT("");
-					GetWindowText(GetDlgItem(hWnd,IDC_03FILENAME),szFileName,ARRAYSIZE(szFileName));
-					GetWindowText(GetDlgItem(hWnd,IDC_03IMPORTPASSWORD),szPassword,ARRAYSIZE(szPassword));
-					if (!ImportFileToSmartCard(szFileName, szPassword, szReader, szCard))
+					std::wstring szFileName = EID::GetWindowTextW(GetDlgItem(hWnd,IDC_03FILENAME));
+					std::wstring szPassword = EID::GetWindowTextW(GetDlgItem(hWnd,IDC_03IMPORTPASSWORD));
+					if (!ImportFileToSmartCard((PWSTR)szFileName.c_str(), (PWSTR)szPassword.c_str(), szReader, szCard))
 					{
 						MessageBoxWin32Ex(GetLastError(),hWnd);
 						SetWindowLongPtr(hWnd,DWLP_MSGRESULT,-1);
@@ -351,12 +347,11 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			case IDC_03SHOW:
 				if (pRootCertificate)
 				{
-					TCHAR szTitle[256] = TEXT("");
-					LoadString(g_hinst, IDS_03CERTVIEWTITLE, szTitle, ARRAYSIZE(szTitle));
+					std::wstring szTitle = EID::LoadStringW(g_hinst, IDS_03CERTVIEWTITLE);
 					certViewInfo.dwSize = sizeof(CRYPTUI_VIEWCERTIFICATE_STRUCT);
 					certViewInfo.hwndParent = hWnd;
 					certViewInfo.dwFlags = CRYPTUI_DISABLE_EDITPROPERTIES | CRYPTUI_DISABLE_ADDTOSTORE | CRYPTUI_DISABLE_EXPORT | CRYPTUI_DISABLE_HTMLLINK;
-					certViewInfo.szTitle = szTitle;
+					certViewInfo.szTitle = (PWSTR)szTitle.c_str();
 					certViewInfo.pCertContext = pRootCertificate;
 					certViewInfo.cPurposes = 0;
 					certViewInfo.rgszPurposes = nullptr;
