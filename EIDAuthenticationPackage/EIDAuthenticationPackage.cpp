@@ -691,12 +691,12 @@ extern "C"
 
 	// these API aren't available in Windows XP
 	// so we have to load them manually
-	typedef BOOL (WINAPI *CredIsProtectedWFct)(
+	using CredIsProtectedWFct = BOOL (WINAPI*)(
 			__in LPWSTR                 pszProtectedCredentials,
 			__out CRED_PROTECTION_TYPE* pProtectionType
 			);
 
-	typedef BOOL (WINAPI *CredUnprotectWFct) (
+	using CredUnprotectWFct = BOOL (WINAPI*)(
 			__in BOOL                                   fAsSelf,
 			__in_ecount(cchProtectedCredentials) LPWSTR pszProtectedCredentials,
 			__in DWORD                                  cchProtectedCredentials,

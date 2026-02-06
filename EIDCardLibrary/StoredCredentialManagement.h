@@ -20,14 +20,15 @@
 #include "EIDCardLibrary.h"
 
  
-typedef enum EID_PRIVATE_DATA_TYPE
+enum EID_PRIVATE_DATA_TYPE
 {
 	eidpdtClearText=1,
 	eidpdtCrypted = 2,
 	eidpdtDPAPI = 3,
 
-}*PEID_PRIVATE_DATA_TYPE;
-typedef struct _EID_PRIVATE_DATA
+};
+using PEID_PRIVATE_DATA_TYPE = EID_PRIVATE_DATA_TYPE*;
+struct EID_PRIVATE_DATA
 {
 	EID_PRIVATE_DATA_TYPE dwType;
 	USHORT dwCertificatOffset;
@@ -38,7 +39,8 @@ typedef struct _EID_PRIVATE_DATA
 	USHORT dwPasswordSize;
 	UCHAR Hash[CERT_HASH_LENGTH];
 	BYTE Data[sizeof(DWORD)];
-} EID_PRIVATE_DATA, *PEID_PRIVATE_DATA;
+};
+using PEID_PRIVATE_DATA = EID_PRIVATE_DATA*;
 
  class CStoredCredentialManager
  {

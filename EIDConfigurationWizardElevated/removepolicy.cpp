@@ -1,4 +1,4 @@
-#include <Windows.h>
+#include <windows.h>
 #include <tchar.h>
 #include "EIDConfigurationWizardElevated.h"
 #include "../EIDCardLibrary/GPO.h"

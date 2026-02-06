@@ -66,7 +66,7 @@ static HMODULE SafeLoadLibrary(__in LPCWSTR wszModulePath)
 // Internal context structure for interfacing with a card module
 //
 
-typedef struct _MGSC_CONTEXT
+struct MGSC_CONTEXT
 {
     //
     // Internal context
@@ -74,15 +74,17 @@ typedef struct _MGSC_CONTEXT
 
     PVOID                           pvContext;
 
-} MGSC_CONTEXT, *PMGSC_CONTEXT;
+};
+using PMGSC_CONTEXT = MGSC_CONTEXT*;
 
 
-typedef struct _INTERNAL_CONTEXT
+struct INTERNAL_CONTEXT
 {
     HMODULE hModule;
     CARD_DATA CardData;
 
-} INTERNAL_CONTEXT, *PINTERNAL_CONTEXT;
+};
+using PINTERNAL_CONTEXT = INTERNAL_CONTEXT*;
 
 //
 // Macros for error checking and flow control

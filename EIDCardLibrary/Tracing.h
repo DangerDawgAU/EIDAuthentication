@@ -44,12 +44,12 @@ void EIDCardLibraryTracingRegister();
 void EIDCardLibraryTracingUnRegister();
 
 #define EIDCardLibraryTrace(dwLevel, ...) \
-	EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__, dwLevel, __VA_ARGS__);
+	EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__, dwLevel, __VA_ARGS__)
 
 void EIDCardLibraryTraceEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction, UCHAR dwLevel, PCWSTR szFormat,...);
 
 #define EIDCardLibraryDumpMemory(memory, memorysize) \
-	EIDCardLibraryDumpMemoryEx(__FILE__,__LINE__,__FUNCTION__, memory, memorysize);
+	EIDCardLibraryDumpMemoryEx(__FILE__,__LINE__,__FUNCTION__, memory, memorysize)
 
 void EIDCardLibraryDumpMemoryEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, PVOID memory, DWORD memorysize);
 
@@ -57,8 +57,8 @@ void EIDCardLibraryDumpMemoryEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, 
  *  Display a messagebox giving an error code
  */
 void MessageBoxWin32Ex2(DWORD status, HWND hWnd, LPCSTR szFile, DWORD dwLine);
-#define MessageBoxWin32(status) MessageBoxWin32Ex2 (status, NULL, __FILE__,__LINE__);
-#define MessageBoxWin32Ex(status, hwnd ) MessageBoxWin32Ex2 (status, hwnd, __FILE__,__LINE__);
+#define MessageBoxWin32(status) MessageBoxWin32Ex2 (status, NULL, __FILE__,__LINE__)
+#define MessageBoxWin32Ex(status, hwnd ) MessageBoxWin32Ex2 (status, hwnd, __FILE__,__LINE__)
 
 BOOL LookUpErrorMessage(PWSTR buf, int cch, DWORD err);
 
@@ -75,6 +75,6 @@ constexpr UCHAR SECURITY_AUDIT_FAILURE  = 1;
 constexpr UCHAR SECURITY_AUDIT_WARNING  = 2;
 
 #define EIDSecurityAudit(dwAuditType, ...) \
-	EIDSecurityAuditEx(__FILE__,__LINE__,__FUNCTION__, dwAuditType, __VA_ARGS__);
+	EIDSecurityAuditEx(__FILE__,__LINE__,__FUNCTION__, dwAuditType, __VA_ARGS__)
 
 void EIDSecurityAuditEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction, UCHAR dwAuditType, PCWSTR szFormat,...);

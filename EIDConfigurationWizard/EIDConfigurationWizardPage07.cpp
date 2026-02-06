@@ -1,4 +1,4 @@
-#include <Windows.h>
+#include <windows.h>
 #include <Commctrl.h>
 
 #include "../EIDCardLibrary/CContainer.h"

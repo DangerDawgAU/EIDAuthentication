@@ -23,7 +23,7 @@
 std::set<CCredential*> Credentials;
 std::list<CSecurityContext*> Contexts;
 std::map<ULONG_PTR, CUsermodeContext*> UserModeContexts;
-typedef std::pair <LUID, CCredential*> Credential_Pair;
+using Credential_Pair = std::pair<LUID, CCredential*>;
 
 // Critical section for thread-safe access to credential containers (CWE-416 fix for #24)
 static CRITICAL_SECTION g_CredentialLock;
