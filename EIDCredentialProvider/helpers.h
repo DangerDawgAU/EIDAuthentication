@@ -28,7 +28,6 @@
 
 // Standard IUnknown AddRef/Release implementation for COM objects.
 // Assumes the class has a LONG _cRef member. Place in the public section of the class.
-// QueryInterface must still be implemented per-class since each checks different IIDs.
 #define IMPL_IUNKNOWN_ADDREF_RELEASE()                                      \
     STDMETHOD_(ULONG, AddRef)()                                             \
     {                                                                       \
@@ -45,6 +44,34 @@
             delete this;                                                    \
         }                                                                   \
         return cRef;                                                        \
+    }
+
+// Standard ICredentialProviderCredential QueryInterface implementation.
+// Both CEIDCredential and CMessageCredential implement this identically.
+#define IMPL_CREDENTIAL_QUERYINTERFACE()                                    \
+    STDMETHOD(QueryInterface)(REFIID riid, void** ppv) override             \
+    {                                                                       \
+        HRESULT hr;                                                         \
+        if (ppv != nullptr)                                                 \
+        {                                                                   \
+            if (IID_IUnknown == riid ||                                     \
+                IID_ICredentialProviderCredential == riid)                   \
+            {                                                               \
+                *ppv = static_cast<IUnknown*>(this);                        \
+                reinterpret_cast<IUnknown*>(*ppv)->AddRef();                \
+                hr = S_OK;                                                  \
+            }                                                               \
+            else                                                            \
+            {                                                               \
+                *ppv = nullptr;                                             \
+                hr = E_NOINTERFACE;                                         \
+            }                                                               \
+        }                                                                   \
+        else                                                                \
+        {                                                                   \
+            hr = E_INVALIDARG;                                              \
+        }                                                                   \
+        return hr;                                                          \
     }
 
 //makes a copy of a field descriptor using CoTaskMemAlloc

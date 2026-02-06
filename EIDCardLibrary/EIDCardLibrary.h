@@ -52,6 +52,10 @@ BOOL EIDIsComponentInLSAContext();
 // Use this instead of LoadLibrary for system DLLs
 HMODULE EIDLoadSystemLibrary(LPCTSTR szDllName);
 
+// Window utility functions shared across Wizard and Elevated projects
+VOID CenterWindow(HWND hWnd);
+VOID SetIcon(HWND hWnd);
+
 enum EID_INTERACTIVE_LOGON_SUBMIT_TYPE
 {
 	EID_INTERACTIVE_LOGON_SUBMIT_TYPE_VANILLA = 13, //KerbCertificateLogon = 13

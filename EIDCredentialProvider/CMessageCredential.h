@@ -47,31 +47,7 @@ public:
 	CMessageCredential& operator=(const CMessageCredential&) = delete;
     // IUnknown
     IMPL_IUNKNOWN_ADDREF_RELEASE()
-
-    STDMETHOD (QueryInterface)(REFIID riid, void** ppv) override
-    {
-        HRESULT hr;
-        if (ppv != nullptr)
-        {
-            if (IID_IUnknown == riid ||
-                IID_ICredentialProviderCredential == riid)
-            {
-                *ppv = static_cast<IUnknown*>(this);
-                reinterpret_cast<IUnknown*>(*ppv)->AddRef();
-                hr = S_OK;
-            }
-            else
-            {
-                *ppv = nullptr;
-                hr = E_NOINTERFACE;
-            }
-        }
-        else
-        {
-            hr = E_INVALIDARG;
-        }
-        return hr;
-    }
+    IMPL_CREDENTIAL_QUERYINTERFACE()
   public:
     // ICredentialProviderCredential
     IFACEMETHODIMP Advise(ICredentialProviderCredentialEvents* pcpce) override;
