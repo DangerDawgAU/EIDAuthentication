@@ -23,7 +23,7 @@
 #include "../EIDCardLibrary/CertificateUtilities.h"
 #include "../EIDCardLibrary/Package.h"
 #include "../EIDCardLibrary/Tracing.h"
-#include <lm.h>
+#include <LM.h>
 #include <wincred.h>
 
 

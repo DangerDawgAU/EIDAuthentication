@@ -21,17 +21,17 @@
 #include <ntstatus.h>
 #define WIN32_NO_STATUS 1
 
-#include <windows.h>
+#include <Windows.h>
 
 #include <winscard.h>
-#include <ntsecapi.h>
+#include <NTSecAPI.h>
 
 
 #define SECURITY_WIN32
 #include <sspi.h>
 
-#include <ntsecpkg.h>
-#include <subauth.h>
+#include <NTSecPKG.h>
+#include <SubAuth.h>
 #include <credentialprovider.h>
 #include <wincred.h>
 

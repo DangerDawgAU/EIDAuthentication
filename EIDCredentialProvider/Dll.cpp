@@ -20,8 +20,8 @@
 //
 // Standard dll required functions and class factory implementation.
 
-#include <windows.h>
-#include <unknwn.h>
+#include <Windows.h>
+#include <Unknwn.h>
 #include <credentialprovider.h>
 
 #include "Dll.h"

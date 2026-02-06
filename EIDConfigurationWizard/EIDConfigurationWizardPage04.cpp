@@ -1,7 +1,7 @@
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
-#include <commctrl.h>
-#include <winuser.h>
+#include <CommCtrl.h>
+#include <WinUser.h>
 #include "global.h"
 #include "EIDConfigurationWizard.h"
 

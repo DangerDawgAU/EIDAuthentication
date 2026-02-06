@@ -19,7 +19,7 @@
 
 
 
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
 
 #include "CSmartCardNotifier.h"

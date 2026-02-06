@@ -1,7 +1,7 @@
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
 #include <wincred.h>
-#include <ntsecapi.h>
+#include <NTSecAPI.h>
 #include <random>
 
 #include "global.h"

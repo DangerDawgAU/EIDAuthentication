@@ -1,7 +1,7 @@
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
-#include <cryptuiapi.h>
-#include <shobjidl.h>
+#include <CryptUIApi.h>
+#include <ShObjIdl.h>
 #include "global.h"
 #include "EIDConfigurationWizard.h"
 #include "../EIDCardLibrary/CertificateUtilities.h"

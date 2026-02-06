@@ -19,7 +19,7 @@
 #ifndef __CARDMOD__H__
 #define __CARDMOD__H__
 
-#include <windows.h>
+#include <Windows.h>
 #include <wincrypt.h>
 #pragma warning(push)
 #pragma warning(disable:4201)

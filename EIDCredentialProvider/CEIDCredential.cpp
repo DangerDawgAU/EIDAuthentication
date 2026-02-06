@@ -29,10 +29,10 @@
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/Package.h"
 
-#include <codeanalysis/warnings.h>
+#include <CodeAnalysis/Warnings.h>
 #pragma warning(push)
 #pragma warning(disable : 4995)
-#include <shlwapi.h>
+#include <Shlwapi.h>
 #pragma warning(pop)
 #pragma warning(push)
 #pragma warning(disable : 4995)

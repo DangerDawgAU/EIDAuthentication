@@ -21,13 +21,13 @@
 #include <ntstatus.h>
 #define WIN32_NO_STATUS 1
 
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
-#include <ntsecapi.h>
+#include <NTSecAPI.h>
 #define SECURITY_WIN32
 #include <sspi.h>
 
-#include <ntsecpkg.h>
+#include <NTSecPKG.h>
 #include <wincred.h>
 #include <list>
 

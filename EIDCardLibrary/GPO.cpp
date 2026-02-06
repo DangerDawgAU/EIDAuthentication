@@ -18,11 +18,11 @@
 */
 
 
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
 // needed to avoid LNK2001 with the gpedit.h file (IID_IGroupPolicyObject)
 #include <initguid.h>
-#include <gpedit.h>
+#include <GPEdit.h>
 #include "GPO.h"
 #include "Tracing.h"
 

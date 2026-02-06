@@ -19,8 +19,8 @@
 
 #include <ntstatus.h>
 #define WIN32_NO_STATUS 1
-#include <windows.h>
-#include <ntsecapi.h>
+#include <Windows.h>
+#include <NTSecAPI.h>
 
 
 #include "../EIDCardLibrary/Tracing.h"

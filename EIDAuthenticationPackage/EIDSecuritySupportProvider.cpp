@@ -21,18 +21,18 @@
 #include <ntstatus.h>
 #define WIN32_NO_STATUS 1
 
-#include <windows.h>
+#include <Windows.h>
 #include <tchar.h>
-#include <ntsecapi.h>
+#include <NTSecAPI.h>
 #define SECURITY_WIN32
 #include <sspi.h>
 #include <sddl.h>
-#include <ntsecpkg.h>
+#include <NTSecPKG.h>
 #include <wincred.h>
-#include <lm.h>
+#include <LM.h>
 #include <list>
 
-#include <imagehlp.h>
+#include <ImageHlp.h>
 #pragma comment(lib,"imagehlp")
 
 #include "../EIDCardLibrary/EIDCardLibrary.h"
