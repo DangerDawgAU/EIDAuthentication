@@ -155,7 +155,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Common.cpp" />
     <ClCompile Include="EIDConfigurationWizardElevated.cpp" />
     <ClCompile Include="forcepolicy.cpp" />
     <ClCompile Include="removepolicy.cpp" />

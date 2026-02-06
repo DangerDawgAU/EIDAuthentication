@@ -2,14 +2,13 @@
 #include <tchar.h>
 #include <wincred.h>
 #include <ntsecapi.h>
-#include <wmistr.h>
-#include <evntrace.h>
 #include <random>
 
 #include "global.h"
 #include "EIDConfigurationWizard.h"
 
 #include "../EIDCardLibrary/EIDCardLibrary.h"
+#include "../EIDCardLibrary/TraceExport.h"
 #include "../EIDCardLibrary/Package.h"
 #include "../EIDCardLibrary/Tracing.h"
 // OnlineDatabase.h removed - internet reporting functionality disabled
@@ -89,82 +88,6 @@ BOOL TestLogon(HWND hMainWnd)
 
 HANDLE hInternalLogWriteHandle = nullptr;
 
-VOID WINAPI ProcessEvents(PEVENT_TRACE pEvent)
-{
-  // Is this the first event of the session? The event is available only if
-  // you are consuming events from a log file, not a real-time session.
-  {
-    //Process the event. The pEvent->MofData member is a pointer to 
-    //the event specific data, if it exists.
-	  if (pEvent->MofLength && pEvent->Header.Class.Level > 0)
-	  {
-		DWORD dwWritten;
-		FILETIME ft;
-		SYSTEMTIME st;
-		ft.dwHighDateTime = pEvent->Header.TimeStamp.HighPart;
-		ft.dwLowDateTime = pEvent->Header.TimeStamp.LowPart;
-		FileTimeToSystemTime(&ft,&st);
-		TCHAR szLocalDate[255], szLocalTime[255];
-		_stprintf_s(szLocalDate, ARRAYSIZE(szLocalDate),TEXT("%04d-%02d-%02d"),st.wYear,st.wMonth,st.wDay);
-		_stprintf_s(szLocalTime, ARRAYSIZE(szLocalTime),TEXT("%02d:%02d:%02d"),st.wHour,st.wMinute,st.wSecond);
-		WriteFile ( hInternalLogWriteHandle, szLocalDate, (DWORD)_tcslen(szLocalDate) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
-		WriteFile ( hInternalLogWriteHandle, TEXT(";"), 1 * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
-		WriteFile ( hInternalLogWriteHandle, szLocalTime, (DWORD)_tcslen(szLocalTime) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
-		WriteFile ( hInternalLogWriteHandle, TEXT(";"), 1 * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
-		WriteFile ( hInternalLogWriteHandle, pEvent->MofData, (DWORD)_tcslen((PTSTR) pEvent->MofData) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
-		WriteFile ( hInternalLogWriteHandle, TEXT("\r\n"), 2 * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
-	  }
-  }
-
-  return;
-}
-
-void ExportOneTraceFile(PTSTR szTraceFile)
-{
-	ULONG rc;
-	TRACEHANDLE handle = NULL;
-	EVENT_TRACE_LOGFILE trace;
-	memset(&trace,0, sizeof(EVENT_TRACE_LOGFILE));
-	trace.LoggerName = TEXT("EIDCredentialProvider");
-	trace.LogFileName = szTraceFile;
-	trace.EventCallback = (PEVENT_CALLBACK) (ProcessEvents);
-	handle = OpenTrace(&trace);
-	if ((TRACEHANDLE)INVALID_HANDLE_VALUE == handle)
-	{
-		// Handle error as appropriate for your application.
-	}
-	else
-	{
-		FILETIME now, start;
-		SYSTEMTIME sysNow, sysstart;
-		GetLocalTime(&sysNow);
-		SystemTimeToFileTime(&sysNow, &now);
-		memcpy(&sysstart, &sysNow, sizeof(SYSTEMTIME));
-		sysstart.wYear -= 1;
-		SystemTimeToFileTime(&sysstart, &start);
-		DWORD dwWritten;
-		TCHAR szBuffer[256];
-		_tcscpy_s(szBuffer,ARRAYSIZE(szBuffer),TEXT("================================================\r\n"));
-		WriteFile ( hInternalLogWriteHandle, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
-		WriteFile ( hInternalLogWriteHandle, szTraceFile, (DWORD)_tcslen(szTraceFile) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
-		_tcscpy_s(szBuffer,ARRAYSIZE(szBuffer),TEXT("\r\n"));
-		WriteFile ( hInternalLogWriteHandle, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
-		_tcscpy_s(szBuffer,ARRAYSIZE(szBuffer),TEXT("================================================\r\n"));
-		WriteFile ( hInternalLogWriteHandle, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
-		rc = ProcessTrace(&handle, 1, nullptr, nullptr);
-		if (rc != ERROR_SUCCESS && rc != ERROR_CANCELLED)
-		{
-			if (rc ==  0x00001069)
-			{
-			}
-			else
-			{
-			}
-		}
-		CloseTrace(handle);
-	}
-}
-
 HANDLE StartReport(PTSTR szLogFile)
 {
 	DWORD dwError = 0;
@@ -185,7 +108,6 @@ HANDLE StartReport(PTSTR szLogFile)
 			dwError = GetLastError();
 			__leave;
 		}
-		// hInternalLogWriteHandle MUST be a module variable because the callback can't use any parameter
 		hInternalLogWriteHandle = hOutput;
 		// disable the logging, just in case if was active
 		StopLogging();
@@ -408,9 +330,6 @@ VOID CreateReport(PTSTR szNamedPipeName)
 			__leave;
 		}
 		
-		// Warning : hReport is used as hInternalLogWriteHandle
-		// Side Effect !!!!!!!!
-		// hInternalLogWriteHandle MUST be a module variable because the callback can't use any parameter
 		hReport = StartReport(szFile);
 		
 		// fait for <Enter> to quit
@@ -425,7 +344,7 @@ VOID CreateReport(PTSTR szNamedPipeName)
 		// disable the logging
 		StopLogging();
 		// get the text
-		ExportOneTraceFile(TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl"));
+		ExportOneTraceFile(hInternalLogWriteHandle, TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl"));
 	}
 	__finally
 	{

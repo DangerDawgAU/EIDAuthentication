@@ -1,9 +1,9 @@
 #pragma once
 
 #include <windows.h>
+#include "../EIDCardLibrary/EIDCardLibrary.h"
 
-// Utility functions for window management
-VOID CenterWindow(HWND hWnd);
-VOID SetIcon(HWND hWnd);
+// CenterWindow and SetIcon are declared in EIDCardLibrary/EIDCardLibrary.h
+
 BOOL IsElevated();
 BOOL IsCurrentUserBelongToADomain();
