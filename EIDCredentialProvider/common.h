@@ -61,12 +61,16 @@ struct FIELD_STATE_PAIR
 };
 
 // These two arrays are separate because a credential provider might
-// want to set up a credential with various combinations of field state pairs 
+// want to set up a credential with various combinations of field state pairs
 // and field descriptors.
+
+// Static buffer for empty string literals (C++23 /Zc:strictStrings compatibility)
+// pszLabel in CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR is LPWSTR (non-const)
+static wchar_t s_wszEmptyLabel[] = L"";
 
 // The field state value indicates whether the field is displayed
 // in the selected tile, the deselected tile, or both.
-// The Field interactive state indicates when 
+// The Field interactive state indicates when
 static const FIELD_STATE_PAIR s_rgFieldStatePairs[] = 
 {
     { CPFS_DISPLAY_IN_BOTH, CPFIS_NONE },                   // SFI_TILEIMAGE
@@ -91,19 +95,19 @@ static const FIELD_STATE_PAIR s_rgMessageFieldStatePairs[] =
 // The third is the name of the field, NOT the value which will appear in the field.
 static CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgCredProvFieldDescriptors[] =
 {
-    { SFI_TILEIMAGE, CPFT_TILE_IMAGE ,L""},
-    { SFI_USERNAME, CPFT_LARGE_TEXT,L""},
-	{ SFI_MESSAGE, CPFT_SMALL_TEXT,L""},
-    { SFI_PIN, CPFT_PASSWORD_TEXT,L""},
-	{ SFI_CERTIFICATE, CPFT_COMMAND_LINK,L""},
-    { SFI_SUBMIT_BUTTON, CPFT_SUBMIT_BUTTON, L""},
-	
+    { SFI_TILEIMAGE, CPFT_TILE_IMAGE, s_wszEmptyLabel},
+    { SFI_USERNAME, CPFT_LARGE_TEXT, s_wszEmptyLabel},
+	{ SFI_MESSAGE, CPFT_SMALL_TEXT, s_wszEmptyLabel},
+    { SFI_PIN, CPFT_PASSWORD_TEXT, s_wszEmptyLabel},
+	{ SFI_CERTIFICATE, CPFT_COMMAND_LINK, s_wszEmptyLabel},
+    { SFI_SUBMIT_BUTTON, CPFT_SUBMIT_BUTTON, s_wszEmptyLabel},
+
 };
 
 // Same as s_rgCredProvFieldDescriptors above, but for the CMessageCredential.
 static CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgMessageCredProvFieldDescriptors[] =
 {
-    { SMFI_TILEIMAGE, CPFT_TILE_IMAGE, L""},
-	{ SMFI_MESSAGE, CPFT_LARGE_TEXT, L""},
-	{ SMFI_CANCELFORCEPOLICY, CPFT_COMMAND_LINK, L"" },
+    { SMFI_TILEIMAGE, CPFT_TILE_IMAGE, s_wszEmptyLabel},
+	{ SMFI_MESSAGE, CPFT_LARGE_TEXT, s_wszEmptyLabel},
+	{ SMFI_CANCELFORCEPOLICY, CPFT_COMMAND_LINK, s_wszEmptyLabel },
 };
