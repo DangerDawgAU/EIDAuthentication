@@ -1997,11 +1997,24 @@ void CStoredCredentialManager::ProcessSecretBufferDebugInternal(__in DWORD dwRid
 
 BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE pbSecret, __in_opt USHORT usSecretSize)
 {
+	// Convert C-style buffer to span for internal processing
+	// Validate that null buffer with non-zero size is an error
+	if (pbSecret == nullptr && usSecretSize > 0) {
+		SetLastError(ERROR_INVALID_PARAMETER);
+		return FALSE;
+	}
+
+	// Create span for bounds-safe internal processing
+	std::span<const BYTE> secretSpan(pbSecret, usSecretSize);
 
 	if (!EIDIsComponentInLSAContext())
  	{
-		return StorePrivateDataDebug(dwRid,pbSecret, usSecretSize);
+		ProcessSecretBufferDebugInternal(dwRid, secretSpan);
+		return StorePrivateDataDebug(dwRid, pbSecret, usSecretSize);
 	}
+
+	// Process buffer using span-based helper
+	ProcessSecretBufferInternal(dwRid, secretSpan);
 
 	LSA_OBJECT_ATTRIBUTES ObjectAttributes;
     LSA_HANDLE LsaPolicyHandle = nullptr;
