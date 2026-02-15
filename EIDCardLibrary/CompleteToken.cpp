@@ -31,8 +31,11 @@
 #include <LM.h>
 #include <sddl.h>
 
+#include <utility>  // for std::pair
+
 #include "EIDCardLibrary.h"
 #include "Tracing.h"
+#include "ErrorHandling.h"
 
 BOOL NameToSid(WCHAR* UserName, PSID* pUserSid);
 BOOL GetGroups(WCHAR* UserName,PGROUP_USERS_INFO_1 *lpGroupInfo, LPDWORD pTotalEntries);
@@ -42,196 +45,222 @@ void DebugPrintSid(const WCHAR* Name, PSID Sid);
 
 NTSTATUS CheckAuthorization(PWSTR UserName, NTSTATUS *SubStatus, LARGE_INTEGER *ExpirationTime);
 
-NTSTATUS UserNameToToken(__in PLSA_UNICODE_STRING AccountName,
-						__out PLSA_TOKEN_INFORMATION_V2 *Token,
-						__out PDWORD TokenLength,
-						__out PNTSTATUS SubStatus
-						) {
-	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-	PLSA_TOKEN_INFORMATION_V2 TokenInformation;
-	PTOKEN_GROUPS pTokenGroups=nullptr;
+// Internal function using Result<T> for type-safe error handling
+// Marked noexcept for LSASS compatibility
+// Returns token info structure with size, or HRESULT error
+[[nodiscard]] EID::Result<std::pair<PLSA_TOKEN_INFORMATION_V2, DWORD>> UserNameToTokenInternal(
+    __in PLSA_UNICODE_STRING AccountName,
+    __out PNTSTATUS SubStatus) noexcept
+{
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Enter");
+	PLSA_TOKEN_INFORMATION_V2 TokenInformation = nullptr;
+	PTOKEN_GROUPS pTokenGroups = nullptr;
 	PGROUP_USERS_INFO_1 pGroupInfo = nullptr;
 	PGROUP_USERS_INFO_0 pLocalGroupInfo = nullptr;
 
-	DWORD NumberOfGroups;
-	DWORD NumberOfLocalGroups;
+	DWORD NumberOfGroups = 0;
+	DWORD NumberOfLocalGroups = 0;
 	BOOL bResult;
 	PSID UserSid = nullptr, PrimaryGroupSid = nullptr, *pGroupSid = nullptr;
-	DWORD Size;
+	DWORD Size = 0;
 	PBYTE Offset;
 	DWORD i;
-	NTSTATUS Status;
 	LARGE_INTEGER ExpirationTime;
 	// convert AccountName to WSTR
-	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Convert");
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Convert");
 	WCHAR UserName[UNLEN+1];
-	__try
+
+	// Helper lambda for cleanup on error
+	auto cleanup = [&]() {
+		if (PrimaryGroupSid) EIDFree(PrimaryGroupSid);
+		if (UserSid) EIDFree(UserSid);
+		if (pGroupSid) EIDFree(pGroupSid);
+		if (pGroupInfo) NetApiBufferFree(pGroupInfo);
+		if (pLocalGroupInfo) NetApiBufferFree(pLocalGroupInfo);
+		if (TokenInformation) EIDFree(TokenInformation);
+	};
+
+	wcsncpy_s(UserName, ARRAYSIZE(UserName), AccountName->Buffer, AccountName->Length / 2);
+	UserName[AccountName->Length / 2] = 0;
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"CheckAuthorization");
+	// check authorization
+	NTSTATUS Status = CheckAuthorization(UserName, SubStatus, &ExpirationTime);
+	if (Status != STATUS_SUCCESS)
 	{
-		wcsncpy_s(UserName,ARRAYSIZE(UserName),AccountName->Buffer,AccountName->Length/2);
-		UserName[AccountName->Length/2]=0;
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"CheckAuthorization");
-		// check authorization
-		Status = CheckAuthorization(UserName, SubStatus, &ExpirationTime);
-		if (Status != STATUS_SUCCESS)
-		{
-			__leave;
-		}
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"GetGroups");
-		// get the number of groups
-		bResult = GetGroups(UserName,&pGroupInfo,&NumberOfGroups);
-		if (!bResult)
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetGroups error");
-			Status = STATUS_DATA_ERROR;
-			__leave;
-		}
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"GetLocalGroups");
-		bResult = GetLocalGroups(UserName,&pLocalGroupInfo,&NumberOfLocalGroups);
-		if (!bResult)
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetGroups error");
-			Status = STATUS_DATA_ERROR;
-			__leave;
-		}
+		cleanup();
+		return EID::make_unexpected(HRESULT_FROM_NT(Status));
+	}
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"GetGroups");
+	// get the number of groups
+	bResult = GetGroups(UserName, &pGroupInfo, &NumberOfGroups);
+	if (!bResult)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"GetGroups error");
+		cleanup();
+		return EID::make_unexpected(HRESULT_FROM_WIN32(ERROR_INVALID_DATA));
+	}
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"GetLocalGroups");
+	bResult = GetLocalGroups(UserName, &pLocalGroupInfo, &NumberOfLocalGroups);
+	if (!bResult)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"GetLocalGroups error");
+		cleanup();
+		return EID::make_unexpected(HRESULT_FROM_WIN32(ERROR_INVALID_DATA));
+	}
 
 	// get SID
 	// User
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"User");
-		bResult = NameToSid(UserName,&UserSid);
-		if (!bResult)
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"NameToSid");
-			Status = STATUS_DATA_ERROR;
-			__leave;
-		}
-		// Primary Group Id
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Primary Group Id");
-		bResult = GetPrimaryGroupSidFromUserSid(UserSid,&PrimaryGroupSid);
-		if (!bResult)
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetGroups");
-			Status = STATUS_DATA_ERROR;
-			__leave;
-		}
-		Size = 0;
-		// Group
-		pGroupSid = (PSID*) EIDAlloc((NumberOfGroups+NumberOfLocalGroups) * sizeof(PSID));
-		if (!pGroupSid)
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pGroupSid NULL");
-			Status = STATUS_NO_MEMORY;
-			__leave;
-		}
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Group");
-		for (i=0; i<NumberOfGroups; i++)
-		{
-			NameToSid(pGroupInfo[i].grui1_name,&pGroupSid[i]);
-			Size += GetLengthSid(pGroupSid[i]);
-		}
-		for (i=0; i<NumberOfLocalGroups; i++)
-		{
-			NameToSid(pLocalGroupInfo[i].grui0_name,&pGroupSid[NumberOfGroups+i]);
-			Size += GetLengthSid(pGroupSid[NumberOfGroups+i]);
-		}	// allocation
-		// compute the size
-		Size += sizeof(LSA_TOKEN_INFORMATION_V2); // struct
-		Size += GetLengthSid(UserSid) + GetLengthSid(PrimaryGroupSid);//sid user and primary group
-		Size += sizeof(DWORD) + (sizeof(SID_AND_ATTRIBUTES)) * (NumberOfGroups+NumberOfLocalGroups); // groups
-
-		TokenInformation = (PLSA_TOKEN_INFORMATION_V2) EIDAlloc(Size);
-		if (TokenInformation == nullptr)
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"TokenInformation NULL");
-			Status = STATUS_NO_MEMORY;
-			__leave;
-		}
-		// update offset and copy info
-		Offset =  (PBYTE)TokenInformation + sizeof(LSA_TOKEN_INFORMATION_V1);
-		TokenInformation->User.User.Sid = (PSID)Offset;
-		CopySid(GetLengthSid(UserSid),Offset,UserSid);
-		DebugPrintSid(UserName,UserSid);
-		TokenInformation->User.User.Attributes = 0; // cf msdn, no attributes defined for users sid
-		Offset += GetLengthSid(UserSid);
-
-		TokenInformation->PrimaryGroup.PrimaryGroup = (PSID)Offset;
-		CopySid(GetLengthSid(PrimaryGroupSid),Offset,PrimaryGroupSid);
-		DebugPrintSid(L"PrimaryGroupId", PrimaryGroupSid);
-		Offset += GetLengthSid(PrimaryGroupSid);
-
-		TokenInformation->Groups = (PTOKEN_GROUPS) Offset;
-		pTokenGroups = (PTOKEN_GROUPS)Offset;
-		pTokenGroups->GroupCount = NumberOfGroups + NumberOfLocalGroups;
-		// -ANYSIZE_ARRAY because TOKEN_GROUPS contain "ANYSIZE_ARRAY" (=1) SID_AND_ATTRIBUTES
-		Offset += sizeof(TOKEN_GROUPS) + sizeof(SID_AND_ATTRIBUTES) * (NumberOfGroups + NumberOfLocalGroups -ANYSIZE_ARRAY); 
-		// cause TOKEN_GROUPS contains one SID_AND_ATTRIBUTES
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Group Struct time");
-
-		for (i=0; i<NumberOfGroups; i++)
-		{
-			// attributes get directly from the struct
-			pTokenGroups->Groups[i].Attributes = pGroupInfo[i].grui1_attributes;
-			pTokenGroups->Groups[i].Sid = (PSID)Offset;
-			CopySid(GetLengthSid(pGroupSid[i]),Offset ,pGroupSid[i]);
-			Offset += GetLengthSid(pGroupSid[i]);
-			DebugPrintSid(pGroupInfo[i].grui1_name, pGroupSid[i]);
-			EIDFree(pGroupSid[i]);
-		}
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Group 2");
-		for (i=0; i<NumberOfLocalGroups; i++)
-		{
-				// get the attributes of group since the struct doesn't contain attributes
-				if (*GetSidSubAuthority(pGroupSid[NumberOfGroups+i],0)!=SECURITY_BUILTIN_DOMAIN_RID)
-			{
-				pTokenGroups->Groups[NumberOfGroups+i].Attributes=SE_GROUP_ENABLED|SE_GROUP_ENABLED_BY_DEFAULT;
-			}
-			else
-			{
-				pTokenGroups->Groups[NumberOfGroups+i].Attributes=0;
-			}
-			pTokenGroups->Groups[NumberOfGroups+i].Sid = (PSID)Offset;
-			CopySid(GetLengthSid(pGroupSid[NumberOfGroups+i]),Offset,pGroupSid[NumberOfGroups+i]);
-			Offset += GetLengthSid(pGroupSid[NumberOfGroups+i]);
-			DebugPrintSid(pLocalGroupInfo[i].grui0_name, pGroupSid[NumberOfGroups+i]);
-			EIDFree(pGroupSid[NumberOfGroups+i]);
-		}
-
-		// Expiration time
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Expiration time");
-		TokenInformation->ExpirationTime = ExpirationTime;
-		
-		// privileges
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"privileges");
-		TokenInformation->Privileges = nullptr;
-
-		// owner
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"owner");
-		TokenInformation->Owner.Owner = nullptr;
-
-		// dacl
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dacl");
-		TokenInformation->DefaultDacl.DefaultDacl = nullptr;
-
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"TokenInformation done");
-
-		*TokenLength = Size;
-		*Token = TokenInformation;
-
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Leave");
-	}
-	__finally
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"User");
+	bResult = NameToSid(UserName, &UserSid);
+	if (!bResult)
 	{
-		if (PrimaryGroupSid)
-			EIDFree(PrimaryGroupSid);
-		if (UserSid)
-			EIDFree(UserSid);
-		if (pGroupSid)
-			EIDFree(pGroupSid);
-		if (pGroupInfo)
-			NetApiBufferFree(pGroupInfo);
-		if (pLocalGroupInfo)
-			NetApiBufferFree(pLocalGroupInfo);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"NameToSid");
+		cleanup();
+		return EID::make_unexpected(HRESULT_FROM_WIN32(ERROR_INVALID_DATA));
 	}
-	return STATUS_SUCCESS;
+	// Primary Group Id
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Primary Group Id");
+	bResult = GetPrimaryGroupSidFromUserSid(UserSid, &PrimaryGroupSid);
+	if (!bResult)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"GetPrimaryGroupSidFromUserSid");
+		cleanup();
+		return EID::make_unexpected(HRESULT_FROM_WIN32(ERROR_INVALID_DATA));
+	}
+	Size = 0;
+	// Group
+	pGroupSid = (PSID*)EIDAlloc((NumberOfGroups + NumberOfLocalGroups) * sizeof(PSID));
+	if (!pGroupSid)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"pGroupSid NULL");
+		cleanup();
+		return EID::make_unexpected(E_OUTOFMEMORY);
+	}
+	// Initialize all to nullptr for safe cleanup
+	for (i = 0; i < NumberOfGroups + NumberOfLocalGroups; i++)
+	{
+		pGroupSid[i] = nullptr;
+	}
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Group");
+	for (i = 0; i < NumberOfGroups; i++)
+	{
+		NameToSid(pGroupInfo[i].grui1_name, &pGroupSid[i]);
+		Size += GetLengthSid(pGroupSid[i]);
+	}
+	for (i = 0; i < NumberOfLocalGroups; i++)
+	{
+		NameToSid(pLocalGroupInfo[i].grui0_name, &pGroupSid[NumberOfGroups + i]);
+		Size += GetLengthSid(pGroupSid[NumberOfGroups + i]);
+	}
+	// compute the size
+	Size += sizeof(LSA_TOKEN_INFORMATION_V2); // struct
+	Size += GetLengthSid(UserSid) + GetLengthSid(PrimaryGroupSid);//sid user and primary group
+	Size += sizeof(DWORD) + (sizeof(SID_AND_ATTRIBUTES)) * (NumberOfGroups + NumberOfLocalGroups); // groups
+
+	TokenInformation = (PLSA_TOKEN_INFORMATION_V2)EIDAlloc(Size);
+	if (TokenInformation == nullptr)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"TokenInformation NULL");
+		cleanup();
+		return EID::make_unexpected(E_OUTOFMEMORY);
+	}
+	// update offset and copy info
+	Offset = (PBYTE)TokenInformation + sizeof(LSA_TOKEN_INFORMATION_V1);
+	TokenInformation->User.User.Sid = (PSID)Offset;
+	CopySid(GetLengthSid(UserSid), Offset, UserSid);
+	DebugPrintSid(UserName, UserSid);
+	TokenInformation->User.User.Attributes = 0; // cf msdn, no attributes defined for users sid
+	Offset += GetLengthSid(UserSid);
+
+	TokenInformation->PrimaryGroup.PrimaryGroup = (PSID)Offset;
+	CopySid(GetLengthSid(PrimaryGroupSid), Offset, PrimaryGroupSid);
+	DebugPrintSid(L"PrimaryGroupId", PrimaryGroupSid);
+	Offset += GetLengthSid(PrimaryGroupSid);
+
+	TokenInformation->Groups = (PTOKEN_GROUPS)Offset;
+	pTokenGroups = (PTOKEN_GROUPS)Offset;
+	pTokenGroups->GroupCount = NumberOfGroups + NumberOfLocalGroups;
+	// -ANYSIZE_ARRAY because TOKEN_GROUPS contain "ANYSIZE_ARRAY" (=1) SID_AND_ATTRIBUTES
+	Offset += sizeof(TOKEN_GROUPS) + sizeof(SID_AND_ATTRIBUTES) * (NumberOfGroups + NumberOfLocalGroups - ANYSIZE_ARRAY);
+	// cause TOKEN_GROUPS contains one SID_AND_ATTRIBUTES
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Group Struct time");
+
+	for (i = 0; i < NumberOfGroups; i++)
+	{
+		// attributes get directly from the struct
+		pTokenGroups->Groups[i].Attributes = pGroupInfo[i].grui1_attributes;
+		pTokenGroups->Groups[i].Sid = (PSID)Offset;
+		CopySid(GetLengthSid(pGroupSid[i]), Offset, pGroupSid[i]);
+		Offset += GetLengthSid(pGroupSid[i]);
+		DebugPrintSid(pGroupInfo[i].grui1_name, pGroupSid[i]);
+		EIDFree(pGroupSid[i]);
+		pGroupSid[i] = nullptr;
+	}
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Group 2");
+	for (i = 0; i < NumberOfLocalGroups; i++)
+	{
+		// get the attributes of group since the struct doesn't contain attributes
+		if (*GetSidSubAuthority(pGroupSid[NumberOfGroups + i], 0) != SECURITY_BUILTIN_DOMAIN_RID)
+		{
+			pTokenGroups->Groups[NumberOfGroups + i].Attributes = SE_GROUP_ENABLED | SE_GROUP_ENABLED_BY_DEFAULT;
+		}
+		else
+		{
+			pTokenGroups->Groups[NumberOfGroups + i].Attributes = 0;
+		}
+		pTokenGroups->Groups[NumberOfGroups + i].Sid = (PSID)Offset;
+		CopySid(GetLengthSid(pGroupSid[NumberOfGroups + i]), Offset, pGroupSid[NumberOfGroups + i]);
+		Offset += GetLengthSid(pGroupSid[NumberOfGroups + i]);
+		DebugPrintSid(pLocalGroupInfo[i].grui0_name, pGroupSid[NumberOfGroups + i]);
+		EIDFree(pGroupSid[NumberOfGroups + i]);
+		pGroupSid[NumberOfGroups + i] = nullptr;
+	}
+
+	// Expiration time
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Expiration time");
+	TokenInformation->ExpirationTime = ExpirationTime;
+
+	// privileges
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"privileges");
+	TokenInformation->Privileges = nullptr;
+
+	// owner
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"owner");
+	TokenInformation->Owner.Owner = nullptr;
+
+	// dacl
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"dacl");
+	TokenInformation->DefaultDacl.DefaultDacl = nullptr;
+
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"TokenInformation done");
+
+	// Free intermediate buffers (but not TokenInformation - that's returned)
+	if (PrimaryGroupSid) { EIDFree(PrimaryGroupSid); PrimaryGroupSid = nullptr; }
+	if (UserSid) { EIDFree(UserSid); UserSid = nullptr; }
+	if (pGroupSid) { EIDFree(pGroupSid); pGroupSid = nullptr; }
+	if (pGroupInfo) { NetApiBufferFree(pGroupInfo); pGroupInfo = nullptr; }
+	if (pLocalGroupInfo) { NetApiBufferFree(pLocalGroupInfo); pLocalGroupInfo = nullptr; }
+
+	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Leave");
+	return std::make_pair(TokenInformation, Size);
+}
+
+// Exported wrapper maintaining NTSTATUS return for LSA compatibility
+// Converts HRESULT errors to NTSTATUS via hr_to_ntstatus()
+NTSTATUS UserNameToToken(__in PLSA_UNICODE_STRING AccountName,
+	__out PLSA_TOKEN_INFORMATION_V2 *Token,
+	__out PDWORD TokenLength,
+	__out PNTSTATUS SubStatus)
+{
+	auto result = UserNameToTokenInternal(AccountName, SubStatus);
+	if (result)
+	{
+		auto [tokenInfo, size] = *result;
+		*Token = tokenInfo;
+		*TokenLength = size;
+		return STATUS_SUCCESS;
+	}
+	return EID::hr_to_ntstatus(result.error());
 }
 
 

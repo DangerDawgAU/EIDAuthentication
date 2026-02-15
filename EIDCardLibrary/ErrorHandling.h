@@ -87,4 +87,8 @@ template<typename T>
     return result.has_value();
 }
 
+// HRESULT to NTSTATUS conversion for LSA authentication functions
+// Implemented in ErrorHandling.cpp
+[[nodiscard]] NTSTATUS hr_to_ntstatus(HRESULT hr) noexcept;
+
 } // namespace EID
