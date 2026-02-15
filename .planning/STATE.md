@@ -69,6 +69,7 @@ Recent decisions affecting current work:
 - [02.1-01]: Template dependent types like std::list<T*>::iterator require typename keyword
 - [02.2-02b]: Use static TCHAR arrays for PTSTR compatibility with Windows ListView APIs
 - [02.2-02b]: Use static wchar_t arrays for LPTSTR compatibility with Windows Tooltip APIs
+- [02.2-02a]: Use static char/wchar_t arrays for LSA_STRING and ExportOneTraceFile string parameters
 
 ### Roadmap Evolution
 
