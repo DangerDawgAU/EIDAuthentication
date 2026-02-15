@@ -1,12 +1,10 @@
 ---
 phase: 02-error-handling
-plan: 01
+plan: 01b
 type: execute
 wave: 1
 depends_on: []
 files_modified:
-  - EIDCardLibrary/CertificateUtilities.cpp
-  - EIDCardLibrary/CertificateValidation.cpp
   - EIDCardLibrary/CompleteToken.cpp
   - EIDCardLibrary/Registration.cpp
   - EIDCardLibrary/smartcardmodule.cpp
@@ -16,17 +14,12 @@ user_setup: []
 
 must_haves:
   truths:
-    - "EIDCardLibrary compiles with zero errors from /Zc:strictStrings const-correctness"
-    - "All string literal to LPSTR/LPWSTR conversions use static char/wchar arrays"
-    - "No string literals are directly assigned to non-const pointers"
-    - "Dependent projects can now link against EIDCardLibrary"
+    - "EIDCardLibrary compiles with zero errors from CompleteToken.cpp, Registration.cpp, smartcardmodule.cpp, TraceExport.cpp"
+    - "All string literal to LPWSTR conversions use static wchar_t arrays"
+    - "All string literal to WCHAR* conversions use static WCHAR arrays"
+    - "Function pointer casts use reinterpret_cast instead of C-style casts"
+    - "Remaining const-correctness errors resolved (11 of 23 total)"
   artifacts:
-    - path: "EIDCardLibrary/CertificateUtilities.cpp"
-      provides: "Fixed const-correctness for szOID_* string assignments"
-      contains: "static char s_szOid...[]"
-    - path: "EIDCardLibrary/CertificateValidation.cpp"
-      provides: "Fixed const-correctness for szOID_KP_SMARTCARD_LOGON usage"
-      contains: "static char s_szOidSmartCardLogon[]"
     - path: "EIDCardLibrary/CompleteToken.cpp"
       provides: "Fixed WCHAR* string literal assignment"
       contains: "static WCHAR"
@@ -37,13 +30,21 @@ must_haves:
       provides: "Fixed LPWSTR string literal assignments"
       contains: "static wchar_t"
     - path: "EIDCardLibrary/TraceExport.cpp"
-      provides: "Fixed TEXT() macro and function pointer cast"
+      provides: "Fixed function pointer cast"
       contains: "reinterpret_cast<PEVENT_CALLBACK>"
   key_links:
-    - from: "EIDCardLibrary/CertificateUtilities.cpp"
-      to: "Windows SDK header wincrypt.h"
-      via: "static char arrays for OID string constants"
-      pattern: "static char s_szOid.*\\[\\] = szOID_"
+    - from: "EIDCardLibrary/CompleteToken.cpp"
+      to: "String literal assignments"
+      via: "static WCHAR arrays for non-const WCHAR* parameters"
+      pattern: "static WCHAR s_"
+    - from: "EIDCardLibrary/Registration.cpp"
+      to: "RegSetKeyValue function"
+      via: "static wchar_t arrays for string literal values"
+      pattern: "static wchar_t s_wsz"
+    - from: "EIDCardLibrary/smartcardmodule.cpp"
+      to: "String literal assignments"
+      via: "static wchar_t arrays for non-const LPWSTR parameters"
+      pattern: "static wchar_t s_"
     - from: "EIDCardLibrary/TraceExport.cpp"
       to: "wmistr.h PEVENT_CALLBACK type"
       via: "reinterpret_cast for function pointer conversion"
@@ -51,11 +52,11 @@ must_haves:
 ---
 
 <objective>
-Fix const-correctness compile errors in EIDCardLibrary to enable C++23 compilation with /Zc:strictStrings flag.
+Fix const-correctness compile errors in CompleteToken.cpp, Registration.cpp, smartcardmodule.cpp, and TraceExport.cpp to enable C++23 compilation with /Zc:strictStrings flag.
 
-Purpose: The /Zc:strictStrings flag (enabled by default in C++23) enforces strict const-correctness for string literals. String literals are now const char*/const wchar_t* and cannot be implicitly converted to non-const LPSTR/LPWSTR parameters used by Windows APIs. This plan fixes all 23 compile errors by creating writable static buffers for string literals that must be passed to non-const API parameters.
+Purpose: The /Zc:strictStrings flag (enabled by default in C++23) enforces strict const-correctness for string literals. String literals are now const char*/const wchar_t* and cannot be implicitly converted to non-const LPSTR/LPWSTR parameters used by Windows APIs. This plan fixes the remaining 11 of 23 compile errors in non-certificate files by creating writable static buffers for string literals and using proper C++ casts for function pointers.
 
-Output: EIDCardLibrary compiles successfully with C++23, enabling dependent projects to link and allowing std::expected adoption in subsequent plans.
+Output: CompleteToken.cpp, Registration.cpp, smartcardmodule.cpp, and TraceExport.cpp compile successfully with C++23, completing const-correctness fixes and enabling dependent projects to link.
 </objective>
 
 <execution_context>
@@ -68,6 +69,7 @@ Output: EIDCardLibrary compiles successfully with C++23, enabling dependent proj
 @.planning/ROADMAP.md
 @.planning/STATE.md
 @.planning/phases/02-error-handling/02-RESEARCH.md
+@.planning/phases/02-error-handling/02-01a-SUMMARY.md
 @.planning/phases/01-build-system/01-03-SUMMARY.md
 
 # Locked decisions from STATE.md
@@ -78,76 +80,27 @@ Output: EIDCardLibrary compiles successfully with C++23, enabling dependent proj
 From 02-RESEARCH.md Pitfall 1: String literal to LPSTR/LPWSTR fix pattern:
 ```cpp
 // BEFORE (compile error):
-params.rgpszUsageIdentifier[0] = szOID_KP_SMARTCARD_LOGON;  // const char* to LPSTR
+pwszPointer = L"string";  // const wchar_t* to WCHAR*
 
 // AFTER (fixed):
-static char s_szOidSmartCardLogon[] = szOID_KP_SMARTCARD_LOGON;  // Non-const copy
-params.rgpszUsageIdentifier[0] = s_szOidSmartCardLogon;
+static WCHAR s_wszString[] = L"string";
+pwszPointer = s_wszString;
+```
+
+For function pointer casts, use reinterpret_cast instead of C-style casts:
+```cpp
+// BEFORE (compile warning/error):
+ptr = (TargetType)source;
+
+// AFTER (fixed):
+ptr = reinterpret_cast<TargetType>(source);
 ```
 </context>
 
 <tasks>
 
 <task type="auto">
-  <name>Task 1: Fix CertificateUtilities.cpp const-correctness (10 errors)</name>
-  <files>EIDCardLibrary/CertificateUtilities.cpp</files>
-  <action>
-Fix 10 const-correctness errors in CertificateUtilities.cpp by creating static char arrays for OID string literals.
-
-Lines 620-626: szOID_PKIX_KP_CLIENT_AUTH, szOID_PKIX_KP_SERVER_AUTH, szOID_KP_SMARTCARD_LOGON, szOID_KP_EFS assigned to LPSTR* array element
-
-Fix: Add at file scope before first use (around line 600):
-```cpp
-// Non-const copies for Windows API compatibility (CERT_ENHKEY_USAGE.rgpszUsageIdentifier is LPSTR*)
-static char s_szOidClientAuth[] = szOID_PKIX_KP_CLIENT_AUTH;
-static char s_szOidServerAuth[] = szOID_PKIX_KP_SERVER_AUTH;
-static char s_szOidSmartCardLogon[] = szOID_KP_SMARTCARD_LOGON;
-static char s_szOidEfs[] = szOID_KP_EFS;
-```
-
-Then replace assignments at lines 620, 622, 624, 626:
-- Line 620: `CertEnhKeyUsage.rgpszUsageIdentifier[...] = s_szOidClientAuth;`
-- Line 622: `CertEnhKeyUsage.rgpszUsageIdentifier[...] = s_szOidServerAuth;`
-- Line 624: `CertEnhKeyUsage.rgpszUsageIdentifier[...] = s_szOidSmartCardLogon;`
-- Line 626: `CertEnhKeyUsage.rgpszUsageIdentifier[...] = s_szOidEfs;`
-
-Lines 40-41: pwszProviderName, pwszContainerName (LPCWSTR) cast to LPWSTR
-- These are function parameters being passed to Windows APIs that don't modify
-- Already use const_cast (LPWSTR) - no change needed, these are safe casts
-
-AVOID: Do NOT modify API signatures or change Windows SDK structures
-  </action>
-  <verify>Build EIDCardLibrary and verify CertificateUtilities.cpp produces zero compile errors</verify>
-  <done>Line 620-626 assignments compile without const-correctness errors</done>
-</task>
-
-<task type="auto">
-  <name>Task 2: Fix CertificateValidation.cpp const-correctness (2 errors)</name>
-  <files>EIDCardLibrary/CertificateValidation.cpp</files>
-  <action>
-Fix 2 const-correctness errors in CertificateValidation.cpp for szOID_KP_SMARTCARD_LOGON assignments.
-
-Lines 307-308: szOID_KP_SMARTCARD_LOGON assigned to LPSTR* pointer
-Line 448-449: szOID_KP_SMARTCARD_LOGON assigned to LPSTR* pointer
-
-Fix: Add at file scope (after includes, before function definitions):
-```cpp
-// Non-const copy for Windows API compatibility (params.EnhkeyUsage.rgpszUsageIdentifier is LPSTR*)
-static char s_szOidSmartCardLogon[] = szOID_KP_SMARTCARD_LOGON;
-```
-
-Replace line 307: `szOid = s_szOidSmartCardLogon;` (note: szOid is local LPSTR variable)
-Replace line 448: `szOid = s_szOidSmartCardLogon;` (note: szOid is local LPSTR variable)
-
-Note: Line 235 compares against pCertUsage->rgpszUsageIdentifier[dwI] (const char* comparison with strcmp)
-- No fix needed, strcmp accepts const char* parameters
-  </action>
-  <verify>Build EIDCardLibrary and verify CertificateValidation.cpp produces zero compile errors</verify>
-  <done>Lines 307-308, 448-449 compile without const-correctness errors</done>
-</task>
-
-<task type="auto">
-  <name>Task 3: Fix CompleteToken.cpp const-correctness (1 error)</name>
+  <name>Task 1: Fix CompleteToken.cpp const-correctness (1 error)</name>
   <files>EIDCardLibrary/CompleteToken.cpp</files>
   <action>
 Fix 1 const-correctness error in CompleteToken.cpp for WCHAR* string literal assignment.
@@ -171,11 +124,11 @@ pwszPointer = s_wszString;
 If the error is from line 67 itself (array initialization), verify wcsncpy_s usage is correct.
   </action>
   <verify>Build EIDCardLibrary and verify CompleteToken.cpp produces zero compile errors</verify>
-  <done>All string literal to WCHAR* conversions use static wchar_t arrays</done>
+  <done>All string literal to WCHAR* conversions use static WCHAR arrays</done>
 </task>
 
 <task type="auto">
-  <name>Task 4: Fix Registration.cpp const-correctness (7 errors)</name>
+  <name>Task 2: Fix Registration.cpp const-correctness (7 errors)</name>
   <files>EIDCardLibrary/Registration.cpp</files>
   <action>
 Fix 7 const-correctness errors in Registration.cpp for string literals in registry functions.
@@ -207,7 +160,7 @@ Note: Do NOT modify registry path strings (2nd parameter) - those are LPCWSTR an
 </task>
 
 <task type="auto">
-  <name>Task 5: Fix smartcardmodule.cpp const-correctness (2 errors)</name>
+  <name>Task 3: Fix smartcardmodule.cpp const-correctness (2 errors)</name>
   <files>EIDCardLibrary/smartcardmodule.cpp</files>
   <action>
 Fix 2 const-correctness errors in smartcardmodule.cpp for LPWSTR string literal assignments.
@@ -237,7 +190,7 @@ Focus on string literals being ASSIGNED to LPWSTR variables, not LPWSTR pointers
 </task>
 
 <task type="auto">
-  <name>Task 6: Fix TraceExport.cpp const-correctness (1 error)</name>
+  <name>Task 4: Fix TraceExport.cpp const-correctness (1 error)</name>
   <files>EIDCardLibrary/TraceExport.cpp</files>
   <action>
 Fix 1 const-correctness error in TraceExport.cpp for function pointer cast.
@@ -264,20 +217,24 @@ Note: TEXT() macros on lines 60, 78, 81, 83 expand to string literals but are pa
 
 <verification>
 1. Build EIDCardLibrary project with C++23 (Debug|x64 configuration)
-2. Verify zero compile errors from /Zc:strictStrings
-3. Run `grep -E "static (char|wchar_t|WCHAR) s_" EIDCardLibrary/*.cpp` to confirm static array pattern used
+2. Verify zero compile errors from CompleteToken.cpp, Registration.cpp, smartcardmodule.cpp, TraceExport.cpp
+3. Run `grep -E "static (wchar_t|WCHAR) s_" EIDCardLibrary/CompleteToken.cpp EIDCardLibrary/Registration.cpp EIDCardLibrary/smartcardmodule.cpp EIDCardLibrary/TraceExport.cpp` to confirm static array pattern used
 4. Verify no string literals directly assigned to non-const pointers
-5. Confirm dependent projects (EIDCredentialProvider, EIDAuthenticationPackage) can now link
+5. Verify all function pointer casts use reinterpret_cast
 </verification>
 
 <success_criteria>
-1. EIDCardLibrary compiles with zero errors (23 const-correctness errors resolved)
-2. All string literal to non-const pointer conversions use static array pattern
-3. No C-style casts remain for function pointers (use reinterpret_cast)
-4. EIDCardLibrary.lib produced successfully for all configurations
-5. Ready for 02-02 (define error types and Result<T> patterns)
+1. CompleteToken.cpp compiles with zero errors (1 const-correctness error resolved)
+2. Registration.cpp compiles with zero errors (7 const-correctness errors resolved)
+3. smartcardmodule.cpp compiles with zero errors (2 const-correctness errors resolved)
+4. TraceExport.cpp compiles with zero errors (1 const-correctness error resolved)
+5. All string literal to non-const pointer conversions use static array pattern
+6. All function pointer casts use reinterpret_cast instead of C-style casts
+7. EIDCardLibrary.lib produced successfully for all configurations
+8. All 23 const-correctness errors across 02-01a and 02-01b resolved
+9. Ready for 02-02 (define error types and Result<T> patterns)
 </success_criteria>
 
 <output>
-After completion, create `.planning/phases/02-error-handling/02-01-SUMMARY.md`
+After completion, create `.planning/phases/02-error-handling/02-01b-SUMMARY.md`
 </output>
