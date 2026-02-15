@@ -28,6 +28,11 @@
 
 #pragma comment(lib,"Crypt32")
 
+// Non-const copy for Windows API compatibility (params.EnhkeyUsage.rgpszUsageIdentifier is LPSTR*)
+// With /Zc:strictStrings (enabled by default in C++23), string literals are const and cannot
+// be implicitly converted to non-const LPSTR. This static array provides writable storage.
+static char s_szOidSmartCardLogon[] = szOID_KP_SMARTCARD_LOGON;
+
 void InitChainValidationParams(ChainValidationParams* params)
 {
     params->EnhkeyUsage.cUsageIdentifier = 0;
@@ -304,7 +309,7 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 	{
 		// Always enforce Smart Card Logon EKU - certificates without this EKU must not authenticate
 		params.EnhkeyUsage.cUsageIdentifier = 1;
-		szOid = szOID_KP_SMARTCARD_LOGON;
+		szOid = s_szOidSmartCardLogon;
 		params.EnhkeyUsage.rgpszUsageIdentifier = &szOid;
 		params.CertUsage.dwType = USAGE_MATCH_TYPE_OR;
 		if (!HasCertificateRightEKU(pCertContext))
@@ -445,7 +450,7 @@ BOOL MakeTrustedCertifcate(PCCERT_CONTEXT pCertContext)
 	else
 	{
 		params.EnhkeyUsage.cUsageIdentifier = 1;
-		szOid = szOID_KP_SMARTCARD_LOGON;
+		szOid = s_szOidSmartCardLogon;
 		params.EnhkeyUsage.rgpszUsageIdentifier = &szOid;
 	}
 

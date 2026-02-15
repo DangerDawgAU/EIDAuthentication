@@ -30,6 +30,19 @@
 #pragma comment (lib,"Scarddlg")
 #pragma comment (lib,"Rpcrt4")
 
+// Non-const copies for Windows API compatibility (CERT_ENHKEY_USAGE.rgpszUsageIdentifier is LPSTR*)
+// With /Zc:strictStrings (enabled by default in C++23), string literals are const and cannot
+// be implicitly converted to non-const LPSTR. These static arrays provide writable storage.
+static char s_szOidClientAuth[] = szOID_PKIX_KP_CLIENT_AUTH;
+static char s_szOidServerAuth[] = szOID_PKIX_KP_SERVER_AUTH;
+static char s_szOidSmartCardLogon[] = szOID_KP_SMARTCARD_LOGON;
+static char s_szOidEfs[] = szOID_KP_EFS;
+static char s_szOidKeyUsage[] = szOID_KEY_USAGE;
+static char s_szOidBasicConstraints2[] = szOID_BASIC_CONSTRAINTS2;
+static char s_szOidEnhancedKeyUsage[] = szOID_ENHANCED_KEY_USAGE;
+static char s_szOidSubjectKeyId[] = szOID_SUBJECT_KEY_IDENTIFIER;
+static char s_szOidSha1RsaSign[] = szOID_OIWSEC_sha1RSASign;
+
 BOOL SetupCertificateContextWithKeyInfo(
     __in PCCERT_CONTEXT pCertContext, __in HCRYPTPROV hProv,
     __in LPCWSTR pwszProviderName, __in LPCWSTR pwszContainerName, __in DWORD dwKeySpec)
@@ -557,7 +570,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			__leave;
 		}
 
-		CertInfo.rgExtension[CertInfo.cExtension].pszObjId = szOID_KEY_USAGE;   
+		CertInfo.rgExtension[CertInfo.cExtension].pszObjId = s_szOidKeyUsage;   
 		CertInfo.rgExtension[CertInfo.cExtension].fCritical = FALSE;   
 		CertInfo.rgExtension[CertInfo.cExtension].Value.cbData = dwSize;   
 		CertInfo.rgExtension[CertInfo.cExtension].Value.pbData = pbKeyUsage;   
@@ -589,7 +602,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 		}
 
 		// Set Basic Constraints extension   
-		CertInfo.rgExtension[CertInfo.cExtension].pszObjId = szOID_BASIC_CONSTRAINTS2;   
+		CertInfo.rgExtension[CertInfo.cExtension].pszObjId = s_szOidBasicConstraints2;   
 		CertInfo.rgExtension[CertInfo.cExtension].fCritical = FALSE;   
 		CertInfo.rgExtension[CertInfo.cExtension].Value.cbData = dwSize;   
 		CertInfo.rgExtension[CertInfo.cExtension].Value.pbData = pbBasicConstraints;   
@@ -617,13 +630,13 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			}
 			CertEnhKeyUsage.cUsageIdentifier = 0;
 			if (pCertificateInfo->bHasClientAuthentication)
-				CertEnhKeyUsage.rgpszUsageIdentifier[CertEnhKeyUsage.cUsageIdentifier++] = szOID_PKIX_KP_CLIENT_AUTH;
+				CertEnhKeyUsage.rgpszUsageIdentifier[CertEnhKeyUsage.cUsageIdentifier++] = s_szOidClientAuth;
 			if (pCertificateInfo->bHasServerAuthentication)
-				CertEnhKeyUsage.rgpszUsageIdentifier[CertEnhKeyUsage.cUsageIdentifier++] = szOID_PKIX_KP_SERVER_AUTH;
+				CertEnhKeyUsage.rgpszUsageIdentifier[CertEnhKeyUsage.cUsageIdentifier++] = s_szOidServerAuth;
 			if (pCertificateInfo->bHasSmartCardAuthentication)
-				CertEnhKeyUsage.rgpszUsageIdentifier[CertEnhKeyUsage.cUsageIdentifier++] = szOID_KP_SMARTCARD_LOGON;
+				CertEnhKeyUsage.rgpszUsageIdentifier[CertEnhKeyUsage.cUsageIdentifier++] = s_szOidSmartCardLogon;
 			if (pCertificateInfo->bHasEFS)
-				CertEnhKeyUsage.rgpszUsageIdentifier[CertEnhKeyUsage.cUsageIdentifier++] = szOID_KP_EFS;
+				CertEnhKeyUsage.rgpszUsageIdentifier[CertEnhKeyUsage.cUsageIdentifier++] = s_szOidEfs;
 			pbEnhKeyUsage = AllocateAndEncodeObject(&CertEnhKeyUsage,X509_ENHANCED_KEY_USAGE,&dwSize);
 			if (!pbEnhKeyUsage)
 			{
@@ -633,7 +646,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			}
 
 		   // Set Basic Constraints extension   
-		   CertInfo.rgExtension[CertInfo.cExtension].pszObjId = szOID_ENHANCED_KEY_USAGE;   
+		   CertInfo.rgExtension[CertInfo.cExtension].pszObjId = s_szOidEnhancedKeyUsage;   
 		   CertInfo.rgExtension[CertInfo.cExtension].fCritical = FALSE;   
 		   CertInfo.rgExtension[CertInfo.cExtension].Value.cbData = dwSize;   
 		   CertInfo.rgExtension[CertInfo.cExtension].Value.pbData = pbEnhKeyUsage;   
@@ -792,7 +805,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			}   
 
 			// Set Subject Key Identifier   
-			CertInfo.rgExtension[CertInfo.cExtension].pszObjId = szOID_SUBJECT_KEY_IDENTIFIER;   
+			CertInfo.rgExtension[CertInfo.cExtension].pszObjId = s_szOidSubjectKeyId;   
 			CertInfo.rgExtension[CertInfo.cExtension].fCritical = FALSE;   
 			CertInfo.rgExtension[CertInfo.cExtension].Value.cbData = dwSize;   
 			CertInfo.rgExtension[CertInfo.cExtension].Value.pbData = SubjectKeyIdentifier;   
@@ -803,7 +816,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			// sign certificate
 			///////////////////
 			memset(&Parameters, 0, sizeof(Parameters));
-			SigAlg.pszObjId = szOID_OIWSEC_sha1RSASign;
+			SigAlg.pszObjId = s_szOidSha1RsaSign;
 			SigAlg.Parameters = Parameters;
 
 			CertInfo.SignatureAlgorithm = SigAlg;
