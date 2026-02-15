@@ -21,6 +21,7 @@
 
 #include "../EIDCardLibrary/CertificateValidation.h"
 #include "../EIDCardLibrary/CertificateUtilities.h"
+#include "../EIDCardLibrary/GPO.h"
 #include "../EIDCardLibrary/Package.h"
 #include "../EIDCardLibrary/Tracing.h"
 #include <LM.h>
@@ -368,7 +369,7 @@ template <typename T>
 BOOL CContainerHolderFactory<T>::DisconnectNotification(LPCTSTR szReaderName)
 {
 	this->Lock();
-	std::list<T*>::iterator l_iter = _CredentialList.begin();
+	typename std::list<T*>::iterator l_iter = _CredentialList.begin();
 	while(l_iter!=_CredentialList.end())
 	{
 		T* item = (T *)*l_iter;
@@ -407,7 +408,7 @@ template <typename T>
 BOOL CContainerHolderFactory<T>::CleanList()
 {
 	this->Lock();
-	std::list<T*>::iterator l_iter = _CredentialList.begin();
+	typename std::list<T*>::iterator l_iter = _CredentialList.begin();
 	while(l_iter!=_CredentialList.end())
 	{
 		T* item = (T *)*l_iter;
@@ -444,7 +445,7 @@ T* CContainerHolderFactory<T>::GetContainerHolderAt(DWORD dwIndex)
 	T* result = nullptr;
 	if (dwIndex < _CredentialList.size())
 	{
-		std::list<T*>::iterator it = _CredentialList.begin();
+		typename std::list<T*>::iterator it = _CredentialList.begin();
 		std::advance(it, dwIndex);
 		result = *it;
 	}
