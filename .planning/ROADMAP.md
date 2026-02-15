@@ -12,7 +12,7 @@ This roadmap transforms the EIDAuthentication Windows smart card authentication 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [x] **Phase 1: Build System** - Enable C++23 compilation across all 7 projects ✓ 2026-02-15
+- [x] **Phase 1: Build System** - Enable C++23 compilation across all 7 projects (Complete) 2026-02-15
 - [ ] **Phase 2: Error Handling** - Adopt `std::expected` for internal error handling
 - [ ] **Phase 3: Compile-Time Enhancements** - Leverage `consteval`, `constexpr`, and related features
 - [ ] **Phase 4: Code Quality** - Modernize with `std::format`, `std::span`, and string utilities
@@ -33,9 +33,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3
 
 Plans:
-- [x] 01-01-PLAN.md — Update EIDCardLibrary project with C++23 flag and verify build ✓
-- [x] 01-02-PLAN.md — Update remaining 6 projects (DLLs and EXEs) with C++23 flag ✓
-- [x] 01-03-PLAN.md — Verify consistent settings across all configurations ✓
+- [x] 01-01-PLAN.md - Update EIDCardLibrary project with C++23 flag and verify build (Complete)
+- [x] 01-02-PLAN.md - Update remaining 6 projects (DLLs and EXEs) with C++23 flag (Complete)
+- [x] 01-03-PLAN.md - Verify consistent settings across all configurations (Complete)
 
 ### Phase 2: Error Handling
 **Goal**: Internal code uses `std::expected<T, E>` for typed error handling while preserving C-style API boundaries
@@ -49,9 +49,18 @@ Plans:
 **Plans**: 3
 
 Plans:
-- [ ] 02-01-PLAN.md — Fix const-correctness compile errors in EIDCardLibrary
-- [ ] 02-02-PLAN.md — Define error types and Result<T> patterns
-- [ ] 02-03-PLAN.md — Create API boundary conversion layer for exports
+- [ ] 02-01-PLAN.md - Fix const-correctness compile errors in EIDCardLibrary
+- [ ] 02-02-PLAN.md - Define error types and Result<T> patterns
+- [ ] 02-03-PLAN.md - Create API boundary conversion layer for exports
+
+### Phase 02.1: Fix C++23 conformance errors (INSERTED)
+
+**Goal:** Fix C++23 conformance errors (C4596, C7510, C3861) blocking full solution build
+**Depends on:** Phase 2
+**Plans:** 1
+
+Plans:
+- [ ] 02.1-01-PLAN.md - Fix all C++23 conformance errors across 3 files
 
 ### Phase 3: Compile-Time Enhancements
 **Goal**: Compile-time validation and optimization using C++23 constexpr/consteval features
@@ -121,12 +130,13 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
+Phases execute in numeric order: 1 -> 2 -> 2.1 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Build System | 3/3 | ✓ Complete | 2026-02-15 |
-| 2. Error Handling | 0/3 | Ready to execute | - |
+| 1. Build System | 3/3 | Complete | 2026-02-15 |
+| 2. Error Handling | 0/3 | In Progress | - |
+| 2.1. Fix C++23 Conformance | 0/1 | Planned | - |
 | 3. Compile-Time Enhancements | 0/3 | Not started | - |
 | 4. Code Quality | 0/4 | Not started | - |
 | 5. Documentation | 0/2 | Not started | - |
@@ -150,3 +160,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 *Roadmap created: 2026-02-15*
 *Phase 1 planned: 2026-02-15*
 *Phase 2 planned: 2026-02-15*
+*Phase 2.1 planned: 2026-02-15*
