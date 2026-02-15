@@ -164,6 +164,7 @@
     <ClCompile Include="CompleteProfile.cpp" />
     <ClCompile Include="CompleteToken.cpp" />
     <ClCompile Include="CredentialManagement.cpp" />
+    <ClCompile Include="ErrorHandling.cpp" />
     <ClCompile Include="CSmartCardNotifier.cpp" />
     <ClCompile Include="GPO.cpp" />
     <ClCompile Include="..\EIDCredentialProvider\guid.cpp" />
@@ -186,6 +187,7 @@
     <ClInclude Include="CSmartCardNotifier.h" />
     <ClInclude Include="EIDAuthenticateVersion.h" />
     <ClInclude Include="EIDCardLibrary.h" />
+    <ClInclude Include="ErrorHandling.h" />
     <ClInclude Include="GPO.h" />
     <ClInclude Include="guid.h" />
     <ClInclude Include="Package.h" />

@@ -19,8 +19,10 @@
 
 #pragma once
 
+// Include Windows headers for HRESULT, DWORD, BOOL, etc.
+#include <Windows.h>
+
 #include <expected>
-#include <winerror.h>
 
 namespace EID {
 
