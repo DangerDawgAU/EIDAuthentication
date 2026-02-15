@@ -46,12 +46,12 @@ Plans:
   2. All exported LSA/Credential Provider functions maintain C-style signatures (HRESULT, BOOL)
   3. New error-handling code compiles with `noexcept` specifier
   4. Error conversion layer exists between internal `std::expected` and external HRESULT
-**Plans**: TBD
+**Plans**: 3
 
 Plans:
-- [ ] 02-01: Define error types and `std::expected` patterns for EIDCardLibrary
-- [ ] 02-02: Migrate key internal functions to use `std::expected`
-- [ ] 02-03: Create API boundary conversion layer for exports
+- [ ] 02-01-PLAN.md — Fix const-correctness compile errors in EIDCardLibrary
+- [ ] 02-02-PLAN.md — Define error types and Result<T> patterns
+- [ ] 02-03-PLAN.md — Create API boundary conversion layer for exports
 
 ### Phase 3: Compile-Time Enhancements
 **Goal**: Compile-time validation and optimization using C++23 constexpr/consteval features
@@ -126,7 +126,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Build System | 3/3 | ✓ Complete | 2026-02-15 |
-| 2. Error Handling | 0/3 | Ready to plan | - |
+| 2. Error Handling | 0/3 | Ready to execute | - |
 | 3. Compile-Time Enhancements | 0/3 | Not started | - |
 | 4. Code Quality | 0/4 | Not started | - |
 | 5. Documentation | 0/2 | Not started | - |
@@ -149,3 +149,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 *Roadmap created: 2026-02-15*
 *Phase 1 planned: 2026-02-15*
+*Phase 2 planned: 2026-02-15*
