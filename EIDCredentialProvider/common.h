@@ -28,6 +28,7 @@
 #define SECURITY_WIN32
 #include <security.h>
 #include <intsafe.h>
+#include <utility>
 
 #define MAX_ULONG  ((ULONG)(-1))
 

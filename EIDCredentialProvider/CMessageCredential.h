@@ -28,6 +28,7 @@
 #include "helpers.h"
 #include "dll.h"
 #include "EIDCredentialProvider.h"
+#include <utility>
 
 enum CMessageCredentialStatus
 {
