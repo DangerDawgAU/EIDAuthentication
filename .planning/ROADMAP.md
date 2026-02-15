@@ -49,7 +49,7 @@ Plans:
 **Plans**: 3
 
 Plans:
-- [ ] 02-01-PLAN.md - Fix const-correctness compile errors in EIDCardLibrary
+- [x] 02-01-PLAN.md - Fix const-correctness compile errors in EIDCardLibrary (Complete)
 - [ ] 02-02-PLAN.md - Define error types and Result<T> patterns
 - [ ] 02-03-PLAN.md - Create API boundary conversion layer for exports
 
@@ -61,6 +61,16 @@ Plans:
 
 Plans:
 - [ ] 02.1-01-PLAN.md - Fix all C++23 conformance errors across 3 files
+
+### Phase 02.2: Fix const-correctness in dependent projects (INSERTED)
+
+**Goal:** Fix C2440 const-correctness errors in EIDCredentialProvider and EIDConfigurationWizard to enable full solution build
+**Depends on:** Phase 2
+**Plans:** 2
+
+Plans:
+- [ ] 02.2-01-PLAN.md - Fix const-correctness in EIDCredentialProvider (common.h, helpers.cpp)
+- [ ] 02.2-02-PLAN.md - Fix const-correctness in EIDConfigurationWizard (DebugReport.cpp, Page04, Page05)
 
 ### Phase 3: Compile-Time Enhancements
 **Goal**: Compile-time validation and optimization using C++23 constexpr/consteval features
@@ -130,13 +140,14 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 2.1 -> 3 -> 4 -> 5 -> 6
+Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Build System | 3/3 | Complete | 2026-02-15 |
-| 2. Error Handling | 0/3 | In Progress | - |
+| 2. Error Handling | 1/3 | In Progress | - |
 | 2.1. Fix C++23 Conformance | 0/1 | Planned | - |
+| 2.2. Fix const-correctness | 0/2 | Planned | - |
 | 3. Compile-Time Enhancements | 0/3 | Not started | - |
 | 4. Code Quality | 0/4 | Not started | - |
 | 5. Documentation | 0/2 | Not started | - |
@@ -156,8 +167,8 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 3 -> 4 -> 5 -> 6
 **Total Coverage:** 22/22 v1 requirements mapped (100%)
 
 ---
-
 *Roadmap created: 2026-02-15*
 *Phase 1 planned: 2026-02-15*
 *Phase 2 planned: 2026-02-15*
 *Phase 2.1 planned: 2026-02-15*
+*Phase 2.2 planned: 2026-02-15*
