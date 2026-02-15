@@ -70,6 +70,7 @@ Recent decisions affecting current work:
 ### Roadmap Evolution
 
 - Phase 02.1 inserted after Phase 2: Fix C++23 conformance errors (URGENT)
+- Phase 02.2 inserted after Phase 2.1: Fix const-correctness in dependent projects (URGENT)
 
 ### Pending Todos
 

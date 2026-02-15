@@ -66,11 +66,12 @@ Plans:
 
 **Goal:** Fix C2440 const-correctness errors in EIDCredentialProvider and EIDConfigurationWizard to enable full solution build
 **Depends on:** Phase 2
-**Plans:** 2
+**Plans:** 3
 
 Plans:
 - [ ] 02.2-01-PLAN.md - Fix const-correctness in EIDCredentialProvider (common.h, helpers.cpp)
-- [ ] 02.2-02-PLAN.md - Fix const-correctness in EIDConfigurationWizard (DebugReport.cpp, Page04, Page05)
+- [ ] 02.2-02a-PLAN.md - Fix const-correctness in EIDConfigurationWizard DebugReport.cpp
+- [ ] 02.2-02b-PLAN.md - Fix const-correctness in EIDConfigurationWizard Page04.cpp and Page05.cpp
 
 ### Phase 3: Compile-Time Enhancements
 **Goal**: Compile-time validation and optimization using C++23 constexpr/consteval features
@@ -147,7 +148,7 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 | 1. Build System | 3/3 | Complete | 2026-02-15 |
 | 2. Error Handling | 1/3 | In Progress | - |
 | 2.1. Fix C++23 Conformance | 0/1 | Planned | - |
-| 2.2. Fix const-correctness | 0/2 | Planned | - |
+| 2.2. Fix const-correctness | 0/3 | Planned | - |
 | 3. Compile-Time Enhancements | 0/3 | Not started | - |
 | 4. Code Quality | 0/4 | Not started | - |
 | 5. Documentation | 0/2 | Not started | - |
