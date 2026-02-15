@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-15)
 ## Current Position
 
 Phase: 2.2 of 6 (Fix Const-Correctness in Dependent Projects)
-Plan: 2b of 3 in current phase - COMPLETE
-Status: Phase 02.2-02b Complete - EIDConfigurationWizard Page04/Page05 const-correctness fixed
-Last activity: 2026-02-15 - Completed 02.2-02b (Fix EIDConfigurationWizard Page04/Page05)
+Plan: 1 of 3 in current phase - COMPLETE
+Status: Phase 02.2-01 Complete - EIDCredentialProvider const-correctness fixed
+Last activity: 2026-02-15 - Completed 02.2-01 (Fix EIDCredentialProvider const-correctness)
 
 Progress: [============] 55%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
+- Total plans completed: 9
 - Average duration: 11 min
 - Total execution time: 1.5 hours
 
@@ -30,7 +30,7 @@ Progress: [============] 55%
 | 1. Build System | 3 | 3 | 12 min |
 | 2. Error Handling | 3 | 4 | 15 min |
 | 2.1. C++23 Conformance | 1 | 1 | 12 min |
-| 2.2. Const-Correctness | 2 | 3 | 8 min |
+| 2.2. Const-Correctness | 3 | 3 | 9 min |
 | 3. Compile-Time | 0 | 3 | - |
 | 4. Code Quality | 0 | 4 | - |
 | 5. Documentation | 0 | 2 | - |
@@ -70,6 +70,8 @@ Recent decisions affecting current work:
 - [02.2-02b]: Use static TCHAR arrays for PTSTR compatibility with Windows ListView APIs
 - [02.2-02b]: Use static wchar_t arrays for LPTSTR compatibility with Windows Tooltip APIs
 - [02.2-02a]: Use static char/wchar_t arrays for LSA_STRING and ExportOneTraceFile string parameters
+- [02.2-01]: Use static wchar_t arrays for LPWSTR struct members (CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR.pszLabel)
+- [02.2-01]: Removing const from array declaration does NOT fix C2440 - static buffers required
 
 ### Roadmap Evolution
 
@@ -93,8 +95,8 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 02.2-02b-PLAN.md (Fix EIDConfigurationWizard Page04/Page05)
-Resume file: .planning/phases/02.2-fix-const-correctness-in-dependent-projects/02.2-02b-SUMMARY.md
+Stopped at: Completed 02.2-01-PLAN.md (Fix EIDCredentialProvider const-correctness)
+Resume file: .planning/phases/02.2-fix-const-correctness-in-dependent-projects/02.2-01-SUMMARY.md
 
 ---
 
