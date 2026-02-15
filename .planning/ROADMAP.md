@@ -30,12 +30,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Full solution builds with zero errors using v143 toolset
   3. Static CRT (`/MT`) is preserved in all Release configurations
   4. No new compiler warnings introduced by C++23 flag
-**Plans**: TBD
+**Plans**: 3
 
 Plans:
-- [ ] 01-01: Update EIDCardLibrary project with C++23 flag and verify build
-- [ ] 01-02: Update remaining 6 projects (DLLs and EXEs) with C++23 flag
-- [ ] 01-03: Verify consistent settings across all configurations
+- [ ] 01-01-PLAN.md — Update EIDCardLibrary project with C++23 flag and verify build
+- [ ] 01-02-PLAN.md — Update remaining 6 projects (DLLs and EXEs) with C++23 flag
+- [ ] 01-03-PLAN.md — Verify consistent settings across all configurations
 
 ### Phase 2: Error Handling
 **Goal**: Internal code uses `std::expected<T, E>` for typed error handling while preserving C-style API boundaries
@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Build System | 0/3 | Not started | - |
+| 1. Build System | 0/3 | Ready to execute | - |
 | 2. Error Handling | 0/3 | Not started | - |
 | 3. Compile-Time Enhancements | 0/3 | Not started | - |
 | 4. Code Quality | 0/4 | Not started | - |
@@ -148,3 +148,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 ---
 
 *Roadmap created: 2026-02-15*
+*Phase 1 planned: 2026-02-15*
