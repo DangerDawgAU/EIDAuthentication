@@ -53,14 +53,16 @@ void InitChainValidationParams(ChainValidationParams* params)
     params->PolicyStatus.lElementIndex = -1;
 }
 
-PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
+// Internal function using Result<T> for type-safe error handling
+// Marked noexcept for LSASS compatibility
+// Note: EIDImpersonate/EIDRevertToSelf must be called by the wrapper for proper cleanup
+[[nodiscard]] EID::Result<PCCERT_CONTEXT> GetCertificateFromCspInfoInternal(
+    __in PEID_SMARTCARD_CSP_INFO pCspInfo) noexcept
 {
 	// for TS Smart Card redirection
 	PCCERT_CONTEXT pCertContext = nullptr;
-	EIDImpersonate();
-	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"GetCertificateFromCspInfo");
+	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"GetCertificateFromCspInfoInternal");
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
-	DWORD dwError = 0;
 
 	// SECURITY FIX #143: Validate CSP info offsets before use (CWE-125/CWE-20)
 	// Client-supplied offsets must be within structure bounds to prevent out-of-bounds read
@@ -69,10 +71,9 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 	    pCspInfo->nContainerNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize) ||
 	    pCspInfo->nCSPNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"GetCertificateFromCspInfo: Invalid CSP info offset - dwCspInfoLen=%u, nContainerNameOffset=%u, nCSPNameOffset=%u",
+		EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"GetCertificateFromCspInfoInternal: Invalid CSP info offset - dwCspInfoLen=%u, nContainerNameOffset=%u, nCSPNameOffset=%u",
 			pCspInfo->dwCspInfoLen, pCspInfo->nContainerNameOffset, pCspInfo->nCSPNameOffset);
-		EIDRevertToSelf();
-		return nullptr;
+		return EID::make_unexpected(E_INVALIDARG);
 	}
 
 	BYTE Data[4096];
@@ -82,85 +83,95 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 	HCRYPTKEY phUserKey = NULL;  // Windows handle type - keep as NULL
 	BOOL fResult;
 	BOOL fSuccess = FALSE;
-	__try
+
+	// check input
+	if (GetPolicyValue(AllowSignatureOnlyKeys) == 0 && pCspInfo->KeySpec == AT_SIGNATURE)
 	{
-		// check input
-		if (GetPolicyValue(AllowSignatureOnlyKeys) == 0 && pCspInfo->KeySpec == AT_SIGNATURE)
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Policy denies AT_SIGNATURE Key");
-			__leave;
-		}
-		// Security: Validate CSP provider before loading
-		if (!IsAllowedCSPProvider(szProviderName))
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"CSP provider '%s' not allowed", szProviderName);
-			dwError = ERROR_ACCESS_DENIED;
-			__leave;
-		}
-		fResult = CryptAcquireContext(&hProv,szContainerName,szProviderName,PROV_RSA_FULL, CRYPT_SILENT);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Policy denies AT_SIGNATURE Key");
+		return EID::make_unexpected(HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED));
+	}
+	// Security: Validate CSP provider before loading
+	if (!IsAllowedCSPProvider(szProviderName))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"CSP provider '%s' not allowed", szProviderName);
+		return EID::make_unexpected(HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED));
+	}
+	fResult = CryptAcquireContext(&hProv, szContainerName, szProviderName, PROV_RSA_FULL, CRYPT_SILENT);
+	if (!fResult)
+	{
+		HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptAcquireContext : 0x%08x container='%s' provider='%s'", GetLastError(), szContainerName, szProviderName);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"PIV fallback");
+		fResult = CryptAcquireContext(&hProv, nullptr, szProviderName, PROV_RSA_FULL, CRYPT_SILENT);
 		if (!fResult)
 		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptAcquireContext : 0x%08x container='%s' provider='%s'",GetLastError(),szContainerName,szProviderName);
-			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"PIV fallback");
-			fResult = CryptAcquireContext(&hProv,nullptr,szProviderName,PROV_RSA_FULL, CRYPT_SILENT);
-			if (!fResult)
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptAcquireContext : 0x%08x",GetLastError());
-				__leave;
-			}
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptAcquireContext : 0x%08x", GetLastError());
+			return EID::make_unexpected(HRESULT_FROM_WIN32(GetLastError()));
 		}
-		if (!CryptGetUserKey(hProv, pCspInfo->KeySpec, &phUserKey))
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptGetUserKey : 0x%08x",GetLastError());
-			__leave;
-		}
-		if (!CryptGetKeyParam(phUserKey,KP_CERTIFICATE,(BYTE*)Data,&DataSize,0))
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptGetKeyParam : 0x%08x",GetLastError());
-			__leave;
-		}
-		pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, Data, DataSize); 
-		if (!pCertContext)
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertCreateCertificateContext : 0x%08x",GetLastError());
-			__leave;
-		}
-		// save reference to CSP (else we can't access private key)
-		if (!SetupCertificateContextWithKeyInfo(pCertContext, hProv, szProviderName, szContainerName, pCspInfo->KeySpec))
-		{
-			dwError = GetLastError();
-			__leave;
-		}
-		// important : the hprov will be freed if the certificatecontext is freed, and that's a problem
-		if (!CryptContextAddRef(hProv, nullptr, 0))
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptContextAddRef 0x%08x",dwError);
-			__leave;
-		}
-		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Certificate OK");
-		fSuccess = TRUE;
 	}
-	__finally
+	if (!CryptGetUserKey(hProv, pCspInfo->KeySpec, &phUserKey))
 	{
-		if (!fSuccess && pCertContext)
-		{
-			CertFreeCertificateContext(pCertContext);
-			pCertContext = nullptr;
-		}
-		if (phUserKey)
-			CryptDestroyKey(phUserKey);
-		if (hProv)
-			CryptReleaseContext(hProv,0);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptGetUserKey : 0x%08x", GetLastError());
+		CryptReleaseContext(hProv, 0);
+		return EID::make_unexpected(HRESULT_FROM_WIN32(GetLastError()));
 	}
-	EIDRevertToSelf();
-	SetLastError(dwError);
+	if (!CryptGetKeyParam(phUserKey, KP_CERTIFICATE, (BYTE*)Data, &DataSize, 0))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptGetKeyParam : 0x%08x", GetLastError());
+		CryptDestroyKey(phUserKey);
+		CryptReleaseContext(hProv, 0);
+		return EID::make_unexpected(HRESULT_FROM_WIN32(GetLastError()));
+	}
+	pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, Data, DataSize);
+	if (!pCertContext)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CertCreateCertificateContext : 0x%08x", GetLastError());
+		CryptDestroyKey(phUserKey);
+		CryptReleaseContext(hProv, 0);
+		return EID::make_unexpected(HRESULT_FROM_WIN32(GetLastError()));
+	}
+	// save reference to CSP (else we can't access private key)
+	if (!SetupCertificateContextWithKeyInfo(pCertContext, hProv, szProviderName, szContainerName, pCspInfo->KeySpec))
+	{
+		HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+		CertFreeCertificateContext(pCertContext);
+		CryptDestroyKey(phUserKey);
+		CryptReleaseContext(hProv, 0);
+		return EID::make_unexpected(hr);
+	}
+	// important : the hprov will be freed if the certificatecontext is freed, and that's a problem
+	if (!CryptContextAddRef(hProv, nullptr, 0))
+	{
+		HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptContextAddRef 0x%08x", hr);
+		CertFreeCertificateContext(pCertContext);
+		CryptDestroyKey(phUserKey);
+		CryptReleaseContext(hProv, 0);
+		return EID::make_unexpected(hr);
+	}
+	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"Certificate OK");
+
+	// Cleanup key handle - the provider handle is referenced by the certificate
+	CryptDestroyKey(phUserKey);
+	// Don't release hProv - it's now owned by the certificate context
+
 	return pCertContext;
+}
+
+// Exported wrapper maintaining PCCERT_CONTEXT return type with SetLastError
+PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
+{
+	EIDImpersonate();
+	auto result = GetCertificateFromCspInfoInternal(pCspInfo);
+	EIDRevertToSelf();
+
+	if (result)
+	{
+		SetLastError(ERROR_SUCCESS);
+		return *result;
+	}
+	SetLastError(static_cast<DWORD>(result.error()));
+	return nullptr;
 }
 
 #define ERRORTOTEXT(ERROR) case ERROR: pszName = TEXT(#ERROR);                 break;
