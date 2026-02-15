@@ -17,12 +17,14 @@
 #pragma comment(lib,"Winscard")
 #pragma comment(lib,"Scarddlg")
 
+// Static buffer for column name (required for PTSTR compatibility with const-correctness)
+static TCHAR s_szColumnName[] = TEXT("Comment");
 
 CContainerHolderFactory<CContainerHolderTest> *pCredentialList = nullptr;
 DWORD dwCurrentCredential = 0xFFFFFFFF;
 BOOL fHasDeselected = TRUE;
 
-PTSTR Columns[] = {TEXT("Comment")};
+PTSTR Columns[] = { s_szColumnName };
 #define COLUMN_NUM ARRAYSIZE(Columns)
 
 BOOL InitListViewColumns(HWND hWndListView) 
