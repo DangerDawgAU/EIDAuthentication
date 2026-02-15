@@ -102,6 +102,7 @@ Create 04-VERIFICATION.md with sections for each QUAL requirement:
 </task>
 
 <task type="checkpoint:human-verify" gate="blocking">
+  <name>Task 2: User review checkpoint for Phase 4 completion</name>
   <what-built>All Phase 4 code quality improvements implemented and verified</what-built>
   <how-to-verify>
 1. Review 04-VERIFICATION.md (created by Task 1)
