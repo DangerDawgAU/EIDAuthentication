@@ -24,6 +24,9 @@
 
 #include "TraceExport.h"
 
+// Non-const string buffer for EVENT_TRACE_LOGFILE.LoggerName (requires LPWSTR)
+static TCHAR s_szLoggerName[] = TEXT("EIDCredentialProvider");
+
 static HANDLE g_hTraceOutputFile = nullptr;
 
 static VOID WINAPI ProcessEvents(PEVENT_TRACE pEvent)
@@ -57,9 +60,9 @@ void ExportOneTraceFile(HANDLE hOutputFile, PTSTR szTraceFile)
 	TRACEHANDLE handle = NULL;
 	EVENT_TRACE_LOGFILE trace;
 	memset(&trace,0, sizeof(EVENT_TRACE_LOGFILE));
-	trace.LoggerName = TEXT("EIDCredentialProvider");
+	trace.LoggerName = s_szLoggerName;
 	trace.LogFileName = szTraceFile;
-	trace.EventCallback = (PEVENT_CALLBACK) (ProcessEvents);
+	trace.EventCallback = reinterpret_cast<PEVENT_CALLBACK>(ProcessEvents);
 	handle = OpenTrace(&trace);
 	if ((TRACEHANDLE)INVALID_HANDLE_VALUE == handle)
 	{
