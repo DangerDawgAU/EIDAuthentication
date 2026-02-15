@@ -89,7 +89,7 @@ static const FIELD_STATE_PAIR s_rgMessageFieldStatePairs[] =
 // The first field is the index of the field.
 // The second is the type of the field.
 // The third is the name of the field, NOT the value which will appear in the field.
-static const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgCredProvFieldDescriptors[] =
+static CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgCredProvFieldDescriptors[] =
 {
     { SFI_TILEIMAGE, CPFT_TILE_IMAGE ,L""},
     { SFI_USERNAME, CPFT_LARGE_TEXT,L""},
@@ -101,7 +101,7 @@ static const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgCredProvFieldDescriptors[]
 };
 
 // Same as s_rgCredProvFieldDescriptors above, but for the CMessageCredential.
-static const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgMessageCredProvFieldDescriptors[] =
+static CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgMessageCredProvFieldDescriptors[] =
 {
     { SMFI_TILEIMAGE, CPFT_TILE_IMAGE, L""},
 	{ SMFI_MESSAGE, CPFT_LARGE_TEXT, L""},
