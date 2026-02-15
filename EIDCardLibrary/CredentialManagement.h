@@ -12,7 +12,7 @@ class CCredential;
 class CSecurityContext
 {
 public:
-	static CSecurityContext* CSecurityContext::CreateContext(CCredential* pCredential);
+	static CSecurityContext* CreateContext(CCredential* pCredential);
 	explicit CSecurityContext(CCredential* pCredential);
 	CSecurityContext(const CSecurityContext&) = delete;
 	CSecurityContext& operator=(const CSecurityContext&) = delete;
@@ -74,7 +74,7 @@ public:
 	static NTSTATUS DeleteContextInfo(ULONG_PTR pHandle);
 	static NTSTATUS GetImpersonationHandle(ULONG_PTR pHandle,PHANDLE ImpersonationToken);
 private:
-	static CUsermodeContext* CUsermodeContext::GetContextFromHandle(ULONG_PTR Handle);
+	static CUsermodeContext* GetContextFromHandle(ULONG_PTR Handle);
 	HANDLE Handle;
 	explicit CUsermodeContext(PEID_SSP_CALLBACK_MESSAGE pMessage);
 };
