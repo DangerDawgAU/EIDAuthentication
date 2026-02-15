@@ -38,7 +38,7 @@ BOOL NameToSid(WCHAR* UserName, PSID* pUserSid);
 BOOL GetGroups(WCHAR* UserName,PGROUP_USERS_INFO_1 *lpGroupInfo, LPDWORD pTotalEntries);
 BOOL GetLocalGroups(WCHAR* UserName,PGROUP_USERS_INFO_0 *lpGroupInfo, LPDWORD pTotalEntries);
 BOOL GetPrimaryGroupSidFromUserSid(PSID UserSID, PSID *PrimaryGroupSID);
-void DebugPrintSid(WCHAR* Name, PSID Sid);
+void DebugPrintSid(const WCHAR* Name, PSID Sid);
 
 NTSTATUS CheckAuthorization(PWSTR UserName, NTSTATUS *SubStatus, LARGE_INTEGER *ExpirationTime);
 
@@ -294,7 +294,7 @@ BOOL GetPrimaryGroupSidFromUserSid(PSID UserSID, PSID *PrimaryGroupSID)
 	return TRUE;
 }
 
-void DebugPrintSid(WCHAR* Name, PSID Sid)
+void DebugPrintSid(const WCHAR* Name, PSID Sid)
 {
 	LPTSTR chSID = nullptr;
 	ConvertSidToStringSid(Sid,&chSID);
