@@ -97,13 +97,13 @@ Plans:
   2. CRTP patterns evaluated for deducing `this` modernization where applicable
   3. String search operations use `std::string::contains()` instead of `find() != npos`
   4. Buffer parameters use `std::span` at internal function boundaries
-**Plans**: TBD
+**Plans**: 4
 
 Plans:
-- [ ] 04-01: Replace `sprintf`/`snprintf` with `std::format` in non-LSASS code
-- [ ] 04-02: Adopt `std::string::contains()` for string operations
-- [ ] 04-03: Introduce `std::span` for buffer handling
-- [ ] 04-04: Evaluate deducing `this` for CRTP patterns
+- [ ] 04-01-PLAN.md - Replace `swprintf_s` with `std::format` in non-LSASS code (EIDConfigurationWizard, EIDCredentialProvider)
+- [ ] 04-02-PLAN.md - Document QUAL-02 (Deducing This) as NOT APPLICABLE
+- [ ] 04-03-PLAN.md - Introduce `std::span` for buffer handling in credential storage
+- [ ] 04-04-PLAN.md - Verify all Phase 4 code quality improvements
 
 ### Phase 5: Documentation
 **Goal**: Documentation reflects C++23 requirements and updated build instructions
@@ -173,3 +173,4 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 *Phase 2.1 planned: 2026-02-15*
 *Phase 2.2 planned: 2026-02-15*
 *Phase 3 revised: 2026-02-15*
+*Phase 4 planned: 2026-02-15*
