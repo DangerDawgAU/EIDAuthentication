@@ -93,17 +93,18 @@ Plans:
 **Depends on**: Phase 3
 **Requirements**: QUAL-01, QUAL-02, QUAL-03, QUAL-04
 **Success Criteria** (what must be TRUE):
-  1. `std::format` replaces `sprintf`/`snprintf` in non-LSASS code (Configuration Wizard, logging)
+  1. `std::format` replaces `sprintf`/`snprintf` in non-LSASS code (Configuration Wizard only)
   2. CRTP patterns evaluated for deducing `this` modernization where applicable
   3. String search operations use `std::string::contains()` instead of `find() != npos`
   4. Buffer parameters use `std::span` at internal function boundaries
-**Plans**: 4
+**Plans**: 5
 
 Plans:
-- [ ] 04-01-PLAN.md - Replace `swprintf_s` with `std::format` in non-LSASS code (EIDConfigurationWizard, EIDCredentialProvider)
+- [ ] 04-01-PLAN.md - Replace `swprintf_s` with `std::format` in non-LSASS code (EIDConfigurationWizard only)
 - [ ] 04-02-PLAN.md - Document QUAL-02 (Deducing This) as NOT APPLICABLE
 - [ ] 04-03-PLAN.md - Introduce `std::span` for buffer handling in credential storage
-- [ ] 04-04-PLAN.md - Verify all Phase 4 code quality improvements
+- [ ] 04-04a-PLAN.md - Automated verification of all Phase 4 code quality improvements
+- [ ] 04-04b-PLAN.md - User review checkpoint and create VERIFICATION.md
 
 ### Phase 5: Documentation
 **Goal**: Documentation reflects C++23 requirements and updated build instructions
@@ -149,7 +150,7 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 | 2.1. Fix C++23 Conformance | 1/1 | Complete | 2026-02-15 |
 | 2.2. Fix const-correctness | 3/3 | Complete | 2026-02-15 |
 | 3. Compile-Time Enhancements | 4/4 | Complete | 2026-02-15 |
-| 4. Code Quality | 0/4 | Not started | - |
+| 4. Code Quality | 0/5 | Not started | - |
 | 5. Documentation | 0/2 | Not started | - |
 | 6. Verification | 0/4 | Not started | - |
 
@@ -173,4 +174,4 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 *Phase 2.1 planned: 2026-02-15*
 *Phase 2.2 planned: 2026-02-15*
 *Phase 3 revised: 2026-02-15*
-*Phase 4 planned: 2026-02-15*
+*Phase 4 revised: 2026-02-15*
