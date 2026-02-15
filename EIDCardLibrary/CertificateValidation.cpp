@@ -206,58 +206,61 @@ LPCTSTR GetTrustErrorText(DWORD Status)
 #undef ERRORTOTEXT
 
 
+// Internal function using Result<T> for type-safe error handling
+// Marked noexcept for LSASS compatibility
+[[nodiscard]] EID::ResultVoid HasCertificateRightEKUInternal(
+    __in PCCERT_CONTEXT pCertContext) noexcept
+{
+	if (GetPolicyValue(AllowCertificatesWithNoEKU) != 0)
+	{
+		// Policy allows certificates without EKU - success
+		return {};
+	}
+
+	// Check EKU SmartCardLogon
+	DWORD dwSize = 0;
+	if (!CertGetEnhancedKeyUsage(pCertContext, 0, nullptr, &dwSize))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error 0x%08x returned by CertGetEnhancedKeyUsage", GetLastError());
+		return EID::make_unexpected(HRESULT_FROM_WIN32(GetLastError()));
+	}
+
+	PCERT_ENHKEY_USAGE pCertUsage = static_cast<PCERT_ENHKEY_USAGE>(EIDAlloc(dwSize));
+	if (!pCertUsage)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error 0x%08x returned by EIDAlloc", GetLastError());
+		return EID::make_unexpected(E_OUTOFMEMORY);
+	}
+
+	// Use RAII-style cleanup
+	struct CertUsageDeleter {
+		PCERT_ENHKEY_USAGE p;
+		~CertUsageDeleter() { if (p) EIDFree(p); }
+	} cleanup{ pCertUsage };
+
+	if (!CertGetEnhancedKeyUsage(pCertContext, 0, pCertUsage, &dwSize))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error 0x%08x returned by CertGetEnhancedKeyUsage", GetLastError());
+		return EID::make_unexpected(HRESULT_FROM_WIN32(GetLastError()));
+	}
+
+	for (DWORD dwI = 0; dwI < pCertUsage->cUsageIdentifier; dwI++)
+	{
+		if (strcmp(pCertUsage->rgpszUsageIdentifier[dwI], szOID_KP_SMARTCARD_LOGON) == 0)
+		{
+			// Found SmartCard Logon EKU
+			return {};
+		}
+	}
+
+	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"No EKU found in end certificate");
+	return EID::make_unexpected(CERT_TRUST_IS_NOT_VALID_FOR_USAGE);
+}
+
+// Exported wrapper maintaining BOOL + GetLastError pattern for API compatibility
 BOOL HasCertificateRightEKU(__in PCCERT_CONTEXT pCertContext)
 {
-	BOOL fValidation = FALSE;
-	DWORD dwError = 0, dwSize = 0, dwI;
-	PCERT_ENHKEY_USAGE		 pCertUsage        = nullptr;
-	__try
-	{
-		if (!GetPolicyValue(AllowCertificatesWithNoEKU))
-		{
-			// check EKU SmartCardLogon
-			if (!CertGetEnhancedKeyUsage(pCertContext, 0, nullptr, &dwSize))
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CertGetEnhancedKeyUsage", GetLastError());
-				__leave;
-			}
-			pCertUsage = (PCERT_ENHKEY_USAGE)EIDAlloc(dwSize);
-			if (!pCertUsage)
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by EIDAlloc", GetLastError());
-				__leave;
-			}
-			if (!CertGetEnhancedKeyUsage(pCertContext, 0, pCertUsage, &dwSize))
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CertGetEnhancedKeyUsage", GetLastError());
-				__leave;
-			}
-			for (dwI = 0; dwI < pCertUsage->cUsageIdentifier; dwI++)
-			{
-				if (strcmp(pCertUsage->rgpszUsageIdentifier[dwI],szOID_KP_SMARTCARD_LOGON) == 0)
-				{
-					break;
-				}
-			}
-			if (dwI >= pCertUsage->cUsageIdentifier)
-			{
-				dwError = CERT_TRUST_IS_NOT_VALID_FOR_USAGE;
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No EKU found in end certificate");
-				__leave;
-			}
-		}
-		fValidation = TRUE;
-	}
-	__finally
-	{
-		if (pCertUsage)
-			EIDFree(pCertUsage);
-	}
-	SetLastError(dwError);
-	return fValidation;
+	return EID::to_bool(HasCertificateRightEKUInternal(pCertContext));
 }
 
 BOOL IsCertificateInComputerTrustedPeopleStore(__in PCCERT_CONTEXT pCertContext)
