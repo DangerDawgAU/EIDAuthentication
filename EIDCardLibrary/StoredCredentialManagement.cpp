@@ -37,6 +37,7 @@
 #include "CertificateValidation.h"
 #include "StringConversion.h"
 #include <string>
+#include <span>
 
 constexpr LPCTSTR CREDENTIALPROVIDER = MS_ENH_RSA_AES_PROV;
 constexpr DWORD CREDENTIALKEYLENGTH = 256;
@@ -1957,6 +1958,42 @@ BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid
 ////////////////////////////////////////////////////////////////////////////////
 // LEVEL 3
 ////////////////////////////////////////////////////////////////////////////////
+
+void CStoredCredentialManager::ProcessSecretBufferInternal(__in DWORD dwRid, std::span<const BYTE> secret) noexcept
+{
+    // Bounds-safe access with automatic size tracking
+    if (secret.empty()) {
+        EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"ProcessSecretBufferInternal: empty buffer for RID 0x%08X", dwRid);
+        return;
+    }
+
+    // Example bounds-safe iteration (replace with actual secret processing from existing StorePrivateData)
+    for (const auto& byte : secret) {
+        // Process each byte safely - buffer.size() automatically available
+        UNREFERENCED_PARAMETER(byte);
+    }
+
+    // Access size without separate parameter: secret.size()
+    DWORD dwSecretSize = static_cast<DWORD>(secret.size());
+    EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"ProcessSecretBufferInternal: RID 0x%08X, size %u", dwRid, dwSecretSize);
+}
+
+void CStoredCredentialManager::ProcessSecretBufferDebugInternal(__in DWORD dwRid, std::span<const BYTE> secret) noexcept
+{
+    // Bounds-safe access with automatic size tracking
+    if (secret.empty()) {
+        EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"ProcessSecretBufferDebugInternal: empty buffer for RID 0x%08X", dwRid);
+        return;
+    }
+
+    // Example bounds-safe iteration
+    for (const auto& byte : secret) {
+        UNREFERENCED_PARAMETER(byte);
+    }
+
+    DWORD dwSecretSize = static_cast<DWORD>(secret.size());
+    EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"ProcessSecretBufferDebugInternal: RID 0x%08X, size %u", dwRid, dwSecretSize);
+}
 
 BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE pbSecret, __in_opt USHORT usSecretSize)
 {
