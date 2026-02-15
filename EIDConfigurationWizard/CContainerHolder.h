@@ -22,6 +22,7 @@
 #include <Windows.h>
 #include <tchar.h>
 #include "global.h"
+#include <utility>
 
 enum CheckType {
 	CHECK_SIGNATUREONLY = 0,
