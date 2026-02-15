@@ -6,10 +6,12 @@ This document describes how to build the EID Authentication project from source.
 
 ### Required Software
 
-1. **Visual Studio 2025 Community** (or higher)
+1. **Visual Studio 2022 or later** (Community, Professional, or Enterprise)
    - Workload: Desktop development with C++
    - Windows SDK: 10.0.22621.0 or later
-   - Platform Toolset: v145
+   - Platform Toolset: v143
+
+   Note: v143 toolset is required for Windows 7+ compatibility (v145 dropped Win7 support)
 
 2. **NSIS (Nullsoft Scriptable Install System)** - Optional, for installer
    - Download from: https://nsis.sourceforge.io/
@@ -146,11 +148,32 @@ build.bat Release
 
 ## Build Environment
 
-**Compiler:** Microsoft Visual C++ 2025 (MSVC v145)
-**Target OS:** Windows 10/11 (64-bit)
-**Language Standard:** C++14
+**Compiler:** Microsoft Visual C++ 2022 (MSVC v143)
+**Target OS:** Windows 7 or later (64-bit)
+**Language Standard:** C++23 (/std:c++23preview)
 **Character Set:** Unicode (TCHAR)
-**Runtime:** Multi-threaded DLL (/MD for Release, /MDd for Debug)
+**Runtime:** Multi-threaded Static (/MT for Release, /MTd for Debug)
+
+Note: Static CRT is required for LSASS compatibility
+
+### C++23 Modernization Notes
+
+This project uses C++23 language features with the MSVC compiler. All 7 projects
+in the solution are configured with `<LanguageStandard>stdcpp23preview</LanguageStandard>`.
+
+**Key Requirements:**
+- Visual Studio 2022 or later (v143 toolset for Windows 7+ compatibility)
+- `/std:c++23preview` compiler flag (set via project configuration)
+- Static CRT linkage (/MT) for LSASS-loaded DLLs
+
+**Modern Features Used:**
+- `std::expected<T, E>` for type-safe error handling
+- `std::format` for text formatting (non-LSASS components)
+- `std::span<T>` for bounds-safe buffer access
+- `std::to_underlying()` for enum conversions
+- Enhanced `constexpr` and `noexcept` specifications
+
+For details on the modernization effort, see [.planning/phases/](.planning/phases/).
 
 ## Notes
 
