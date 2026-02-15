@@ -123,13 +123,14 @@ Plans:
   3. Credential Provider appears on Windows login screen
   4. Configuration Wizard launches and operates normally
   5. Password Change Notification DLL processes events correctly
-**Plans**: TBD
+**Plans**: 5
 
 Plans:
-- [ ] 06-01: Verify build artifacts and DLL registration
-- [ ] 06-02: Test LSA Authentication Package on Windows 7/10/11
-- [ ] 06-03: Test Credential Provider functionality
-- [ ] 06-04: Test Configuration Wizard and Password Change Notification
+- [ ] 06-01-PLAN.md - Verify build artifacts and static CRT linkage
+- [ ] 06-02-PLAN.md - Test LSA Authentication Package on Windows 7/10/11
+- [ ] 06-03-PLAN.md - Test Credential Provider functionality
+- [ ] 06-04-PLAN.md - Test Configuration Wizard and Password Change Notification
+- [ ] 06-05-PLAN.md - Create verification summary and UAT documentation
 
 ## Progress
 
@@ -145,7 +146,7 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 | 3. Compile-Time Enhancements | 4/4 | Complete | 2026-02-15 |
 | 4. Code Quality | 5/5 | Complete | 2026-02-15 |
 | 5. Documentation | 1/1 | Complete | 2026-02-15 |
-| 6. Verification | 0/4 | Not started | - |
+| 6. Verification | 0/5 | Not started | - |
 
 ## Coverage Summary
 
@@ -169,3 +170,4 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 *Phase 3 revised: 2026-02-15*
 *Phase 4 revised: 2026-02-15*
 *Phase 5 planned: 2026-02-15*
+*Phase 6 planned: 2026-02-15*
