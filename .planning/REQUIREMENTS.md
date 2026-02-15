@@ -30,7 +30,7 @@ Requirements for initial C++23 modernization milestone. Each maps to roadmap pha
 ### Code Quality
 
 - [ ] **QUAL-01**: `std::format` replaces `sprintf`/`snprintf` in non-LSASS code
-- [ ] **QUAL-02**: Deducing `this` modernizes CRTP patterns where applicable
+- [ ] **QUAL-02**: ~~Deducing `this` modernizes CRTP patterns where applicable~~ **Status: NOT APPLICABLE** - Codebase contains ZERO CRTP (Curiously Recurring Template Pattern) implementations. Deducing `this` is a C++23 feature specifically designed to modernize CRTP code. Without existing CRTP patterns, there are no candidates for deducing `this` modernization. (See 04-RESEARCH.md section "QUAL-02: Deducing `this` - NOT APPLICABLE")
 - [ ] **QUAL-03**: `std::string::contains()` adopted for simpler string operations
 - [ ] **QUAL-04**: `std::span` used for buffer handling at internal boundaries
 
@@ -100,7 +100,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMPILE-03 | Phase 3 | Pending |
 | COMPILE-04 | Phase 3 | Pending |
 | QUAL-01 | Phase 4 | Pending |
-| QUAL-02 | Phase 4 | Pending |
+| QUAL-02 | Phase 4 | NOT APPLICABLE |
 | QUAL-03 | Phase 4 | Pending |
 | QUAL-04 | Phase 4 | Pending |
 | DOC-01 | Phase 5 | Pending |
