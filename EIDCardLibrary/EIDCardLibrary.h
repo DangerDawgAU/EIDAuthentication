@@ -39,6 +39,8 @@ constexpr const wchar_t* AUTHENTICATIONPACKAGENAMEW = L"EIDAuthenticationPackage
 
 #pragma warning(pop)
 
+#include <utility>
+
 #include "ErrorHandling.h"
 
 #define EIDAlloc(value) EIDAllocEx(__FILE__,__LINE__,__FUNCTION__,value)

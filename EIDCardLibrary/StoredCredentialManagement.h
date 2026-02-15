@@ -18,8 +18,9 @@
 */
 
 #include "EIDCardLibrary.h"
+#include <utility>
 
- 
+
 enum EID_PRIVATE_DATA_TYPE
 {
 	eidpdtClearText=1,

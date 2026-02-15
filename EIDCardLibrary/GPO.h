@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <utility>
+
 enum GPOPolicy
 {
   AllowSignatureOnlyKeys,
