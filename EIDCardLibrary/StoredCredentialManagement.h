@@ -28,6 +28,18 @@ enum EID_PRIVATE_DATA_TYPE
 	eidpdtDPAPI = 3,
 
 };
+
+// Validates that an EID_PRIVATE_DATA_TYPE value is a known valid type
+// Marked constexpr+noexcept for compile-time evaluation and LSASS compatibility
+constexpr bool IsValidPrivateDataType(EID_PRIVATE_DATA_TYPE type) noexcept
+{
+    return type >= eidpdtClearText && type <= eidpdtDPAPI;
+}
+
+// Compile-time validation of private data type enum bounds
+static_assert(IsValidPrivateDataType(eidpdtClearText), "eidpdtClearText must be a valid type");
+static_assert(IsValidPrivateDataType(eidpdtDPAPI), "eidpdtDPAPI must be a valid type");
+
 using PEID_PRIVATE_DATA_TYPE = EID_PRIVATE_DATA_TYPE*;
 struct EID_PRIVATE_DATA
 {
@@ -73,7 +85,7 @@ public:
 	BOOL GetSignatureChallenge(__out PBYTE* ppChallenge, __out PDWORD pdwChallengeSize);
 	BOOL VerifySignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize);
  private:
-	static CStoredCredentialManager* theSingleInstance;	
+	static CStoredCredentialManager* theSingleInstance;
 	BOOL GetResponseFromCryptedChallenge(__in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PCCERT_CONTEXT pCertContext, __in PWSTR szPin, __out PBYTE *ppResponse, __out PDWORD pdwResponseSize);
 	BOOL GetPasswordFromCryptedChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, __out PWSTR *pszPassword);
 	BOOL GetPasswordFromSignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, __out PWSTR *pszPassword);

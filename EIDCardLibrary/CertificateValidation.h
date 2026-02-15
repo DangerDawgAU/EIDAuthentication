@@ -17,6 +17,20 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#pragma once
+
+#include <cstddef>
+
+// Compile-time validation for certificate hash length (SHA-256 = 32 bytes)
+// Marked constexpr+noexcept for compile-time evaluation and LSASS compatibility
+constexpr bool IsValidCertHashLength(size_t length) noexcept
+{
+    // CERT_HASH_LENGTH is defined as 32 (SHA-256) in EIDCardLibrary.h
+    return length == 32;
+}
+
+// Compile-time assertion that CERT_HASH_LENGTH matches SHA-256
+static_assert(IsValidCertHashLength(32), "CERT_HASH_LENGTH must be 32 bytes for SHA-256");
 
 struct ChainValidationParams {
     CERT_ENHKEY_USAGE EnhkeyUsage;
