@@ -10,32 +10,32 @@ See: .planning/PROJECT.md (updated 2026-02-15)
 ## Current Position
 
 Phase: 2 of 6 (Error Handling)
-Plan: 1 of 4 in current phase
-Status: In Progress - 02-01a Complete
-Last activity: 2026-02-15 - Completed 02-01a (Certificate Const-Correctness Fix)
+Plan: 2 of 4 in current phase
+Status: In Progress - 02-01a, 02-01b Complete
+Last activity: 2026-02-15 - Completed 02-01b (Non-Certificate Const-Correctness Fix)
 
-Progress: [=========--] 21%
+Progress: [=========--] 25%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 12 min
-- Total execution time: 0.8 hours
+- Total plans completed: 5
+- Average duration: 13 min
+- Total execution time: 1.1 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Build System | 3 | 3 | 12 min |
-| 2. Error Handling | 1 | 4 | 15 min |
+| 2. Error Handling | 2 | 4 | 20 min |
 | 3. Compile-Time | 0 | 3 | - |
 | 4. Code Quality | 0 | 4 | - |
 | 5. Documentation | 0 | 2 | - |
 | 6. Verification | 0 | 4 | - |
 
 **Recent Trend:**
-- Last 5 plans: 12 min, 15 min, 8 min, 15 min
+- Last 5 plans: 12 min, 15 min, 8 min, 15 min, 25 min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -58,6 +58,8 @@ Recent decisions affecting current work:
 - [01-03]: 23 compile errors documented for Phase 2 resolution
 - [01-03]: No new C++23-specific warnings introduced
 - [02-01a]: Use static char arrays for OID string literals to fix LPSTR const-correctness
+- [02-01b]: Prefer const-correct function signatures over static buffers when function only reads string data
+- [02-01b]: Use static arrays only when Windows API requires non-const pointers
 
 ### Pending Todos
 
@@ -65,13 +67,14 @@ None yet.
 
 ### Blockers/Concerns
 
-- EIDCardLibrary has ~11 remaining compile errors in other files (Registration.cpp, CompleteToken.cpp, TraceExport.cpp) that must be fixed before dependent projects can link
+- All 23 const-correctness compile errors now fixed (12 in 02-01a, 11 in 02-01b)
+- EIDCardLibrary should now compile successfully (pending verification of remaining errors)
 
 ## Session Continuity
 
 Last session: 2026-02-15
-Stopped at: Completed 02-01a-PLAN.md (Certificate Const-Correctness Fix)
-Resume file: .planning/phases/02-error-handling/02-01a-SUMMARY.md
+Stopped at: Completed 02-01b-PLAN.md (Non-Certificate Const-Correctness Fix)
+Resume file: .planning/phases/02-error-handling/02-01b-SUMMARY.md
 
 ---
 
