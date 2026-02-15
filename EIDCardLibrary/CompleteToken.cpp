@@ -331,101 +331,119 @@ void DebugPrintSid(const WCHAR* Name, PSID Sid)
 	LocalFree(chSID);
 }
 
-// check is the account is valid and not disabled
-NTSTATUS CheckAuthorization(PWSTR UserName, NTSTATUS *SubStatus, LARGE_INTEGER *ExpirationTime)
+// Internal function using Result<T> for type-safe error handling
+// Marked noexcept for LSASS compatibility
+// Returns expiration time on success, HRESULT error on failure
+// Sets SubStatus for account restriction details
+[[nodiscard]] EID::Result<LARGE_INTEGER> CheckAuthorizationInternal(
+    PWSTR UserName,
+    NTSTATUS* SubStatus) noexcept
 {
-	NTSTATUS Status = STATUS_SUCCESS;
 	PUSER_INFO_4 pUserInfo = nullptr;
-	__try
-	{
-		if((Status=NetUserGetInfo(nullptr, UserName, 4, (LPBYTE*)&pUserInfo))!=0)
-		{
-			switch(Status)
-			{
-			case ERROR_ACCESS_DENIED:
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"User not found (%s): ACCESS DENIED",UserName);
-				Status = STATUS_ACCESS_DENIED;
-				break;
-			case NERR_InvalidComputer:
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"User not found (%s): Invalid computer",UserName);
-				Status = STATUS_NO_SUCH_DOMAIN;
-				break;
-			case NERR_UserNotFound:
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"User not found (%s): No such user",UserName);
-				Status = STATUS_NO_SUCH_USER;
-				break;
-			default:
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"User not found (%s): Unknown error 0x%08x",UserName,Status);
-				Status = STATUS_NO_SUCH_USER;
-				break;
-			}
-			__leave;
-		}
+	LARGE_INTEGER ExpirationTime;
+	ExpirationTime.QuadPart = 0x7FFFFFFFFFFFFFFF;
 
-		if(pUserInfo->usri4_flags&UF_ACCOUNTDISABLE)
+	NET_API_STATUS netStatus = NetUserGetInfo(nullptr, UserName, 4, (LPBYTE*)&pUserInfo);
+	if (netStatus != 0)
+	{
+		HRESULT hr;
+		switch (netStatus)
 		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Account disabled: ACCOUNT_DISABLED");
-			*SubStatus = STATUS_ACCOUNT_DISABLED;
-			Status = STATUS_ACCOUNT_RESTRICTION;
-			__leave;
+		case ERROR_ACCESS_DENIED:
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"User not found (%s): ACCESS DENIED", UserName);
+			hr = HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED);
+			break;
+		case NERR_InvalidComputer:
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"User not found (%s): Invalid computer", UserName);
+			hr = HRESULT_FROM_WIN32(ERROR_BAD_NETPATH);
+			break;
+		case NERR_UserNotFound:
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"User not found (%s): No such user", UserName);
+			hr = HRESULT_FROM_WIN32(ERROR_NO_SUCH_USER);
+			break;
+		default:
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"User not found (%s): Unknown error 0x%08x", UserName, netStatus);
+			hr = HRESULT_FROM_WIN32(ERROR_NO_SUCH_USER);
+			break;
 		}
-		ExpirationTime->QuadPart = 0x7FFFFFFFFFFFFFFF;
-		if (pUserInfo->usri4_logon_hours)
+		return EID::make_unexpected(hr);
+	}
+
+	// Ensure cleanup on all exit paths
+	struct UserInfoCleanup {
+		PUSER_INFO_4* pp;
+		~UserInfoCleanup() { if (pp && *pp) NetApiBufferFree(*pp); }
+	} cleanup{ &pUserInfo };
+
+	if (pUserInfo->usri4_flags & UF_ACCOUNTDISABLE)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Account disabled: ACCOUNT_DISABLED");
+		*SubStatus = STATUS_ACCOUNT_DISABLED;
+		// Use HRESULT that maps to STATUS_ACCOUNT_RESTRICTION
+		return EID::make_unexpected(HRESULT_FROM_WIN32(ERROR_ACCOUNT_RESTRICTION));
+	}
+
+	if (pUserInfo->usri4_logon_hours)
+	{
+		DWORD dwPosLogon, dwPosLogoff, dwHours;
+		SYSTEMTIME SystemTime;
+		FILETIME FileTime;
+		GetSystemTime(&SystemTime);
+		dwPosLogon = SystemTime.wDayOfWeek * 24 + SystemTime.wHour;
+		if (!((pUserInfo->usri4_logon_hours[dwPosLogon / 8] >> (dwPosLogon % 8)) & 1))
 		{
-			DWORD dwPosLogon, dwPosLogoff, dwHours;
-			SYSTEMTIME SystemTime;
-			FILETIME FileTime;
-			GetSystemTime(&SystemTime);
-			dwPosLogon = SystemTime.wDayOfWeek*24 + SystemTime.wHour;
-			if (!((pUserInfo->usri4_logon_hours[dwPosLogon/8] >> (dwPosLogon % 8)) & 1))
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"STATUS_INVALID_LOGON_HOURS");
+			*SubStatus = STATUS_INVALID_LOGON_HOURS;
+			return EID::make_unexpected(HRESULT_FROM_WIN32(ERROR_ACCOUNT_RESTRICTION));
+		}
+		else
+		{
+			// logon authorized
+			// iterates to find the first 0
+			for (dwHours = 1; dwHours < 7 * 24 + 1; dwHours++)
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"STATUS_INVALID_LOGON_HOURS");
-				*SubStatus = STATUS_INVALID_LOGON_HOURS;
-				Status = STATUS_ACCOUNT_RESTRICTION;
-				__leave;
-			}
-			else
-			{
-				// logon authorized
-				// iterates to find the first 0
-				for (dwHours = 1 ; dwHours < 7 * 24 + 1; dwHours++)
+				dwPosLogoff = (dwPosLogon + dwHours) % (7 * 24);
+				if (!((pUserInfo->usri4_logon_hours[dwPosLogoff / 8] >> (dwPosLogoff % 8)) & 1))
 				{
-					dwPosLogoff = (dwPosLogon + dwHours) % (7 * 24);
-					if (!((pUserInfo->usri4_logon_hours[dwPosLogoff/8] >> (dwPosLogoff % 8)) & 1))
-					{
-						// Logon authorized not everytime
-						EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Hour Restriction");
-						LARGE_INTEGER Hour;
-						Hour.LowPart = 0x61C46800;
-						Hour.HighPart = 8;
-						SystemTime.wMinute = 0;
-						SystemTime.wSecond = 0;
-						SystemTime.wMilliseconds = 0;
-						SystemTimeToFileTime(&SystemTime, &FileTime);
-						ExpirationTime->LowPart = FileTime.dwLowDateTime;
-						ExpirationTime->HighPart = FileTime.dwHighDateTime;
-						ExpirationTime->QuadPart +=  Hour.QuadPart * dwHours; 
-						break;
-					}
+					// Logon authorized not everytime
+					EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Hour Restriction");
+					LARGE_INTEGER Hour;
+					Hour.LowPart = 0x61C46800;
+					Hour.HighPart = 8;
+					SystemTime.wMinute = 0;
+					SystemTime.wSecond = 0;
+					SystemTime.wMilliseconds = 0;
+					SystemTimeToFileTime(&SystemTime, &FileTime);
+					ExpirationTime.LowPart = FileTime.dwLowDateTime;
+					ExpirationTime.HighPart = FileTime.dwHighDateTime;
+					ExpirationTime.QuadPart += Hour.QuadPart * dwHours;
+					break;
 				}
 			}
 		}
-		if (wcscmp(pUserInfo->usri4_logon_server,L"\\\\*") != 0)
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"STATUS_INVALID_WORKSTATION");
-			*SubStatus = STATUS_INVALID_WORKSTATION;
-			Status = STATUS_ACCOUNT_RESTRICTION;
-			__leave;
-		}
-		Status = STATUS_SUCCESS;
 	}
-	__finally
+
+	if (wcscmp(pUserInfo->usri4_logon_server, L"\\\\*") != 0)
 	{
-		if (pUserInfo)
-			NetApiBufferFree(pUserInfo);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"STATUS_INVALID_WORKSTATION");
+		*SubStatus = STATUS_INVALID_WORKSTATION;
+		return EID::make_unexpected(HRESULT_FROM_WIN32(ERROR_ACCOUNT_RESTRICTION));
 	}
-	
-	return Status;
+
+	return ExpirationTime;
+}
+
+// Exported wrapper maintaining NTSTATUS return for LSA compatibility
+// Converts HRESULT errors to NTSTATUS via hr_to_ntstatus()
+NTSTATUS CheckAuthorization(PWSTR UserName, NTSTATUS *SubStatus, LARGE_INTEGER *ExpirationTime)
+{
+	auto result = CheckAuthorizationInternal(UserName, SubStatus);
+	if (result)
+	{
+		*ExpirationTime = *result;
+		return STATUS_SUCCESS;
+	}
+	return EID::hr_to_ntstatus(result.error());
 }
 
 
