@@ -28,6 +28,7 @@
 
 // Static buffers for Windows API compatibility (C++23 /Zc:strictStrings)
 static char s_szMyTest[] = "MYTEST";
+static wchar_t s_wszEtlPath[] = L"c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl";
 
 BOOL TestLogon(HWND hMainWnd)
 {
@@ -353,7 +354,7 @@ VOID CreateReport(PTSTR szNamedPipeName)
 		// disable the logging
 		StopLogging();
 		// get the text
-		ExportOneTraceFile(hInternalLogWriteHandle, L"c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl");
+		ExportOneTraceFile(hInternalLogWriteHandle, s_wszEtlPath);
 	}
 	__finally
 	{
