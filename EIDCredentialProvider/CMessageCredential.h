@@ -85,7 +85,7 @@ public:
   public:
     HRESULT Initialize(const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR* rgcpfd,
                        const FIELD_STATE_PAIR* rgfsp,
-                       PWSTR szMessage);
+                       PCWSTR szMessage);
     CMessageCredential();
 
     virtual ~CMessageCredential();

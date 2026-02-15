@@ -144,19 +144,23 @@ extern "C"
 		__out  PSecPkgInfo PackageInfo
 	)
 	{
+		// Static buffers for SecPkgInfo Name/Comment (non-const SEC_WCHAR* required by API)
+		static SEC_WCHAR s_szPackageName[] = TEXT("EIDAuthenticationPackage");
+		static SEC_WCHAR s_szPackageComment[] = TEXT("EIDAuthenticationPackage");
+
 		PackageInfo->fCapabilities = SECPKG_FLAG_LOGON |
 			SECPKG_FLAG_MULTI_REQUIRED|
 			SECPKG_FLAG_CLIENT_ONLY|
 			SECPKG_FLAG_IMPERSONATION|
-			SECPKG_FLAG_NEGOTIABLE| 
+			SECPKG_FLAG_NEGOTIABLE|
 			SECPKG_FLAG_NEGOTIABLE2 |
 			SECPKG_FLAG_ACCEPT_WIN32_NAME |
 			SECPKG_FLAG_GSS_COMPATIBLE;
 		PackageInfo->wVersion = SECURITY_SUPPORT_PROVIDER_INTERFACE_VERSION;
 		PackageInfo->wRPCID = SECPKG_ID_NONE;
 		PackageInfo->cbMaxToken = 5000;
-		PackageInfo->Name = AUTHENTICATIONPACKAGENAMET;
-		PackageInfo->Comment = AUTHENTICATIONPACKAGENAMET;
+		PackageInfo->Name = s_szPackageName;
+		PackageInfo->Comment = s_szPackageComment;
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Leave");
 		return STATUS_SUCCESS;
 	}

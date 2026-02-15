@@ -21,6 +21,7 @@
 
 #include "../EIDCardLibrary/CertificateValidation.h"
 #include "../EIDCardLibrary/CertificateUtilities.h"
+#include "../EIDCardLibrary/CContainer.h"
 #include "../EIDCardLibrary/GPO.h"
 #include "../EIDCardLibrary/Package.h"
 #include "../EIDCardLibrary/Tracing.h"
