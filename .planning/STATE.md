@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-15)
 ## Current Position
 
 Phase: 4 of 6 (Code Quality) - IN PROGRESS
-Plan: 2 of 4 in current phase - COMPLETE
-Status: QUAL-02 documented as NOT APPLICABLE
-Last activity: 2026-02-15 - Completed 04-02 (QUAL-02 documentation)
+Plan: 2 of 5 in current phase - COMPLETE
+Status: QUAL-01 (std::format) and QUAL-02 (RAII N/A) complete
+Last activity: 2026-02-15 - Completed 04-01 and 04-02
 
 Progress: [================--] 81%
 
@@ -32,7 +32,7 @@ Progress: [================--] 81%
 | 2.1. C++23 Conformance | 1 | 1 | 12 min |
 | 2.2. Const-Correctness | 3 | 3 | 9 min |
 | 3. Compile-Time | 4 | 4 | 6 min |
-| 4. Code Quality | 1 | 4 | 2 min |
+| 4. Code Quality | 2 | 5 | 1 min |
 | 5. Documentation | 0 | 2 | - |
 | 6. Verification | 0 | 4 | - |
 
@@ -76,6 +76,7 @@ Recent decisions affecting current work:
 - [03-03a]: if consteval not applicable to codebase - no functions have different compile-time vs runtime code paths
 - [03-03b]: No std::unreachable() in security-critical code - external data sources (registry, caller params) can contain invalid values
 - [03-02]: constexpr validation functions also marked noexcept for LSASS compatibility
+- [04-01]: std::format used in EIDConfigurationWizard only (non-LSASS user-mode EXE); wcscpy_s retained for pre-allocated buffers
 - [04-02]: QUAL-02 (Deducing this) marked as NOT APPLICABLE - codebase has no CRTP patterns
 
 ### Roadmap Evolution
