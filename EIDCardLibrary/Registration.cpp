@@ -30,8 +30,12 @@
 #include <string>
 
 
+// Non-const string buffers for Windows API compatibility (AddSecurityPackage/DeleteSecurityPackage require LPWSTR)
+static WCHAR s_wszAuthenticationPackageName[] = L"EIDAuthenticationPackage";
+
+
 /** Used to append a string to a multi string reg key */
-void AppendValueToMultiSz(HKEY hKey,PTSTR szKey, PTSTR szValue, PTSTR szData)
+void AppendValueToMultiSz(HKEY hKey, LPCTSTR szKey, LPCTSTR szValue, LPCTSTR szData)
 {
 	HKEY hkResult;
 	DWORD Status;
@@ -92,7 +96,7 @@ void AppendValueToMultiSz(HKEY hKey,PTSTR szKey, PTSTR szValue, PTSTR szData)
 }
 
 /** Used to Remove a string to a multi string reg key */
-void RemoveValueFromMultiSz(HKEY hKey, PTSTR szKey, PTSTR szValue, PTSTR szData)
+void RemoveValueFromMultiSz(HKEY hKey, LPCTSTR szKey, LPCTSTR szValue, LPCTSTR szData)
 {
 	HKEY hkResult;
 	DWORD Status;
@@ -209,7 +213,7 @@ BOOL RegisterTheSecurityPackage()
 			__leave;
 		}
 		SECURITY_PACKAGE_OPTIONS options = {sizeof(SECURITY_PACKAGE_OPTIONS)};
-		Status = AddSecurityPackage(AUTHENTICATIONPACKAGENAMET, &options);
+		Status = AddSecurityPackage(s_wszAuthenticationPackageName, &options);
 		if (Status != SEC_E_OK)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to register the package 0x%08X 0x%08X",Status, GetLastError());
@@ -241,7 +245,7 @@ BOOL UnRegisterTheSecurityPackage()
 			fReturn = TRUE;
 			__leave;
 		}
-		Status = DeleteSecurityPackage(AUTHENTICATIONPACKAGENAMET);
+		Status = DeleteSecurityPackage(s_wszAuthenticationPackageName);
 		if (Status != SEC_E_OK)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to unregister the package 0x%08X 0x%08X",Status, GetLastError());

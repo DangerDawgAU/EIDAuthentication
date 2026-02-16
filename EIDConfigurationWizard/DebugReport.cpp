@@ -26,6 +26,10 @@
 #include "CContainerHolder.h"
 #pragma comment(lib,"Credui")
 
+// Static buffers for Windows API compatibility (C++23 /Zc:strictStrings)
+static char s_szMyTest[] = "MYTEST";
+static wchar_t s_wszEtlPath[] = L"c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl";
+
 BOOL TestLogon(HWND hMainWnd)
 {
 	BOOL save = false;
@@ -37,7 +41,7 @@ BOOL TestLogon(HWND hMainWnd)
 	DWORD dwError = 0;
 
 	LSA_HANDLE hLsa;
-	LSA_STRING Origin = { (USHORT)strlen("MYTEST"), (USHORT)sizeof("MYTEST"), "MYTEST" };
+	LSA_STRING Origin = { (USHORT)strlen(s_szMyTest), (USHORT)sizeof(s_szMyTest), s_szMyTest };
 	QUOTA_LIMITS Quota = {0};
 	TOKEN_SOURCE Source = { "TEST", { 0, 101 } };
 	MSV1_0_INTERACTIVE_PROFILE *Profile;
@@ -350,7 +354,7 @@ VOID CreateReport(PTSTR szNamedPipeName)
 		// disable the logging
 		StopLogging();
 		// get the text
-		ExportOneTraceFile(hInternalLogWriteHandle, L"c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl");
+		ExportOneTraceFile(hInternalLogWriteHandle, s_wszEtlPath);
 	}
 	__finally
 	{

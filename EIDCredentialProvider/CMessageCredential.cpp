@@ -66,7 +66,7 @@ CMessageCredential::~CMessageCredential()
 HRESULT CMessageCredential::Initialize(
                         const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR* rgcpfd,
                         const FIELD_STATE_PAIR* rgfsp,
-                        PWSTR szMessage)
+                        PCWSTR szMessage)
 {
     HRESULT hr = S_OK;
     // Copy the field descriptors for each field. This is useful if you want to vary the field

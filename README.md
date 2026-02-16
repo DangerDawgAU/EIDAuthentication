@@ -3,8 +3,8 @@
 **Smart card authentication for Windows standalone/local accounts**
 
 [![License](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20Vista%20SP1+-lightgrey.svg)]()
-[![Build](https://img.shields.io/badge/build-VS%202025%20(v145)-purple.svg)]()
+[![Platform](https://img.shields.io/badge/platform-Windows%207+-lightgrey.svg)]()
+[![Build](https://img.shields.io/badge/build-VS%202022%20(v143)-purple.svg)]()
 
 ---
 
@@ -34,14 +34,29 @@ This fork has been **extensively modernized**:
 - Comprehensive documentation
 - Security hardening with 143 issues remediated
 
+### 2026 C++23 Modernization
+
+The codebase has been upgraded to C++23 with the following improvements:
+
+- **Language Standard:** C++23 with `/std:c++23preview` flag
+- **Toolset:** v143 (for Windows 7+ compatibility)
+- **Error Handling:** `std::expected<T, E>` for internal error handling
+- **Compile-Time:** Enhanced `constexpr` validation and `std::to_underlying()` for enums
+- **Code Quality:** `std::format` for text formatting, `std::span` for buffer handling
+- **All 7 projects** configured for C++23 compilation
+- **Zero regressions** in authentication functionality
+
+See [.planning/ROADMAP.md](.planning/ROADMAP.md) for complete modernization details.
+
 ---
 
 ## Quick Start
 
 ### Prerequisites
 
-- **Windows Vista SP1 or later** (x64)
-- **Visual Studio 2025** (Community, Professional, or Enterprise)
+- **Windows 7 or later** (x64)
+- **Visual Studio 2022 or later** (Community, Professional, or Enterprise)
+- **Platform Toolset v143** (required for Windows 7+ compatibility)
 - **NSIS 3.x** (for building installer)
 - **Cryptographic Provider Development Kit (CPDK)** - [Download](https://www.microsoft.com/en-us/download/details.aspx?id=30688)
 - **Smart card reader** (physical or virtual TPM-based)
@@ -196,10 +211,10 @@ EIDAuthentication/
 
 - **Platform:** x64 only
 - **Configurations:** Debug, Release
-- **Toolset:** v143 (VS 2022 Build Tools, used with VS 2025)
+- **Toolset:** v143 (VS 2022 Build Tools, for Windows 7+ compatibility)
 - **SDK:** Windows 10 SDK (10.0.26100.0+)
-- **Language Standard:** C++14
-- **Runtime:** Multi-threaded DLL (/MD)
+- **Language Standard:** C++23 (/std:c++23preview)
+- **Runtime:** Multi-threaded Static (/MT for Release, /MTd for Debug)
 
 ### Building Individual Projects
 
@@ -388,7 +403,7 @@ This fork underwent comprehensive security assessment with **143 issues** identi
 
 - **Local accounts only** - Not for domain-joined computers
 - **x64 only** - No 32-bit support
-- **Windows Vista SP1+** - No XP support
+- **Windows 7+** - No Vista/XP support
 - **Single smart card per user** - Cannot enroll multiple cards
 - **No offline unlock** - Requires smart card to log in
 

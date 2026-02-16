@@ -62,6 +62,10 @@ static HMODULE SafeLoadLibrary(__in LPCWSTR wszModulePath)
         return LoadLibraryExW(wszFullPath, nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
     }
 }
+
+// Non-const string buffer for card module API compatibility (cardmod.h functions require LPWSTR)
+static WCHAR s_wszCardUserUser[] = L"user";
+
 //
 // Internal context structure for interfacing with a card module
 //
@@ -666,7 +670,7 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"MgScCardAcquireContext 0x%08X",lReturn);
 			__leave;
 		}
-		dwError = MgScCardAuthenticatePin(&pContext,wszCARD_USER_USER,szPin,pdwAttempts);
+		dwError = MgScCardAuthenticatePin(&pContext,s_wszCardUserUser,szPin,pdwAttempts);
 		if ( dwError )
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"MgScCardAuthenticatePin 0x%08X *pdwAttempts=%d",lReturn, *pdwAttempts);
@@ -680,7 +684,7 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 		BOOL fDeAuthenticated = FALSE;
 		if (pContext.pvContext)
 		{
-			if (MgScCardDeauthenticate(&pContext, wszCARD_USER_USER, 0) == ERROR_SUCCESS)
+			if (MgScCardDeauthenticate(&pContext, s_wszCardUserUser, 0) == ERROR_SUCCESS)
 			{
 				fDeAuthenticated = TRUE;
 			}

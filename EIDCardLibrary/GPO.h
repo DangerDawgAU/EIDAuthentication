@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <utility>
+
 enum GPOPolicy
 {
   AllowSignatureOnlyKeys,
@@ -38,6 +40,17 @@ enum GPOPolicy
   scremoveoption,
   EnforceCSPWhitelist,  // Security: block CSP providers not in whitelist
 };
+
+// Validates that a GPOPolicy enum value is within valid bounds to prevent array overflow
+// Marked constexpr+noexcept for compile-time evaluation and LSASS compatibility
+constexpr bool IsValidPolicy(GPOPolicy policy) noexcept
+{
+    return policy >= AllowSignatureOnlyKeys && policy <= EnforceCSPWhitelist;
+}
+
+// Compile-time validation of GPOPolicy enum bounds
+static_assert(IsValidPolicy(AllowSignatureOnlyKeys), "AllowSignatureOnlyKeys must be a valid policy");
+static_assert(IsValidPolicy(EnforceCSPWhitelist), "EnforceCSPWhitelist must be a valid policy");
 
 DWORD GetPolicyValue(GPOPolicy Policy);
 BOOL SetPolicyValue(GPOPolicy Policy, DWORD dwValue);

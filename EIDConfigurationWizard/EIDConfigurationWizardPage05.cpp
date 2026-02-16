@@ -12,6 +12,9 @@
 
 #include "CContainerHolder.h"
 
+// Static buffer for tooltip space character (required for LPTSTR compatibility with const-correctness)
+static wchar_t s_wszSpace[] = L" ";
+
 // from previous step
 // credentials
 extern CContainerHolderFactory<CContainerHolderTest> *pCredentialList;
@@ -72,7 +75,7 @@ VOID ShowInvalidPasswordBalloon(HWND hWnd)
 		ti.hwnd     = hWnd;
 		ti.uId      = (UINT_PTR) GetDlgItem(hWnd, IDC_05PASSWORD);
 		ti.hinst    = g_hinst;
-		ti.lpszText = L" ";
+		ti.lpszText = s_wszSpace;
 		SendMessage(hwndInvalidPasswordBalloon, TTM_SETTITLE, TTI_ERROR, (LPARAM) szError);
 		SendMessage(hwndInvalidPasswordBalloon, TTM_ADDTOOL, 0, (LPARAM) &ti );
 		SendMessage(hwndInvalidPasswordBalloon,TTM_TRACKACTIVATE,(WPARAM)TRUE,(LPARAM)&ti);

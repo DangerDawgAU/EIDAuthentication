@@ -34,7 +34,7 @@ public:
 	HRESULT SetUsageScenario(__in CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,__in DWORD dwFlags);
 	BOOL DisconnectNotification(__in LPCTSTR szReaderName);
 	BOOL ConnectNotification(__in LPCTSTR szReaderName,__in LPCTSTR szCardName, __in USHORT ActivityCount);
-	BOOL CContainerHolderFactory<T>::CreateContainer(__in LPCTSTR szReaderName,__in LPCTSTR szCardName,
+	BOOL CreateContainer(__in LPCTSTR szReaderName,__in LPCTSTR szCardName,
 															   __in LPCTSTR szProviderName, __in LPCTSTR szWideContainerName,
 															   __in DWORD KeySpec, __in USHORT ActivityCount, __in PCCERT_CONTEXT pCertContext);
 	BOOL CreateItemFromCertificateBlob(__in HCRYPTPROV hProv, __in LPCTSTR szReaderName,__in LPCTSTR szCardName,

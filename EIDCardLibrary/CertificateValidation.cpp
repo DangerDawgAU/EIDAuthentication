@@ -28,6 +28,11 @@
 
 #pragma comment(lib,"Crypt32")
 
+// Non-const copy for Windows API compatibility (params.EnhkeyUsage.rgpszUsageIdentifier is LPSTR*)
+// With /Zc:strictStrings (enabled by default in C++23), string literals are const and cannot
+// be implicitly converted to non-const LPSTR. This static array provides writable storage.
+static char s_szOidSmartCardLogon[] = szOID_KP_SMARTCARD_LOGON;
+
 void InitChainValidationParams(ChainValidationParams* params)
 {
     params->EnhkeyUsage.cUsageIdentifier = 0;
@@ -48,14 +53,16 @@ void InitChainValidationParams(ChainValidationParams* params)
     params->PolicyStatus.lElementIndex = -1;
 }
 
-PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
+// Internal function using Result<T> for type-safe error handling
+// Marked noexcept for LSASS compatibility
+// Note: EIDImpersonate/EIDRevertToSelf must be called by the wrapper for proper cleanup
+[[nodiscard]] EID::Result<PCCERT_CONTEXT> GetCertificateFromCspInfoInternal(
+    __in PEID_SMARTCARD_CSP_INFO pCspInfo) noexcept
 {
 	// for TS Smart Card redirection
 	PCCERT_CONTEXT pCertContext = nullptr;
-	EIDImpersonate();
-	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"GetCertificateFromCspInfo");
+	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"GetCertificateFromCspInfoInternal");
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
-	DWORD dwError = 0;
 
 	// SECURITY FIX #143: Validate CSP info offsets before use (CWE-125/CWE-20)
 	// Client-supplied offsets must be within structure bounds to prevent out-of-bounds read
@@ -64,10 +71,9 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 	    pCspInfo->nContainerNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize) ||
 	    pCspInfo->nCSPNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"GetCertificateFromCspInfo: Invalid CSP info offset - dwCspInfoLen=%u, nContainerNameOffset=%u, nCSPNameOffset=%u",
+		EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"GetCertificateFromCspInfoInternal: Invalid CSP info offset - dwCspInfoLen=%u, nContainerNameOffset=%u, nCSPNameOffset=%u",
 			pCspInfo->dwCspInfoLen, pCspInfo->nContainerNameOffset, pCspInfo->nCSPNameOffset);
-		EIDRevertToSelf();
-		return nullptr;
+		return EID::make_unexpected(E_INVALIDARG);
 	}
 
 	BYTE Data[4096];
@@ -77,85 +83,95 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 	HCRYPTKEY phUserKey = NULL;  // Windows handle type - keep as NULL
 	BOOL fResult;
 	BOOL fSuccess = FALSE;
-	__try
+
+	// check input
+	if (GetPolicyValue(AllowSignatureOnlyKeys) == 0 && pCspInfo->KeySpec == AT_SIGNATURE)
 	{
-		// check input
-		if (GetPolicyValue(AllowSignatureOnlyKeys) == 0 && pCspInfo->KeySpec == AT_SIGNATURE)
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Policy denies AT_SIGNATURE Key");
-			__leave;
-		}
-		// Security: Validate CSP provider before loading
-		if (!IsAllowedCSPProvider(szProviderName))
-		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"CSP provider '%s' not allowed", szProviderName);
-			dwError = ERROR_ACCESS_DENIED;
-			__leave;
-		}
-		fResult = CryptAcquireContext(&hProv,szContainerName,szProviderName,PROV_RSA_FULL, CRYPT_SILENT);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Policy denies AT_SIGNATURE Key");
+		return EID::make_unexpected(HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED));
+	}
+	// Security: Validate CSP provider before loading
+	if (!IsAllowedCSPProvider(szProviderName))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"CSP provider '%s' not allowed", szProviderName);
+		return EID::make_unexpected(HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED));
+	}
+	fResult = CryptAcquireContext(&hProv, szContainerName, szProviderName, PROV_RSA_FULL, CRYPT_SILENT);
+	if (!fResult)
+	{
+		HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptAcquireContext : 0x%08x container='%s' provider='%s'", GetLastError(), szContainerName, szProviderName);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"PIV fallback");
+		fResult = CryptAcquireContext(&hProv, nullptr, szProviderName, PROV_RSA_FULL, CRYPT_SILENT);
 		if (!fResult)
 		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptAcquireContext : 0x%08x container='%s' provider='%s'",GetLastError(),szContainerName,szProviderName);
-			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"PIV fallback");
-			fResult = CryptAcquireContext(&hProv,nullptr,szProviderName,PROV_RSA_FULL, CRYPT_SILENT);
-			if (!fResult)
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptAcquireContext : 0x%08x",GetLastError());
-				__leave;
-			}
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptAcquireContext : 0x%08x", GetLastError());
+			return EID::make_unexpected(HRESULT_FROM_WIN32(GetLastError()));
 		}
-		if (!CryptGetUserKey(hProv, pCspInfo->KeySpec, &phUserKey))
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptGetUserKey : 0x%08x",GetLastError());
-			__leave;
-		}
-		if (!CryptGetKeyParam(phUserKey,KP_CERTIFICATE,(BYTE*)Data,&DataSize,0))
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptGetKeyParam : 0x%08x",GetLastError());
-			__leave;
-		}
-		pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, Data, DataSize); 
-		if (!pCertContext)
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertCreateCertificateContext : 0x%08x",GetLastError());
-			__leave;
-		}
-		// save reference to CSP (else we can't access private key)
-		if (!SetupCertificateContextWithKeyInfo(pCertContext, hProv, szProviderName, szContainerName, pCspInfo->KeySpec))
-		{
-			dwError = GetLastError();
-			__leave;
-		}
-		// important : the hprov will be freed if the certificatecontext is freed, and that's a problem
-		if (!CryptContextAddRef(hProv, nullptr, 0))
-		{
-			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptContextAddRef 0x%08x",dwError);
-			__leave;
-		}
-		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Certificate OK");
-		fSuccess = TRUE;
 	}
-	__finally
+	if (!CryptGetUserKey(hProv, pCspInfo->KeySpec, &phUserKey))
 	{
-		if (!fSuccess && pCertContext)
-		{
-			CertFreeCertificateContext(pCertContext);
-			pCertContext = nullptr;
-		}
-		if (phUserKey)
-			CryptDestroyKey(phUserKey);
-		if (hProv)
-			CryptReleaseContext(hProv,0);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptGetUserKey : 0x%08x", GetLastError());
+		CryptReleaseContext(hProv, 0);
+		return EID::make_unexpected(HRESULT_FROM_WIN32(GetLastError()));
 	}
-	EIDRevertToSelf();
-	SetLastError(dwError);
+	if (!CryptGetKeyParam(phUserKey, KP_CERTIFICATE, (BYTE*)Data, &DataSize, 0))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptGetKeyParam : 0x%08x", GetLastError());
+		CryptDestroyKey(phUserKey);
+		CryptReleaseContext(hProv, 0);
+		return EID::make_unexpected(HRESULT_FROM_WIN32(GetLastError()));
+	}
+	pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, Data, DataSize);
+	if (!pCertContext)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CertCreateCertificateContext : 0x%08x", GetLastError());
+		CryptDestroyKey(phUserKey);
+		CryptReleaseContext(hProv, 0);
+		return EID::make_unexpected(HRESULT_FROM_WIN32(GetLastError()));
+	}
+	// save reference to CSP (else we can't access private key)
+	if (!SetupCertificateContextWithKeyInfo(pCertContext, hProv, szProviderName, szContainerName, pCspInfo->KeySpec))
+	{
+		HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+		CertFreeCertificateContext(pCertContext);
+		CryptDestroyKey(phUserKey);
+		CryptReleaseContext(hProv, 0);
+		return EID::make_unexpected(hr);
+	}
+	// important : the hprov will be freed if the certificatecontext is freed, and that's a problem
+	if (!CryptContextAddRef(hProv, nullptr, 0))
+	{
+		HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptContextAddRef 0x%08x", hr);
+		CertFreeCertificateContext(pCertContext);
+		CryptDestroyKey(phUserKey);
+		CryptReleaseContext(hProv, 0);
+		return EID::make_unexpected(hr);
+	}
+	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"Certificate OK");
+
+	// Cleanup key handle - the provider handle is referenced by the certificate
+	CryptDestroyKey(phUserKey);
+	// Don't release hProv - it's now owned by the certificate context
+
 	return pCertContext;
+}
+
+// Exported wrapper maintaining PCCERT_CONTEXT return type with SetLastError
+PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
+{
+	EIDImpersonate();
+	auto result = GetCertificateFromCspInfoInternal(pCspInfo);
+	EIDRevertToSelf();
+
+	if (result)
+	{
+		SetLastError(ERROR_SUCCESS);
+		return *result;
+	}
+	SetLastError(static_cast<DWORD>(result.error()));
+	return nullptr;
 }
 
 #define ERRORTOTEXT(ERROR) case ERROR: pszName = TEXT(#ERROR);                 break;
@@ -201,58 +217,61 @@ LPCTSTR GetTrustErrorText(DWORD Status)
 #undef ERRORTOTEXT
 
 
+// Internal function using Result<T> for type-safe error handling
+// Marked noexcept for LSASS compatibility
+[[nodiscard]] EID::ResultVoid HasCertificateRightEKUInternal(
+    __in PCCERT_CONTEXT pCertContext) noexcept
+{
+	if (GetPolicyValue(AllowCertificatesWithNoEKU) != 0)
+	{
+		// Policy allows certificates without EKU - success
+		return {};
+	}
+
+	// Check EKU SmartCardLogon
+	DWORD dwSize = 0;
+	if (!CertGetEnhancedKeyUsage(pCertContext, 0, nullptr, &dwSize))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error 0x%08x returned by CertGetEnhancedKeyUsage", GetLastError());
+		return EID::make_unexpected(HRESULT_FROM_WIN32(GetLastError()));
+	}
+
+	PCERT_ENHKEY_USAGE pCertUsage = static_cast<PCERT_ENHKEY_USAGE>(EIDAlloc(dwSize));
+	if (!pCertUsage)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error 0x%08x returned by EIDAlloc", GetLastError());
+		return EID::make_unexpected(E_OUTOFMEMORY);
+	}
+
+	// Use RAII-style cleanup
+	struct CertUsageDeleter {
+		PCERT_ENHKEY_USAGE p;
+		~CertUsageDeleter() { if (p) EIDFree(p); }
+	} cleanup{ pCertUsage };
+
+	if (!CertGetEnhancedKeyUsage(pCertContext, 0, pCertUsage, &dwSize))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error 0x%08x returned by CertGetEnhancedKeyUsage", GetLastError());
+		return EID::make_unexpected(HRESULT_FROM_WIN32(GetLastError()));
+	}
+
+	for (DWORD dwI = 0; dwI < pCertUsage->cUsageIdentifier; dwI++)
+	{
+		if (strcmp(pCertUsage->rgpszUsageIdentifier[dwI], szOID_KP_SMARTCARD_LOGON) == 0)
+		{
+			// Found SmartCard Logon EKU
+			return {};
+		}
+	}
+
+	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"No EKU found in end certificate");
+	return EID::make_unexpected(CERT_TRUST_IS_NOT_VALID_FOR_USAGE);
+}
+
+// Exported wrapper maintaining BOOL + GetLastError pattern for API compatibility
 BOOL HasCertificateRightEKU(__in PCCERT_CONTEXT pCertContext)
 {
-	BOOL fValidation = FALSE;
-	DWORD dwError = 0, dwSize = 0, dwI;
-	PCERT_ENHKEY_USAGE		 pCertUsage        = nullptr;
-	__try
-	{
-		if (!GetPolicyValue(AllowCertificatesWithNoEKU))
-		{
-			// check EKU SmartCardLogon
-			if (!CertGetEnhancedKeyUsage(pCertContext, 0, nullptr, &dwSize))
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CertGetEnhancedKeyUsage", GetLastError());
-				__leave;
-			}
-			pCertUsage = (PCERT_ENHKEY_USAGE)EIDAlloc(dwSize);
-			if (!pCertUsage)
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by EIDAlloc", GetLastError());
-				__leave;
-			}
-			if (!CertGetEnhancedKeyUsage(pCertContext, 0, pCertUsage, &dwSize))
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CertGetEnhancedKeyUsage", GetLastError());
-				__leave;
-			}
-			for (dwI = 0; dwI < pCertUsage->cUsageIdentifier; dwI++)
-			{
-				if (strcmp(pCertUsage->rgpszUsageIdentifier[dwI],szOID_KP_SMARTCARD_LOGON) == 0)
-				{
-					break;
-				}
-			}
-			if (dwI >= pCertUsage->cUsageIdentifier)
-			{
-				dwError = CERT_TRUST_IS_NOT_VALID_FOR_USAGE;
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No EKU found in end certificate");
-				__leave;
-			}
-		}
-		fValidation = TRUE;
-	}
-	__finally
-	{
-		if (pCertUsage)
-			EIDFree(pCertUsage);
-	}
-	SetLastError(dwError);
-	return fValidation;
+	return EID::to_bool(HasCertificateRightEKUInternal(pCertContext));
 }
 
 BOOL IsCertificateInComputerTrustedPeopleStore(__in PCCERT_CONTEXT pCertContext)
@@ -304,7 +323,7 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 	{
 		// Always enforce Smart Card Logon EKU - certificates without this EKU must not authenticate
 		params.EnhkeyUsage.cUsageIdentifier = 1;
-		szOid = szOID_KP_SMARTCARD_LOGON;
+		szOid = s_szOidSmartCardLogon;
 		params.EnhkeyUsage.rgpszUsageIdentifier = &szOid;
 		params.CertUsage.dwType = USAGE_MATCH_TYPE_OR;
 		if (!HasCertificateRightEKU(pCertContext))
@@ -445,7 +464,7 @@ BOOL MakeTrustedCertifcate(PCCERT_CONTEXT pCertContext)
 	else
 	{
 		params.EnhkeyUsage.cUsageIdentifier = 1;
-		szOid = szOID_KP_SMARTCARD_LOGON;
+		szOid = s_szOidSmartCardLogon;
 		params.EnhkeyUsage.rgpszUsageIdentifier = &szOid;
 	}
 

@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <tchar.h>
 #include <credentialprovider.h>
+#include <format>
 #include "global.h"
 #include "EIDConfigurationWizard.h"
 #include "../EIDCardLibrary/CContainer.h"
@@ -59,7 +60,8 @@ BOOL GetTrustErrorMessage(DWORD dwError, PTSTR szName, DWORD dwSize)
 	}
 	else
 	{
-		swprintf_s(szName, dwSize, L"Unknown Error");
+		std::wstring errMsg = std::format(L"Unknown Error");
+		wcscpy_s(szName, dwSize, errMsg.c_str());
 	}
 	return fReturn;
 } 

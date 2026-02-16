@@ -34,6 +34,10 @@
 
 #include <CodeAnalysis/Warnings.h>
 
+// Static buffer for empty string literal to avoid const-correctness issues
+// with PWSTR (non-const wchar_t*) initialization from L""
+static wchar_t s_wszEmpty[] = L"";
+
 #pragma warning(push)
 #pragma warning(disable : 4995)
 #include <Shlwapi.h>
@@ -136,7 +140,7 @@ static HRESULT ProtectAndCopyString(
     // Note that the third parameter to CredProtect, the number of characters of pwzToProtect
     // to encrypt, must include the NULL terminator!
     DWORD cchProtected = 0;
-	PWSTR pwzProtected = L"";
+	PWSTR pwzProtected = s_wszEmpty;
 	   if (!CredProtectW(FALSE, pwzToProtect, (DWORD)wcslen(pwzToProtect)+1, pwzProtected, &cchProtected, nullptr))
     {
         DWORD dwErr = GetLastError();

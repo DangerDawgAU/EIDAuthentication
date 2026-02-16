@@ -38,6 +38,9 @@
 #pragma warning(disable : 4995)
 #include <strsafe.h>
 #pragma warning(pop)
+// Static buffer for PWSTR* assignment (C++23 /Zc:strictStrings compatibility)
+static wchar_t s_wszUnknownError[] = L"Unknow Error";
+
 // CEIDCredential ////////////////////////////////////////////////////////
 
 CEIDCredential::CEIDCredential(CContainer* container):
@@ -646,7 +649,7 @@ HRESULT CEIDCredential::ReportResult(
     CREDENTIAL_PROVIDER_STATUS_ICON* pcpsiOptionalStatusIcon
     )
 {
-    if (ppwszOptionalStatusText) *ppwszOptionalStatusText = L"Unknow Error";
+    if (ppwszOptionalStatusText) *ppwszOptionalStatusText = s_wszUnknownError;
     if (pcpsiOptionalStatusIcon) *pcpsiOptionalStatusIcon = CPSI_NONE;
 	
 	if (ntsStatus == STATUS_SUCCESS)

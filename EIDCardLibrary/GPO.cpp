@@ -60,12 +60,6 @@ GPOInfo MyGPOInfo[] =
   {szMainGPOKey, L"EnforceCSPWhitelist" }  // Security: block CSPs not in whitelist
 };
 
-// Validates that a GPOPolicy enum value is within valid bounds to prevent array overflow
-static BOOL IsValidPolicy(GPOPolicy policy)
-{
-	return (policy >= AllowSignatureOnlyKeys && policy <= EnforceCSPWhitelist);
-}
-
 DWORD GetPolicyValue( GPOPolicy Policy)
 {
 	// Validate Policy enum bounds to prevent array overflow

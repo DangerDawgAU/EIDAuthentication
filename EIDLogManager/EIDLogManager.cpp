@@ -182,15 +182,25 @@ void SaveLog(HWND hDlg)
 		{
 			__leave;
 		}
-		ExportOneTraceFile(hFile, TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl"));
-		ExportOneTraceFile(hFile, TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.001"));
-		ExportOneTraceFile(hFile, TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.002"));
-		ExportOneTraceFile(hFile, TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.003"));
-		ExportOneTraceFile(hFile, TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.004"));
-		ExportOneTraceFile(hFile, TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.005"));
-		ExportOneTraceFile(hFile, TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.006"));
-		ExportOneTraceFile(hFile, TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.007"));
-		ExportOneTraceFile(hFile, TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.008"));
+		// Static buffers for ExportOneTraceFile (requires non-const PTSTR)
+		static TCHAR s_szTraceFile0[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl");
+		static TCHAR s_szTraceFile1[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.001");
+		static TCHAR s_szTraceFile2[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.002");
+		static TCHAR s_szTraceFile3[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.003");
+		static TCHAR s_szTraceFile4[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.004");
+		static TCHAR s_szTraceFile5[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.005");
+		static TCHAR s_szTraceFile6[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.006");
+		static TCHAR s_szTraceFile7[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.007");
+		static TCHAR s_szTraceFile8[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.008");
+		ExportOneTraceFile(hFile, s_szTraceFile0);
+		ExportOneTraceFile(hFile, s_szTraceFile1);
+		ExportOneTraceFile(hFile, s_szTraceFile2);
+		ExportOneTraceFile(hFile, s_szTraceFile3);
+		ExportOneTraceFile(hFile, s_szTraceFile4);
+		ExportOneTraceFile(hFile, s_szTraceFile5);
+		ExportOneTraceFile(hFile, s_szTraceFile6);
+		ExportOneTraceFile(hFile, s_szTraceFile7);
+		ExportOneTraceFile(hFile, s_szTraceFile8);
 	}
 	__finally
 	{
