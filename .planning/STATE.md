@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
-**Current focus:** v1.3 Deep Modernization - Phase 21 ready to plan
+**Current focus:** v1.3 Deep Modernization - Phase 22 in progress
 
 ## Current Position
 
-Phase: 21 of 30 (SonarQube Style Issues) - COMPLETE
-Plan: 3 of 3
-Status: Complete
-Last activity: 2026-02-17 — Phase 21 complete: verified clean build with 9 auto conversions
+Phase: 22 of 30 (SonarQube Macro Issues) - IN PROGRESS
+Plan: 1 of 3
+Status: In Progress
+Last activity: 2026-02-17 — Phase 22 Plan 01: converted 2 macros to constexpr
 
-Progress: [██░░░░░░░░░░░░░░░░░░] 7% (Phase 21 complete - 3/3 plans)
+Progress: [██░░░░░░░░░░░░░░░░░░] 7% (Phase 22 in progress - 1/3 plans)
 
 ## Performance Metrics
 
@@ -42,6 +42,8 @@ Recent decisions for v1.3:
 - Code refactoring phases follow SonarQube phases (complexity, duplicates)
 - C++23 advanced features evaluated after code quality baseline established
 - Diagnostics/logging improvements before final verification
+- Replace simple value macros with constexpr for type safety (22-01)
+- Use static constexpr for file-scope constants to ensure internal linkage (22-01)
 
 ### Pending Todos
 
@@ -54,8 +56,8 @@ None currently. v1.3 ready to begin.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 21-03-PLAN.md (Build verification - Phase 21 complete)
-Resume file: None — Phase 21 complete, ready for Phase 22 planning
+Stopped at: Completed 22-01-PLAN.md (Simple value macro conversion)
+Resume file: 22-02-PLAN.md
 
 ## Key Constraints (Always Remember)
 
