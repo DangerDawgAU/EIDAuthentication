@@ -419,7 +419,7 @@ void SelectBestCredential()
 	}
 }
 
-#define WM_MYMESSAGE WM_USER + 10
+constexpr UINT WM_MYMESSAGE = WM_USER + 10;
 INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	hWndTemp = hWnd;
