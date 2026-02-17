@@ -8,37 +8,44 @@ A Windows smart card authentication package providing smart card login for local
 
 A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
 
-## Current Milestone: v1.1 SonarQube Quality Remediation
+## Current Milestone: v1.2 Code Modernization
 
-**Goal:** Close all 1,167 SonarQube issues through code improvement or explicit "not applicable" marking
+**Goal:** Resolve ~550 fixable SonarQube maintainability issues while documenting remaining ~550 as justified exceptions
 
 **Target features:**
-- Zero open SonarQube security hotspots
-- Zero open SonarQube bugs/reliability issues
-- Modern C++ patterns (const correctness, smart pointers, std::string)
-- Reduced code complexity and duplication
-- Iterative verification with re-scanning after each phase
+- Fix 1 blocker issue (fall-through annotation)
+- Fix 102 const-correctness issues (globals, pointers)
+- Convert 149 C-style char arrays to std::string (where LSASS-safe)
+- Convert 28 C-style arrays to std::array
+- Mark ~550 issues as "Won't Fix" with justification (Windows API, style preferences)
+- Final SonarQube scan confirming fixable issues resolved
+
+### Completed Milestones
+
+**v1.0 C++23 Modernization** — Build system, error handling, compile-time features
+**v1.1 SonarQube Quality Remediation** — Zero security hotspots, zero reliability bugs
 
 ## Requirements
 
-### Validated (v1.0 Shipped)
+### Validated (v1.0 & v1.1 Shipped)
 - ✓ Build System — All 7 projects with `/std:c++23`
 - ✓ Error Handling — `std::expected` internal, C API boundaries
 - ✓ Compile-Time — `constexpr` validation, `std::to_underlying`
 - ✓ Code Quality — `std::format`, `std::span`
 - ✓ Documentation — README, BUILD.md updated
 - ✓ Build Verification — Passed, runtime pending
+- ✓ Security Hotspots — 0 open (2 fixed)
+- ✓ Reliability Bugs — 0 open (3 fixed)
 
-### Active (v1.1 Scope)
-- [ ] Resolve 2 security hotspots (strlen safety)
-- [ ] Fix 3 reliability bugs (type punning, dead code)
-- [ ] Const correctness for globals, pointers, functions, parameters
-- [ ] Modern C++ types (std::string, std::array, enum class, nullptr)
-- [ ] Code simplification (auto, constexpr, merge ifs, separate decls)
-- [ ] Complexity reduction (nesting, RAII for memory)
-- [ ] Modern diagnostics (std::source_location)
-- [ ] Resolve 17 code duplication blocks
-- [ ] Final verification: 0 open issues
+### Active (v1.2 Scope)
+- [ ] Fix 1 blocker issue (unannotated fall-through)
+- [ ] Const correctness for global variables (71 issues)
+- [ ] Const correctness for global pointers (31 issues)
+- [ ] C-style char array → std::string where safe (149 issues)
+- [ ] C-style array → std::array (28 issues)
+- [ ] Variable shadowing fixes (~20 issues)
+- [ ] Document ~550 "Won't Fix" issues with justification
+- [ ] Final verification: all fixable issues resolved
 
 ### Out of Scope
 
@@ -87,4 +94,4 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 | SonarQube remediation phase-by-phase | Group issues by category, fix iteratively with re-scan verification | — Pending |
 
 ---
-*Last updated: 2026-02-17 after v1.1 milestone start*
+*Last updated: 2026-02-17 after v1.2 milestone start*

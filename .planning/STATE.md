@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A clean, maintainable, and secure codebase with zero static analysis issues
-**Current focus:** v1.1 COMPLETE - SonarQube remediation done
+**Current focus:** v1.2 Code Modernization - Fix ~550 fixable SonarQube issues
 
 ## Current Position
 
-Phase: All phases complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Milestone v1.1 COMPLETE - Awaiting SonarQube rescan and "Won't Fix" marking
-Last activity: 2026-02-17 — Milestone v1.1 execution complete
+Status: Defining requirements
+Last activity: 2026-02-17 — Milestone v1.2 started
 
-Progress: [v1.0 COMPLETE] [v1.1 COMPLETE] 100%
+Progress: [v1.0 COMPLETE] [v1.1 COMPLETE] [v1.2 ○] 0%
 
 ## Performance Metrics
 
