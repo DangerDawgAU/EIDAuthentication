@@ -24,47 +24,8 @@ CContainerHolderFactory<CContainerHolderTest> *pCredentialList = nullptr;
 DWORD dwCurrentCredential = 0xFFFFFFFF;
 BOOL fHasDeselected = TRUE;
 
-// Helper: Handle refresh button click - reconnect to smart card and refresh credential list
-// Returns TRUE if refresh succeeded, FALSE if cancelled or failed
-static BOOL HandleRefreshRequest(HWND hWnd)
-{
-    if (!pCredentialList) return FALSE;
-
-    // Clear all data
-    PropSheet_SetWizButtons(hWnd, PSWIZB_BACK);
-    pCredentialList->DisconnectNotification(szReader);
-    dwCurrentCredential = 0xFFFFFFFF;
-    ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_04LIST));
-    ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_04CHECKS));
-
-    // Prompt for card
-    if (!AskForCard(szReader, dwReaderSize, szCard, dwCardSize))
-    {
-        LONG lReturn = GetLastError();
-        if (lReturn != SCARD_W_CANCELLED_BY_USER)
-        {
-            MessageBoxWin32Ex(lReturn, hWnd);
-        }
-        return FALSE;
-    }
-
-    // Reconnect and trigger refresh
-#pragma warning(push)
-#pragma warning(disable: 4302)
-    SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(IDC_WAIT)));
-#pragma warning(pop)
-    pCredentialList->ConnectNotification(szReader, szCard, 0);
-#pragma warning(push)
-#pragma warning(disable: 4302)
-    SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(IDC_ARROW)));
-#pragma warning(pop)
-
-    // Send activation message to refresh UI
-    NMHDR nmh;
-    nmh.code = PSN_SETACTIVE;
-    SendMessage(hWnd, WM_NOTIFY, 0, (LPARAM)&nmh);
-    return TRUE;
-}
+// Forward declaration
+BOOL PopulateListViewCheckData(HWND hWndListViewList, HWND hWndListViewCheck);
 
 PTSTR Columns[] = { s_szColumnName };
 #define COLUMN_NUM ARRAYSIZE(Columns)
@@ -462,6 +423,82 @@ void SelectBestCredential()
 }
 
 constexpr UINT WM_MYMESSAGE = WM_USER + 10;
+
+// Helper: Handle refresh button click - reconnect to smart card and refresh credential list
+// Returns TRUE if refresh succeeded, FALSE if cancelled or failed
+static BOOL HandleRefreshRequest(HWND hWnd)
+{
+    if (!pCredentialList) return FALSE;
+
+    // Clear all data
+    PropSheet_SetWizButtons(hWnd, PSWIZB_BACK);
+    pCredentialList->DisconnectNotification(szReader);
+    dwCurrentCredential = 0xFFFFFFFF;
+    ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_04LIST));
+    ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_04CHECKS));
+
+    // Prompt for card
+    if (!AskForCard(szReader, dwReaderSize, szCard, dwCardSize))
+    {
+        LONG lReturn = GetLastError();
+        if (lReturn != SCARD_W_CANCELLED_BY_USER)
+        {
+            MessageBoxWin32Ex(lReturn, hWnd);
+        }
+        return FALSE;
+    }
+
+    // Reconnect and trigger refresh
+#pragma warning(push)
+#pragma warning(disable: 4302)
+    SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(IDC_WAIT)));
+#pragma warning(pop)
+    pCredentialList->ConnectNotification(szReader, szCard, 0);
+#pragma warning(push)
+#pragma warning(disable: 4302)
+    SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(IDC_ARROW)));
+#pragma warning(pop)
+
+    // Send activation message to refresh UI
+    NMHDR nmh;
+    nmh.code = PSN_SETACTIVE;
+    SendMessage(hWnd, WM_NOTIFY, 0, (LPARAM)&nmh);
+    return TRUE;
+}
+
+// Helper: Handle credential selection change in the list view
+static void HandleCredentialSelectionChange(HWND hWnd, LPNMITEMACTIVATE pnmItem)
+{
+    if (!pCredentialList) return;
+
+    if (pnmItem->uNewState & LVIS_SELECTED)
+    {
+        if ((DWORD)pnmItem->iItem < pCredentialList->ContainerHolderCount())
+        {
+            fHasDeselected = FALSE;
+            dwCurrentCredential = (DWORD)pnmItem->iItem;
+            PopulateListViewCheckData(GetDlgItem(hWnd, IDC_04LIST), GetDlgItem(hWnd, IDC_04CHECKS));
+
+            if (pCredentialList->GetContainerHolderAt(dwCurrentCredential)->GetIconIndex())
+            {
+                PropSheet_SetWizButtons(hWnd, PSWIZB_NEXT | PSWIZB_BACK);
+            }
+            else
+            {
+                PropSheet_SetWizButtons(hWnd, PSWIZB_BACK);
+            }
+        }
+    }
+    else
+    {
+        // Deselection - clear check list and reset state
+        ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_04CHECKS));
+        PropSheet_SetWizButtons(hWnd, PSWIZB_BACK);
+        fHasDeselected = TRUE;
+        PostMessage(hWnd, WM_MYMESSAGE, 0, 0);
+    }
+}
+
 INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	hWndTemp = hWnd;
@@ -568,30 +605,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			case LVN_ITEMCHANGED:
 				if (pnmh->idFrom == IDC_04LIST && pCredentialList)
 				{
-					if (((LPNMITEMACTIVATE)lParam)->uNewState & LVIS_SELECTED )
-					{
-						if ((DWORD)(((LPNMITEMACTIVATE)lParam)->iItem) < pCredentialList->ContainerHolderCount())
-						{
-							fHasDeselected = FALSE;
-							dwCurrentCredential = ((LPNMITEMACTIVATE)lParam)->iItem;
-							PopulateListViewCheckData(GetDlgItem(hWnd, IDC_04LIST),GetDlgItem(hWnd, IDC_04CHECKS));
-							if (pCredentialList->GetContainerHolderAt(dwCurrentCredential)->GetIconIndex())
-							{
-								PropSheet_SetWizButtons(hWnd, PSWIZB_NEXT |	PSWIZB_BACK);
-							}
-							else
-							{
-								PropSheet_SetWizButtons(hWnd, PSWIZB_BACK);
-							}
-						}
-					}
-					else
-					{
-						ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_04CHECKS));
-						PropSheet_SetWizButtons(hWnd, PSWIZB_BACK);
-						fHasDeselected = TRUE;
-						PostMessage(hWnd, WM_MYMESSAGE, 0, 0);
-					}
+					HandleCredentialSelectionChange(hWnd, (LPNMITEMACTIVATE)lParam);
 				}
 				break;
 			case NM_DBLCLK:
