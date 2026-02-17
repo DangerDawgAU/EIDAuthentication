@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 25 of 30 (Code Refactoring Complexity) - IN PROGRESS
-Plan: 1 of 3
-Status: 25-01 complete, helper functions extracted from SelectFirstCertificateWithPrivateKey
-Last activity: 2026-02-17 — Completed 25-01 (certificate matching helpers extracted)
+Plan: 2 of 3
+Status: 25-02 complete, helper functions extracted from WndProc_04CHECKS
+Last activity: 2026-02-17 — Completed 25-02 (WM_NOTIFY handler helpers extracted)
 
-Progress: [███░░░░░░░░░░░░░░░░░] 17% (Phase 25 in progress - 1/3 plans)
+Progress: [███░░░░░░░░░░░░░░░░░] 17% (Phase 25 in progress - 2/3 plans)
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Recent decisions for v1.3:
 - Extract complex boolean conditions into named static helper functions to reduce cognitive complexity (25-01)
 - Use null-safe checks in helper functions to remove null-check mental burden from callers (25-01)
 - [Phase 25]: Place helper functions after WM_MYMESSAGE definition to avoid forward declaration issues in Win32 window procedures
+- [Phase 25]: Add forward declaration for PopulateListViewCheckData to enable use in helper functions before its definition
 
 ### Pending Todos
 
@@ -69,8 +70,8 @@ None currently. v1.3 ready to begin.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 25-01-PLAN.md
-Resume file: 25-02-PLAN.md (Phase 25: Code Refactoring Complexity)
+Stopped at: Completed 25-02-PLAN.md
+Resume file: 25-03-PLAN.md (Phase 25: Code Refactoring Complexity)
 
 ## Key Constraints (Always Remember)
 
@@ -85,4 +86,4 @@ Resume file: 25-02-PLAN.md (Phase 25: Code Refactoring Complexity)
 
 *Last updated: 2026-02-17*
 *Current milestone: v1.3 Deep Modernization*
-*Next: Phase 25 Code Refactoring Complexity (plan 2 of 3)*
+*Next: Phase 25 Code Refactoring Complexity (plan 3 of 3)*
