@@ -71,7 +71,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 21: SonarQube Style Issues** - Replace explicit types with auto where clearer (completed 2026-02-17)
 - [x] **Phase 22: SonarQube Macro Issues** - Convert macros to const/constexpr where safe (completed 2026-02-17)
-- [ ] **Phase 23: SonarQube Const Issues** - Mark remaining global variables const
+- [x] **Phase 23: SonarQube Const Issues** - Mark remaining global variables const (completed 2026-02-17)
 - [ ] **Phase 24: SonarQube Nesting Issues** - Reduce deep nesting in key functions
 - [ ] **Phase 25: Code Refactoring - Complexity** - Reduce cognitive complexity and extract helpers
 - [ ] **Phase 26: Code Refactoring - Duplicates** - Consolidate duplicate code patterns
@@ -273,7 +273,7 @@ Phases execute in numeric order: 21 -> 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28 ->
 |-------|----------------|--------|-----------|
 | 21. SonarQube Style | 0/3 | Complete    | 2026-02-17 |
 | 22. SonarQube Macros | 0/TBD | Complete    | 2026-02-17 |
-| 23. SonarQube Const | 0/TBD | Not started | - |
+| 23. SonarQube Const | 0/TBD | Complete    | 2026-02-17 |
 | 24. SonarQube Nesting | 0/TBD | Not started | - |
 | 25. Code Complexity | 0/TBD | Not started | - |
 | 26. Code Duplicates | 0/TBD | Not started | - |
