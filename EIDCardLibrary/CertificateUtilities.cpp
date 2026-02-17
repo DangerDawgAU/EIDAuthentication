@@ -211,34 +211,36 @@ PCCERT_CONTEXT SelectFirstCertificateWithPrivateKey()
 	if (hCertStore)
 	{
 		PCCERT_CONTEXT pCertContext = nullptr;
-		pCertContext = CertEnumCertificatesInStore(hCertStore,pCertContext);
+		pCertContext = CertEnumCertificatesInStore(hCertStore, pCertContext);
 		while (pCertContext)
 		{
-			
 			PBYTE KeySpec = nullptr;
 			dwSize = 0;
-			if (CertGetCertificateContextProperty(pCertContext,CERT_KEY_PROV_INFO_PROP_ID,KeySpec,&dwSize))
+
+			// Skip certificates without private keys
+			if (!CertGetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, KeySpec, &dwSize))
 			{
-				//The certificate has a private key
-				if (returnedContext) 
-					CertFreeCertificateContext(returnedContext);
-				// get the subject details for the cert
-				CertGetNameString(pCertContext,CERT_NAME_SIMPLE_DISPLAY_TYPE,0,nullptr,szCertName,ARRAYSIZE(szCertName));
-				// match computer name ?
-				if (_tcscmp(szCertName, szComputerName) == 0)
-				{
-					returnedContext = pCertContext;
-					// return
-					break;
-				}
-				else
-				{
-					returnedContext = CertDuplicateCertificateContext(pCertContext);
-					// continue the loop
-				}
-				
+				pCertContext = CertEnumCertificatesInStore(hCertStore, pCertContext);
+				continue;
 			}
-			pCertContext = CertEnumCertificatesInStore(hCertStore,pCertContext);
+
+			// Certificate has a private key - process it
+			if (returnedContext)
+				CertFreeCertificateContext(returnedContext);
+
+			// Get the subject details for the cert
+			CertGetNameString(pCertContext, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, nullptr, szCertName, ARRAYSIZE(szCertName));
+
+			// Check for computer name match
+			if (_tcscmp(szCertName, szComputerName) == 0)
+			{
+				returnedContext = pCertContext;
+				break;  // Found exact match, exit loop
+			}
+
+			// Keep a reference to this certificate as fallback
+			returnedContext = CertDuplicateCertificateContext(pCertContext);
+			pCertContext = CertEnumCertificatesInStore(hCertStore, pCertContext);
 		}
 		CertCloseStore(hCertStore,0);
 	}
