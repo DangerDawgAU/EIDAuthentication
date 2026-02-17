@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
-**Current focus:** v1.3 Deep Modernization - Phase 22 complete
+**Current focus:** v1.3 Deep Modernization - Phase 23 in progress
 
 ## Current Position
 
-Phase: 22 of 30 (SonarQube Macro Issues) - COMPLETE
-Plan: 3 of 3
+Phase: 23 of 30 (SonarQube Const Issues) - IN PROGRESS
+Plan: 1 of 1
 Status: Complete
-Last activity: 2026-02-17 — Phase 22 Plan 03: build verification complete, 4 macros converted to constexpr
+Last activity: 2026-02-17 — Phase 23 Plan 01: documented won't-fix global variable const categories
 
-Progress: [██░░░░░░░░░░░░░░░░░░] 7% (Phase 22 complete - 3/3 plans)
+Progress: [██░░░░░░░░░░░░░░░░░░] 7% (Phase 23 complete - 1/1 plans)
 
 ## Performance Metrics
 
@@ -48,6 +48,8 @@ Recent decisions for v1.3:
 - Use constexpr UINT for Windows custom message constants (22-02)
 - EIDAuthenticateVersionText must remain as #define - used in .rc resource files (22-03)
 - Resource compiler cannot process C++ constexpr - requires #define (22-03)
+- All remaining global variables are legitimately mutable - LSA pointers, tracing state, DLL state, UI state, handles, Windows API buffers (23-01)
+- Windows CryptoAPI requires non-const char arrays for CERT_ENHKEY_USAGE.rgpszUsageIdentifier (23-01)
 
 ### Pending Todos
 
@@ -60,8 +62,8 @@ None currently. v1.3 ready to begin.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 22-03-PLAN.md (Build verification)
-Resume file: 23-01-PLAN.md (Phase 23: SonarQube Const Issues)
+Stopped at: Completed 23-01-PLAN.md (Won't-fix documentation)
+Resume file: 24-01-PLAN.md (Phase 24: SonarQube Nested Issues)
 
 ## Key Constraints (Always Remember)
 
@@ -76,4 +78,4 @@ Resume file: 23-01-PLAN.md (Phase 23: SonarQube Const Issues)
 
 *Last updated: 2026-02-17*
 *Current milestone: v1.3 Deep Modernization*
-*Next: Phase 23 SonarQube Const Issues*
+*Next: Phase 24 SonarQube Nested Issues*
