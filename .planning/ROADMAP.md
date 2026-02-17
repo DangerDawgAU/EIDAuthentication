@@ -107,7 +107,12 @@ Plans:
   1. SonarQube shows 0 remaining macro issues (or all remaining documented with Windows API justification)
   2. Constants that can use `constexpr` are converted
   3. Build passes with no new warnings
-**Plans**: TBD
+**Plans**: 3 plans in 2 waves
+
+Plans:
+- [ ] 22-01-PLAN.md - Convert simple macros to constexpr in EIDCardLibrary files
+- [ ] 22-02-PLAN.md - Convert numeric macros to constexpr in Wizard pages and utilities
+- [ ] 22-03-PLAN.md - Build verification and document won't-fix macros
 
 ### Phase 23: SonarQube Const Issues
 **Goal**: Global variables that should be immutable are marked `const`
