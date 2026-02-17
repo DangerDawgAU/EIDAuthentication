@@ -54,7 +54,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Milestone Goal:** Resolve ~550 fixable SonarQube maintainability issues while documenting remaining ~550 as justified exceptions.
 
-- [ ] **Phase 15: Critical Fix** - Fix 1 blocker issue (unannotated fall-through)
+- [x] **Phase 15: Critical Fix** - Fix 1 blocker issue (unannotated fall-through) (completed 2026-02-17)
 - [ ] **Phase 16: Const Correctness** - Fix 102+ const-correctness issues (globals, pointers, methods)
 - [ ] **Phase 17: Modern Types** - Convert ~197 legacy type usages (C-style arrays, shadowing)
 - [ ] **Phase 18: Code Quality** - Build verification after all code changes
@@ -218,7 +218,7 @@ Phases execute in numeric order: 15 -> 16 -> 17 -> 18 -> 19 -> 20
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 15. Critical Fix | 0/1 | Ready to execute | - |
+| 15. Critical Fix | 0/1 | Complete    | 2026-02-17 |
 | 16. Const Correctness | 0/TBD | Not started | - |
 | 17. Modern Types | 0/TBD | Not started | - |
 | 18. Code Quality | 0/TBD | Not started | - |
