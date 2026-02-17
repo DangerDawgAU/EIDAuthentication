@@ -122,7 +122,10 @@ Plans:
   1. SonarQube shows 0 remaining global variable const issues (or all remaining documented)
   2. Read-only global variables are properly marked const
   3. Build passes with no new warnings
-**Plans**: TBD
+**Plans**: 1 plan in 1 wave
+
+Plans:
+- [ ] 23-01-PLAN.md - Verify won't-fix categories and document remaining global const issues
 
 ### Phase 24: SonarQube Nesting Issues
 **Goal**: Key functions have reduced nesting depth for improved readability
