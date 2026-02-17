@@ -371,7 +371,7 @@ template <typename T>
 BOOL CContainerHolderFactory<T>::DisconnectNotification(LPCTSTR szReaderName)
 {
 	this->Lock();
-	typename std::list<T*>::iterator l_iter = _CredentialList.begin();
+	auto l_iter = _CredentialList.begin();
 	while(l_iter!=_CredentialList.end())
 	{
 		T* item = (T *)*l_iter;
@@ -410,7 +410,7 @@ template <typename T>
 BOOL CContainerHolderFactory<T>::CleanList()
 {
 	this->Lock();
-	typename std::list<T*>::iterator l_iter = _CredentialList.begin();
+	auto l_iter = _CredentialList.begin();
 	while(l_iter!=_CredentialList.end())
 	{
 		T* item = (T *)*l_iter;
@@ -447,7 +447,7 @@ T* CContainerHolderFactory<T>::GetContainerHolderAt(DWORD dwIndex)
 	T* result = nullptr;
 	if (dwIndex < _CredentialList.size())
 	{
-		typename std::list<T*>::iterator it = _CredentialList.begin();
+		auto it = _CredentialList.begin();
 		std::advance(it, dwIndex);
 		result = *it;
 	}
