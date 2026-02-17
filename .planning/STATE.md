@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: 24 of 30 (SonarQube Nesting Issues) - IN PROGRESS
-Plan: 2 of 3
-Status: 24-02 complete, reduced nesting in WaitForSmartCardInsertion and SelectFirstCertificateWithPrivateKey
-Last activity: 2026-02-17 — Completed 24-02 (early continue pattern)
+Phase: 24 of 30 (SonarQube Nesting Issues) - COMPLETE
+Plan: 3 of 3
+Status: 24-03 complete, won't-fix documentation created, build verified
+Last activity: 2026-02-17 — Completed 24-03 (verification and won't-fix documentation)
 
-Progress: [███░░░░░░░░░░░░░░░░░] 15% (Phase 24 in progress - 2/3 plans)
+Progress: [███░░░░░░░░░░░░░░░░░] 17% (Phase 24 complete - 3/3 plans)
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Recent decisions for v1.3:
 - Extract nested option handlers as static file-local functions to reduce nesting depth (24-01)
 - Use early return pattern with short-circuit && for guard-style handler invocation (24-01)
 - [Phase 24-sonarqube-nesting-issues]: Use early continue pattern to skip uninteresting loop iterations, reducing nesting depth (24-02)
+- SEH-protected code, complex state machines, crypto validation chains, and Windows message handlers remain as won't-fix for nesting depth (24-03)
 
 ### Pending Todos
 
@@ -65,8 +66,8 @@ None currently. v1.3 ready to begin.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 24-02-PLAN.md (Nesting Depth Reduction)
-Resume file: 24-03-PLAN.md (Phase 24: SonarQube Nested Issues - Wave 2)
+Stopped at: Completed 24-03-PLAN.md (Phase 24 Complete)
+Resume file: 25-01-PLAN.md (Phase 25: Next phase in v1.3 roadmap)
 
 ## Key Constraints (Always Remember)
 
