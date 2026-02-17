@@ -75,10 +75,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Code compiles successfully after fix
   3. No new issues introduced by the fix
   4. Switch statement has explicit `[[fallthrough]]` annotation or case restructure
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 15-01: Fix unannotated fall-through in EIDConfigurationWizardPage06.cpp:44
+- [ ] 15-01-PLAN.md - Add [[fallthrough]] annotation to EIDConfigurationWizardPage06.cpp
 
 ### Phase 16: Const Correctness
 **Goal**: All global variables, pointers, and member functions are const-correct per SonarQube rules
@@ -218,7 +218,7 @@ Phases execute in numeric order: 15 -> 16 -> 17 -> 18 -> 19 -> 20
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 15. Critical Fix | 0/TBD | Not started | - |
+| 15. Critical Fix | 0/1 | Ready to execute | - |
 | 16. Const Correctness | 0/TBD | Not started | - |
 | 17. Modern Types | 0/TBD | Not started | - |
 | 18. Code Quality | 0/TBD | Not started | - |
