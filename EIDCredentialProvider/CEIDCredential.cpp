@@ -133,7 +133,7 @@ HRESULT CEIDCredential::Initialize()
     }
 	else
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"not SUCCEEDED");
+		EIDLogErrorWithContext("Initialize::SHStrDupW", hr, L"field=certificate");
 	}
     return S_OK;
 }
@@ -213,13 +213,13 @@ HRESULT CEIDCredential::SetDeselected()
     }
 	if (!SUCCEEDED(hr))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"not SUCCEEDED hr=0x%08x",hr);
+		EIDLogErrorWithContext("SetDeselected", hr, L"field=SFI_PIN");
 	}
 
     return hr;
 }
 
-// Get info for a particular field of a tile. Called by logonUI to get information to 
+// Get info for a particular field of a tile. Called by logonUI to get information to
 // display the tile.
 HRESULT CEIDCredential::GetFieldState(
     DWORD dwFieldID,
@@ -241,7 +241,7 @@ HRESULT CEIDCredential::GetFieldState(
     }
 	if (!SUCCEEDED(hr))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"not SUCCEEDED hr=0x%08x",hr);
+		EIDLogErrorWithContext("GetFieldState", hr, L"fieldId=%lu", dwFieldID);
 	}
     return hr;
 }
@@ -267,7 +267,7 @@ HRESULT CEIDCredential::GetStringValue(
     }
 	if (!SUCCEEDED(hr))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"not SUCCEEDED hr=0x%08x",hr);
+		EIDLogErrorWithContext("GetStringValue", hr, L"fieldId=%lu", dwFieldID);
 	}
     return hr;
 }
@@ -301,12 +301,12 @@ HRESULT CEIDCredential::GetBitmapValue(
     }
 	if (!SUCCEEDED(hr))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"not SUCCEEDED hr=0x%08x",hr);
+		EIDLogErrorWithContext("GetBitmapValue", hr, L"fieldId=%lu", dwFieldID);
 	}
     return hr;
 }
 
-// Sets pdwAdjacentTo to the index of the field the submit button should be 
+// Sets pdwAdjacentTo to the index of the field the submit button should be
 // adjacent to. We recommend that the submit button is placed next to the last
 // field which the user is required to enter information in. Optional fields
 // should be below the submit button.
@@ -330,7 +330,7 @@ HRESULT CEIDCredential::GetSubmitButtonValue(
     }
 	if (!SUCCEEDED(hr))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"not SUCCEEDED hr=0x%08x",hr);
+		EIDLogErrorWithContext("GetSubmitButtonValue", hr, L"fieldId=%lu", dwFieldID);
 	}
     return hr;
 }
@@ -360,12 +360,12 @@ HRESULT CEIDCredential::SetStringValue(
     }
 	if (!SUCCEEDED(hr))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"not SUCCEEDED hr=0x%08x",hr);
+		EIDLogErrorWithContext("SetStringValue", hr, L"fieldId=%lu", dwFieldID);
 	}
     return hr;
 }
 
-//------------- 
+//-------------
 // The following methods are for logonUI to get the values of various UI elements and then communicate
 // to the credential about what the user did in that field.  However, these methods are not implemented
 // because our tile doesn't contain these types of UI elements
@@ -449,7 +449,7 @@ HRESULT CEIDCredential::CommandLinkClicked(DWORD dwFieldID)
     }
 	if (!SUCCEEDED(hr))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"not SUCCEEDED hr=0x%08x",hr);
+		EIDLogErrorWithContext("CommandLinkClicked", hr, L"fieldId=%lu", dwFieldID);
 	}
     return hr;
 }
@@ -583,12 +583,12 @@ HRESULT CEIDCredential::GetSerialization(
 						}
 						else
 						{
-							EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RetrieveNegotiateAuthPackage not SUCCEEDED hr=0x%08x",hr);
+							EIDLogErrorWithContext("GetSerialization::RetrieveNegotiateAuthPackage", hr, nullptr);
 						}
 					}
 					else
 					{
-						EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDUnlockLogonPack not SUCCEEDED hr=0x%08x",hr);
+						EIDLogErrorWithContext("GetSerialization::EIDUnlockLogonPack", hr, nullptr);
 					}
 				}
 				else
@@ -598,13 +598,13 @@ HRESULT CEIDCredential::GetSerialization(
             }
 			else
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDUnlockLogonInit not SUCCEEDED hr=0x%08x",hr);
+				EIDLogErrorWithContext("GetSerialization::EIDUnlockLogonInit", hr, nullptr);
 			}
             CoTaskMemFree(pwzProtectedPin);
         }
 		else
 		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"ProtectIfNecessaryAndCopyPassword not SUCCEEDED hr=0x%08x",hr);
+			EIDLogErrorWithContext("GetSerialization::ProtectIfNecessaryAndCopyPassword", hr, nullptr);
 		}
     }
     else
@@ -615,7 +615,7 @@ HRESULT CEIDCredential::GetSerialization(
     }
 	if (!SUCCEEDED(hr))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"not SUCCEEDED hr=0x%08x",hr);
+		EIDLogErrorWithContext("GetSerialization", hr, nullptr);
 	}
 	else
 	{
