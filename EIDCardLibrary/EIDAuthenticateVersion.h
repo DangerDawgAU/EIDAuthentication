@@ -1,5 +1,5 @@
 
 #pragma once
 
-#define EIDAuthenticateVersionText "EIDAuthenticateVersionText_mytext"
+constexpr const char* EIDAuthenticateVersionText = "EIDAuthenticateVersionText_mytext";
 #define EIDAuthenticateVersionNumeric 1.1.1.1
