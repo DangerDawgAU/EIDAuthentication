@@ -438,7 +438,8 @@ extern "C"
 		}
 		__except(EIDExceptionHandler(GetExceptionInformation()))
 		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"NT exception 0x%08x",GetExceptionCode());
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"NT exception in LsaApCallPackageUntrusted: 0x%08x",GetExceptionCode());
+			EIDLogStackTrace(GetExceptionCode());
 			return STATUS_LOGON_FAILURE;
 		}
 	}
@@ -655,10 +656,11 @@ extern "C"
 		}
 		__except(EIDExceptionHandler(GetExceptionInformation()))
 		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"NT exception 0x%08x",GetExceptionCode());
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"NT exception in LsaApCallPackage: 0x%08x",GetExceptionCode());
+			EIDLogStackTrace(GetExceptionCode());
 			return STATUS_LOGON_FAILURE;
 		}
-	}  
+	}
 
 	/**
 	Called when the authentication package's identifier has been specified in
@@ -734,7 +736,7 @@ extern "C"
 				{
 					if (!CredUnprotectW(FALSE,pwzPin,UNLEN,pwzPinUncrypted,&dPinUncrypted))
 					{
-						EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CredUnprotectW 0x%08x",GetLastError());
+						EIDLogErrorWithContext("CredUnprotectW", HRESULT_FROM_WIN32(GetLastError()), nullptr);
 						Status = STATUS_BAD_VALIDATION_CLASS;
 						__leave;
 					}
@@ -818,7 +820,7 @@ extern "C"
 			}
 			else
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetComputerName NULL 0x%08x",GetLastError());
+				EIDLogErrorWithContext("GetComputerName", HRESULT_FROM_WIN32(GetLastError()), nullptr);
 				return STATUS_BAD_VALIDATION_CLASS;
 			}
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"MachineName OK");
@@ -896,7 +898,7 @@ extern "C"
 			if (!manager->GetPassword(dwRid,pCertContext, pPin, &szPassword))
 			{
 				DWORD dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RetrieveStoredCredential failed 0x%08x", dwError);
+				EIDLogErrorWithContext("RetrieveStoredCredential", HRESULT_FROM_WIN32(dwError), nullptr);
 				MyLsaDispatchTable->FreeLsaHeap(MyTokenInformation);
 				switch(dwError)
 				{
@@ -985,7 +987,8 @@ extern "C"
 		{
 			SecureZeroMemory(pwzPin, sizeof(pwzPin));
 			SecureZeroMemory(pwzPinUncrypted, sizeof(pwzPinUncrypted));
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"NT exception 0x%08x",GetExceptionCode());
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"NT exception in LsaApLogonUserEx2: 0x%08x",GetExceptionCode());
+			EIDLogStackTrace(GetExceptionCode());
 			return STATUS_LOGON_FAILURE;
 		}
 	}
