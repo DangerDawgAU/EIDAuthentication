@@ -41,6 +41,7 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, WPARAM wParam, 
 				{
 					// enable / disable policy
 				}
+				[[fallthrough]];
 			case PSN_SETACTIVE:
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Activate");
 				PropSheet_SetWizButtons(hWnd, PSWIZB_BACK | PSWIZB_FINISH);
