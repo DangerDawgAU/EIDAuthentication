@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
-**Current focus:** v1.3 Deep Modernization - Phase 24 planned
+**Current focus:** v1.3 Deep Modernization - Phase 25 in progress
 
 ## Current Position
 
-Phase: 24 of 30 (SonarQube Nesting Issues) - COMPLETE
-Plan: 3 of 3
-Status: 24-03 complete, won't-fix documentation created, build verified
-Last activity: 2026-02-17 — Completed 24-03 (verification and won't-fix documentation)
+Phase: 25 of 30 (Code Refactoring Complexity) - IN PROGRESS
+Plan: 1 of 3
+Status: 25-01 complete, helper functions extracted from SelectFirstCertificateWithPrivateKey
+Last activity: 2026-02-17 — Completed 25-01 (certificate matching helpers extracted)
 
-Progress: [███░░░░░░░░░░░░░░░░░] 17% (Phase 24 complete - 3/3 plans)
+Progress: [███░░░░░░░░░░░░░░░░░] 17% (Phase 25 in progress - 1/3 plans)
 
 ## Performance Metrics
 
@@ -54,6 +54,9 @@ Recent decisions for v1.3:
 - Use early return pattern with short-circuit && for guard-style handler invocation (24-01)
 - [Phase 24-sonarqube-nesting-issues]: Use early continue pattern to skip uninteresting loop iterations, reducing nesting depth (24-02)
 - SEH-protected code, complex state machines, crypto validation chains, and Windows message handlers remain as won't-fix for nesting depth (24-03)
+- Extract complex boolean conditions into named static helper functions to reduce cognitive complexity (25-01)
+- Use null-safe checks in helper functions to remove null-check mental burden from callers (25-01)
+- [Phase 25]: Place helper functions after WM_MYMESSAGE definition to avoid forward declaration issues in Win32 window procedures
 
 ### Pending Todos
 
@@ -66,8 +69,8 @@ None currently. v1.3 ready to begin.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 24-03-PLAN.md (Phase 24 Complete)
-Resume file: 25-01-PLAN.md (Phase 25: Next phase in v1.3 roadmap)
+Stopped at: Completed 25-01-PLAN.md
+Resume file: 25-02-PLAN.md (Phase 25: Code Refactoring Complexity)
 
 ## Key Constraints (Always Remember)
 
@@ -82,4 +85,4 @@ Resume file: 25-01-PLAN.md (Phase 25: Next phase in v1.3 roadmap)
 
 *Last updated: 2026-02-17*
 *Current milestone: v1.3 Deep Modernization*
-*Next: Phase 24 SonarQube Nested Issues*
+*Next: Phase 25 Code Refactoring Complexity (plan 2 of 3)*
