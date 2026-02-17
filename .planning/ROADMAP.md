@@ -165,7 +165,10 @@ Plans:
   1. SonarQube duplications reduced or documented
   2. Common patterns extracted into shared utilities
   3. Build passes and functionality preserved
-**Plans**: TBD
+**Plans**: 1 plan in 1 wave
+
+Plans:
+- [ ] 26-01-PLAN.md - Verify existing shared helpers, document duplications as won't-fix
 
 ### Phase 27: C++23 Advanced Features
 **Goal**: Modern C++23 features evaluated and applied where beneficial
@@ -286,7 +289,7 @@ Phases execute in numeric order: 21 -> 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28 ->
 | 23. SonarQube Const | 0/TBD | Complete    | 2026-02-17 |
 | 24. SonarQube Nesting | 0/TBD | Complete    | 2026-02-17 |
 | 25. Code Complexity | 0/TBD | Complete    | 2026-02-17 |
-| 26. Code Duplicates | 0/TBD | Not started | - |
+| 26. Code Duplicates | 0/1 | Planned     | - |
 | 27. C++23 Features | 0/TBD | Not started | - |
 | 28. Diagnostics | 0/TBD | Not started | - |
 | 29. Build Verification | 0/TBD | Not started | - |
