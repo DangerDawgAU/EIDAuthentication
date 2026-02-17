@@ -28,13 +28,13 @@ BOOL fShowNewCertificatePanel;
 BOOL fGotoNewScreen = FALSE;
 HINSTANCE g_hinst;
 WCHAR szReader[256];
-DWORD dwReaderSize = ARRAYSIZE(szReader);
+const DWORD dwReaderSize = ARRAYSIZE(szReader);
 WCHAR szCard[256];
-DWORD dwCardSize = ARRAYSIZE(szCard);
+const DWORD dwCardSize = ARRAYSIZE(szCard);
 WCHAR szUserName[256];
-DWORD dwUserNameSize = ARRAYSIZE(szUserName);
+const DWORD dwUserNameSize = ARRAYSIZE(szUserName);
 WCHAR szPassword[256];
-DWORD dwPasswordSize = ARRAYSIZE(szPassword);
+const DWORD dwPasswordSize = ARRAYSIZE(szPassword);
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,

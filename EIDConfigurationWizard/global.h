@@ -5,13 +5,13 @@ extern BOOL fShowNewCertificatePanel;
 extern BOOL fGotoNewScreen;
 
 extern WCHAR szReader[];
-extern DWORD dwReaderSize;
+extern const DWORD dwReaderSize;
 extern WCHAR szCard[];
-extern DWORD dwCardSize;
+extern const DWORD dwCardSize;
 extern WCHAR szUserName[];
-extern DWORD dwUserNameSize;
+extern const DWORD dwUserNameSize;
 extern WCHAR szPassword[];
-extern DWORD dwPasswordSize;
+extern const DWORD dwPasswordSize;
 
 
 VOID CenterWindow(HWND hWnd);
