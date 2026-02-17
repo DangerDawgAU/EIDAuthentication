@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
-**Current focus:** v1.3 Deep Modernization - Phase 27 complete
+**Current focus:** v1.3 Deep Modernization - Phase 28 in progress
 
 ## Current Position
 
-Phase: 27 of 30 (C++23 Advanced Features) - COMPLETE
-Plan: 1 of 1
-Status: 27-01 complete, all three C++23 features deferred with justification
-Last activity: 2026-02-18 — Completed 27-01 (C++23 advanced features deferral documentation)
+Phase: 28 of 30 (Diagnostics & Logging) - IN PROGRESS
+Plan: 1 of 5
+Status: 28-01 complete, diagnostic helper functions added
+Last activity: 2026-02-18 — Completed 28-01 (Diagnostic helper functions)
 
-Progress: [████░░░░░░░░░░░░░░░░] 20% (Phase 27 - 1/1 plans)
+Progress: [████░░░░░░░░░░░░░░░░] 20% (Phase 28 - 1/5 plans)
 
 ## Performance Metrics
 
@@ -64,6 +64,9 @@ Recent decisions for v1.3:
 - [Phase 27]: CPP23-01 (import std;) deferred - partial MSVC support, experimental CMake integration (27-01)
 - [Phase 27]: CPP23-02 (std::flat_map/flat_set) deferred - not implemented in MSVC (27-01)
 - [Phase 27]: CPP23-03 (std::stacktrace) won't-fix - use CaptureStackBackTrace Win32 API instead (27-01)
+- [Phase 28]: EIDLogErrorWithContext provides structured error logging with operation context and HRESULT (28-01)
+- [Phase 28]: EIDLogStackTrace uses CaptureStackBackTrace with stack-allocated buffers for LSASS-safe stack traces (28-01)
+- [Phase 28]: Structured logging prefixes ([ERROR_CONTEXT], [STACK_TRACE]) enable filtering in security monitoring tools (28-01)
 
 ### Pending Todos
 
@@ -76,8 +79,8 @@ None currently. v1.3 ready to begin.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 27-01-PLAN.md
-Resume file: Phase 28 - Diagnostics Improvements
+Stopped at: Completed 28-01-PLAN.md
+Resume file: Phase 28 - Diagnostics Improvements (Plan 2 of 5)
 
 ## Key Constraints (Always Remember)
 
