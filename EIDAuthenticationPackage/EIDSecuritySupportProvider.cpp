@@ -365,10 +365,10 @@ extern "C"
 				// 
 			// First get information about the caller. 
 			// 	 
-			Status = MyLsaDispatchTable->GetClientInfo(&ClientInfo); 
-			if (Status != STATUS_SUCCESS) 
-			{ 
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetKeyArgument not ok 0x%08x", Status); 
+			Status = MyLsaDispatchTable->GetClientInfo(&ClientInfo);
+			if (Status != STATUS_SUCCESS)
+			{
+				EIDLogErrorWithContext("GetClientInfo", HRESULT_FROM_NT(Status), nullptr);
 				__leave;
 			} 
 	 
@@ -400,10 +400,10 @@ extern "C"
 				// copy the authorization data to our user space
 				pAuthIdentityEx = (PSEC_WINNT_AUTH_IDENTITY_EXW)
 												EIDAlloc(sizeof(SEC_WINNT_AUTH_IDENTITY_EXW)); 
-				if (!pAuthIdentityEx) 
-				{ 
-					Status = STATUS_INSUFFICIENT_RESOURCES; 
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc is 0x%08x", Status); 
+				if (!pAuthIdentityEx)
+				{
+					Status = STATUS_INSUFFICIENT_RESOURCES;
+					EIDLogErrorWithContext("EIDAlloc", HRESULT_FROM_NT(Status), nullptr);
 					__leave;
 				}
 				Status = MyLsaDispatchTable->CopyFromClientBuffer( 
@@ -412,13 +412,13 @@ extern "C"
 							pAuthIdentityEx, 
 							AuthorizationData);
 
-				if (Status != STATUS_SUCCESS) 
-				{ 
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CopyFromClientBuffer is 0x%08x", Status); 
+				if (Status != STATUS_SUCCESS)
+				{
+					EIDLogErrorWithContext("CopyFromClientBuffer", HRESULT_FROM_NT(Status), nullptr);
 					__leave;
-				} 
-				// 
-				// Check for the ex version 
+				}
+				//
+				// Check for the ex version
 				// 
 		 
 				if (pAuthIdentityEx->Version == SEC_WINNT_AUTH_IDENTITY_VERSION) 
@@ -429,11 +429,11 @@ extern "C"
 								pAuthIdentityEx, 
 								AuthorizationData); 
 		 
-					if (Status != STATUS_SUCCESS) 
-					{ 
-						EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CopyFromClientBuffer is 0x%08x", Status); 
+					if (Status != STATUS_SUCCESS)
+					{
+						EIDLogErrorWithContext("CopyFromClientBuffer", HRESULT_FROM_NT(Status), nullptr);
 						__leave;
-					} 
+					}
 					pAuthIdentity = (PSEC_WINNT_AUTH_IDENTITY) &pAuthIdentityEx->User; 
 					CredSize = pAuthIdentityEx->Length; 
 					Offset = FIELD_OFFSET(SEC_WINNT_AUTH_IDENTITY_EXW, User); 
@@ -471,11 +471,11 @@ extern "C"
 															(pAuthIdentity->UserLength + 1) * dwCharSize, 
 															szCredential,
 															pAuthIdentity->User); 
-				if (Status != STATUS_SUCCESS) 
-				{ 
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CopyFromClientBuffer is 0x%08x", Status); 
+				if (Status != STATUS_SUCCESS)
+				{
+					EIDLogErrorWithContext("CopyFromClientBuffer", HRESULT_FROM_NT(Status), nullptr);
 					__leave;
-				} 
+				}
 				BOOL fRes;
 				if (UseUnicode)
 				{
@@ -485,9 +485,9 @@ extern "C"
 				{
 					fRes = CredUnmarshalCredentialA((LPCSTR)szCredential,&CredType, (PVOID*) &pCertInfo);
 				}
-				if (!fRes) 
-				{ 
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CredUnmarshalCredential is 0x%08x UseUnicode=%d", GetLastError(), UseUnicode); 
+				if (!fRes)
+				{
+					EIDLogErrorWithContext("CredUnmarshalCredential", HRESULT_FROM_WIN32(GetLastError()), L"UseUnicode=%d", UseUnicode);
 					Status = SEC_E_UNKNOWN_CREDENTIALS;
 					__leave;
 				}				
@@ -508,9 +508,9 @@ extern "C"
 															(pAuthIdentity->PasswordLength + 1) * dwCharSize, 
 															szPassword,
 															pAuthIdentity->Password); 
-				if (Status != STATUS_SUCCESS) 
-				{ 
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CopyFromClientBuffer is 0x%08x", Status); 
+				if (Status != STATUS_SUCCESS)
+				{
+					EIDLogErrorWithContext("CopyFromClientBuffer", HRESULT_FROM_NT(Status), nullptr);
 					__leave;
 				}
 				// convert to unicode
@@ -677,21 +677,21 @@ extern "C"
 					status = MyLsaDispatchTable->AllocateClientBuffer(NULL, dwSize, (PVOID*) Buffer);
 					if (status != STATUS_SUCCESS)
 					{
-						EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"AllocateClientBuffer status = 0x%08x",status);
+						EIDLogErrorWithContext("AllocateClientBuffer", HRESULT_FROM_NT(status), nullptr);
 						__leave;
 					}
 					status = MyLsaDispatchTable->CopyToClientBuffer(NULL, dwSize, *((PVOID*) Buffer), szName);
 					if (status != STATUS_SUCCESS)
 					{
-						EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CopyToClientBuffer status = 0x%08x",status);
+						EIDLogErrorWithContext("CopyToClientBuffer", HRESULT_FROM_NT(status), nullptr);
 						__leave;
 					}
 					status = STATUS_SUCCESS;
 				}
 				__finally
-				{	
+				{
 				}
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SECPKG_CRED_ATTR_NAMES status = 0x%08x",status);
+				EIDLogErrorWithContext("QueryContextAttributes", HRESULT_FROM_NT(status), L"attr=SECPKG_CRED_ATTR_NAMES");
 				return status;
 				break;
 			default:
