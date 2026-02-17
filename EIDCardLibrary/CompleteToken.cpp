@@ -62,7 +62,9 @@ NTSTATUS CheckAuthorization(PWSTR UserName, NTSTATUS *SubStatus, LARGE_INTEGER *
 	DWORD NumberOfGroups = 0;
 	DWORD NumberOfLocalGroups = 0;
 	BOOL bResult;
-	PSID UserSid = nullptr, PrimaryGroupSid = nullptr, *pGroupSid = nullptr;
+	PSID UserSid = nullptr;
+	PSID PrimaryGroupSid = nullptr;
+	PSID* pGroupSid = nullptr;
 	DWORD Size = 0;
 	PBYTE Offset;
 	DWORD i;
@@ -386,7 +388,9 @@ void DebugPrintSid(const WCHAR* Name, PSID Sid)
 
 	if (pUserInfo->usri4_logon_hours)
 	{
-		DWORD dwPosLogon, dwPosLogoff, dwHours;
+		DWORD dwPosLogon;
+		DWORD dwPosLogoff;
+		DWORD dwHours;
 		SYSTEMTIME SystemTime;
 		FILETIME FileTime;
 		GetSystemTime(&SystemTime);

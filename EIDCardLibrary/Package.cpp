@@ -171,7 +171,7 @@ VOID EIDRevertToSelf()
 
 BOOL EIDIsComponentInLSAContext()
 {
-	return (MyImpersonate != nullptr);
+	return MyImpersonate != nullptr;
 }
 
 // Secure DLL loading function - prevents DLL hijacking attacks
@@ -473,7 +473,8 @@ HRESULT CallAuthPackage(LPCWSTR username ,LPWSTR * szAuthPackageValue, PULONG sz
     NET_API_STATUS netStatus;
 	HRESULT hr;
     HANDLE hLsa;
-	DWORD dwRid,dwSubAuthorityCount;
+	DWORD dwRid;
+	DWORD dwSubAuthorityCount;
 	USER_INFO_23* pUserInfo;
 	PSID pSid;
 	
@@ -531,7 +532,7 @@ static BOOL SafeCheckBufferOverflow(ULONG_PTR offset, ULONG length, ULONG limit)
 		return TRUE; // Overflow detected
 	}
 	// Safe to add - check bounds
-	return (offset + length > limit);
+	return offset + length > limit;
 }
 
 NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAuthenticationBase, ULONG AuthenticationInformationLength)
@@ -675,11 +676,13 @@ PTSTR GetUsernameFromRid(__in DWORD dwRid)
 {
 	NET_API_STATUS Status;
 	PUSER_INFO_3 pUserInfo = nullptr;
-	DWORD dwEntriesRead = 0, dwTotalEntries = 0;
+	DWORD dwEntriesRead = 0;
+	DWORD dwTotalEntries = 0;
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
 	BOOL fFound = FALSE;
-	DWORD dwI, dwSize;
+	DWORD dwI;
+	DWORD dwSize;
 	PTSTR szUsername = nullptr;
 	__try
 	{
@@ -749,8 +752,10 @@ BOOL IsAdmin(PTSTR szUserName)
 	PLOCALGROUP_USERS_INFO_0 pGroupInfo;
 	SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
 	SID_NAME_USE SidType;
-	PSID AdministratorsGroup; 
-	DWORD dwEntriesRead, dwTotalEntries, dwSize;
+	PSID AdministratorsGroup;
+	DWORD dwEntriesRead;
+	DWORD dwTotalEntries;
+	DWORD dwSize;
 	if (NERR_Success != NetUserGetLocalGroups(nullptr, szUserName, 0, LG_INCLUDE_INDIRECT, (PBYTE*)&pGroupInfo,
 		MAX_PREFERRED_LENGTH, &dwEntriesRead, &dwTotalEntries))
 		return FALSE;
@@ -790,7 +795,8 @@ BOOL IsAdmin(PTSTR szUserName)
 // extract RID from current process
 DWORD GetCurrentRid()
 {
-	DWORD dwSize = 0, dwRid = 0;
+	DWORD dwSize = 0;
+	DWORD dwRid = 0;
 	PSID pSid;
 	PTOKEN_USER pInfo = nullptr;
 	HANDLE hToken;
@@ -830,7 +836,8 @@ DWORD GetRidFromUsername(LPTSTR szUsername)
 	SID_NAME_USE Use;
 	PSID pSid = nullptr;
 	TCHAR checkDomainName[UNCLEN+1];
-	DWORD cchReferencedDomainName=0, dwRid = 0;
+	DWORD cchReferencedDomainName = 0;
+	DWORD dwRid = 0;
 
 	DWORD dLengthSid = 0;
 	bResult = LookupAccountName(nullptr,  szUsername, nullptr,&dLengthSid,nullptr, &cchReferencedDomainName, &Use);
@@ -857,7 +864,8 @@ BOOL LsaEIDCreateStoredCredential(__in_opt PWSTR szUsername, __in PWSTR szPasswo
 	DWORD dwSize;
 	NTSTATUS status;
 	PBYTE pPointer;
-	DWORD dwPasswordSize, dwBufferSize = 0;
+	DWORD dwPasswordSize;
+	DWORD dwBufferSize = 0;
 	DWORD dwError = 0;
 	PCRYPT_KEY_PROV_INFO pProvInfo = nullptr;
 	__try

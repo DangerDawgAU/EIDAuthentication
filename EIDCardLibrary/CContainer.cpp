@@ -31,7 +31,7 @@
 
 #pragma comment(lib, "Cryptui.lib")
 
-#define REMOVALPOLICYKEY TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Removal Policy")
+static constexpr TCHAR REMOVALPOLICYKEY[] = TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Removal Policy");
 
 // Maximum lengths for container/card/provider/reader names (CWE-20 fix for #63)
 constexpr DWORD MAX_CONTAINER_NAME_LENGTH = 1024;
@@ -274,7 +274,8 @@ BOOL CContainer::TriggerRemovePolicy() const
 	HKEY hRemovePolicyKey = nullptr;
 	PBYTE pbBuffer = nullptr;
 	DWORD dwSize;
-	DWORD dwProcessId, dwSessionId;
+	DWORD dwProcessId;
+	DWORD dwSessionId;
 	TCHAR szValueKey[sizeof(DWORD)+1];
 
 	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Enter");
@@ -377,7 +378,8 @@ PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSi
 	DWORD dwRid = 0;
 	PWSTR szUserName = nullptr;
 	WCHAR szDomainName[MAX_COMPUTERNAME_LENGTH+1];
-	DWORD dwSize, dwTotalSize;
+	DWORD dwSize;
+	DWORD dwTotalSize;
 	__try
 	{
 	

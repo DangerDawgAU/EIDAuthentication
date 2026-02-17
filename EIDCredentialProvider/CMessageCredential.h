@@ -49,7 +49,7 @@ public:
     // IUnknown
     IMPL_IUNKNOWN_ADDREF_RELEASE()
     IMPL_CREDENTIAL_QUERYINTERFACE()
-  public:
+
     // ICredentialProviderCredential
     IFACEMETHODIMP Advise(ICredentialProviderCredentialEvents* pcpce) override;
     IFACEMETHODIMP UnAdvise() override;
@@ -82,7 +82,6 @@ public:
                                 PWSTR* ppwszOptionalStatusText,
                                 CREDENTIAL_PROVIDER_STATUS_ICON* pcpsiOptionalStatusIcon) override;
 
-  public:
     HRESULT Initialize(const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR* rgcpfd,
                        const FIELD_STATE_PAIR* rgfsp,
                        PCWSTR szMessage);

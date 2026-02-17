@@ -390,7 +390,7 @@ HRESULT CEIDProvider::GetFieldDescriptorAt(
     }
 	if (!SUCCEEDED(hr))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"not SUCCEEDED hr=0x%08x",hr);
+		EIDLogErrorWithContext("GetFieldDescriptorAt", hr, L"index=%lu", dwIndex);
 	}
 	_CredentialList.Unlock();
 	   return hr;
@@ -485,12 +485,12 @@ HRESULT CEIDProvider::GetCredentialAt(
     }
     if (!SUCCEEDED(hr))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"not SUCCEEDED hr=0x%08x",hr);
+		EIDLogErrorWithContext("GetCredentialAt", hr, L"index=%lu", dwIndex);
 	}
     return hr;
 }
 
-// Boilerplate method to create an instance of our provider. 
+// Boilerplate method to create an instance of our provider.
 HRESULT CEIDProvider_CreateInstance(REFIID riid, void** ppv)
 {
     HRESULT hr;
@@ -509,7 +509,7 @@ HRESULT CEIDProvider_CreateInstance(REFIID riid, void** ppv)
     }
     if (!SUCCEEDED(hr))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"not SUCCEEDED hr=0x%08x",hr);
+		EIDLogErrorWithContext("CEIDProvider_CreateInstance", hr, nullptr);
 	}
     return hr;
 }

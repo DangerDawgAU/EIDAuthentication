@@ -83,7 +83,7 @@ VOID ShowInvalidPasswordBalloon(HWND hWnd)
 	}
 }
 
-#define WM_MYMESSAGE WM_USER + 10
+constexpr UINT WM_MYMESSAGE = WM_USER + 10;
 INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	int wmId;

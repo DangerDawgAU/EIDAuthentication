@@ -146,7 +146,8 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 	LONG					Status;
 
 	SCARD_READERSTATE 		rgscState[MAXIMUM_SMARTCARD_READERS];
-	DWORD             		dwI, dwRdrCount;
+	DWORD             		dwI;
+	DWORD             		dwRdrCount;
 	HANDLE					hAccessStartedEvent[2];
 
 
@@ -216,54 +217,59 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 		Status = SCardGetStatusChange(_hSCardContext, (DWORD) 2000 ,rgscState,dwRdrCount);
 		while((Status == SCARD_S_SUCCESS) || (Status == SCARD_E_TIMEOUT))
 		{ 
-			for ( dwI=0; dwI < dwRdrCount; dwI++)
+			for (dwI = 0; dwI < dwRdrCount; dwI++)
+		{
+			// Skip unchanged or mute readers early
+			if ((SCARD_STATE_MUTE & rgscState[dwI].dwEventState) ||
+				!(SCARD_STATE_CHANGED & rgscState[dwI].dwEventState))
 			{
-				
-				// Report the status for all the reader where a change has been detected.
-				if (!(SCARD_STATE_MUTE & rgscState[dwI].dwEventState) &&
-					(SCARD_STATE_CHANGED & rgscState[dwI].dwEventState))
-				{
-						EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"SCardGetStatusChange :0x%08X",rgscState[dwI].dwEventState);
-						if ( (SCARD_STATE_PRESENT  & rgscState[dwI].dwEventState) &&
-								!(SCARD_STATE_PRESENT & rgscState[dwI].dwCurrentState))
-						{
-							LPTSTR pmszCards = nullptr;
-							DWORD cch = SCARD_AUTOALLOCATE;
-							for (DWORD dwJ = 0; dwJ < 4; dwJ++)
-							{
-								EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"ATR :%02X %02X %02X %02X %02X %02X %02X %02X",
-									rgscState[dwI].rgbAtr[dwJ * 8 + 0],
-									rgscState[dwI].rgbAtr[dwJ * 8 + 1],
-									rgscState[dwI].rgbAtr[dwJ * 8 + 2],
-									rgscState[dwI].rgbAtr[dwJ * 8 + 3],
-									rgscState[dwI].rgbAtr[dwJ * 8 + 4],
-									rgscState[dwI].rgbAtr[dwJ * 8 + 5],
-									rgscState[dwI].rgbAtr[dwJ * 8 + 6],
-									rgscState[dwI].rgbAtr[dwJ * 8 + 7]
-								);
-							}
-							Status = SCardListCards(_hSCardContext,rgscState[dwI].rgbAtr,nullptr,0, (LPTSTR)&pmszCards,&cch );
-							if (Status != SCARD_S_SUCCESS)
-							{
-								EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to retrieve smart card name 0x%08x",Status);
-							}
-							Callback(EIDCPRSConnecting,rgscState[dwI].szReader, pmszCards, (rgscState[dwI].dwEventState)>>16);
-							SCardFreeMemory(_hSCardContext,pmszCards);
-							rgscState[dwI].dwCurrentState = SCARD_STATE_PRESENT;
-
-						}
-						if ( !(SCARD_STATE_PRESENT & rgscState[dwI].dwEventState) &&
-								(SCARD_STATE_PRESENT & rgscState[dwI].dwCurrentState) &&
-								!(SCARD_STATE_MUTE & rgscState[dwI].dwCurrentState)
-								)
-						{
-								Callback(EIDCPRSDisconnected,rgscState[dwI].szReader, nullptr, 0);
-								rgscState[dwI].dwCurrentState = SCARD_STATE_EMPTY;
-						}
-				}
-				// Memorize the current state.
 				rgscState[dwI].dwCurrentState = rgscState[dwI].dwEventState;
-			}	
+				continue;
+			}
+
+			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"SCardGetStatusChange :0x%08X", rgscState[dwI].dwEventState);
+
+			// Handle card insertion at reduced nesting level
+			if ((SCARD_STATE_PRESENT & rgscState[dwI].dwEventState) &&
+				!(SCARD_STATE_PRESENT & rgscState[dwI].dwCurrentState))
+			{
+				LPTSTR pmszCards = nullptr;
+				DWORD cch = SCARD_AUTOALLOCATE;
+				for (DWORD dwJ = 0; dwJ < 4; dwJ++)
+				{
+					EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"ATR :%02X %02X %02X %02X %02X %02X %02X %02X",
+						rgscState[dwI].rgbAtr[dwJ * 8 + 0],
+						rgscState[dwI].rgbAtr[dwJ * 8 + 1],
+						rgscState[dwI].rgbAtr[dwJ * 8 + 2],
+						rgscState[dwI].rgbAtr[dwJ * 8 + 3],
+						rgscState[dwI].rgbAtr[dwJ * 8 + 4],
+						rgscState[dwI].rgbAtr[dwJ * 8 + 5],
+						rgscState[dwI].rgbAtr[dwJ * 8 + 6],
+						rgscState[dwI].rgbAtr[dwJ * 8 + 7]
+					);
+				}
+				Status = SCardListCards(_hSCardContext, rgscState[dwI].rgbAtr, nullptr, 0, (LPTSTR)&pmszCards, &cch);
+				if (Status != SCARD_S_SUCCESS)
+				{
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Unable to retrieve smart card name 0x%08x", Status);
+				}
+				Callback(EIDCPRSConnecting, rgscState[dwI].szReader, pmszCards, (rgscState[dwI].dwEventState) >> 16);
+				SCardFreeMemory(_hSCardContext, pmszCards);
+				rgscState[dwI].dwCurrentState = SCARD_STATE_PRESENT;
+			}
+
+			// Handle card removal at reduced nesting level
+			if (!(SCARD_STATE_PRESENT & rgscState[dwI].dwEventState) &&
+				(SCARD_STATE_PRESENT & rgscState[dwI].dwCurrentState) &&
+				!(SCARD_STATE_MUTE & rgscState[dwI].dwCurrentState))
+			{
+				Callback(EIDCPRSDisconnected, rgscState[dwI].szReader, nullptr, 0);
+				rgscState[dwI].dwCurrentState = SCARD_STATE_EMPTY;
+			}
+
+			// Memorize the current state.
+			rgscState[dwI].dwCurrentState = rgscState[dwI].dwEventState;
+		}	
 			//update reader list (add or remove readers)
 			Status = GetReaderStates(rgscState,&dwRdrCount);
 			if(Status != SCARD_S_SUCCESS)
@@ -318,11 +324,13 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 // and then for connected card
 LONG CSmartCardConnectionNotifier::GetReaderStates(SCARD_READERSTATE rgscState[MAXIMUM_SMARTCARD_READERS],PDWORD dwRdrCount) {
 	LONG					Status;
-	DWORD   				dwReadersLength;	
-	LPTSTR					szRdr, szListReaders;
-	
+	DWORD   				dwReadersLength;
+	LPTSTR					szRdr;
+	LPTSTR					szListReaders;
+
 	DWORD					dwPreviousRdrCount;
-	DWORD					dwI, dwJ;
+	DWORD					dwI;
+	DWORD					dwJ;
 	DWORD					dwOldListToNewList[MAXIMUM_SMARTCARD_READERS];
 	DWORD					dwNewListToOldList[MAXIMUM_SMARTCARD_READERS];
 	LPTSTR					szReader[MAXIMUM_SMARTCARD_READERS];

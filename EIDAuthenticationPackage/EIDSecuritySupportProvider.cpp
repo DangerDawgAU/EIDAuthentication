@@ -258,7 +258,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(Flags); 
 		UNREFERENCED_PARAMETER(UserData); 
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-		return(STATUS_NOT_SUPPORTED); 
+		return STATUS_NOT_SUPPORTED; 
 	} 
 
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -275,7 +275,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(phContext);
 		UNREFERENCED_PARAMETER(pInput);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-		return(STATUS_SUCCESS);
+		return STATUS_SUCCESS;
 
 	}
 
@@ -365,10 +365,10 @@ extern "C"
 				// 
 			// First get information about the caller. 
 			// 	 
-			Status = MyLsaDispatchTable->GetClientInfo(&ClientInfo); 
-			if (Status != STATUS_SUCCESS) 
-			{ 
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetKeyArgument not ok 0x%08x", Status); 
+			Status = MyLsaDispatchTable->GetClientInfo(&ClientInfo);
+			if (Status != STATUS_SUCCESS)
+			{
+				EIDLogErrorWithContext("GetClientInfo", HRESULT_FROM_NT(Status), nullptr);
 				__leave;
 			} 
 	 
@@ -394,16 +394,16 @@ extern "C"
 			{ 
 				LogonIdToUse = &ClientInfo.LogonId; 
 			}
-			
-			if (AuthorizationData != NULL) 
+
+			if (AuthorizationData != nullptr)
 			{ 
 				// copy the authorization data to our user space
 				pAuthIdentityEx = (PSEC_WINNT_AUTH_IDENTITY_EXW)
 												EIDAlloc(sizeof(SEC_WINNT_AUTH_IDENTITY_EXW)); 
-				if (!pAuthIdentityEx) 
-				{ 
-					Status = STATUS_INSUFFICIENT_RESOURCES; 
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc is 0x%08x", Status); 
+				if (!pAuthIdentityEx)
+				{
+					Status = STATUS_INSUFFICIENT_RESOURCES;
+					EIDLogErrorWithContext("EIDAlloc", HRESULT_FROM_NT(Status), nullptr);
 					__leave;
 				}
 				Status = MyLsaDispatchTable->CopyFromClientBuffer( 
@@ -412,13 +412,13 @@ extern "C"
 							pAuthIdentityEx, 
 							AuthorizationData);
 
-				if (Status != STATUS_SUCCESS) 
-				{ 
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CopyFromClientBuffer is 0x%08x", Status); 
+				if (Status != STATUS_SUCCESS)
+				{
+					EIDLogErrorWithContext("CopyFromClientBuffer", HRESULT_FROM_NT(Status), nullptr);
 					__leave;
-				} 
-				// 
-				// Check for the ex version 
+				}
+				//
+				// Check for the ex version
 				// 
 		 
 				if (pAuthIdentityEx->Version == SEC_WINNT_AUTH_IDENTITY_VERSION) 
@@ -429,11 +429,11 @@ extern "C"
 								pAuthIdentityEx, 
 								AuthorizationData); 
 		 
-					if (Status != STATUS_SUCCESS) 
-					{ 
-						EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CopyFromClientBuffer is 0x%08x", Status); 
+					if (Status != STATUS_SUCCESS)
+					{
+						EIDLogErrorWithContext("CopyFromClientBuffer", HRESULT_FROM_NT(Status), nullptr);
 						__leave;
-					} 
+					}
 					pAuthIdentity = (PSEC_WINNT_AUTH_IDENTITY) &pAuthIdentityEx->User; 
 					CredSize = pAuthIdentityEx->Length; 
 					Offset = FIELD_OFFSET(SEC_WINNT_AUTH_IDENTITY_EXW, User); 
@@ -471,11 +471,11 @@ extern "C"
 															(pAuthIdentity->UserLength + 1) * dwCharSize, 
 															szCredential,
 															pAuthIdentity->User); 
-				if (Status != STATUS_SUCCESS) 
-				{ 
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CopyFromClientBuffer is 0x%08x", Status); 
+				if (Status != STATUS_SUCCESS)
+				{
+					EIDLogErrorWithContext("CopyFromClientBuffer", HRESULT_FROM_NT(Status), nullptr);
 					__leave;
-				} 
+				}
 				BOOL fRes;
 				if (UseUnicode)
 				{
@@ -485,9 +485,9 @@ extern "C"
 				{
 					fRes = CredUnmarshalCredentialA((LPCSTR)szCredential,&CredType, (PVOID*) &pCertInfo);
 				}
-				if (!fRes) 
-				{ 
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CredUnmarshalCredential is 0x%08x UseUnicode=%d", GetLastError(), UseUnicode); 
+				if (!fRes)
+				{
+					EIDLogErrorWithContext("CredUnmarshalCredential", HRESULT_FROM_WIN32(GetLastError()), L"UseUnicode=%d", UseUnicode);
 					Status = SEC_E_UNKNOWN_CREDENTIALS;
 					__leave;
 				}				
@@ -508,9 +508,9 @@ extern "C"
 															(pAuthIdentity->PasswordLength + 1) * dwCharSize, 
 															szPassword,
 															pAuthIdentity->Password); 
-				if (Status != STATUS_SUCCESS) 
-				{ 
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CopyFromClientBuffer is 0x%08x", Status); 
+				if (Status != STATUS_SUCCESS)
+				{
+					EIDLogErrorWithContext("CopyFromClientBuffer", HRESULT_FROM_NT(Status), nullptr);
 					__leave;
 				}
 				// convert to unicode
@@ -577,9 +577,9 @@ extern "C"
 		if (!CCredential::Delete(CredentialHandle))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Credential %p not found",CredentialHandle);
-			return(STATUS_INVALID_HANDLE);
+			return STATUS_INVALID_HANDLE;
 		}
-		return(STATUS_SUCCESS);
+		return STATUS_SUCCESS;
 	}
 
 	/** Used to add  credentials for a  security principal.*/
@@ -677,21 +677,21 @@ extern "C"
 					status = MyLsaDispatchTable->AllocateClientBuffer(NULL, dwSize, (PVOID*) Buffer);
 					if (status != STATUS_SUCCESS)
 					{
-						EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"AllocateClientBuffer status = 0x%08x",status);
+						EIDLogErrorWithContext("AllocateClientBuffer", HRESULT_FROM_NT(status), nullptr);
 						__leave;
 					}
 					status = MyLsaDispatchTable->CopyToClientBuffer(NULL, dwSize, *((PVOID*) Buffer), szName);
 					if (status != STATUS_SUCCESS)
 					{
-						EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CopyToClientBuffer status = 0x%08x",status);
+						EIDLogErrorWithContext("CopyToClientBuffer", HRESULT_FROM_NT(status), nullptr);
 						__leave;
 					}
 					status = STATUS_SUCCESS;
 				}
 				__finally
-				{	
+				{
 				}
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SECPKG_CRED_ATTR_NAMES status = 0x%08x",status);
+				EIDLogErrorWithContext("QueryContextAttributes", HRESULT_FROM_NT(status), L"attr=SECPKG_CRED_ATTR_NAMES");
 				return status;
 				break;
 			default:
@@ -716,9 +716,9 @@ extern "C"
 		if (!CSecurityContext::Delete(phContext))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Context 0x%08X not found",phContext);
-			return(SEC_E_INVALID_HANDLE);
+			return SEC_E_INVALID_HANDLE;
 		}
-		return(SEC_E_OK);
+		return SEC_E_OK;
 	}
 
 	/**  The SpQueryContextAttributes function retrieves the attributes of a  security context.
@@ -757,7 +757,7 @@ extern "C"
 				if (ContextNames->sUserName == NULL)
 				{
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INSUFFICIENT_MEMORY");
-					return(SEC_E_INSUFFICIENT_MEMORY);
+					return SEC_E_INSUFFICIENT_MEMORY;
 				}
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Username = %s",ContextNames->sUserName);
 				break;
@@ -768,10 +768,10 @@ extern "C"
 				break;
 			default:
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN");
-				return(SEC_E_INVALID_TOKEN);
+				return SEC_E_INVALID_TOKEN;
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"SEC_E_OK");
-		return(SEC_E_OK);
+		return SEC_E_OK;
 	}
 
 
@@ -864,7 +864,8 @@ extern "C"
 
 	NTSTATUS NTAPI SpCreateToken(DWORD dwRid, PHANDLE phToken)
 	{
-		NTSTATUS Status = STATUS_SUCCESS, SubStatus = STATUS_SUCCESS;
+		NTSTATUS Status = STATUS_SUCCESS;
+		NTSTATUS SubStatus = STATUS_SUCCESS;
 		LUID LogonId;
 		TOKEN_SOURCE tokenSource = { "EIDAuth", PackageUid};
 		UNICODE_STRING AccountName;
@@ -878,7 +879,8 @@ extern "C"
 		WCHAR szUserName[256];
 		DWORD dwSize;
 		USER_INFO_3 *pInfo = NULL;
-		DWORD dwEntriesRead, dwTotalEntries;
+		DWORD dwEntriesRead;
+		DWORD dwTotalEntries;
 		NET_API_STATUS NetStatus ;
 		DWORD dwI;
 		__try

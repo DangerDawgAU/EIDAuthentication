@@ -9,6 +9,12 @@
 #include "../EIDCardLibrary/StringConversion.h"
 #include <string>
 
+// Forward declarations for option handlers (extracted to reduce nesting)
+static BOOL HandleDeleteOption(HWND hWnd);
+static BOOL HandleCreateOption(HWND hWnd, PCCERT_CONTEXT pRootCert);
+static BOOL HandleUseThisOption(HWND hWnd, PCCERT_CONTEXT pRootCert);
+static BOOL HandleImportOption(HWND hWnd);
+
 // used to know what root certicate we are refering
 // null = unknown
 PCCERT_CONTEXT pRootCertificate = nullptr;
@@ -187,6 +193,95 @@ VOID UpdateCertificatePanel(HWND hWnd)
 	CheckDlgButton(hWnd,IDC_03_CREATE,BST_UNCHECKED);
 }
 
+// ============================================================================
+// Option handler functions (extracted from WndProc_03NEW to reduce nesting)
+// Each returns TRUE if navigation should be blocked, FALSE to continue
+// ============================================================================
+
+static BOOL HandleDeleteOption(HWND hWnd)
+{
+	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"IDC_03DELETE");
+	// delete all data
+	if (!ClearCard(szReader, szCard))
+	{
+		DWORD dwError = GetLastError();
+		if (dwError != SCARD_W_CANCELLED_BY_USER)
+			MessageBoxWin32Ex(dwError, hWnd);
+		SetWindowLongPtr(hWnd, DWLP_MSGRESULT, -1);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static BOOL HandleCreateOption(HWND hWnd, PCCERT_CONTEXT pRootCert)
+{
+	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"IDC_03_CREATE");
+	// Get validity years from UI
+	WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);
+	if (wValidityYears < MIN_CERT_VALIDITY_YEARS) wValidityYears = MIN_CERT_VALIDITY_YEARS;
+	if (wValidityYears > MAX_CERT_VALIDITY_YEARS) wValidityYears = MAX_CERT_VALIDITY_YEARS;
+	// create self signed certificate as root
+	if (CreateRootCertificate())
+	{
+		if (CreateSmartCardCertificate(pRootCertificate, szReader, szCard, wValidityYears))
+		{
+			//  OK
+			return FALSE;
+		}
+		else
+		{
+			DWORD dwError = GetLastError();
+			if (dwError != SCARD_W_CANCELLED_BY_USER)
+				MessageBoxWin32Ex(dwError, hWnd);
+			SetWindowLongPtr(hWnd, DWLP_MSGRESULT, -1);
+			return TRUE;
+		}
+	}
+	else
+	{
+		MessageBoxWin32Ex(GetLastError(), hWnd);
+		SetWindowLongPtr(hWnd, DWLP_MSGRESULT, -1);
+		return TRUE;
+	}
+}
+
+static BOOL HandleUseThisOption(HWND hWnd, PCCERT_CONTEXT pRootCert)
+{
+	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"IDC_03USETHIS");
+	if (!pRootCert)
+	{
+		SetWindowLongPtr(hWnd, DWLP_MSGRESULT, -1);
+		return TRUE;
+	}
+	// Get validity years from UI
+	WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);
+	if (wValidityYears < MIN_CERT_VALIDITY_YEARS) wValidityYears = MIN_CERT_VALIDITY_YEARS;
+	if (wValidityYears > MAX_CERT_VALIDITY_YEARS) wValidityYears = MAX_CERT_VALIDITY_YEARS;
+	if (!CreateSmartCardCertificate(pRootCert, szReader, szCard, wValidityYears))
+	{
+		DWORD dwError = GetLastError();
+		if (dwError != SCARD_W_CANCELLED_BY_USER)
+			MessageBoxWin32Ex(dwError, hWnd);
+		SetWindowLongPtr(hWnd, DWLP_MSGRESULT, -1);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static BOOL HandleImportOption(HWND hWnd)
+{
+	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"IDC_03IMPORT");
+	std::wstring szFileName = EID::GetWindowTextW(GetDlgItem(hWnd, IDC_03FILENAME));
+	std::wstring wszImportPassword = EID::GetWindowTextW(GetDlgItem(hWnd, IDC_03IMPORTPASSWORD));
+	if (!ImportFileToSmartCard((PWSTR)szFileName.c_str(), (PWSTR)wszImportPassword.c_str(), szReader, szCard))
+	{
+		MessageBoxWin32Ex(GetLastError(), hWnd);
+		SetWindowLongPtr(hWnd, DWLP_MSGRESULT, -1);
+		return TRUE;
+	}
+	return FALSE;
+}
+
 INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	int wmId;
@@ -233,85 +328,15 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				}
 				break;
 			case PSN_WIZNEXT:
-				if (IsDlgButtonChecked(hWnd,IDC_03DELETE))
-				{
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"IDC_03DELETE");
-					// delete all data
-					if (!ClearCard(szReader, szCard))
-					{
-						DWORD dwError = GetLastError();
-						if (dwError != SCARD_W_CANCELLED_BY_USER)
-							MessageBoxWin32Ex(dwError,hWnd);
-						SetWindowLongPtr(hWnd,DWLP_MSGRESULT,-1);
-						return TRUE;
-					}
-				}
-				if (IsDlgButtonChecked(hWnd,IDC_03_CREATE))
-				{
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"IDC_03_CREATE");
-					// Get validity years from UI
-					WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);
-					if (wValidityYears < MIN_CERT_VALIDITY_YEARS) wValidityYears = MIN_CERT_VALIDITY_YEARS;
-					if (wValidityYears > MAX_CERT_VALIDITY_YEARS) wValidityYears = MAX_CERT_VALIDITY_YEARS;
-					// create self signed certificate as root
-					if (CreateRootCertificate())
-					{
-						if (CreateSmartCardCertificate(pRootCertificate, szReader, szCard, wValidityYears))
-						{
-							//  OK
-						}
-						else
-						{
-							DWORD dwError = GetLastError();
-							if (dwError != SCARD_W_CANCELLED_BY_USER)
-								MessageBoxWin32Ex(dwError,hWnd);
-							SetWindowLongPtr(hWnd,DWLP_MSGRESULT,-1);
-							return TRUE;
-						}
-					}
-					else
-					{
-						MessageBoxWin32Ex(GetLastError(),hWnd);
-						SetWindowLongPtr(hWnd,DWLP_MSGRESULT,-1);
-						return TRUE;
-					}
-					// cancel
-					break;
-				}
-				else if (IsDlgButtonChecked(hWnd,IDC_03USETHIS))
-				{
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"IDC_03USETHIS");
-					if (!pRootCertificate)
-					{
-						SetWindowLongPtr(hWnd,DWLP_MSGRESULT,-1);
-						return TRUE;
-					}
-					// Get validity years from UI
-					WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);
-					if (wValidityYears < MIN_CERT_VALIDITY_YEARS) wValidityYears = MIN_CERT_VALIDITY_YEARS;
-					if (wValidityYears > MAX_CERT_VALIDITY_YEARS) wValidityYears = MAX_CERT_VALIDITY_YEARS;
-					if (!CreateSmartCardCertificate(pRootCertificate, szReader, szCard, wValidityYears))
-					{
-						DWORD dwError = GetLastError();
-						if (dwError != SCARD_W_CANCELLED_BY_USER)
-							MessageBoxWin32Ex(dwError,hWnd);
-						SetWindowLongPtr(hWnd,DWLP_MSGRESULT,-1);
-						return TRUE;
-					}
-				}
-				else if (IsDlgButtonChecked(hWnd,IDC_03IMPORT))
-				{
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"IDC_03IMPORT");
-					std::wstring szFileName = EID::GetWindowTextW(GetDlgItem(hWnd,IDC_03FILENAME));
-					std::wstring wszImportPassword = EID::GetWindowTextW(GetDlgItem(hWnd,IDC_03IMPORTPASSWORD));
-					if (!ImportFileToSmartCard((PWSTR)szFileName.c_str(), (PWSTR)wszImportPassword.c_str(), szReader, szCard))
-					{
-						MessageBoxWin32Ex(GetLastError(),hWnd);
-						SetWindowLongPtr(hWnd,DWLP_MSGRESULT,-1);
-						return TRUE;
-					}
-
-				}
+				// Use early return pattern with extracted handlers to reduce nesting
+				if (IsDlgButtonChecked(hWnd, IDC_03DELETE) && HandleDeleteOption(hWnd))
+					return TRUE;
+				if (IsDlgButtonChecked(hWnd, IDC_03_CREATE) && HandleCreateOption(hWnd, pRootCertificate))
+					return TRUE;
+				if (IsDlgButtonChecked(hWnd, IDC_03USETHIS) && HandleUseThisOption(hWnd, pRootCertificate))
+					return TRUE;
+				if (IsDlgButtonChecked(hWnd, IDC_03IMPORT) && HandleImportOption(hWnd))
+					return TRUE;
 				break;
 		}
 		break;

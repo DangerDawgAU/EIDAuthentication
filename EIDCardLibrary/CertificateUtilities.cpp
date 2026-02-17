@@ -148,8 +148,9 @@ PTSTR GetUniqueIDString()
 PCCERT_CONTEXT SelectCertificateWithPrivateKey(HWND hWnd)
 {
 	PCCERT_CONTEXT returnedContext = nullptr;
-		
-	HCERTSTORE hCertStore,hStore;
+
+	HCERTSTORE hCertStore;
+	HCERTSTORE hStore;
 	BOOL bShowNoCertificate = TRUE;
 	// open trusted root store
 	hCertStore = CertOpenStore(CERT_STORE_PROV_SYSTEM,0,NULL,CERT_SYSTEM_STORE_CURRENT_USER,_T("Root"));
@@ -197,6 +198,20 @@ PCCERT_CONTEXT SelectCertificateWithPrivateKey(HWND hWnd)
 	return returnedContext;
 }
 
+// Helper: Check if certificate name matches computer name
+static bool IsComputerNameMatch(LPCTSTR szCertName, LPCTSTR szComputerName)
+{
+    return szCertName && szComputerName && _tcscmp(szCertName, szComputerName) == 0;
+}
+
+// Helper: Check if certificate has an associated private key
+static bool CertificateHasPrivateKey(PCCERT_CONTEXT pCertContext)
+{
+    if (!pCertContext) return false;
+    DWORD dwSize = 0;
+    return CertGetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, nullptr, &dwSize) != FALSE;
+}
+
 PCCERT_CONTEXT SelectFirstCertificateWithPrivateKey()
 {
 	PCCERT_CONTEXT returnedContext = nullptr;
@@ -210,34 +225,33 @@ PCCERT_CONTEXT SelectFirstCertificateWithPrivateKey()
 	if (hCertStore)
 	{
 		PCCERT_CONTEXT pCertContext = nullptr;
-		pCertContext = CertEnumCertificatesInStore(hCertStore,pCertContext);
+		pCertContext = CertEnumCertificatesInStore(hCertStore, pCertContext);
 		while (pCertContext)
 		{
-			
-			PBYTE KeySpec = nullptr;
-			dwSize = 0;
-			if (CertGetCertificateContextProperty(pCertContext,CERT_KEY_PROV_INFO_PROP_ID,KeySpec,&dwSize))
+			// Skip certificates without private keys
+			if (!CertificateHasPrivateKey(pCertContext))
 			{
-				//The certificate has a private key
-				if (returnedContext) 
-					CertFreeCertificateContext(returnedContext);
-				// get the subject details for the cert
-				CertGetNameString(pCertContext,CERT_NAME_SIMPLE_DISPLAY_TYPE,0,nullptr,szCertName,ARRAYSIZE(szCertName));
-				// match computer name ?
-				if (_tcscmp(szCertName, szComputerName) == 0)
-				{
-					returnedContext = pCertContext;
-					// return
-					break;
-				}
-				else
-				{
-					returnedContext = CertDuplicateCertificateContext(pCertContext);
-					// continue the loop
-				}
-				
+				pCertContext = CertEnumCertificatesInStore(hCertStore, pCertContext);
+				continue;
 			}
-			pCertContext = CertEnumCertificatesInStore(hCertStore,pCertContext);
+
+			// Certificate has a private key - process it
+			if (returnedContext)
+				CertFreeCertificateContext(returnedContext);
+
+			// Get the subject details for the cert
+			CertGetNameString(pCertContext, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, nullptr, szCertName, ARRAYSIZE(szCertName));
+
+			// Check for computer name match - exact match takes priority
+			if (IsComputerNameMatch(szCertName, szComputerName))
+			{
+				returnedContext = pCertContext;
+				break;  // Found exact match, exit loop
+			}
+
+			// Keep a reference to this certificate as fallback
+			returnedContext = CertDuplicateCertificateContext(pCertContext);
+			pCertContext = CertEnumCertificatesInStore(hCertStore, pCertContext);
 		}
 		CertCloseStore(hCertStore,0);
 	}
@@ -369,7 +383,8 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 	CERT_INFO CertInfo = {0};
 	CertInfo.rgExtension = nullptr;
 	CERT_NAME_BLOB SubjectIssuerBlob = {0};
-	HCRYPTPROV hCryptProvNewCertificate = NULL, hCryptProvRootCertificate = NULL;  // Windows handle types - keep as NULL
+	HCRYPTPROV hCryptProvNewCertificate = NULL;  // Windows handle type - keep as NULL
+	HCRYPTPROV hCryptProvRootCertificate = NULL;  // Windows handle type - keep as NULL
 	PCCERT_CONTEXT pNewCertificateContext = nullptr;
 	PCERT_PUBLIC_KEY_INFO pbPublicKeyInfo = nullptr;
 	HCERTSTORE hCertStore = nullptr;
@@ -1138,7 +1153,8 @@ BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName)
 	CHAR szContainerName[1024];
 	DWORD dwContainerNameLen = ARRAYSIZE(szContainerName);
 	DWORD dwFlags;
-	HCRYPTPROV HMainCryptProv = NULL, hProv = NULL;  // Windows handle types - keep as NULL
+	HCRYPTPROV HMainCryptProv = NULL;  // Windows handle type - keep as NULL
+	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
 	DWORD dwError = 0;
 	BOOL fReturn = FALSE;
 	LPTSTR szMainContainerName = nullptr;
@@ -1265,7 +1281,7 @@ struct RSAPRIVKEY {
 	BLOBHEADER blobheader;
 	RSAPUBKEY rsapubkey;
 #ifdef _DEBUG
-	#define BITLEN_TO_CHECK 2048
+	static constexpr DWORD BITLEN_TO_CHECK = 2048;
 	BYTE modulus[BITLEN_TO_CHECK/8];
 	BYTE prime1[BITLEN_TO_CHECK/16];
 	BYTE prime2[BITLEN_TO_CHECK/16];
@@ -1347,11 +1363,13 @@ BOOL ImportFileToSmartCard(PTSTR szFileName, PTSTR szPassword, PTSTR szReaderNam
 	TCHAR szProviderName[1024];
 	DWORD dwProviderNameLen = ARRAYSIZE(szProviderName);
 	PWSTR szContainerName = nullptr;
-	HCRYPTPROV hCardProv = NULL, hProv = NULL;
+	HCRYPTPROV hCardProv = NULL;
+	HCRYPTPROV hProv = NULL;
 	PCCERT_CONTEXT pCertContext = nullptr;
 	BOOL fFreeProv = FALSE;
 	DWORD dwKeySpec = AT_KEYEXCHANGE;
-	HCRYPTKEY hKey = NULL, hCardKey = NULL;  // Windows handle types - keep as NULL
+	HCRYPTKEY hKey = NULL;  // Windows handle type - keep as NULL
+	HCRYPTKEY hCardKey = NULL;  // Windows handle type - keep as NULL
 	PRSAPRIVKEY pbData = nullptr;
 	DWORD dwSize = 0;
 	DWORD dwError = 0;
@@ -1565,7 +1583,8 @@ BOOL ImportFileToSmartCard(PTSTR szFileName, PTSTR szPassword, PTSTR szReaderNam
 PCCERT_CONTEXT FindCertificateFromHashOnCard(PCRYPT_DATA_BLOB pCertInfo, PTSTR szReaderName, PTSTR szProviderName)
 {
 	PCCERT_CONTEXT pCertContext = nullptr;
-	HCRYPTPROV HCryptProv = NULL, hProv = NULL;  // Windows handle types - keep as NULL
+	HCRYPTPROV HCryptProv = NULL;  // Windows handle type - keep as NULL
+	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
 	TCHAR szMainContainerName[1024];
 	DWORD dwContainerNameLen = ARRAYSIZE(szMainContainerName);
 	CHAR szContainerName[1024];

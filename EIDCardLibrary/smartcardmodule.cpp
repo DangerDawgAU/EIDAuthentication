@@ -606,7 +606,9 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 	BYTE bAtr[32];
 	DWORD cbAtr = ARRAYSIZE(bAtr);
 	LONG lReturn;
-	DWORD dwSize, dwState, dwProtocol;
+	DWORD dwSize;
+	DWORD dwState;
+	DWORD dwProtocol;
 	DWORD dwError = 0;
 	TCHAR szReaderTemp[256];
 	BOOL fReturn = FALSE;

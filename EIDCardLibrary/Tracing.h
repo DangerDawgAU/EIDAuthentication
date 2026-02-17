@@ -78,3 +78,30 @@ constexpr UCHAR SECURITY_AUDIT_WARNING  = 2;
 	EIDSecurityAuditEx(__FILE__,__LINE__,__FUNCTION__, dwAuditType, __VA_ARGS__)
 
 void EIDSecurityAuditEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction, UCHAR dwAuditType, PCWSTR szFormat,...);
+
+// Enhanced error logging with operation context
+// Provides structured error messages for easier debugging
+// Format: "[ERROR_CONTEXT] Operation 'name' failed: hr=0x%08X, context_info
+#define EIDLogErrorWithContext(operation, hr, ...) \
+	EIDLogErrorWithContextEx(__FILE__, __LINE__, __FUNCTION__, operation, hr, __VA_ARGS__)
+
+void EIDLogErrorWithContextEx(
+	PCSTR szFile,
+	DWORD dwLine,
+	PCSTR szFunction,
+	const char* operation,
+	HRESULT hr,
+	PCWSTR szAdditionalContext,
+	...);
+
+// LSASS-safe stack trace capture for error diagnostics
+// Uses CaptureStackBackTrace (not std::stacktrace - Phase 27 finding)
+// Stack-allocated buffers only - no dynamic memory
+#define EIDLogStackTrace(errorCode) \
+	EIDLogStackTraceEx(__FILE__, __LINE__, __FUNCTION__, errorCode)
+
+void EIDLogStackTraceEx(
+	PCSTR szFile,
+	DWORD dwLine,
+	PCSTR szFunction,
+	DWORD errorCode);

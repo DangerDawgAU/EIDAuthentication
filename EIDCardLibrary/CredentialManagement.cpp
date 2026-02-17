@@ -109,8 +109,7 @@ BOOL CCredential::Delete(ULONG_PTR phCredential)
 	CCredential* toDelete = nullptr;
 
 	EnterCriticalSection(&g_CredentialLock);
-	std::set<CCredential*>::iterator iter;
-	for ( iter = Credentials.begin( ); iter != Credentials.end( ); iter++ )
+	for ( auto iter = Credentials.begin( ); iter != Credentials.end( ); iter++ )
 	{
 		CCredential* currentCredential = *iter;
 		if (currentCredential == testedCredential)
@@ -136,8 +135,7 @@ CCredential* CCredential::GetCredentialFromHandle(ULONG_PTR CredentialHandle)
 	CCredential* result = nullptr;
 
 	EnterCriticalSection(&g_CredentialLock);
-	std::set<CCredential*>::iterator iter;
-	for ( iter = Credentials.begin( ); iter != Credentials.end( ); iter++ )
+	for ( auto iter = Credentials.begin( ); iter != Credentials.end( ); iter++ )
 	{
 		CCredential* currentCredential = *iter;
 		if (currentCredential == pCredential)
@@ -204,8 +202,7 @@ BOOL CSecurityContext::Delete(ULONG_PTR phContext)
 	CSecurityContext* toDelete = nullptr;
 
 	EnterCriticalSection(&g_CredentialLock);
-	std::list<CSecurityContext*>::iterator iter;
-	for ( iter = Contexts.begin( ); iter != Contexts.end( ); iter++ )
+	for ( auto iter = Contexts.begin( ); iter != Contexts.end( ); iter++ )
 	{
 		CSecurityContext* currentContext = *iter;
 		if (currentContext == testedContext)
@@ -231,8 +228,7 @@ CSecurityContext* CSecurityContext::GetContextFromHandle(ULONG_PTR context)
 	CSecurityContext* result = nullptr;
 
 	EnterCriticalSection(&g_CredentialLock);
-	std::list<CSecurityContext*>::iterator iter;
-	for ( iter = Contexts.begin( ); iter != Contexts.end( ); iter++ )
+	for ( auto iter = Contexts.begin( ); iter != Contexts.end( ); iter++ )
 	{
 		CSecurityContext* currentContext = *iter;
 		if (currentContext == testedContext)
@@ -368,7 +364,9 @@ NTSTATUS CSecurityContext::ReceiveNegociateMessage(PSecBufferDesc Buffer)
 
 NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 {
-	DWORD dwEntriesRead, dwTotalEntries, dwI;
+	DWORD dwEntriesRead;
+	DWORD dwTotalEntries;
+	DWORD dwI;
 	USER_INFO_3 *pInfo = nullptr;
 	NTSTATUS Status = STATUS_SUCCESS;
 	__try
@@ -437,6 +435,7 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 	}
 	__finally
 	{
+		// SEH cleanup - no action needed
 	}
 	return SEC_I_CONTINUE_NEEDED;
 }
@@ -587,7 +586,7 @@ NTSTATUS CUsermodeContext::AddContextInfo(ULONG_PTR pHandle, PEID_SSP_CALLBACK_M
 
 NTSTATUS CUsermodeContext::DeleteContextInfo(ULONG_PTR pHandle)
 {
-	std::map<ULONG_PTR, CUsermodeContext*>::iterator it = UserModeContexts.find(pHandle);
+	auto it = UserModeContexts.find(pHandle);
 	if (it == UserModeContexts.end())
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_HANDLE 0X%08X", pHandle);
@@ -616,7 +615,7 @@ NTSTATUS CUsermodeContext::GetImpersonationHandle(ULONG_PTR pHandle,PHANDLE Impe
 
 CUsermodeContext* CUsermodeContext::GetContextFromHandle(ULONG_PTR pHandle)
 {
-	std::map<ULONG_PTR, CUsermodeContext*>::iterator it = UserModeContexts.find(pHandle);
+	auto it = UserModeContexts.find(pHandle);
 	if (it == UserModeContexts.end())
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Context not found = 0x%08X", pHandle);
