@@ -92,7 +92,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. SonarQube shows 0 remaining "replace with auto" issues (or all remaining documented)
   2. Code uses `auto` for iterator declarations and obvious types
   3. Build passes with no new warnings
-**Plans**: TBD
+**Plans**: 3 plans in 2 waves
+
+Plans:
+- [ ] 21-01-PLAN.md - Convert iterator declarations to auto in CredentialManagement.cpp
+- [ ] 21-02-PLAN.md - Convert template iterator declarations to auto in CContainerHolderFactory.cpp
+- [ ] 21-03-PLAN.md - Build verification and confirm auto conversions
 
 ### Phase 22: SonarQube Macro Issues
 **Goal**: Constants use `const`/`constexpr` instead of preprocessor macros where safe
@@ -258,7 +263,7 @@ Phases execute in numeric order: 21 -> 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28 ->
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 21. SonarQube Style | 0/TBD | Not started | - |
+| 21. SonarQube Style | 0/3 | Not started | - |
 | 22. SonarQube Macros | 0/TBD | Not started | - |
 | 23. SonarQube Const | 0/TBD | Not started | - |
 | 24. SonarQube Nesting | 0/TBD | Not started | - |
