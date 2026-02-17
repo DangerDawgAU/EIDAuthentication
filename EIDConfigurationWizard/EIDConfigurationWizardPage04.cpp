@@ -24,6 +24,48 @@ CContainerHolderFactory<CContainerHolderTest> *pCredentialList = nullptr;
 DWORD dwCurrentCredential = 0xFFFFFFFF;
 BOOL fHasDeselected = TRUE;
 
+// Helper: Handle refresh button click - reconnect to smart card and refresh credential list
+// Returns TRUE if refresh succeeded, FALSE if cancelled or failed
+static BOOL HandleRefreshRequest(HWND hWnd)
+{
+    if (!pCredentialList) return FALSE;
+
+    // Clear all data
+    PropSheet_SetWizButtons(hWnd, PSWIZB_BACK);
+    pCredentialList->DisconnectNotification(szReader);
+    dwCurrentCredential = 0xFFFFFFFF;
+    ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_04LIST));
+    ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_04CHECKS));
+
+    // Prompt for card
+    if (!AskForCard(szReader, dwReaderSize, szCard, dwCardSize))
+    {
+        LONG lReturn = GetLastError();
+        if (lReturn != SCARD_W_CANCELLED_BY_USER)
+        {
+            MessageBoxWin32Ex(lReturn, hWnd);
+        }
+        return FALSE;
+    }
+
+    // Reconnect and trigger refresh
+#pragma warning(push)
+#pragma warning(disable: 4302)
+    SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(IDC_WAIT)));
+#pragma warning(pop)
+    pCredentialList->ConnectNotification(szReader, szCard, 0);
+#pragma warning(push)
+#pragma warning(disable: 4302)
+    SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(IDC_ARROW)));
+#pragma warning(pop)
+
+    // Send activation message to refresh UI
+    NMHDR nmh;
+    nmh.code = PSN_SETACTIVE;
+    SendMessage(hWnd, WM_NOTIFY, 0, (LPARAM)&nmh);
+    return TRUE;
+}
+
 PTSTR Columns[] = { s_szColumnName };
 #define COLUMN_NUM ARRAYSIZE(Columns)
 
@@ -592,35 +634,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 					LITEM item = pNMLink->item;
 					if (wcscmp(item.szID, L"idrefresh") == 0)
 					{
-						// clear all data
-						PropSheet_SetWizButtons(hWnd, PSWIZB_BACK);
-						pCredentialList->DisconnectNotification(szReader);
-						dwCurrentCredential = 0xFFFFFFFF;
-						ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_04LIST));
-						ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_04CHECKS));
-						if (AskForCard(szReader,dwReaderSize,szCard,dwCardSize))
-						{
-							NMHDR nmh;
-							nmh.code = PSN_SETACTIVE;
-#pragma warning(push)
-#pragma warning(disable: 4302)
-							SetCursor(LoadCursorW(nullptr,MAKEINTRESOURCEW(IDC_WAIT)));
-#pragma warning(pop)
-							pCredentialList->ConnectNotification(szReader,szCard,0);
-#pragma warning(push)
-#pragma warning(disable: 4302)
-							SetCursor(LoadCursorW(nullptr,MAKEINTRESOURCEW(IDC_ARROW)));
-#pragma warning(pop)
-							SendMessage(hWnd, WM_NOTIFY, 0, (LPARAM)&nmh);
-						}
-						else
-						{
-							LONG lReturn = GetLastError();
-							if (lReturn != SCARD_W_CANCELLED_BY_USER)
-							{
-								MessageBoxWin32Ex(lReturn,hWnd);
-							}
-						}
+						HandleRefreshRequest(hWnd);
 					}
 				}
 				break;
