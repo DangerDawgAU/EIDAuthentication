@@ -135,7 +135,12 @@ Plans:
   1. SonarQube nesting depth issues reduced or documented with justification
   2. Complex functions refactored with early returns or extracted helpers
   3. All refactored functions compile and build passes
-**Plans**: TBD
+**Plans**: 3 plans in 2 waves
+
+Plans:
+- [ ] 24-01-PLAN.md - Extract option handlers from WndProc_03NEW in EIDConfigurationWizardPage03.cpp
+- [ ] 24-02-PLAN.md - Apply early continue/return patterns in CSmartCardNotifier and CertificateUtilities
+- [ ] 24-03-PLAN.md - Build verification and document won't-fix nesting categories
 
 ### Phase 25: Code Refactoring - Complexity
 **Goal**: High-complexity functions are simpler and more maintainable
