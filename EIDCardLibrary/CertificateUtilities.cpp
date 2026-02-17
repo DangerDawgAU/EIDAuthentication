@@ -198,6 +198,20 @@ PCCERT_CONTEXT SelectCertificateWithPrivateKey(HWND hWnd)
 	return returnedContext;
 }
 
+// Helper: Check if certificate name matches computer name
+static bool IsComputerNameMatch(LPCTSTR szCertName, LPCTSTR szComputerName)
+{
+    return szCertName && szComputerName && _tcscmp(szCertName, szComputerName) == 0;
+}
+
+// Helper: Check if certificate has an associated private key
+static bool CertificateHasPrivateKey(PCCERT_CONTEXT pCertContext)
+{
+    if (!pCertContext) return false;
+    DWORD dwSize = 0;
+    return CertGetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, nullptr, &dwSize) != FALSE;
+}
+
 PCCERT_CONTEXT SelectFirstCertificateWithPrivateKey()
 {
 	PCCERT_CONTEXT returnedContext = nullptr;
@@ -214,11 +228,8 @@ PCCERT_CONTEXT SelectFirstCertificateWithPrivateKey()
 		pCertContext = CertEnumCertificatesInStore(hCertStore, pCertContext);
 		while (pCertContext)
 		{
-			PBYTE KeySpec = nullptr;
-			dwSize = 0;
-
 			// Skip certificates without private keys
-			if (!CertGetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, KeySpec, &dwSize))
+			if (!CertificateHasPrivateKey(pCertContext))
 			{
 				pCertContext = CertEnumCertificatesInStore(hCertStore, pCertContext);
 				continue;
@@ -231,8 +242,8 @@ PCCERT_CONTEXT SelectFirstCertificateWithPrivateKey()
 			// Get the subject details for the cert
 			CertGetNameString(pCertContext, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, nullptr, szCertName, ARRAYSIZE(szCertName));
 
-			// Check for computer name match
-			if (_tcscmp(szCertName, szComputerName) == 0)
+			// Check for computer name match - exact match takes priority
+			if (IsComputerNameMatch(szCertName, szComputerName))
 			{
 				returnedContext = pCertContext;
 				break;  // Found exact match, exit loop
