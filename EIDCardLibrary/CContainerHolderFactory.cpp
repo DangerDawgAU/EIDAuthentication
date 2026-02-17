@@ -77,7 +77,8 @@ BOOL CContainerHolderFactory<T>::ConnectNotification(__in LPCTSTR szReaderName,_
 template <typename T> 
 BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReaderName,__in LPCTSTR szCardName, __in USHORT ActivityCount)
 {
-	HCRYPTPROV HCryptProv,hProv=NULL;
+	HCRYPTPROV HCryptProv;
+	HCRYPTPROV hProv = NULL;
 	BOOL bStatus;
 	CHAR szContainerName[1024];
 	DWORD dwContainerNameLen = ARRAYSIZE(szContainerName);

@@ -148,8 +148,9 @@ PTSTR GetUniqueIDString()
 PCCERT_CONTEXT SelectCertificateWithPrivateKey(HWND hWnd)
 {
 	PCCERT_CONTEXT returnedContext = nullptr;
-		
-	HCERTSTORE hCertStore,hStore;
+
+	HCERTSTORE hCertStore;
+	HCERTSTORE hStore;
 	BOOL bShowNoCertificate = TRUE;
 	// open trusted root store
 	hCertStore = CertOpenStore(CERT_STORE_PROV_SYSTEM,0,NULL,CERT_SYSTEM_STORE_CURRENT_USER,_T("Root"));
@@ -369,7 +370,8 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 	CERT_INFO CertInfo = {0};
 	CertInfo.rgExtension = nullptr;
 	CERT_NAME_BLOB SubjectIssuerBlob = {0};
-	HCRYPTPROV hCryptProvNewCertificate = NULL, hCryptProvRootCertificate = NULL;  // Windows handle types - keep as NULL
+	HCRYPTPROV hCryptProvNewCertificate = NULL;  // Windows handle type - keep as NULL
+	HCRYPTPROV hCryptProvRootCertificate = NULL;  // Windows handle type - keep as NULL
 	PCCERT_CONTEXT pNewCertificateContext = nullptr;
 	PCERT_PUBLIC_KEY_INFO pbPublicKeyInfo = nullptr;
 	HCERTSTORE hCertStore = nullptr;
@@ -1138,7 +1140,8 @@ BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName)
 	CHAR szContainerName[1024];
 	DWORD dwContainerNameLen = ARRAYSIZE(szContainerName);
 	DWORD dwFlags;
-	HCRYPTPROV HMainCryptProv = NULL, hProv = NULL;  // Windows handle types - keep as NULL
+	HCRYPTPROV HMainCryptProv = NULL;  // Windows handle type - keep as NULL
+	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
 	DWORD dwError = 0;
 	BOOL fReturn = FALSE;
 	LPTSTR szMainContainerName = nullptr;
@@ -1347,11 +1350,13 @@ BOOL ImportFileToSmartCard(PTSTR szFileName, PTSTR szPassword, PTSTR szReaderNam
 	TCHAR szProviderName[1024];
 	DWORD dwProviderNameLen = ARRAYSIZE(szProviderName);
 	PWSTR szContainerName = nullptr;
-	HCRYPTPROV hCardProv = NULL, hProv = NULL;
+	HCRYPTPROV hCardProv = NULL;
+	HCRYPTPROV hProv = NULL;
 	PCCERT_CONTEXT pCertContext = nullptr;
 	BOOL fFreeProv = FALSE;
 	DWORD dwKeySpec = AT_KEYEXCHANGE;
-	HCRYPTKEY hKey = NULL, hCardKey = NULL;  // Windows handle types - keep as NULL
+	HCRYPTKEY hKey = NULL;  // Windows handle type - keep as NULL
+	HCRYPTKEY hCardKey = NULL;  // Windows handle type - keep as NULL
 	PRSAPRIVKEY pbData = nullptr;
 	DWORD dwSize = 0;
 	DWORD dwError = 0;
@@ -1565,7 +1570,8 @@ BOOL ImportFileToSmartCard(PTSTR szFileName, PTSTR szPassword, PTSTR szReaderNam
 PCCERT_CONTEXT FindCertificateFromHashOnCard(PCRYPT_DATA_BLOB pCertInfo, PTSTR szReaderName, PTSTR szProviderName)
 {
 	PCCERT_CONTEXT pCertContext = nullptr;
-	HCRYPTPROV HCryptProv = NULL, hProv = NULL;  // Windows handle types - keep as NULL
+	HCRYPTPROV HCryptProv = NULL;  // Windows handle type - keep as NULL
+	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
 	TCHAR szMainContainerName[1024];
 	DWORD dwContainerNameLen = ARRAYSIZE(szMainContainerName);
 	CHAR szContainerName[1024];

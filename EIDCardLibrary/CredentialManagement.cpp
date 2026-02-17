@@ -368,7 +368,9 @@ NTSTATUS CSecurityContext::ReceiveNegociateMessage(PSecBufferDesc Buffer)
 
 NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 {
-	DWORD dwEntriesRead, dwTotalEntries, dwI;
+	DWORD dwEntriesRead;
+	DWORD dwTotalEntries;
+	DWORD dwI;
 	USER_INFO_3 *pInfo = nullptr;
 	NTSTATUS Status = STATUS_SUCCESS;
 	__try
@@ -437,6 +439,7 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 	}
 	__finally
 	{
+		// SEH cleanup - no action needed
 	}
 	return SEC_I_CONTINUE_NEEDED;
 }

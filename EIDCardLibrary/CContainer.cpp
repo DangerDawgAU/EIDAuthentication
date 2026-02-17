@@ -274,7 +274,8 @@ BOOL CContainer::TriggerRemovePolicy() const
 	HKEY hRemovePolicyKey = nullptr;
 	PBYTE pbBuffer = nullptr;
 	DWORD dwSize;
-	DWORD dwProcessId, dwSessionId;
+	DWORD dwProcessId;
+	DWORD dwSessionId;
 	TCHAR szValueKey[sizeof(DWORD)+1];
 
 	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Enter");
@@ -377,7 +378,8 @@ PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSi
 	DWORD dwRid = 0;
 	PWSTR szUserName = nullptr;
 	WCHAR szDomainName[MAX_COMPUTERNAME_LENGTH+1];
-	DWORD dwSize, dwTotalSize;
+	DWORD dwSize;
+	DWORD dwTotalSize;
 	__try
 	{
 	

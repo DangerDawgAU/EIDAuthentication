@@ -64,7 +64,8 @@ BOOL CStoredCredentialManager::GetUsernameFromCertContext(__in PCCERT_CONTEXT pC
 {
 	NET_API_STATUS Status;
 	PUSER_INFO_3 pUserInfo = nullptr;
-	DWORD dwEntriesRead = 0, dwTotalEntries = 0;
+	DWORD dwEntriesRead = 0;
+	DWORD dwTotalEntries = 0;
 	BOOL fReturn = FALSE;
 	PEID_PRIVATE_DATA pPrivateData = nullptr;
 	DWORD dwError = 0;
@@ -162,7 +163,8 @@ BOOL CStoredCredentialManager::GetCertContextFromHash(__in PBYTE pbHash, __out P
 {
 	NET_API_STATUS Status;
 	PUSER_INFO_3 pUserInfo = nullptr;
-	DWORD dwEntriesRead = 0, dwTotalEntries = 0;
+	DWORD dwEntriesRead = 0;
+	DWORD dwTotalEntries = 0;
 	BOOL fReturn = FALSE;
 	PEID_PRIVATE_DATA pPrivateData = nullptr;
 	DWORD dwError = 0;
@@ -791,7 +793,8 @@ BOOL CStoredCredentialManager::RemoveAllStoredCredential()
 {
 	NET_API_STATUS Status;
 	PUSER_INFO_3 pUserInfo = nullptr;
-	DWORD dwEntriesRead = 0, dwTotalEntries = 0;
+	DWORD dwEntriesRead = 0;
+	DWORD dwTotalEntries = 0;
 	BOOL fReturn = FALSE;
 	__try
 	{
@@ -818,10 +821,12 @@ BOOL CStoredCredentialManager::RemoveAllStoredCredential()
 
 BOOL CStoredCredentialManager::GetPassword(__in DWORD dwRid, __in PCCERT_CONTEXT pContext, __in PWSTR szPin, __out PWSTR *pszPassword)
 {
-	BOOL fReturn = FALSE, fStatus;
+	BOOL fReturn = FALSE;
+	BOOL fStatus;
 	PBYTE pChallenge = nullptr;
 	PBYTE pResponse = nullptr;
-	DWORD dwResponseSize = 0, dwChallengeSize = 0;
+	DWORD dwResponseSize = 0;
+	DWORD dwChallengeSize = 0;
 	DWORD dwError = 0;
 	DWORD type;
 	__try
@@ -1334,8 +1339,12 @@ BOOL CStoredCredentialManager::GenerateSymetricKeyAndEncryptIt(__in HCRYPTPROV h
 
 BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __in PWSTR szPassword, __in_opt USHORT dwPasswordLen, __out PBYTE *pEncryptedPassword, __out USHORT *usSize)
 {
-	BOOL fReturn = FALSE, fStatus;
-	DWORD dwPasswordSize, dwSize, dwBlockLen, dwEncryptedSize;
+	BOOL fReturn = FALSE;
+	BOOL fStatus;
+	DWORD dwPasswordSize;
+	DWORD dwSize;
+	DWORD dwBlockLen;
+	DWORD dwEncryptedSize;
 	DWORD dwRoundNumber;
 	DWORD dwError = 0;
 	__try
@@ -1351,7 +1360,7 @@ BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __i
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwBlockLen = %d",dwBlockLen);
 		// block size = 256             100 => 1     256 => 1      257  => 2
-		dwRoundNumber = ((DWORD)(dwPasswordSize/dwBlockLen)) + ((dwPasswordSize%dwBlockLen) ? 1 : 0);
+		dwRoundNumber = (dwPasswordSize/dwBlockLen) + ((dwPasswordSize%dwBlockLen) ? 1 : 0);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwRoundNumber = %d",dwRoundNumber);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwPasswordSize = %d",dwPasswordSize);
 		*pEncryptedPassword = (PBYTE) EIDAlloc(dwRoundNumber * dwBlockLen);
@@ -1493,7 +1502,7 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CryptGetKeyParam", GetLastError());
 			__leave;
 		}
-		dwRoundNumber = (DWORD)(pEidPrivateData->usPasswordLen / dwBlockLen) + 
+		dwRoundNumber = (pEidPrivateData->usPasswordLen / dwBlockLen) +
 			((pEidPrivateData->usPasswordLen % dwBlockLen) ? 1 : 0);
 		*pszPassword = (PWSTR) EIDAlloc(dwRoundNumber *  dwBlockLen + sizeof(WCHAR));
 		if (!*pszPassword)
@@ -2333,7 +2342,9 @@ NTSTATUS CStoredCredentialManager::CheckPassword( __in DWORD dwRid, __in PWSTR s
 	LSA_OBJECT_ATTRIBUTES connectionAttrib;
     LSA_HANDLE handlePolicy = nullptr;
     PPOLICY_ACCOUNT_DOMAIN_INFO structInfoPolicy = nullptr;// -> http://msdn2.microsoft.com/en-us/library/ms721895(VS.85).aspx.
- SAMPR_HANDLE hSam = nullptr, hDomain = nullptr, hUser = nullptr;
+ SAMPR_HANDLE hSam = nullptr;
+ SAMPR_HANDLE hDomain = nullptr;
+ SAMPR_HANDLE hUser = nullptr;
  PSAMPR_USER_INTERNAL1_INFORMATION UserInfo = nullptr;
 	unsigned char bHash[16];
 	UNICODE_STRING EncryptedPassword;

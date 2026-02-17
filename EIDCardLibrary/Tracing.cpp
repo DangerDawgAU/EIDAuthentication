@@ -238,7 +238,8 @@ void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR
 
 void EIDCardLibraryDumpMemoryEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, PVOID memoryParam, DWORD memorysize)
 {
-	DWORD i,j;
+	DWORD i;
+	DWORD j;
 	UCHAR buffer[10];
 	WCHAR szFormat[] = L"%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d";
 	WCHAR szFormat2[] = L"%c%c%c%c%c%c%c%c%c%c";

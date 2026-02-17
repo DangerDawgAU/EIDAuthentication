@@ -106,7 +106,8 @@ void RemoveValueFromMultiSz(HKEY hKey, LPCTSTR szKey, LPCTSTR szValue, LPCTSTR s
 		return;
 	}
 	DWORD RegType;
-	DWORD RegSize, RegSizeOut;
+	DWORD RegSize;
+	DWORD RegSizeOut;
 	PTSTR BufferIn = nullptr;
 	PTSTR BufferOut = nullptr;
 	PTSTR PointerIn;
@@ -225,7 +226,8 @@ BOOL RegisterTheSecurityPackage()
 	}
 	__finally
 	{
-	}	
+		// SEH cleanup - no action needed
+	}
 	SetLastError(dwError);
 	return fReturn;
 }
@@ -257,7 +259,8 @@ BOOL UnRegisterTheSecurityPackage()
 	}
 	__finally
 	{
-	}	
+		// SEH cleanup - no action needed
+	}
 	SetLastError(dwError);
 	return fReturn;
 }
@@ -366,7 +369,12 @@ BOOL EnableLogging()
 	static const TCHAR szGuidKey[] = L"SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider\\{B4866A0A-DB08-4835-A26F-414B46F3244C}";
 	static const TCHAR szGuidValue[] = L"{B4866A0A-DB08-4835-A26F-414B46F3244C}";
 	static const TCHAR szFileName[] = L"c:\\windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl";
-	static const DWORD dw0 = 0, dw1 = 1, dw5 = 5, dw8 = 8, dw64 = 64, dw4864 = 4864;
+	static const DWORD dw0 = 0;
+	static const DWORD dw1 = 1;
+	static const DWORD dw5 = 5;
+	static const DWORD dw8 = 8;
+	static const DWORD dw64 = 64;
+	static const DWORD dw4864 = 4864;
 	static const DWORD64 qw0 = 0;
 
 	static const RegEntry entries[] = {
@@ -410,6 +418,7 @@ BOOL EnableLogging()
 	}
 	__finally
 	{
+		// SEH cleanup - no action needed
 	}
 	SetLastError(err);
 	return fReturn;
@@ -432,6 +441,7 @@ BOOL DisableLogging()
 	}
 	__finally
 	{
+		// SEH cleanup - no action needed
 	}
 	SetLastError(lReturn);
 	return fReturn;

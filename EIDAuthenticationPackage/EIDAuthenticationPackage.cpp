@@ -459,7 +459,8 @@ extern "C"
 		NTSTATUS StatusReturned = STATUS_SUCCESS;
 		PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST pGina = (PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST) ProtocolSubmitBuffer;
 		PBYTE pbChallenge = NULL;
-		DWORD dwChallengeSize = 0, dwType = 0;
+		DWORD dwChallengeSize = 0;
+		DWORD dwType = 0;
 		EID_MSGINA_AUTHENTICATION_CHALLENGE_ANSWER response = {0};
 		memset(&response, 0, sizeof(EID_MSGINA_AUTHENTICATION_CHALLENGE_ANSWER));
 		if (SubmitBufferLength < sizeof(EID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST))
@@ -744,7 +745,7 @@ extern "C"
 		}
 		__finally
 		{
-			if (hModule != NULL)
+			if (hModule != nullptr)
 				FreeLibrary(hModule);
 		}
 		return Status;

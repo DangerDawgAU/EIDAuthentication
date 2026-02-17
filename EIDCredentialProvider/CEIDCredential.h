@@ -48,7 +48,7 @@ public:
     // IUnknown
     IMPL_IUNKNOWN_ADDREF_RELEASE()
     IMPL_CREDENTIAL_QUERYINTERFACE()
-  public:
+
     // ICredentialProviderCredential
     IFACEMETHODIMP Advise(ICredentialProviderCredentialEvents* pcpce) override;
     IFACEMETHODIMP UnAdvise() override;
@@ -81,7 +81,6 @@ public:
                                 PWSTR* ppwszOptionalStatusText,
                                 CREDENTIAL_PROVIDER_STATUS_ICON* pcpsiOptionalStatusIcon) override;
 
-  public:
     HRESULT Initialize();
     explicit CEIDCredential(CContainer* container);
 	void SetUsageScenario(__in CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,__in DWORD dwFlags);

@@ -69,8 +69,10 @@ void ExportOneTraceFile(HANDLE hOutputFile, PTSTR szTraceFile)
 	}
 	else
 	{
-		FILETIME now, start;
-		SYSTEMTIME sysNow, sysstart;
+		FILETIME now;
+		FILETIME start;
+		SYSTEMTIME sysNow;
+		SYSTEMTIME sysstart;
 		GetLocalTime(&sysNow);
 		SystemTimeToFileTime(&sysNow, &now);
 		memcpy(&sysstart, &sysNow, sizeof(SYSTEMTIME));

@@ -48,7 +48,8 @@ BOOL TestLogon(HWND hMainWnd)
 	MSV1_0_INTERACTIVE_PROFILE *Profile;
 	ULONG ProfileLen;
 	LUID Luid;
-	NTSTATUS err,stat;
+	NTSTATUS err;
+	NTSTATUS stat;
 	HANDLE Token;
 	DWORD dwFlag = CREDUIWIN_AUTHPACKAGE_ONLY | CREDUIWIN_ENUMERATE_CURRENT_USER;
 	RetrieveNegotiateAuthPackage(&authPackage);

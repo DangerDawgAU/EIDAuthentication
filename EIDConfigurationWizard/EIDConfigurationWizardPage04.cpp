@@ -151,15 +151,16 @@ CloseClipboard();\
 HWND hWndTemp;
 
 HICON MiniIcon(HICON SourceIcon)
-{	
-	ICONINFO SourceIconInfo,  TargetIconInfo ;
+{
+	ICONINFO SourceIconInfo;
+	ICONINFO TargetIconInfo;
 	HICON TargetIcon = nullptr;
 	BITMAP SourceBitmapInfo;
-	HDC SourceDC = nullptr,
-	  TargetDC = nullptr,
-	  ScreenDC = nullptr;
-	HBITMAP OldSourceBitmap = nullptr,
-	  OldTargetBitmap = nullptr;
+	HDC SourceDC = nullptr;
+	HDC TargetDC = nullptr;
+	HDC ScreenDC = nullptr;
+	HBITMAP OldSourceBitmap = nullptr;
+	HBITMAP OldTargetBitmap = nullptr;
 	__try
 	{
 		/* Get information about the source icon and shortcut overlay */

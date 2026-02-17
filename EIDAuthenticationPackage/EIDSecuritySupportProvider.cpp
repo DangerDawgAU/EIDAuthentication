@@ -258,7 +258,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(Flags); 
 		UNREFERENCED_PARAMETER(UserData); 
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-		return(STATUS_NOT_SUPPORTED); 
+		return STATUS_NOT_SUPPORTED; 
 	} 
 
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -275,7 +275,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(phContext);
 		UNREFERENCED_PARAMETER(pInput);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-		return(STATUS_SUCCESS);
+		return STATUS_SUCCESS;
 
 	}
 
@@ -394,8 +394,8 @@ extern "C"
 			{ 
 				LogonIdToUse = &ClientInfo.LogonId; 
 			}
-			
-			if (AuthorizationData != NULL) 
+
+			if (AuthorizationData != nullptr)
 			{ 
 				// copy the authorization data to our user space
 				pAuthIdentityEx = (PSEC_WINNT_AUTH_IDENTITY_EXW)
@@ -577,9 +577,9 @@ extern "C"
 		if (!CCredential::Delete(CredentialHandle))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Credential %p not found",CredentialHandle);
-			return(STATUS_INVALID_HANDLE);
+			return STATUS_INVALID_HANDLE;
 		}
-		return(STATUS_SUCCESS);
+		return STATUS_SUCCESS;
 	}
 
 	/** Used to add  credentials for a  security principal.*/
@@ -716,9 +716,9 @@ extern "C"
 		if (!CSecurityContext::Delete(phContext))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Context 0x%08X not found",phContext);
-			return(SEC_E_INVALID_HANDLE);
+			return SEC_E_INVALID_HANDLE;
 		}
-		return(SEC_E_OK);
+		return SEC_E_OK;
 	}
 
 	/**  The SpQueryContextAttributes function retrieves the attributes of a  security context.
@@ -757,7 +757,7 @@ extern "C"
 				if (ContextNames->sUserName == NULL)
 				{
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INSUFFICIENT_MEMORY");
-					return(SEC_E_INSUFFICIENT_MEMORY);
+					return SEC_E_INSUFFICIENT_MEMORY;
 				}
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Username = %s",ContextNames->sUserName);
 				break;
@@ -768,10 +768,10 @@ extern "C"
 				break;
 			default:
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN");
-				return(SEC_E_INVALID_TOKEN);
+				return SEC_E_INVALID_TOKEN;
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"SEC_E_OK");
-		return(SEC_E_OK);
+		return SEC_E_OK;
 	}
 
 
@@ -864,7 +864,8 @@ extern "C"
 
 	NTSTATUS NTAPI SpCreateToken(DWORD dwRid, PHANDLE phToken)
 	{
-		NTSTATUS Status = STATUS_SUCCESS, SubStatus = STATUS_SUCCESS;
+		NTSTATUS Status = STATUS_SUCCESS;
+		NTSTATUS SubStatus = STATUS_SUCCESS;
 		LUID LogonId;
 		TOKEN_SOURCE tokenSource = { "EIDAuth", PackageUid};
 		UNICODE_STRING AccountName;
@@ -878,7 +879,8 @@ extern "C"
 		WCHAR szUserName[256];
 		DWORD dwSize;
 		USER_INFO_3 *pInfo = NULL;
-		DWORD dwEntriesRead, dwTotalEntries;
+		DWORD dwEntriesRead;
+		DWORD dwTotalEntries;
 		NET_API_STATUS NetStatus ;
 		DWORD dwI;
 		__try

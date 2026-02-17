@@ -146,7 +146,8 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 	LONG					Status;
 
 	SCARD_READERSTATE 		rgscState[MAXIMUM_SMARTCARD_READERS];
-	DWORD             		dwI, dwRdrCount;
+	DWORD             		dwI;
+	DWORD             		dwRdrCount;
 	HANDLE					hAccessStartedEvent[2];
 
 
@@ -318,11 +319,13 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 // and then for connected card
 LONG CSmartCardConnectionNotifier::GetReaderStates(SCARD_READERSTATE rgscState[MAXIMUM_SMARTCARD_READERS],PDWORD dwRdrCount) {
 	LONG					Status;
-	DWORD   				dwReadersLength;	
-	LPTSTR					szRdr, szListReaders;
-	
+	DWORD   				dwReadersLength;
+	LPTSTR					szRdr;
+	LPTSTR					szListReaders;
+
 	DWORD					dwPreviousRdrCount;
-	DWORD					dwI, dwJ;
+	DWORD					dwI;
+	DWORD					dwJ;
 	DWORD					dwOldListToNewList[MAXIMUM_SMARTCARD_READERS];
 	DWORD					dwNewListToOldList[MAXIMUM_SMARTCARD_READERS];
 	LPTSTR					szReader[MAXIMUM_SMARTCARD_READERS];

@@ -58,7 +58,6 @@ public:
         return hr;
     }
 
-  public:
     IFACEMETHODIMP SetUsageScenario(CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus, DWORD dwFlags) override;
     IFACEMETHODIMP SetSerialization(const CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION* pcpcs) override;
 
@@ -76,8 +75,7 @@ public:
 
     friend HRESULT CEIDProvider_CreateInstance(REFIID riid, __deref_out void** ppv);
 
-public:
-	void Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in LPCTSTR szReader, __in_opt LPCTSTR szCardName, __in_opt USHORT ActivityCount) override;
+    void Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in LPCTSTR szReader, __in_opt LPCTSTR szCardName, __in_opt USHORT ActivityCount) override;
 
   protected:
     CEIDProvider();
