@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 22 of 30 (SonarQube Macro Issues) - IN PROGRESS
-Plan: 1 of 3
+Plan: 2 of 3
 Status: In Progress
-Last activity: 2026-02-17 — Phase 22 Plan 01: converted 2 macros to constexpr
+Last activity: 2026-02-17 — Phase 22 Plan 02: converted 3 numeric constant macros to constexpr
 
-Progress: [██░░░░░░░░░░░░░░░░░░] 7% (Phase 22 in progress - 1/3 plans)
+Progress: [██░░░░░░░░░░░░░░░░░░] 7% (Phase 22 in progress - 2/3 plans)
 
 ## Performance Metrics
 
@@ -44,6 +44,8 @@ Recent decisions for v1.3:
 - Diagnostics/logging improvements before final verification
 - Replace simple value macros with constexpr for type safety (22-01)
 - Use static constexpr for file-scope constants to ensure internal linkage (22-01)
+- Use static constexpr DWORD for struct member constants matching Windows API types (22-02)
+- Use constexpr UINT for Windows custom message constants (22-02)
 
 ### Pending Todos
 
@@ -56,8 +58,8 @@ None currently. v1.3 ready to begin.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 22-01-PLAN.md (Simple value macro conversion)
-Resume file: 22-02-PLAN.md
+Stopped at: Completed 22-02-PLAN.md (Numeric constant macro conversion)
+Resume file: 22-03-PLAN.md
 
 ## Key Constraints (Always Remember)
 
