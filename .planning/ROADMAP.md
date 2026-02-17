@@ -157,6 +157,7 @@ Plans:
 **Depends on**: Phase 6
 **Requirements**: SEC-01, SEC-02
 **Issues**: 5 total (2 security hotspots, 3 reliability bugs)
+**Plans:** 2
 **Success Criteria** (what must be TRUE):
   1. SonarQube shows 0 open security hotspots (both resolved or marked N/A)
   2. SonarQube shows 0 open reliability bugs (all 3 resolved or marked N/A)
@@ -167,7 +168,11 @@ Plans:
 - StringConversion.cpp (strlen safety)
 - DebugReport.cpp (strlen safety)
 - CompleteToken.cpp (type punning)
-- Page05.cpp (dead code)
+- EIDConfigurationWizardPage05.cpp (dead code)
+
+Plans:
+- [ ] 07-01-PLAN.md - Fix security hotspots (strlen safety in StringConversion.cpp and DebugReport.cpp)
+- [ ] 07-02-PLAN.md - Fix reliability bugs (type punning in CompleteToken.cpp, unreachable code in Page05.cpp)
 
 ### Phase 8: Const Correctness
 **Goal**: All global variables, pointers, and functions are const-correct per SonarQube rules
@@ -280,7 +285,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Security & Reliability | 0/? | Not Started | - |
+| 7. Security & Reliability | 0/2 | Planned | - |
 | 8. Const Correctness | 0/? | Not Started | - |
 | 9. Modern C++ Types | 0/? | Not Started | - |
 | 10. Code Simplification | 0/? | Not Started | - |
@@ -334,3 +339,4 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14
 *Phase 6 planned: 2026-02-15*
 *v1.0 complete: 2026-02-16*
 *v1.1 roadmap created: 2026-02-17*
+*Phase 7 planned: 2026-02-17*
