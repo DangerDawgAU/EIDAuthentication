@@ -215,8 +215,8 @@ Explicitly excluded. Documented to prevent scope creep.
 **Coverage:**
 - v1.2 requirements: 13 total
 - Mapped to phases: 13
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-15*
-*Last updated: 2026-02-17 after v1.2 milestone start*
+*Last updated: 2026-02-17 after v1.2 roadmap created*
