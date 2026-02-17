@@ -28,6 +28,7 @@
 
 // Static buffers for Windows API compatibility (C++23 /Zc:strictStrings)
 static char s_szMyTest[] = "MYTEST";
+static constexpr size_t s_szMyTestLen = sizeof(s_szMyTest) - 1;  // Length without null terminator (SonarQube cpp:S5813)
 static wchar_t s_wszEtlPath[] = L"c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl";
 
 BOOL TestLogon(HWND hMainWnd)
@@ -41,7 +42,7 @@ BOOL TestLogon(HWND hMainWnd)
 	DWORD dwError = 0;
 
 	LSA_HANDLE hLsa;
-	LSA_STRING Origin = { (USHORT)strlen(s_szMyTest), (USHORT)sizeof(s_szMyTest), s_szMyTest };
+	LSA_STRING Origin = { (USHORT)s_szMyTestLen, (USHORT)sizeof(s_szMyTest), s_szMyTest };
 	QUOTA_LIMITS Quota = {0};
 	TOKEN_SOURCE Source = { "TEST", { 0, 101 } };
 	MSV1_0_INTERACTIVE_PROFILE *Profile;

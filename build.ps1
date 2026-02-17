@@ -114,9 +114,35 @@ if ($Configuration -eq "Release") {
     Write-Host "Building NSIS Installer" -ForegroundColor Cyan
     Write-Host "============================================================" -ForegroundColor Cyan
 
-    $makensisPath = "C:\Program Files (x86)\NSIS\makensis.exe"
+    # Find NSIS installation - check multiple common paths
+    $makensisPath = $null
+    $nsisSearchPaths = @(
+        "C:\Program Files (x86)\NSIS\makensis.exe",
+        "C:\Program Files\NSIS\makensis.exe",
+        "${env:ProgramFiles(x86)}\NSIS\makensis.exe",
+        "${env:ProgramFiles}\NSIS\makensis.exe",
+        "C:\NSIS\makensis.exe",
+        "${env:ProgramFiles}\Nsis\makensis.exe"
+    )
 
-    if (Test-Path $makensisPath) {
+    foreach ($path in $nsisSearchPaths) {
+        if (Test-Path $path) {
+            $makensisPath = $path
+            Write-Host "Found NSIS at: $makensisPath" -ForegroundColor Gray
+            break
+        }
+    }
+
+    # Also check if makensis is in PATH
+    if (-not $makensisPath) {
+        $makensisInPath = Get-Command "makensis.exe" -ErrorAction SilentlyContinue
+        if ($makensisInPath) {
+            $makensisPath = $makensisInPath.Source
+            Write-Host "Found NSIS in PATH: $makensisPath" -ForegroundColor Gray
+        }
+    }
+
+    if ($makensisPath) {
         # Delete old installer
         $installerPath = "Installer\EIDInstallx64.exe"
         if (Test-Path $installerPath) {
@@ -124,8 +150,36 @@ if ($Configuration -eq "Release") {
         }
 
         Push-Location "Installer"
-        $process = Start-Process -FilePath $makensisPath -ArgumentList "Installerx64.nsi" -NoNewWindow -Wait
-        Pop-Location
+        try {
+            # Run NSIS and capture output
+            $nsisOutput = & $makensisPath "Installerx64.nsi" 2>&1
+            $nsisExitCode = $LASTEXITCODE
+
+            # Display NSIS output
+            $nsisOutput | ForEach-Object { Write-Host $_ }
+
+            if ($nsisExitCode -ne 0) {
+                Write-Host ""
+                Write-Host "============================================================" -ForegroundColor Red
+                Write-Host "INSTALLER BUILD FAILED with exit code $nsisExitCode" -ForegroundColor Red
+                Write-Host "============================================================" -ForegroundColor Red
+                Write-Host "Check the NSIS output above for errors" -ForegroundColor Yellow
+                Pop-Location
+                exit 1
+            }
+        }
+        catch {
+            Write-Host ""
+            Write-Host "============================================================" -ForegroundColor Red
+            Write-Host "INSTALLER BUILD FAILED" -ForegroundColor Red
+            Write-Host "============================================================" -ForegroundColor Red
+            Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Yellow
+            Pop-Location
+            exit 1
+        }
+        finally {
+            Pop-Location
+        }
 
         if (Test-Path $installerPath) {
             $installerFile = Get-Item $installerPath
@@ -134,7 +188,9 @@ if ($Configuration -eq "Release") {
             Write-Host "INSTALLER BUILD SUCCEEDED" -ForegroundColor Green
             Write-Host "============================================================" -ForegroundColor Green
             Write-Host "Output: $installerPath" -ForegroundColor White
-            Write-Host "Size: $($installerFile.Length) bytes" -ForegroundColor White
+            $sizeKB = [math]::Round($installerFile.Length / 1KB, 1)
+            $sizeMB = [math]::Round($installerFile.Length / 1MB, 2)
+            Write-Host "Size: $sizeMB MB ($sizeKB KB)" -ForegroundColor White
             Write-Host ""
             Write-Host "Installer includes:" -ForegroundColor White
             Write-Host "  - Certificate cleanup script (CleanupCertificates.ps1)" -ForegroundColor Gray
@@ -146,15 +202,17 @@ if ($Configuration -eq "Release") {
             Write-Host "============================================================" -ForegroundColor Red
             Write-Host "INSTALLER BUILD FAILED" -ForegroundColor Red
             Write-Host "============================================================" -ForegroundColor Red
+            Write-Host "Installer file was not created" -ForegroundColor Yellow
             Write-Host "Check Installer\Installerx64.nsi for errors" -ForegroundColor Yellow
             exit 1
         }
     } else {
         Write-Host ""
-        Write-Host "WARNING: NSIS not found at `"$makensisPath`"" -ForegroundColor Yellow
+        Write-Host "WARNING: NSIS not found in common locations or PATH" -ForegroundColor Yellow
         Write-Host "Skipping installer build" -ForegroundColor Yellow
         Write-Host ""
         Write-Host "To build the installer, install NSIS from https://nsis.sourceforge.io/" -ForegroundColor Cyan
+        Write-Host "Make sure NSIS is added to PATH during installation" -ForegroundColor Cyan
     }
 }
 

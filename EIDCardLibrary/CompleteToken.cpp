@@ -32,6 +32,7 @@
 #include <sddl.h>
 
 #include <utility>  // for std::pair
+#include <bit>      // for std::bit_cast (SonarQube cpp:S3624)
 
 #include "EIDCardLibrary.h"
 #include "Tracing.h"
@@ -414,8 +415,8 @@ void DebugPrintSid(const WCHAR* Name, PSID Sid)
 					SystemTime.wSecond = 0;
 					SystemTime.wMilliseconds = 0;
 					SystemTimeToFileTime(&SystemTime, &FileTime);
-					ExpirationTime.LowPart = FileTime.dwLowDateTime;
-					ExpirationTime.HighPart = FileTime.dwHighDateTime;
+					// Use std::bit_cast for type-safe conversion (SonarQube cpp:S3624)
+					ExpirationTime.QuadPart = std::bit_cast<std::int64_t>(FileTime);
 					ExpirationTime.QuadPart += Hour.QuadPart * dwHours;
 					break;
 				}
