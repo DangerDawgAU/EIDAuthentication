@@ -8,22 +8,21 @@ A Windows smart card authentication package providing smart card login for local
 
 A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
 
-## Current Milestone: v1.2 Code Modernization
+## Current Milestone: v1.3 Deep Modernization
 
-**Goal:** Resolve ~550 fixable SonarQube maintainability issues while documenting remaining ~550 as justified exceptions
+**Goal:** Resolve remaining SonarQube issues and refactor complex code while adding advanced C++23 features
 
 **Target features:**
-- Fix 1 blocker issue (fall-through annotation)
-- Fix 102 const-correctness issues (globals, pointers)
-- Convert 149 C-style char arrays to std::string (where LSASS-safe)
-- Convert 28 C-style arrays to std::array
-- Mark ~550 issues as "Won't Fix" with justification (Windows API, style preferences)
-- Final SonarQube scan confirming fixable issues resolved
+- Resolve ~1,000 remaining SonarQube issues (from v1.2 "Won't Fix" categories)
+- Refactor complex code (reduce nesting, improve structure)
+- Advanced C++23 features (import std, more library features)
+- Improved diagnostics and logging
 
 ### Completed Milestones
 
-**v1.0 C++23 Modernization** — Build system, error handling, compile-time features
-**v1.1 SonarQube Quality Remediation** — Zero security hotspots, zero reliability bugs
+**v1.0 C++23 Modernization** — Build system, error handling, compile-time features ✓
+**v1.1 SonarQube Quality Remediation** — Zero security hotspots, zero reliability bugs ✓
+**v1.2 Code Modernization** — ~55 SonarQube issues fixed, ~1,000 documented as Won't Fix ✓
 
 ## Requirements
 
