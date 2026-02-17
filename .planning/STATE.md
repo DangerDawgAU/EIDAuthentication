@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 ## Current Position
 
-Phase: 24 of 30 (SonarQube Nesting Issues) - PLANNED
-Plan: 0 of 3
-Status: Plans created, ready to execute
-Last activity: 2026-02-17 — Phase 24 plans created (3 plans in 2 waves)
+Phase: 24 of 30 (SonarQube Nesting Issues) - IN PROGRESS
+Plan: 1 of 3
+Status: 24-01 complete, reducing nesting in WndProc_03NEW
+Last activity: 2026-02-17 — Completed 24-01 (extract option handlers)
 
-Progress: [██░░░░░░░░░░░░░░░░░░] 8% (Phase 24 planned - 3/3 plans)
+Progress: [██░░░░░░░░░░░░░░░░░░] 10% (Phase 24 in progress - 1/3 plans)
 
 ## Performance Metrics
 
@@ -50,6 +50,8 @@ Recent decisions for v1.3:
 - Resource compiler cannot process C++ constexpr - requires #define (22-03)
 - All remaining global variables are legitimately mutable - LSA pointers, tracing state, DLL state, UI state, handles, Windows API buffers (23-01)
 - Windows CryptoAPI requires non-const char arrays for CERT_ENHKEY_USAGE.rgpszUsageIdentifier (23-01)
+- Extract nested option handlers as static file-local functions to reduce nesting depth (24-01)
+- Use early return pattern with short-circuit && for guard-style handler invocation (24-01)
 
 ### Pending Todos
 
@@ -62,8 +64,8 @@ None currently. v1.3 ready to begin.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 23-01-PLAN.md (Won't-fix documentation)
-Resume file: 24-01-PLAN.md (Phase 24: SonarQube Nested Issues)
+Stopped at: Completed 24-01-PLAN.md (WndProc_03NEW handler extraction)
+Resume file: 24-02-PLAN.md (Phase 24: SonarQube Nested Issues - Wave 1)
 
 ## Key Constraints (Always Remember)
 
