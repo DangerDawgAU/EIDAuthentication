@@ -73,7 +73,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 22: SonarQube Macro Issues** - Convert macros to const/constexpr where safe (completed 2026-02-17)
 - [x] **Phase 23: SonarQube Const Issues** - Mark remaining global variables const (completed 2026-02-17)
 - [x] **Phase 24: SonarQube Nesting Issues** - Reduce deep nesting in key functions (completed 2026-02-17)
-- [ ] **Phase 25: Code Refactoring - Complexity** - Reduce cognitive complexity and extract helpers
+- [x] **Phase 25: Code Refactoring - Complexity** - Reduce cognitive complexity and extract helpers (completed 2026-02-17)
 - [ ] **Phase 26: Code Refactoring - Duplicates** - Consolidate duplicate code patterns
 - [ ] **Phase 27: C++23 Advanced Features** - Evaluate modules, flat containers, stacktrace
 - [ ] **Phase 28: Diagnostics & Logging** - Enhance error messages and tracing
@@ -285,7 +285,7 @@ Phases execute in numeric order: 21 -> 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28 ->
 | 22. SonarQube Macros | 0/TBD | Complete    | 2026-02-17 |
 | 23. SonarQube Const | 0/TBD | Complete    | 2026-02-17 |
 | 24. SonarQube Nesting | 0/TBD | Complete    | 2026-02-17 |
-| 25. Code Complexity | 0/TBD | Not started | - |
+| 25. Code Complexity | 0/TBD | Complete    | 2026-02-17 |
 | 26. Code Duplicates | 0/TBD | Not started | - |
 | 27. C++23 Features | 0/TBD | Not started | - |
 | 28. Diagnostics | 0/TBD | Not started | - |
