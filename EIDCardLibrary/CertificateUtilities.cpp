@@ -1268,7 +1268,7 @@ struct RSAPRIVKEY {
 	BLOBHEADER blobheader;
 	RSAPUBKEY rsapubkey;
 #ifdef _DEBUG
-	#define BITLEN_TO_CHECK 2048
+	static constexpr DWORD BITLEN_TO_CHECK = 2048;
 	BYTE modulus[BITLEN_TO_CHECK/8];
 	BYTE prime1[BITLEN_TO_CHECK/16];
 	BYTE prime2[BITLEN_TO_CHECK/16];
