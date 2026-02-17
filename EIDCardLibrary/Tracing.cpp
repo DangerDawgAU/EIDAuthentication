@@ -455,3 +455,115 @@ void EIDSecurityAuditEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR dw
 	UCHAR dwLevel = (dwAuditType == 1) ? WINEVENT_LEVEL_CRITICAL : WINEVENT_LEVEL_ERROR;
 	EventWriteString(hPub, dwLevel, 0, AuditBuffer);
 }
+
+// Enhanced error logging with structured context
+// Format: [ERROR_CONTEXT] Function:line - Operation 'name' failed: hr=0x%08X, additional_context
+void EIDLogErrorWithContextEx(
+	PCSTR szFile,
+	DWORD dwLine,
+	PCSTR szFunction,
+	const char* operation,
+	HRESULT hr,
+	PCWSTR szAdditionalContext,
+	...)
+{
+	UNREFERENCED_PARAMETER(szFile);
+
+	WCHAR ContextBuffer[256] = {0};
+	WCHAR FinalBuffer[512] = {0};
+	int ret;
+
+	if (bFirst)
+	{
+		EIDCardLibraryTracingRegister();
+	}
+
+	// Format additional context if provided
+	if (szAdditionalContext != nullptr)
+	{
+		va_list ap;
+		va_start(ap, szAdditionalContext);
+		ret = _vsnwprintf_s(ContextBuffer, ARRAYSIZE(ContextBuffer), _TRUNCATE, szAdditionalContext, ap);
+		va_end(ap);
+		if (ret < 0)
+		{
+			wcscpy_s(ContextBuffer, L"(context formatting error)");
+		}
+	}
+
+	// Format final message with structured prefix
+	if (szAdditionalContext != nullptr && ContextBuffer[0] != L'\0')
+	{
+		swprintf_s(FinalBuffer, ARRAYSIZE(FinalBuffer),
+			L"[ERROR_CONTEXT] %S:%d - Operation '%S' failed: hr=0x%08X, %s",
+			szFunction, dwLine, operation, hr, ContextBuffer);
+	}
+	else
+	{
+		swprintf_s(FinalBuffer, ARRAYSIZE(FinalBuffer),
+			L"[ERROR_CONTEXT] %S:%d - Operation '%S' failed: hr=0x%08X",
+			szFunction, dwLine, operation, hr);
+	}
+
+#ifdef _DEBUG
+	OutputDebugString(FinalBuffer);
+	OutputDebugString(L"\r\n");
+#endif
+
+	EventWriteString(hPub, WINEVENT_LEVEL_ERROR, 0, FinalBuffer);
+}
+
+// LSASS-safe stack trace capture for error diagnostics
+// Uses CaptureStackBackTrace - reliable in LSASS context (Phase 27 finding)
+// Stack-allocated buffer only - no dynamic memory allocation
+void EIDLogStackTraceEx(
+	PCSTR szFile,
+	DWORD dwLine,
+	PCSTR szFunction,
+	DWORD errorCode)
+{
+	UNREFERENCED_PARAMETER(szFile);
+
+	// Stack-allocated buffer - LSASS safe
+	constexpr USHORT MAX_STACK_FRAMES = 16;
+	PVOID stack[MAX_STACK_FRAMES];
+
+	if (bFirst)
+	{
+		EIDCardLibraryTracingRegister();
+	}
+
+	// Log error context at ERROR level
+	WCHAR ErrorBuffer[256];
+	swprintf_s(ErrorBuffer, ARRAYSIZE(ErrorBuffer),
+		L"[STACK_TRACE] %S:%d - Error code 0x%08X, call stack follows:",
+		szFunction, dwLine, errorCode);
+
+#ifdef _DEBUG
+	OutputDebugString(ErrorBuffer);
+	OutputDebugString(L"\r\n");
+#endif
+	EventWriteString(hPub, WINEVENT_LEVEL_ERROR, 0, ErrorBuffer);
+
+	// Capture stack back trace
+	USHORT frames = CaptureStackBackTrace(
+		2,  // Skip this function and immediate caller
+		MAX_STACK_FRAMES,
+		stack,
+		nullptr
+	);
+
+	// Log each frame at VERBOSE level (only visible when tracing enabled)
+	for (USHORT i = 0; i < frames; ++i)
+	{
+		WCHAR FrameBuffer[128];
+		swprintf_s(FrameBuffer, ARRAYSIZE(FrameBuffer),
+			L"[STACK_TRACE]   frame[%u] = 0x%p", i, stack[i]);
+
+#ifdef _DEBUG
+		OutputDebugString(FrameBuffer);
+		OutputDebugString(L"\r\n");
+#endif
+		EventWriteString(hPub, WINEVENT_LEVEL_VERBOSE, 0, FrameBuffer);
+	}
+}
