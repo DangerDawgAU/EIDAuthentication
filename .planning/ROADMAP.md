@@ -114,7 +114,7 @@ Plans:
 Plans:
 - [ ] 17-01: Convert C-style char arrays to std::string where LSASS-safe (149 issues)
 - [ ] 17-02: Convert C-style arrays to std::array (28 issues)
-- [ ] 17-03: Resolve variable shadowing issues (~20 issues)
+- [x] 17-03: Resolve variable shadowing issues (9 issues fixed)
 
 ### Phase 18: Code Quality
 **Goal**: Codebase builds cleanly after all v1.2 modernization changes
@@ -219,8 +219,8 @@ Phases execute in numeric order: 15 -> 16 -> 17 -> 18 -> 19 -> 20
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 15. Critical Fix | 1/1 | Complete    | 2026-02-17 |
-| 16. Const Correctness | 2/3 | In Progress | 2026-02-17 |
-| 17. Modern Types | 0/TBD | Not started | - |
+| 16. Const Correctness | 2/3 | Complete | 2026-02-17 |
+| 17. Modern Types | 1/3 | In Progress | 2026-02-17 |
 | 18. Code Quality | 0/TBD | Not started | - |
 | 19. Documentation | 0/TBD | Not started | - |
 | 20. Final Verification | 0/TBD | Not started | - |
