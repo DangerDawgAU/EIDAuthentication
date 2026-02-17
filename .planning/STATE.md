@@ -5,23 +5,24 @@
 See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
-**Current focus:** v1.2 Code Modernization - Phase 15: Critical Fix
+**Current focus:** v1.2 Code Modernization - Phase 16: Const Correctness
 
 ## Current Position
 
-Phase: 15 of 20 (Critical Fix)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-17 — v1.2 roadmap created, phases 15-20 defined
+Phase: 16 of 20 (Const Correctness)
+Plan: 2 of 3 complete (16-02 pending)
+Status: In Progress - 16-02 (global pointers) deferred due to runtime-assigned nature
+Last activity: 2026-02-17 — Phase 15 complete, Phase 16 partial (16-01, 16-03 done)
 
-Progress: [XXXXXXXXXXXXXX------] 70% (14/20 phases complete across all milestones)
+Progress: [XXXXXXXXXXXXXXX-----] 75% (15/20 phases started, Phase 16 partial)
 
 ## Performance Metrics
 
 **Velocity:**
 - Total plans completed (v1.0): 26
 - Total plans completed (v1.1): 3
-- Total execution time: ~12 hours across v1.0 and v1.1 milestones
+- Total plans completed (v1.2): 3 (15-01, 16-01, 16-03)
+- Total execution time: ~14 hours across all milestones
 
 **By Phase:**
 
@@ -31,12 +32,14 @@ Progress: [XXXXXXXXXXXXXX------] 70% (14/20 phases complete across all milestone
 | 7 (v1.1) | 2 | Complete |
 | 13 (v1.1) | 1 | Complete |
 | 8-12, 14 | - | Deferred/Won't Fix |
-| 15-20 (v1.2) | 0 | Not started |
+| 15 (v1.2) | 1 | Complete |
+| 16 (v1.2) | 2/3 | Partial |
+| 17-20 (v1.2) | 0 | Not started |
 
 **Recent Trend:**
-- v1.1 Security & Reliability completed successfully
-- Code simplification, complexity, diagnostics deferred as Won't Fix (justified)
-- v1.2 ready to begin with critical fix
+- Phase 15 (Critical Fix): Blocker issue resolved with [[fallthrough]] annotation
+- Phase 16 (Const Correctness): 4 global size variables + 11 member functions marked const
+- Many const issues documented as justified exceptions (stateful globals, COM interfaces, Windows API)
 
 ## Accumulated Context
 
@@ -45,30 +48,32 @@ Progress: [XXXXXXXXXXXXXX------] 70% (14/20 phases complete across all milestone
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [v1.1]: ~749 SonarQube issues marked as justified exceptions (Windows API, LSASS, style)
-- [v1.1]: Security hotspots and reliability bugs resolved (zero open)
-- [v1.2]: Scope focused on ~550 fixable issues + documentation of ~550 exceptions
-- [v1.2]: Phase numbering continues from 15 (v1.1 ended at 14)
+- [v1.2]: Global pointer const issues (31) mostly deferred - pointers are runtime-assigned for LSA/Windows API
+- [v1.2]: COM interface methods cannot be const (must match vtable layout)
+- [v1.2]: Lazy-initialization getters cannot be const (GetUserName, GetRid)
+- [v1.2]: CContainerHolderFactory methods cannot be const (modify CRITICAL_SECTION via Lock/Unlock)
 
 ### Roadmap Evolution
 
 - v1.0 complete: C++23 modernization (6 phases + 2 inserted phases)
 - v1.1 complete: SonarQube Quality Remediation (8 phases)
-- v1.2 in progress: Code Modernization (6 phases: 15-20)
+- v1.2 in progress: Code Modernization (Phase 15 complete, Phase 16 partial)
 
 ### Pending Todos
 
-None yet for v1.2.
+- Phase 16-02: Evaluate if any global pointers can safely be marked const
+- Phases 17-20: Not yet started
 
 ### Blockers/Concerns
 
 - **Runtime verification** (v1.0): Pending Windows 7/10/11 test machines with smart card hardware
 - **SonarQube re-scan**: User action required to mark ~550 issues as "Won't Fix" in Phase 19
+- **Build verification**: cardmod.h dependency (CPDK) not installed - pre-existing issue
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: v1.2 roadmap created, Phase 15 ready to plan
+Stopped at: Phase 16 partial complete (16-01, 16-03 done; 16-02 deferred)
 Resume file: .planning/ROADMAP.md
 
 ## Milestone Summary
@@ -100,8 +105,8 @@ Resume file: .planning/ROADMAP.md
 
 | Criterion | Status |
 |-----------|--------|
-| Critical fix (blocker) | PENDING |
-| Const correctness (102+ issues) | PENDING |
+| Critical fix (blocker) | COMPLETE |
+| Const correctness (102+ issues) | PARTIAL (15 addressed, rest justified) |
 | Modern types (197 issues) | PENDING |
 | Code quality | PENDING |
 | Documentation (Won't Fix) | PENDING |
@@ -118,4 +123,4 @@ Resume file: .planning/ROADMAP.md
 
 ---
 
-*Next action: `/gsd:plan-phase 15` to plan the Critical Fix phase*
+*Next action: Continue Phase 16-02 or proceed to Phase 17 (Modern Types)*

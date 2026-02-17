@@ -78,7 +78,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 1 plan
 
 Plans:
-- [ ] 15-01-PLAN.md - Add [[fallthrough]] annotation to EIDConfigurationWizardPage06.cpp
+- [x] 15-01-PLAN.md - Add [[fallthrough]] annotation to EIDConfigurationWizardPage06.cpp
 
 ### Phase 16: Const Correctness
 **Goal**: All global variables, pointers, and member functions are const-correct per SonarQube rules
@@ -94,9 +94,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 16-01-PLAN.md - Mark global variables as const (71 issues across codebase)
-- [ ] 16-02-PLAN.md - Fix global pointer const-correctness (31 issues)
-- [ ] 16-03-PLAN.md - Mark member functions const where appropriate (remaining issues)
+- [x] 16-01-PLAN.md - Mark global variables as const (4 size variables marked const, others are stateful)
+- [ ] 16-02-PLAN.md - Fix global pointer const-correctness (31 issues - most are runtime-assigned)
+- [x] 16-03-PLAN.md - Mark member functions const where appropriate (11 methods marked const)
 
 ### Phase 17: Modern Types
 **Goal**: Code uses modern C++ type system instead of C-style constructs where LSASS-safe
@@ -218,8 +218,8 @@ Phases execute in numeric order: 15 -> 16 -> 17 -> 18 -> 19 -> 20
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 15. Critical Fix | 0/1 | Complete    | 2026-02-17 |
-| 16. Const Correctness | 0/3 | Planned | - |
+| 15. Critical Fix | 1/1 | Complete    | 2026-02-17 |
+| 16. Const Correctness | 2/3 | In Progress | 2026-02-17 |
 | 17. Modern Types | 0/TBD | Not started | - |
 | 18. Code Quality | 0/TBD | Not started | - |
 | 19. Documentation | 0/TBD | Not started | - |
