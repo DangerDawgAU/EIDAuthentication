@@ -54,7 +54,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Milestone Goal:** Resolve ~550 fixable SonarQube maintainability issues while documenting remaining ~550 as justified exceptions.
 
-- [x] **Phase 15: Critical Fix** - Fix 1 blocker issue (unannotated fall-through) (completed 2026-02-17)
+- [x] **Phase 15: Critical Fix** - Fix 1 blocker issue (unannotated fall-through) (completed 2026-02-17)
 - [ ] **Phase 16: Const Correctness** - Fix 102+ const-correctness issues (globals, pointers, methods)
 - [ ] **Phase 17: Modern Types** - Convert ~197 legacy type usages (C-style arrays, shadowing)
 - [ ] **Phase 18: Code Quality** - Build verification after all code changes
@@ -91,12 +91,12 @@ Plans:
   3. All member functions that don't modify state are marked const (remaining issues)
   4. Code compiles successfully after const changes
   5. No new warnings introduced by const additions
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 16-01: Mark global variables as const (71 issues across codebase)
-- [ ] 16-02: Fix global pointer const-correctness (31 issues)
-- [ ] 16-03: Mark member functions const where appropriate (remaining issues)
+- [ ] 16-01-PLAN.md - Mark global variables as const (71 issues across codebase)
+- [ ] 16-02-PLAN.md - Fix global pointer const-correctness (31 issues)
+- [ ] 16-03-PLAN.md - Mark member functions const where appropriate (remaining issues)
 
 ### Phase 17: Modern Types
 **Goal**: Code uses modern C++ type system instead of C-style constructs where LSASS-safe
@@ -219,7 +219,7 @@ Phases execute in numeric order: 15 -> 16 -> 17 -> 18 -> 19 -> 20
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 15. Critical Fix | 0/1 | Complete    | 2026-02-17 |
-| 16. Const Correctness | 0/TBD | Not started | - |
+| 16. Const Correctness | 0/3 | Planned | - |
 | 17. Modern Types | 0/TBD | Not started | - |
 | 18. Code Quality | 0/TBD | Not started | - |
 | 19. Documentation | 0/TBD | Not started | - |
@@ -275,3 +275,4 @@ Phases execute in numeric order: 15 -> 16 -> 17 -> 18 -> 19 -> 20
 *v1.0 complete: 2026-02-16*
 *v1.1 complete: 2026-02-17*
 *v1.2 roadmap created: 2026-02-17*
+*Phase 16 plans created: 2026-02-17*
