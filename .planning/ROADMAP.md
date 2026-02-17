@@ -150,7 +150,12 @@ Plans:
   1. Cognitive complexity metrics improved in key functions
   2. Helper functions extracted from deeply nested blocks
   3. Build passes and functionality preserved
-**Plans**: TBD
+**Plans**: 3 plans in 2 waves
+
+Plans:
+- [ ] 25-01-PLAN.md - Extract certificate helpers from SelectFirstCertificateWithPrivateKey
+- [ ] 25-02-PLAN.md - Extract UI handlers from WndProc_04CHECKS
+- [ ] 25-03-PLAN.md - Build verification and document won't-fix complexity categories
 
 ### Phase 26: Code Refactoring - Duplicates
 **Goal**: Duplicate code patterns consolidated into reusable functions
