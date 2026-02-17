@@ -426,14 +426,14 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"UI_CERTIFICATE_INFO_SAVEON_SMARTCARD");
 			// provider name
-			if (!SchGetProviderNameFromCardName(pCertificateInfo->szCard, szProviderName, &dwProviderNameLen))
+			if (!SchGetProviderNameFromCardName(pCertificateInfo->wszCardName, szProviderName, &dwProviderNameLen))
 			{
 				dwError = GetLastError();
 				EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"SchGetProviderNameFromCardName 0x%08X", dwError);
 				__leave;
 			}
 			// container name from card name
-			szContainerName = BuildContainerNameFromReader(pCertificateInfo->szReader);
+			szContainerName = BuildContainerNameFromReader(pCertificateInfo->wszReaderName);
 			if (!szContainerName)
 			{
 				dwError = GetLastError();

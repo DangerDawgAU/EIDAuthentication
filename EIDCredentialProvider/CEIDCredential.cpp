@@ -138,7 +138,7 @@ HRESULT CEIDCredential::Initialize()
     return S_OK;
 }
 
-CContainer* CEIDCredential::GetContainer()
+CContainer* CEIDCredential::GetContainer() const
 {
 	return _pContainer;
 }

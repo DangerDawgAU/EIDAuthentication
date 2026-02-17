@@ -86,7 +86,7 @@ public:
     explicit CEIDCredential(CContainer* container);
 	void SetUsageScenario(__in CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,__in DWORD dwFlags);
     virtual ~CEIDCredential();
-	CContainer* GetContainer();
+	CContainer* GetContainer() const;
   private:
     LONG                                  _cRef;
 

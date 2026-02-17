@@ -28,13 +28,13 @@ BOOL fShowNewCertificatePanel;
 BOOL fGotoNewScreen = FALSE;
 HINSTANCE g_hinst;
 WCHAR szReader[256];
-DWORD dwReaderSize = ARRAYSIZE(szReader);
+const DWORD dwReaderSize = ARRAYSIZE(szReader);
 WCHAR szCard[256];
-DWORD dwCardSize = ARRAYSIZE(szCard);
+const DWORD dwCardSize = ARRAYSIZE(szCard);
 WCHAR szUserName[256];
-DWORD dwUserNameSize = ARRAYSIZE(szUserName);
+const DWORD dwUserNameSize = ARRAYSIZE(szUserName);
 WCHAR szPassword[256];
-DWORD dwPasswordSize = ARRAYSIZE(szPassword);
+const DWORD dwPasswordSize = ARRAYSIZE(szPassword);
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
@@ -97,11 +97,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			{
 				return 0;
 			}
-			DWORD dwSize = 0;
-			CryptStringToBinary(pszCommandLine[1],0,CRYPT_STRING_BASE64,nullptr,&dwSize,nullptr,nullptr);
-			PBYTE pbCertificate = (PBYTE) EIDAlloc(dwSize);
-			CryptStringToBinary(pszCommandLine[1],0,CRYPT_STRING_BASE64,pbCertificate,&dwSize,nullptr,nullptr);
-			PCCERT_CONTEXT pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING,pbCertificate, dwSize);
+			DWORD dwCertSize = 0;
+			CryptStringToBinary(pszCommandLine[1],0,CRYPT_STRING_BASE64,nullptr,&dwCertSize,nullptr,nullptr);
+			PBYTE pbCertificate = (PBYTE) EIDAlloc(dwCertSize);
+			CryptStringToBinary(pszCommandLine[1],0,CRYPT_STRING_BASE64,pbCertificate,&dwCertSize,nullptr,nullptr);
+			PCCERT_CONTEXT pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING,pbCertificate, dwCertSize);
 			if (pCertContext)
 			{
 				MakeTrustedCertifcate(pCertContext);

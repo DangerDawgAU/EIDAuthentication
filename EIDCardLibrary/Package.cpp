@@ -910,7 +910,7 @@ BOOL LsaEIDCreateStoredCredential(__in_opt PWSTR szUsername, __in PWSTR szPasswo
 		pBuffer->usPasswordLen = 0;
 		pPointer = (PBYTE) &(pBuffer[1]);
 
-		pBuffer->szPassword = (PWSTR) pPointer;
+		pBuffer->wszPassword = (PWSTR) pPointer;
 		memcpy(pPointer, szPassword, dwPasswordSize);
 		pPointer += dwPasswordSize;
 	
@@ -1015,7 +1015,7 @@ DWORD LsaEIDGetRIDFromStoredCredential(__in PCCERT_CONTEXT pContext)
 
 		pBuffer->MessageType = EIDCMGetStoredCredentialRid;
 		pBuffer->usPasswordLen = 0;
-		pBuffer->szPassword = nullptr;
+		pBuffer->wszPassword = nullptr;
 		pBuffer->dwCertificateSize = (USHORT) pContext->cbCertEncoded;
 		pPointer = (PBYTE) &(pBuffer[1]);
 		pBuffer->pbCertificate = pPointer;

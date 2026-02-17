@@ -82,7 +82,6 @@ void InitChainValidationParams(ChainValidationParams* params)
 	LPTSTR szProviderName = pCspInfo->bBuffer + pCspInfo->nCSPNameOffset;
 	HCRYPTKEY phUserKey = NULL;  // Windows handle type - keep as NULL
 	BOOL fResult;
-	BOOL fSuccess = FALSE;
 
 	// check input
 	if (GetPolicyValue(AllowSignatureOnlyKeys) == 0 && pCspInfo->KeySpec == AT_SIGNATURE)
@@ -99,7 +98,6 @@ void InitChainValidationParams(ChainValidationParams* params)
 	fResult = CryptAcquireContext(&hProv, szContainerName, szProviderName, PROV_RSA_FULL, CRYPT_SILENT);
 	if (!fResult)
 	{
-		HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptAcquireContext : 0x%08x container='%s' provider='%s'", GetLastError(), szContainerName, szProviderName);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"PIV fallback");
 		fResult = CryptAcquireContext(&hProv, nullptr, szProviderName, PROV_RSA_FULL, CRYPT_SILENT);

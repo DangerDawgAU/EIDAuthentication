@@ -13,7 +13,7 @@
 extern CContainerHolderFactory<CContainerHolderTest> *pCredentialList;
 
 
-INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, [[maybe_unused]] WPARAM wParam, [[maybe_unused]] LPARAM lParam)
 {
 	switch(message)
 	{
@@ -41,6 +41,7 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, WPARAM wParam, 
 				{
 					// enable / disable policy
 				}
+				[[fallthrough]];
 			case PSN_SETACTIVE:
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Activate");
 				PropSheet_SetWizButtons(hWnd, PSWIZB_BACK | PSWIZB_FINISH);

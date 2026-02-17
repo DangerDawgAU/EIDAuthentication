@@ -28,15 +28,15 @@ extern BOOL fHasDeselected;
 
 DWORD dwWizardError = 0;
 
-BOOL WizardFinishButton(PTSTR szPassword)
+BOOL WizardFinishButton(PTSTR wszUserPassword)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
-	
+
 	CContainerHolderTest* MyTest = pCredentialList->GetContainerHolderAt(dwCurrentCredential);
 	CContainer* container = MyTest->GetContainer();
 	PCCERT_CONTEXT pCertContext = container->GetCertificate();
-	fReturn = LsaEIDCreateStoredCredential(szUserName, szPassword, pCertContext, container->GetKeySpec() == AT_KEYEXCHANGE);
+	fReturn = LsaEIDCreateStoredCredential(szUserName, wszUserPassword, pCertContext, container->GetKeySpec() == AT_KEYEXCHANGE);
 	if (!fReturn)
 	{
 		dwError = GetLastError();

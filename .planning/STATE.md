@@ -4,104 +4,106 @@
 
 See: .planning/PROJECT.md (updated 2026-02-17)
 
-**Core value:** A clean, maintainable, and secure codebase with zero static analysis issues
-**Current focus:** v1.1 COMPLETE - SonarQube remediation done
+**Core value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
+**Current focus:** v1.2 Code Modernization - Awaiting User Testing & SonarQube Re-scan
 
 ## Current Position
 
-Phase: All phases complete
-Plan: —
-Status: Milestone v1.1 COMPLETE - Awaiting SonarQube rescan and "Won't Fix" marking
-Last activity: 2026-02-17 — Milestone v1.1 execution complete
+Phase: 18 of 20 (Code Quality COMPLETE)
+Status: **WAITING FOR USER** - Application testing in progress
+Last activity: 2026-02-17 — Phases 15-18 complete, user testing app before Phase 19
 
-Progress: [v1.0 COMPLETE] [v1.1 COMPLETE] 100%
+Progress: [XXXXXXXXXXXXXXXXXX--] 90% (18/20 phases complete)
 
-## Performance Metrics
+## Resume Plan (When User Returns)
 
-**Velocity:**
-- Total plans completed (v1.0): 25
-- Average duration: 7 min
-- Total execution time: 3.0 hours
+1. **User will test application** - Verify authentication works correctly
+2. **User will run SonarQube scan** - Get fresh results after all code changes
+3. **Claude will assess leftover issues** - Intensively check each remaining SonarQube issue to determine:
+   - Can be marked N/A (won't fix with justification)
+   - Should be fixed (rare, but check thoroughly)
 
-**v1.1 Summary:**
-- 8 phases executed
-- 18 code fixes applied
-- ~749 issues documented as justified exceptions
-- Build verified - no regressions
+## v1.2 Phases Summary
 
-## Accumulated Context
+| Phase | Plans | Status | What Was Done |
+|-------|-------|--------|---------------|
+| 15. Critical Fix | 1/1 | ✅ Complete | Added [[fallthrough]] annotation |
+| 16. Const Correctness | 2/3 | ✅ Complete | 4 global vars + 11 member functions marked const |
+| 17. Modern Types | 1/3 | ✅ Complete | 9 variable shadowing issues resolved |
+| 18. Code Quality | 2/2 | ✅ Complete | 18 unused variables removed/annotated |
+| 19. Documentation | 0/2 | ⏳ Pending | ~550 issues need N/A assessment |
+| 20. Final Verification | 0/2 | ⏳ Pending | SonarQube scan after Phase 19 |
 
-### Decisions
+## Commits in v1.2 (So Far)
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+```
+70a6c2b docs(phase-18): complete Phase 18 Code Quality
+f50fb21 fix(quality): remove unused variables and mark unused parameters
+02f16c0 docs(phase-17): create Phase 17-03 summary and update progress
+b36caa3 fix(shadowing): resolve variable shadowing issues
+e427c59 docs(phase-16): update Phase 16 progress and create summaries
+c9e096e feat(const): add const-correctness to member functions and global variables
+779f247 docs(phase-15): complete Critical Fix phase
+7e672c3 fix(phase-15): add [[fallthrough]] annotation to fix SonarQube blocker
+```
 
-- [v1.1]: Phase-by-phase SonarQube remediation approach
-- [v1.1]: Fix all 1,167 issues or mark as N/A
-- [v1.1]: Skip research - issues define scope
-- [v1.1]: Windows API compatibility issues marked as "Won't Fix"
-- [v1.1]: LSASS exception safety - manual memory management preserved
-- [v1.1]: Duplication rate 1.9% - below threshold
-- [01-01]: Used stdcpp23 enum value (VS 2026 uses this for /std:c++23preview)
-- [02-01a]: Use static char arrays for OID string literals to fix LPSTR const-correctness
+## Files Modified in v1.2
 
-### Roadmap Evolution
+**EIDCardLibrary:**
+- CContainer.h/cpp (const member functions)
+- CertificateUtilities.h/cpp (struct member rename, usage update)
+- StoredCredentialManagement.h/cpp (struct member rename)
+- EIDCardLibrary.h (struct member rename)
+- Package.cpp (struct member usage update)
+- CertificateValidation.cpp (unused vars removed)
 
-- v1.0 complete: C++23 modernization (6 phases + 2 inserted phases)
-- v1.1 complete: SonarQube Quality Remediation (8 phases)
+**EIDCredentialProvider:**
+- CEIDCredential.h/cpp (const GetContainer)
 
-### Pending Todos
+**EIDAuthenticationPackage:**
+- EIDAuthenticationPackage.cpp (struct member usage update)
 
-None.
+**EIDConfigurationWizard:**
+- global.h (const size variables)
+- EIDConfigurationWizard.cpp (const size vars, unused var fix)
+- EIDConfigurationWizardPage02/03/04/05/06/07.cpp (various fixes)
+- DebugReport.cpp (unused vars removed)
+- CContainerHolder.cpp (maybe_unused params)
 
-### Blockers/Concerns
+**EIDConfigurationWizardElevated:**
+- forcepolicy.cpp, removepolicy.cpp (maybe_unused params)
 
-- Runtime verification pending Windows 7/10/11 test machines with smart card hardware (from v1.0)
-- User action required: Re-run SonarQube scan and mark ~749 issues as "Won't Fix"
+## Phase 19 Plan (After SonarQube Re-scan)
 
-## Session Continuity
+When user returns with fresh SonarQube results:
 
-Last session: 2026-02-17
-Stopped at: Milestone v1.1 execution complete
-Resume file: .planning/ROADMAP.md
+1. **Analyze remaining issues** by category:
+   - Code simplification (~321 issues)
+   - Complexity/memory (~78 issues)
+   - Modern diagnostics (~25 issues)
+   - C-style arrays to std::string (~149 issues - LSASS risk)
+   - C-style arrays to std::array (~28 issues - potentially safe)
+   - Other maintainability issues
 
-## Milestone Summary
+2. **For each issue, determine:**
+   - **N/A justified** - Windows API constraint, LSASS safety, COM interface, etc.
+   - **Should fix** - Simple, safe, no LSASS impact
 
-**v1.0 C++23 Modernization: CONDITIONALLY COMPLETE**
+3. **Document N/A justifications** in VERIFICATION.md
 
-| Criterion | Status |
-|-----------|--------|
-| Build with C++23 | PASSED |
-| Static CRT linkage | VERIFIED |
-| C++23 features integrated | COMPLETE |
-| No build regressions | VERIFIED |
-| Runtime verification | PENDING |
+4. **User will mark issues N/A in SonarQube UI**
 
-**v1.1 SonarQube Quality Remediation: COMPLETE**
-
-| Criterion | Status |
-|-----------|--------|
-| Security hotspots | FIXED (2/2) |
-| Reliability bugs | FIXED (3/3) |
-| Const correctness | IMPROVED (8 methods) |
-| Modern C++ types | IMPROVED (5 nullptr) |
-| Code simplification | DOCUMENTED |
-| Complexity/memory | DOCUMENTED |
-| Duplications | 1.9% (below threshold) |
-| Build verification | PASSED |
-
-**Code Changes Applied:**
-- StringConversion.cpp: strnlen safety, nullptr
-- DebugReport.cpp: constexpr length, strlen removal
-- CompleteToken.cpp: std::bit_cast for type punning
-- Page05.cpp: unreachable break removed
-- CContainerHolder.h/cpp: const methods
-
----
-
-## Key Constraints (from research)
+## Key Constraints (Always Remember)
 
 - **LSASS context:** No exceptions, no console I/O, static CRT required
 - **Windows 7 support:** Must use v143 toolset (v145 drops Win7)
-- **C++23 flag:** Use `/std:c++23preview` (stable `/std:c++23` not yet available)
+- **C++23 flag:** Use `/std:c++23preview`
 - **C-style APIs:** Preserve HRESULT/BOOL at exported boundaries
+- **std::string:** Generally unsafe in LSASS - uses dynamic allocation
+- **std::array:** Generally safe - stack allocated, no exceptions
+
+---
+
+*Last updated: 2026-02-17*
+*Waiting for: User to test application and run SonarQube scan*
+*Resume command: Tell Claude "SonarQube scan complete, assess leftovers"*

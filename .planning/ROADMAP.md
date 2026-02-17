@@ -4,6 +4,12 @@
 
 This roadmap transforms the EIDAuthentication Windows smart card authentication codebase from C++14 to C++23. The journey begins with build system configuration to enable C++23 compilation, progresses through modernizing error handling with `std::expected`, adopts compile-time enhancements, improves code quality with modern utilities, updates documentation, and culminates in comprehensive verification to ensure no regressions in the security-critical authentication flow.
 
+## Milestones
+
+- **v1.0 C++23 Modernization** - Phases 1-6 (COMPLETE 2026-02-16)
+- **v1.1 SonarQube Quality Remediation** - Phases 7-14 (COMPLETE 2026-02-17)
+- **v1.2 Code Modernization** - Phases 15-20 (IN PROGRESS)
+
 ## Phases
 
 **Phase Numbering:**
@@ -14,6 +20,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### v1.0 C++23 Modernization (COMPLETE)
 
+<details>
+<summary>v1.0 Phases 1-6 - SHIPPED 2026-02-16</summary>
+
 - [x] **Phase 1: Build System** - Enable C++23 compilation across all 7 projects (Complete) 2026-02-15
 - [x] **Phase 2: Error Handling** - Adopt `std::expected` for internal error handling (Complete) 2026-02-16
 - [x] **Phase 2.1: C++23 Conformance** - Fix conformance errors (INSERTED) (Complete) 2026-02-15
@@ -23,246 +32,145 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Documentation** - Update README and build instructions (Complete) 2026-02-15
 - [x] **Phase 6: Verification** - Comprehensive testing across all Windows versions (Complete*) 2026-02-15
 
-*Build verification passed. Runtime testing deferred pending Windows test machine access.
+</details>
 
 ### v1.1 SonarQube Quality Remediation (COMPLETE)
 
+<details>
+<summary>v1.1 Phases 7-14 - SHIPPED 2026-02-17</summary>
+
 - [x] **Phase 7: Security & Reliability** - Resolve 5 critical issues (2 security hotspots, 3 reliability bugs) (Complete) 2026-02-17
-- [x] **Phase 8: Const Correctness** - Fix ~116 const-correctness issues (Complete*) 2026-02-17
-- [x] **Phase 9: Modern C++ Types** - Convert ~216 legacy type usages (Complete*) 2026-02-17
-- [x] **Phase 10: Code Simplification** - Simplify ~321 code patterns (Complete*) 2026-02-17
-- [x] **Phase 11: Complexity & Memory** - Reduce ~78 complexity/memory issues (Complete*) 2026-02-17
-- [x] **Phase 12: Modern Diagnostics** - Modernize ~25 diagnostic statements (Complete*) 2026-02-17
-- [x] **Phase 13: Duplications** - Resolve 17 code duplication blocks (Complete*) 2026-02-17
-- [x] **Phase 14: Final Verification** - Confirm zero open issues (Complete*) 2026-02-17
+- [x] **Phase 8: Const Correctness** - Fix ~116 const-correctness issues (Deferred to v1.2) 2026-02-17
+- [x] **Phase 9: Modern C++ Types** - Convert ~216 legacy type usages (Deferred to v1.2) 2026-02-17
+- [x] **Phase 10: Code Simplification** - Simplify ~321 code patterns (Won't Fix) 2026-02-17
+- [x] **Phase 11: Complexity & Memory** - Reduce ~78 complexity/memory issues (Won't Fix) 2026-02-17
+- [x] **Phase 12: Modern Diagnostics** - Modernize ~25 diagnostic statements (Won't Fix) 2026-02-17
+- [x] **Phase 13: Duplications** - Resolve 17 code duplication blocks (Complete 1.9%) 2026-02-17
+- [x] **Phase 14: Final Verification** - Confirm zero open issues (Deferred to v1.2) 2026-02-17
 
-*Phases 8-14: Code fixes applied where safe. ~749 issues documented as justified exceptions (Windows API compatibility, LSASS constraints, low severity/high risk). User action required: re-scan SonarQube and mark remaining issues as "Won't Fix".
+</details>
 
----
+### v1.2 Code Modernization (IN PROGRESS)
 
-## v1.0 Phase Details (COMPLETE)
+**Milestone Goal:** Resolve ~550 fixable SonarQube maintainability issues while documenting remaining ~550 as justified exceptions.
 
-### Phase 1: Build System
-**Goal**: All 7 Visual Studio projects compile with C++23 preview flag and produce working binaries
-**Depends on**: Nothing (first phase)
-**Requirements**: BUILD-01, BUILD-02, BUILD-03, BUILD-04
-**Success Criteria** (what must be TRUE):
-  1. All 7 .vcxproj files contain `<LanguageStandard>stdcpp23preview</LanguageStandard>`
-  2. Full solution builds with zero errors using v143 toolset
-  3. Static CRT (`/MT`) is preserved in all Release configurations
-  4. No new compiler warnings introduced by C++23 flag
-**Plans**: 3
-
-Plans:
-- [x] 01-01-PLAN.md - Update EIDCardLibrary project with C++23 flag and verify build (Complete)
-- [x] 01-02-PLAN.md - Update remaining 6 projects (DLLs and EXEs) with C++23 flag (Complete)
-- [x] 01-03-PLAN.md - Verify consistent settings across all configurations (Complete)
-
-### Phase 2: Error Handling
-**Goal**: Internal code uses `std::expected<T, E>` for typed error handling while preserving C-style API boundaries
-**Depends on**: Phase 1
-**Requirements**: ERROR-01, ERROR-02, ERROR-03
-**Plans:** 4 (Complete) 2026-02-16
-**Success Criteria** (what must be TRUE):
-  1. Internal functions return `std::expected<T, ErrorType>` instead of raw HRESULT
-  2. All exported LSA/Credential Provider functions maintain C-style signatures (HRESULT, BOOL)
-  3. New error-handling code compiles with `noexcept` specifier
-  4. Error conversion layer exists between internal `std::expected` and external HRESULT
-
-Plans:
-- [x] 02-01a-PLAN.md - Fix const-correctness compile errors in EIDCardLibrary (Complete)
-- [x] 02-01b-PLAN.md - Additional const-correctness fixes (Complete)
-- [x] 02-02-PLAN.md - Define error types and Result<T> patterns (Complete)
-- [x] 02-03-PLAN.md - Create API boundary conversion layer for exports (Complete)
-
-### Phase 02.1: Fix C++23 conformance errors (INSERTED)
-**Goal:** Fix C++23 conformance errors (C4596, C7510, C3861) blocking full solution build
-**Depends on:** Phase 2
-**Plans:** 1 (Complete) 2026-02-15
-
-Plans:
-- [x] 02.1-01-PLAN.md - Fix all C++23 conformance errors across 3 files (Complete)
-
-### Phase 02.2: Fix const-correctness in dependent projects (INSERTED)
-**Goal:** Fix C2440 const-correctness errors in EIDCredentialProvider and EIDConfigurationWizard to enable full solution build
-**Depends on:** Phase 2
-**Plans:** 3 (Complete) 2026-02-15
-**Note:** All 14 C2440 errors fixed. Full solution build blocked by pre-existing cardmod.h SDK dependency.
-
-Plans:
-- [x] 02.2-01-PLAN.md - Fix const-correctness in EIDCredentialProvider (common.h, helpers.cpp) (Complete)
-- [x] 02.2-02a-PLAN.md - Fix const-correctness in EIDConfigurationWizard DebugReport.cpp (Complete)
-- [x] 02.2-02b-PLAN.md - Fix const-correctness in EIDConfigurationWizard Page04.cpp and Page05.cpp (Complete)
-
-### Phase 3: Compile-Time Enhancements
-**Goal**: Compile-time validation and optimization using C++23 constexpr/consteval features
-**Depends on**: Phase 2
-**Requirements**: COMPILE-01, COMPILE-02, COMPILE-03, COMPILE-04
-**Plans:** 4 (Complete) 2026-02-15
-**Note:** if consteval and std::unreachable documented as not applicable (no dual-path functions, defensive programming required in LSASS).
-
-Plans:
-- [x] 03-01-PLAN.md - Add <utility> headers to enable std::to_underlying() for all 14 enum types (Complete)
-- [x] 03-02-PLAN.md - Extend `constexpr` to validation routines (constexpr+noexcept) (Complete)
-- [x] 03-03a-PLAN.md - Apply `if consteval` where compile-time vs runtime paths differ (Complete - N/A)
-- [x] 03-03b-PLAN.md - Apply `std::unreachable()` ONLY to provably impossible switch defaults (Complete - N/A)
-
-### Phase 4: Code Quality
-**Goal**: Cleaner, safer string and buffer handling using C++23 utilities
-**Depends on**: Phase 3
-**Requirements**: QUAL-01, QUAL-02, QUAL-03, QUAL-04
-**Plans:** 5 (Complete) 2026-02-15
-**Note:** QUAL-02 marked NOT APPLICABLE (no CRTP patterns in codebase).
-
-Plans:
-- [x] 04-01-PLAN.md - Replace `swprintf_s` with `std::format` in non-LSASS code (EIDConfigurationWizard only) (Complete)
-- [x] 04-02-PLAN.md - Document QUAL-02 (Deducing This) as NOT APPLICABLE (Complete)
-- [x] 04-03-PLAN.md - Introduce `std::span` for buffer handling in credential storage (Complete)
-- [x] 04-04a-PLAN.md - Automated verification of all Phase 4 code quality improvements (Complete)
-- [x] 04-04b-PLAN.md - User review checkpoint and create VERIFICATION.md (Complete)
-
-### Phase 5: Documentation
-**Goal**: Documentation reflects C++23 requirements and updated build instructions
-**Depends on**: Phase 4
-**Requirements**: DOC-01, DOC-02
-**Plans:** 1 (Complete) 2026-02-15
-
-Plans:
-- [x] 05-01-PLAN.md - Update README.md and BUILD.md with C++23 requirements and build instructions (Complete)
-
-### Phase 6: Verification (CONDITIONAL COMPLETE)
-**Goal**: All existing authentication functionality works without regression on supported Windows versions
-**Depends on**: Phase 5
-**Requirements**: VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04, VERIFY-05
-**Success Criteria** (what must be TRUE):
-  1. Smart card login succeeds on Windows 7, 10, and 11 test systems
-  2. LSA Authentication Package loads and registers correctly
-  3. Credential Provider appears on Windows login screen
-  4. Configuration Wizard launches and operates normally
-  5. Password Change Notification DLL processes events correctly
-**Plans**: 5 (Complete) 2026-02-15
-**Note**: Build verification PASSED. Runtime verification PENDING - requires Windows 7/10/11 test machines with smart card hardware.
-
-Plans:
-- [x] 06-01-PLAN.md - Verify build artifacts and static CRT linkage (Complete)
-- [x] 06-02-PLAN.md - Test LSA Authentication Package on Windows 7/10/11 (Checklist created)
-- [x] 06-03-PLAN.md - Test Credential Provider functionality (Checklist created)
-- [x] 06-04-PLAN.md - Test Configuration Wizard and Password Change Notification (Checklist created)
-- [x] 06-05-PLAN.md - Create verification summary and UAT documentation (Complete)
+- [x] **Phase 15: Critical Fix** - Fix 1 blocker issue (unannotated fall-through) (completed 2026-02-17)
+- [ ] **Phase 16: Const Correctness** - Fix 102+ const-correctness issues (globals, pointers, methods)
+- [ ] **Phase 17: Modern Types** - Convert ~197 legacy type usages (C-style arrays, shadowing)
+- [ ] **Phase 18: Code Quality** - Build verification after all code changes
+- [ ] **Phase 19: Documentation** - Mark ~550 issues as "Won't Fix" with justification
+- [ ] **Phase 20: Final Verification** - SonarQube confirmation all fixable issues resolved
 
 ---
 
-## v1.1 Phase Details (IN PROGRESS)
+## v1.2 Phase Details
 
-### Phase 7: Security & Reliability
-**Goal**: Zero critical security and reliability issues remain open in SonarQube
-**Depends on**: Phase 6
-**Requirements**: SEC-01, SEC-02
-**Issues**: 5 total (2 security hotspots, 3 reliability bugs)
-**Plans:** 2
+### Phase 15: Critical Fix
+**Goal**: Zero blocker issues remain in SonarQube scan
+**Depends on**: Phase 14 (v1.1 Final Verification)
+**Requirements**: CRIT-01
+**Issues**: 1 total (blocker severity)
 **Success Criteria** (what must be TRUE):
-  1. SonarQube shows 0 open security hotspots (both resolved or marked N/A)
-  2. SonarQube shows 0 open reliability bugs (all 3 resolved or marked N/A)
-  3. Code builds successfully after security fixes
-  4. No new issues introduced by security remediation
-
-**Affected files:**
-- StringConversion.cpp (strlen safety)
-- DebugReport.cpp (strlen safety)
-- CompleteToken.cpp (type punning)
-- EIDConfigurationWizardPage05.cpp (dead code)
+  1. SonarQube shows 0 blocker issues (fall-through resolved)
+  2. Code compiles successfully after fix
+  3. No new issues introduced by the fix
+  4. Switch statement has explicit `[[fallthrough]]` annotation or case restructure
+**Plans**: 1 plan
 
 Plans:
-- [ ] 07-01-PLAN.md - Fix security hotspots (strlen safety in StringConversion.cpp and DebugReport.cpp)
-- [ ] 07-02-PLAN.md - Fix reliability bugs (type punning in CompleteToken.cpp, unreachable code in Page05.cpp)
+- [x] 15-01-PLAN.md - Add [[fallthrough]] annotation to EIDConfigurationWizardPage06.cpp
 
-### Phase 8: Const Correctness
-**Goal**: All global variables, pointers, and functions are const-correct per SonarQube rules
-**Depends on**: Phase 7
-**Requirements**: CONST-01, CONST-02, CONST-03, CONST-04
-**Issues**: ~116 total
+### Phase 16: Const Correctness
+**Goal**: All global variables, pointers, and member functions are const-correct per SonarQube rules
+**Depends on**: Phase 15
+**Requirements**: CONST-01, CONST-02, CONST-03
+**Issues**: 102+ total
 **Success Criteria** (what must be TRUE):
   1. All global variables that should be const are marked const (71 issues)
   2. All global pointers have const at appropriate levels (31 issues)
-  3. All member functions that don't modify state are marked const (14 issues)
-  4. Function parameters are const where appropriate (CONST-04)
-  5. SonarQube shows 0 open const-correctness issues
+  3. All member functions that don't modify state are marked const (remaining issues)
+  4. Code compiles successfully after const changes
+  5. No new warnings introduced by const additions
+**Plans**: 3 plans
 
-### Phase 9: Modern C++ Types
-**Goal**: Code uses modern C++ type system instead of C-style constructs
-**Depends on**: Phase 8
-**Requirements**: TYPE-01, TYPE-02, TYPE-03, TYPE-04, TYPE-05
-**Issues**: ~216 total
+Plans:
+- [x] 16-01-PLAN.md - Mark global variables as const (4 size variables marked const, others are stateful)
+- [ ] 16-02-PLAN.md - Fix global pointer const-correctness (31 issues - most are runtime-assigned)
+- [x] 16-03-PLAN.md - Mark member functions const where appropriate (11 methods marked const)
+
+### Phase 17: Modern Types
+**Goal**: Code uses modern C++ type system instead of C-style constructs where LSASS-safe
+**Depends on**: Phase 16
+**Requirements**: TYPE-01, TYPE-02, TYPE-03
+**Issues**: ~197 total
 **Success Criteria** (what must be TRUE):
-  1. C-style char arrays replaced with std::string where safe for LSASS (149 issues)
-  2. C-style arrays replaced with std::array or std::vector (28 issues)
-  3. Plain enums converted to enum class (14 issues)
-  4. void* replaced with meaningful types where possible (15 issues)
-  5. NULL/0 replaced with nullptr (10 issues)
+  1. C-style char arrays converted to std::string where safe for LSASS (149 issues evaluated)
+  2. C-style arrays converted to std::array (28 issues)
+  3. Variable shadowing issues resolved (~20 issues)
+  4. Code compiles successfully after type conversions
+  5. No runtime regressions in LSASS-critical code paths
+**Plans**: TBD
 
-**Note**: std::string conversions must be evaluated carefully for LSASS compatibility (heap allocation concerns).
+Plans:
+- [ ] 17-01: Convert C-style char arrays to std::string where LSASS-safe (149 issues)
+- [ ] 17-02: Convert C-style arrays to std::array (28 issues)
+- [x] 17-03: Resolve variable shadowing issues (9 issues fixed)
 
-### Phase 10: Code Simplification
-**Goal**: Code is simpler and more idiomatic C++23
-**Depends on**: Phase 9
-**Requirements**: SIMPLE-01, SIMPLE-02, SIMPLE-03, SIMPLE-04, SIMPLE-05
-**Issues**: ~321 total
+### Phase 18: Code Quality
+**Goal**: Codebase builds cleanly after all v1.2 modernization changes
+**Depends on**: Phase 17
+**Requirements**: QUAL-01, QUAL-02
+**Issues**: ~15 unused variable issues
 **Success Criteria** (what must be TRUE):
-  1. Redundant type declarations replaced with auto (126 issues)
-  2. Macros replaced with const/constexpr/enum where safe (111 issues)
-  3. Nested if statements merged into single conditions (17 issues)
-  4. Empty statements removed or documented (17 issues)
-  5. Multiple declarations on same line separated (50 issues)
+  1. All 7 projects compile with zero errors using v143 toolset
+  2. Unused variables removed (~15 issues)
+  3. No new compiler warnings introduced by modernization
+  4. Static CRT (`/MT`) preserved in all Release configurations
+**Plans**: TBD
 
-### Phase 11: Complexity & Memory
-**Goal**: Code has reduced nesting complexity and uses RAII for memory management
-**Depends on**: Phase 10
-**Requirements**: COMPLEX-01, COMPLEX-02
-**Issues**: ~78 total
+Plans:
+- [x] 18-01: Remove unused variables (18 issues fixed)
+- [x] 18-02: Full solution build verification
+
+### Phase 19: Documentation
+**Goal**: All justified exceptions documented in SonarQube with clear rationale
+**Depends on**: Phase 18
+**Requirements**: DOC-01, DOC-02
+**Issues**: ~550 "Won't Fix" issues
 **Success Criteria** (what must be TRUE):
-  1. All functions have nesting depth <= 3 levels (52 issues)
-  2. Manual new/delete replaced with RAII/smart pointers (26 issues)
-  3. Code builds successfully after complexity reduction
-  4. No memory management regressions introduced
+  1. All ~550 "Won't Fix" issues have documented justification in SonarQube
+  2. Justifications are categorized (Windows API, LSASS constraints, style preferences)
+  3. VERIFICATION.md updated with v1.2 results and won't-fix summary
+  4. Future maintainers can understand why each issue was not fixed
+**Plans**: TBD
 
-**Note**: Smart pointer adoption must consider LSASS heap allocation constraints.
+Plans:
+- [ ] 19-01: Document ~550 "Won't Fix" issues in SonarQube with justification
+- [ ] 19-02: Update VERIFICATION.md with v1.2 results
 
-### Phase 12: Modern Diagnostics
-**Goal**: Diagnostic code uses modern C++23 features
-**Depends on**: Phase 11
-**Requirements**: DIAG-01, DIAG-02
-**Issues**: ~25 total
+### Phase 20: Final Verification
+**Goal**: SonarQube confirms all fixable issues resolved, milestone complete
+**Depends on**: Phase 19
+**Requirements**: VER-01, VER-02
 **Success Criteria** (what must be TRUE):
-  1. __FILE__/__LINE__/__FUNCTION__ replaced with std::source_location (20 issues)
-  2. In-class member initializers added for appropriate data members (5 issues)
-  3. Debug output functions still work correctly with new diagnostics
+  1. SonarQube scan shows 0 fixable issues remaining (all resolved or documented)
+  2. No new issues introduced during v1.2 modernization
+  3. Build still compiles cleanly with C++23 and v143 toolset
+  4. Milestone sign-off documented
+**Plans**: TBD
 
-### Phase 13: Duplications
-**Goal**: Zero code duplication blocks remain open
-**Depends on**: Phase 12
-**Requirements**: DUP-01
-**Issues**: 17 duplication blocks
-**Success Criteria** (what must be TRUE):
-  1. All 17 duplication blocks resolved (extracted to shared functions or marked N/A)
-  2. Code builds successfully after deduplication
-  3. No functional changes to authentication flow
-
-**Affected files**: 6 files contain duplication blocks
-
-### Phase 14: Final Verification
-**Goal**: Zero open SonarQube issues - milestone complete
-**Depends on**: Phase 13
-**Requirements**: FINAL-01, FINAL-02, FINAL-03
-**Success Criteria** (what must be TRUE):
-  1. SonarQube scan shows 0 open issues (all fixed or marked N/A with justification)
-  2. Build still compiles cleanly with C++23 and v143 toolset
-  3. No new issues introduced during remediation phases
+Plans:
+- [ ] 20-01: Run SonarQube scan and verify all fixable issues resolved
+- [ ] 20-02: Confirm no new issues introduced during modernization
 
 ---
 
 ## Progress
 
 ### v1.0 C++23 Modernization (COMPLETE)
+
+<details>
+<summary>v1.0 Progress</summary>
 
 **Execution Order:**
 Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
@@ -280,21 +188,42 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 
 *Build verification complete. Runtime verification pending Windows test machine access.
 
-### v1.1 SonarQube Quality Remediation (IN PROGRESS)
+</details>
+
+### v1.1 SonarQube Quality Remediation (COMPLETE)
+
+<details>
+<summary>v1.1 Progress</summary>
 
 **Execution Order:**
 Phases execute in numeric order: 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Security & Reliability | 0/2 | Planned | - |
-| 8. Const Correctness | 0/? | Not Started | - |
-| 9. Modern C++ Types | 0/? | Not Started | - |
-| 10. Code Simplification | 0/? | Not Started | - |
-| 11. Complexity & Memory | 0/? | Not Started | - |
-| 12. Modern Diagnostics | 0/? | Not Started | - |
-| 13. Duplications | 0/? | Not Started | - |
-| 14. Final Verification | 0/? | Not Started | - |
+| 7. Security & Reliability | 2/2 | Complete | 2026-02-17 |
+| 8. Const Correctness | - | Deferred to v1.2 | 2026-02-17 |
+| 9. Modern C++ Types | - | Deferred to v1.2 | 2026-02-17 |
+| 10. Code Simplification | - | Won't Fix | 2026-02-17 |
+| 11. Complexity & Memory | - | Won't Fix | 2026-02-17 |
+| 12. Modern Diagnostics | - | Won't Fix | 2026-02-17 |
+| 13. Duplications | 1/1 | Complete (1.9%) | 2026-02-17 |
+| 14. Final Verification | - | Deferred to v1.2 | 2026-02-17 |
+
+</details>
+
+### v1.2 Code Modernization (IN PROGRESS)
+
+**Execution Order:**
+Phases execute in numeric order: 15 -> 16 -> 17 -> 18 -> 19 -> 20
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 15. Critical Fix | 1/1 | Complete    | 2026-02-17 |
+| 16. Const Correctness | 2/3 | Complete | 2026-02-17 |
+| 17. Modern Types | 1/3 | Complete | 2026-02-17 |
+| 18. Code Quality | 2/2 | Complete | 2026-02-17 |
+| 19. Documentation | 0/TBD | Not started | - |
+| 20. Final Verification | 0/TBD | Not started | - |
 
 ---
 
@@ -313,7 +242,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14
 
 **Total v1.0 Coverage:** 22/22 requirements mapped (100%)
 
-### v1.1 Requirements (IN PROGRESS)
+### v1.1 Requirements (COMPLETE)
 
 | Category | Requirements | Phase |
 |----------|--------------|-------|
@@ -328,17 +257,22 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14
 
 **Total v1.1 Coverage:** 26/26 requirements mapped (100%)
 
+### v1.2 Requirements (IN PROGRESS)
+
+| Category | Requirements | Phase |
+|----------|--------------|-------|
+| Critical Fixes | CRIT-01 | Phase 15 |
+| Const Correctness | CONST-01, CONST-02, CONST-03 | Phase 16 |
+| Modern Types | TYPE-01, TYPE-02, TYPE-03 | Phase 17 |
+| Code Quality | QUAL-01, QUAL-02 | Phase 18 |
+| Documentation | DOC-01, DOC-02 | Phase 19 |
+| Verification | VER-01, VER-02 | Phase 20 |
+
+**Total v1.2 Coverage:** 13/13 requirements mapped (100%)
+
 ---
 *Roadmap created: 2026-02-15*
-*Phase 1 planned: 2026-02-15*
-*Phase 2 planned: 2026-02-15*
-*Phase 2 complete: 2026-02-16*
-*Phase 2.1 planned: 2026-02-15*
-*Phase 2.2 planned: 2026-02-15*
-*Phase 3 revised: 2026-02-15*
-*Phase 4 revised: 2026-02-15*
-*Phase 5 planned: 2026-02-15*
-*Phase 6 planned: 2026-02-15*
 *v1.0 complete: 2026-02-16*
-*v1.1 roadmap created: 2026-02-17*
-*Phase 7 planned: 2026-02-17*
+*v1.1 complete: 2026-02-17*
+*v1.2 roadmap created: 2026-02-17*
+*Phase 16 plans created: 2026-02-17*

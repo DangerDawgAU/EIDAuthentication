@@ -240,8 +240,6 @@ INT_PTR CALLBACK	WndProc_02ENABLE(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				case NM_CLICK:
 				case NM_RETURN:
 					{
-						PNMLINK pNMLink = (PNMLINK)lParam;
-						LITEM item = pNMLink->item;
 						// Online database link removed - internet functionality disabled
 						break;
 					}

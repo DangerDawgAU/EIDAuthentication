@@ -33,21 +33,21 @@ class CContainer
     virtual ~CContainer();
 
 	PTSTR GetUserName();
-	PTSTR GetProviderName();
-	PTSTR GetContainerName();
+	PTSTR GetProviderName() const;
+	PTSTR GetContainerName() const;
 	DWORD GetRid();
-	DWORD GetKeySpec();
+	DWORD GetKeySpec() const;
 
-	PCCERT_CONTEXT GetCertificate();
-	BOOL IsOnReader(__in LPCTSTR szReaderName);
+	PCCERT_CONTEXT GetCertificate() const;
+	BOOL IsOnReader(__in LPCTSTR szReaderName) const;
 	
-	PEID_SMARTCARD_CSP_INFO GetCSPInfo();
-	void FreeCSPInfo(PEID_SMARTCARD_CSP_INFO);
+	PEID_SMARTCARD_CSP_INFO GetCSPInfo() const;
+	void FreeCSPInfo(PEID_SMARTCARD_CSP_INFO) const;
 
-	BOOL Erase();
-	BOOL ViewCertificate(HWND hWnd = nullptr);
+	BOOL Erase() const;
+	BOOL ViewCertificate(HWND hWnd = nullptr) const;
 
-	BOOL TriggerRemovePolicy();
+	BOOL TriggerRemovePolicy() const;
 	PEID_INTERACTIVE_LOGON AllocateLogonStruct(PWSTR szPin, PDWORD pdwSize);
   private:
  static LPTSTR ValidateAndCopyString(LPCTSTR szSource, DWORD maxLength, LPCWSTR szFieldName);

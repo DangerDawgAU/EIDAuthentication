@@ -160,7 +160,6 @@ HICON MiniIcon(HICON SourceIcon)
 	  ScreenDC = nullptr;
 	HBITMAP OldSourceBitmap = nullptr,
 	  OldTargetBitmap = nullptr;
-	HMODULE hDll = nullptr;
 	__try
 	{
 		/* Get information about the source icon and shortcut overlay */
@@ -314,8 +313,7 @@ HICON LoadModIcon(int Num)
 	HRSRC hResInfo2 = nullptr;
 	HGLOBAL hGlobal2 = nullptr;
 	int iResourceNum;
-	HICON hCertOK = nullptr, hOK = nullptr;
-	HICON hCertNOK = nullptr, hNOK = nullptr;
+	HICON hCertOK = nullptr;
 	__try
 	{
 		hDll2 = EIDLoadSystemLibrary(TEXT("imageres.dll"));
@@ -424,7 +422,6 @@ void SelectBestCredential()
 INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	hWndTemp = hWnd;
-	NMLVDISPINFO* plvdi = (NMLVDISPINFO*)lParam; 
 	switch(message)
 	{
 	case WM_INITDIALOG:

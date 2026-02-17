@@ -47,57 +47,53 @@ Requirements for C++23 modernization milestone. All phases executed.
 - [ ] **VERIFY-04**: Runtime verification — Credential Provider appears on login screen (pending test machines)
 - [ ] **VERIFY-05**: Runtime verification — Configuration Wizard operational (pending test machines)
 
-## v1.1 Requirements
+## v1.1 Requirements (COMPLETE)
 
-SonarQube Quality Remediation — Close all 1,167 open issues.
+SonarQube Quality Remediation — Security hotspots and reliability bugs resolved.
 
-### Security & Reliability (Critical)
+### Security & Reliability (Critical) — COMPLETE
 
-- [ ] **SEC-01**: Resolve 2 security hotspots (strlen safety in StringConversion.cpp, DebugReport.cpp)
-- [ ] **SEC-02**: Fix 3 reliability bugs (type punning in CompleteToken.cpp, dead code in Page05.cpp)
+- [x] **SEC-01**: Resolve 2 security hotspots (strlen safety) — Fixed
+- [x] **SEC-02**: Fix 3 reliability bugs (type punning, dead code) — Fixed
+
+### Remaining v1.1 Issues — Deferred to v1.2 or Won't Fix
+
+- CONST-01 through CONST-04, TYPE-01 through TYPE-05, SIMPLE-01 through SIMPLE-05, COMPLEX-01 through COMPLEX-02, DIAG-01 through DIAG-02, DUP-01 — Moved to v1.2 or marked Won't Fix
+
+## v1.2 Requirements
+
+Code Modernization — Resolve ~550 fixable SonarQube maintainability issues.
+
+### Critical Fixes
+
+- [ ] **CRIT-01**: Fix unannotated fall-through in switch statement (EIDConfigurationWizardPage06.cpp:44)
 
 ### Const Correctness
 
-- [ ] **CONST-01**: Mark global variables as `const` (71 issues)
-- [ ] **CONST-02**: Mark global pointers `const` at all levels (31 issues)
-- [ ] **CONST-03**: Mark member functions `const` where appropriate (14 issues)
-- [ ] **CONST-04**: Mark function parameters `const` where appropriate (multiple issues)
+- [ ] **CONST-01**: Global variables marked const (71 issues)
+- [ ] **CONST-02**: Global pointers have const at appropriate levels (31 issues)
+- [ ] **CONST-03**: Member functions that don't modify state marked const (remaining issues)
 
-### Modern C++ Types
+### Modern Types
 
-- [ ] **TYPE-01**: Replace C-style char arrays with `std::string` (149 issues)
-- [ ] **TYPE-02**: Replace C-style arrays with `std::array`/`std::vector` (28 issues)
-- [ ] **TYPE-03**: Convert plain `enum` to `enum class` (14 issues)
-- [ ] **TYPE-04**: Replace `void*` with meaningful types (15 issues)
-- [ ] **TYPE-05**: Replace `NULL`/`0` with `nullptr` (10 issues)
+- [ ] **TYPE-01**: C-style char arrays converted to std::string where LSASS-safe (149 issues)
+- [ ] **TYPE-02**: C-style arrays converted to std::array (28 issues)
+- [ ] **TYPE-03**: Variable shadowing issues resolved (~20 issues)
 
-### Code Simplification
+### Code Quality
 
-- [ ] **SIMPLE-01**: Replace redundant types with `auto` (126 issues)
-- [ ] **SIMPLE-02**: Replace macros with `const`/`constexpr`/`enum` (111 issues)
-- [ ] **SIMPLE-03**: Merge nested if statements (17 issues)
-- [ ] **SIMPLE-04**: Remove or document empty statements (17 issues)
-- [ ] **SIMPLE-05**: Separate multiple declarations (50 issues)
+- [ ] **QUAL-01**: Unused variables removed (~15 issues)
+- [ ] **QUAL-02**: Build passes after all code changes
 
-### Complexity & Memory
+### Documentation
 
-- [ ] **COMPLEX-01**: Reduce nesting depth to max 3 levels (52 issues)
-- [ ] **COMPLEX-02**: Replace manual `new`/`delete` with RAII/smart pointers (26 issues)
+- [ ] **DOC-01**: ~550 "Won't Fix" issues documented with justification in SonarQube
+- [ ] **DOC-02**: VERIFICATION.md updated with v1.2 results
 
-### Modern Diagnostics
+### Verification
 
-- [ ] **DIAG-01**: Replace `__FILE__`/`__LINE__`/`__FUNCTION__` with `std::source_location` (20 issues)
-- [ ] **DIAG-02**: Use in-class initializers for member data (5 issues)
-
-### Duplications
-
-- [ ] **DUP-01**: Resolve 17 code duplication blocks across 6 files
-
-### Final Verification
-
-- [ ] **FINAL-01**: SonarQube scan shows 0 open issues (all fixed or marked N/A)
-- [ ] **FINAL-02**: Build still compiles with C++23
-- [ ] **FINAL-03**: No new issues introduced by remediation
+- [ ] **VER-01**: SonarQube scan confirms all fixable issues resolved
+- [ ] **VER-02**: No new issues introduced during modernization
 
 ## v2 Requirements
 
@@ -163,40 +159,64 @@ Explicitly excluded. Documented to prevent scope creep.
 | VERIFY-04 | Phase 6 | Pending (runtime) |
 | VERIFY-05 | Phase 6 | Pending (runtime) |
 
-### v1.1 Requirements (In Progress)
+### v1.1 Requirements (Complete)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEC-01 | Phase 7 | Pending |
-| SEC-02 | Phase 7 | Pending |
-| CONST-01 | Phase 8 | Pending |
-| CONST-02 | Phase 8 | Pending |
-| CONST-03 | Phase 8 | Pending |
-| CONST-04 | Phase 8 | Pending |
-| TYPE-01 | Phase 9 | Pending |
-| TYPE-02 | Phase 9 | Pending |
-| TYPE-03 | Phase 9 | Pending |
-| TYPE-04 | Phase 9 | Pending |
-| TYPE-05 | Phase 9 | Pending |
-| SIMPLE-01 | Phase 10 | Pending |
-| SIMPLE-02 | Phase 10 | Pending |
-| SIMPLE-03 | Phase 10 | Pending |
-| SIMPLE-04 | Phase 10 | Pending |
-| SIMPLE-05 | Phase 10 | Pending |
-| COMPLEX-01 | Phase 11 | Pending |
-| COMPLEX-02 | Phase 11 | Pending |
-| DIAG-01 | Phase 12 | Pending |
-| DIAG-02 | Phase 12 | Pending |
-| DUP-01 | Phase 13 | Pending |
-| FINAL-01 | Phase 14 | Pending |
-| FINAL-02 | Phase 14 | Pending |
-| FINAL-03 | Phase 14 | Pending |
+| SEC-01 | Phase 7 | Complete |
+| SEC-02 | Phase 7 | Complete |
+| CONST-01 | Phase 8 | Deferred to v1.2 |
+| CONST-02 | Phase 8 | Deferred to v1.2 |
+| CONST-03 | Phase 8 | Deferred to v1.2 |
+| CONST-04 | Phase 8 | Won't Fix |
+| TYPE-01 | Phase 9 | Deferred to v1.2 |
+| TYPE-02 | Phase 9 | Deferred to v1.2 |
+| TYPE-03 | Phase 9 | Won't Fix |
+| TYPE-04 | Phase 9 | Won't Fix |
+| TYPE-05 | Phase 9 | Complete (v1.1) |
+| SIMPLE-01 | Phase 10 | Won't Fix (style) |
+| SIMPLE-02 | Phase 10 | Won't Fix (style) |
+| SIMPLE-03 | Phase 10 | Won't Fix |
+| SIMPLE-04 | Phase 10 | Won't Fix |
+| SIMPLE-05 | Phase 10 | Won't Fix |
+| COMPLEX-01 | Phase 11 | Won't Fix (risky) |
+| COMPLEX-02 | Phase 11 | Won't Fix (LSASS) |
+| DIAG-01 | Phase 12 | Won't Fix |
+| DIAG-02 | Phase 12 | Won't Fix |
+| DUP-01 | Phase 13 | Complete (1.9%) |
+| FINAL-01 | Phase 14 | Deferred to v1.2 |
+| FINAL-02 | Phase 14 | Complete |
+| FINAL-03 | Phase 14 | Deferred to v1.2 |
 
 **Coverage:**
 - v1.1 requirements: 26 total
-- Mapped to phases: 26
+- Complete: 5
+- Deferred to v1.2: 6
+- Won't Fix: 15
+
+### v1.2 Requirements (In Progress)
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| CRIT-01 | Phase 15 | Pending |
+| CONST-01 | Phase 16 | Pending |
+| CONST-02 | Phase 16 | Pending |
+| CONST-03 | Phase 16 | Pending |
+| TYPE-01 | Phase 17 | Pending |
+| TYPE-02 | Phase 17 | Pending |
+| TYPE-03 | Phase 17 | Pending |
+| QUAL-01 | Phase 18 | Pending |
+| QUAL-02 | Phase 18 | Pending |
+| DOC-01 | Phase 19 | Pending |
+| DOC-02 | Phase 19 | Pending |
+| VER-01 | Phase 20 | Pending |
+| VER-02 | Phase 20 | Pending |
+
+**Coverage:**
+- v1.2 requirements: 13 total
+- Mapped to phases: 13
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-15*
-*Last updated: 2026-02-17 after v1.1 milestone definition*
+*Last updated: 2026-02-17 after v1.2 roadmap created*

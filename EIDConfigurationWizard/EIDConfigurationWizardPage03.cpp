@@ -56,7 +56,6 @@ VOID ValidateCertificateValidity(HWND hWnd, PCCERT_CONTEXT pRootCert)
 BOOL SelectFile(HWND hWnd)
 {
 	// select file to open
-	PWSTR szFileName = nullptr;
 	std::wstring szSpecContainer = EID::LoadStringW(g_hinst, IDS_03CONTAINERFILES);
 	std::wstring szSpecAll = EID::LoadStringW(g_hinst, IDS_03ALLFILES);
 	OPENFILENAME ofn;
@@ -120,15 +119,15 @@ BOOL CreateRootCertificate()
 	return fReturn;
 }
 
-BOOL CreateSmartCardCertificate(PCCERT_CONTEXT pCertificate, PWSTR szReader, PWSTR szCard, WORD wValidityYears)
+BOOL CreateSmartCardCertificate(PCCERT_CONTEXT pCertificate, PWSTR wszReader, PWSTR wszCard, WORD wValidityYears)
 {
 	BOOL fReturn;
 	UI_CERTIFICATE_INFO CertificateInfo;
 	std::wstring szSubject = EID::Format(L"CN=%s", szUserName);
 	memset(&CertificateInfo, 0, sizeof(CertificateInfo));
 	CertificateInfo.dwSaveon = UI_CERTIFICATE_INFO_SAVEON_SMARTCARD;
-	CertificateInfo.szReader = szReader;
-	CertificateInfo.szCard = szCard;
+	CertificateInfo.wszReaderName = wszReader;
+	CertificateInfo.wszCardName = wszCard;
 	CertificateInfo.dwKeyType = AT_KEYEXCHANGE;
 	CertificateInfo.bHasSmartCardAuthentication = TRUE;
 	CertificateInfo.pRootCertificate = pCertificate;
@@ -154,7 +153,6 @@ BOOL CreateSmartCardCertificate(PCCERT_CONTEXT pCertificate, PWSTR szReader, PWS
 
 VOID UpdateCertificatePanel(HWND hWnd)
 {
-	wchar_t szBuffer[1024];
 	wchar_t szBuffer2[1024];
 	wchar_t szLocalDate[255];
 	wchar_t szLocalTime[255];
@@ -256,7 +254,6 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					if (wValidityYears < MIN_CERT_VALIDITY_YEARS) wValidityYears = MIN_CERT_VALIDITY_YEARS;
 					if (wValidityYears > MAX_CERT_VALIDITY_YEARS) wValidityYears = MAX_CERT_VALIDITY_YEARS;
 					// create self signed certificate as root
-					DWORD dwReturn = -1;
 					if (CreateRootCertificate())
 					{
 						if (CreateSmartCardCertificate(pRootCertificate, szReader, szCard, wValidityYears))
@@ -306,8 +303,8 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				{
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"IDC_03IMPORT");
 					std::wstring szFileName = EID::GetWindowTextW(GetDlgItem(hWnd,IDC_03FILENAME));
-					std::wstring szPassword = EID::GetWindowTextW(GetDlgItem(hWnd,IDC_03IMPORTPASSWORD));
-					if (!ImportFileToSmartCard((PWSTR)szFileName.c_str(), (PWSTR)szPassword.c_str(), szReader, szCard))
+					std::wstring wszImportPassword = EID::GetWindowTextW(GetDlgItem(hWnd,IDC_03IMPORTPASSWORD));
+					if (!ImportFileToSmartCard((PWSTR)szFileName.c_str(), (PWSTR)wszImportPassword.c_str(), szReader, szCard))
 					{
 						MessageBoxWin32Ex(GetLastError(),hWnd);
 						SetWindowLongPtr(hWnd,DWLP_MSGRESULT,-1);

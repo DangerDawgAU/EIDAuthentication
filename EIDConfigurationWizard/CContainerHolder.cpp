@@ -118,7 +118,9 @@ BOOL CContainerHolderTest::SupportEncryption() const
 {
 	return _pContainer->GetKeySpec() == AT_KEYEXCHANGE;
 }
-HRESULT CContainerHolderTest::SetUsageScenario(__in CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,__in DWORD dwFlags)
+HRESULT CContainerHolderTest::SetUsageScenario(
+    [[maybe_unused]] __in CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,
+    [[maybe_unused]] __in DWORD dwFlags)
 {
 	return S_OK;
 }

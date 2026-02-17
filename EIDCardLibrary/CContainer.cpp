@@ -158,26 +158,26 @@ DWORD CContainer::GetRid()
 	return _dwRid;
 }
 
-PTSTR CContainer::GetProviderName()
+PTSTR CContainer::GetProviderName() const
 {
 	return _szProviderName;
 }
-PTSTR CContainer::GetContainerName()
+PTSTR CContainer::GetContainerName() const
 {
 	return _szContainerName;
 }
-DWORD CContainer::GetKeySpec()
+DWORD CContainer::GetKeySpec() const
 {
 	return _KeySpec;
 }
 
-PCCERT_CONTEXT CContainer::GetCertificate()
+PCCERT_CONTEXT CContainer::GetCertificate() const
 {
 	PCCERT_CONTEXT pCertContext = CertDuplicateCertificateContext(_pCertContext);
 	return pCertContext;
 }
 
-BOOL CContainer::Erase()
+BOOL CContainer::Erase() const
 {
 	HCRYPTPROV hProv;
 	return CryptAcquireContext(&hProv,
@@ -187,12 +187,12 @@ BOOL CContainer::Erase()
 					CRYPT_DELETEKEYSET);
 }
 
-BOOL CContainer::IsOnReader(LPCTSTR szReaderName)
+BOOL CContainer::IsOnReader(LPCTSTR szReaderName) const
 {
 	return _tcscmp(_szReaderName,szReaderName) == 0;
 }
 
-PEID_SMARTCARD_CSP_INFO CContainer::GetCSPInfo()
+PEID_SMARTCARD_CSP_INFO CContainer::GetCSPInfo() const
 {
 	_ASSERTE( _CrtCheckMemory( ) );
 	// Validate member pointers before use
@@ -228,12 +228,12 @@ PEID_SMARTCARD_CSP_INFO CContainer::GetCSPInfo()
 	return pCspInfo;
 }
 
-void CContainer::FreeCSPInfo(PEID_SMARTCARD_CSP_INFO pCspInfo)
+void CContainer::FreeCSPInfo(PEID_SMARTCARD_CSP_INFO pCspInfo) const
 {
 	EIDFree(pCspInfo);
 }
 
-BOOL CContainer::ViewCertificate(HWND hWnd)
+BOOL CContainer::ViewCertificate(HWND hWnd) const
 {
 	CRYPTUI_VIEWCERTIFICATE_STRUCT certViewInfo;
 	BOOL fPropertiesChanged = FALSE;
@@ -267,7 +267,7 @@ BOOL CContainer::ViewCertificate(HWND hWnd)
 	return CryptUIDlgViewCertificate(&certViewInfo,&fPropertiesChanged);
 }
 
-BOOL CContainer::TriggerRemovePolicy()
+BOOL CContainer::TriggerRemovePolicy() const
 {
 	LONG lResult;
 	BOOL fReturn = FALSE;
