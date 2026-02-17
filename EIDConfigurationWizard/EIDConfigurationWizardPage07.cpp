@@ -24,7 +24,7 @@ void SetErrorMessage(HWND hWnd)
 	LocalFree(Error);
 }
 
-INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, [[maybe_unused]] WPARAM wParam, LPARAM lParam)
 {
 	LPNMHDR pnmh = (LPNMHDR)lParam;
 	switch(message)

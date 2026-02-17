@@ -4,7 +4,7 @@
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "EIDConfigurationWizardElevated.h"
 
-INT_PTR CALLBACK WndProc_ForcePolicy(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK WndProc_ForcePolicy(HWND hWnd, UINT message, WPARAM wParam, [[maybe_unused]] LPARAM lParam)
 {
 	int wmId;
 	int wmEvent;

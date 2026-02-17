@@ -56,7 +56,6 @@ VOID ValidateCertificateValidity(HWND hWnd, PCCERT_CONTEXT pRootCert)
 BOOL SelectFile(HWND hWnd)
 {
 	// select file to open
-	PWSTR szFileName = nullptr;
 	std::wstring szSpecContainer = EID::LoadStringW(g_hinst, IDS_03CONTAINERFILES);
 	std::wstring szSpecAll = EID::LoadStringW(g_hinst, IDS_03ALLFILES);
 	OPENFILENAME ofn;
@@ -154,7 +153,6 @@ BOOL CreateSmartCardCertificate(PCCERT_CONTEXT pCertificate, PWSTR wszReader, PW
 
 VOID UpdateCertificatePanel(HWND hWnd)
 {
-	wchar_t szBuffer[1024];
 	wchar_t szBuffer2[1024];
 	wchar_t szLocalDate[255];
 	wchar_t szLocalTime[255];
@@ -256,7 +254,6 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					if (wValidityYears < MIN_CERT_VALIDITY_YEARS) wValidityYears = MIN_CERT_VALIDITY_YEARS;
 					if (wValidityYears > MAX_CERT_VALIDITY_YEARS) wValidityYears = MAX_CERT_VALIDITY_YEARS;
 					// create self signed certificate as root
-					DWORD dwReturn = -1;
 					if (CreateRootCertificate())
 					{
 						if (CreateSmartCardCertificate(pRootCertificate, szReader, szCard, wValidityYears))

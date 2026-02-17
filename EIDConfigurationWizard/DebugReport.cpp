@@ -54,7 +54,6 @@ BOOL TestLogon(HWND hMainWnd)
 	RetrieveNegotiateAuthPackage(&authPackage);
 	
 	CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
-	TCHAR szTitle[256] = L"";
 	TCHAR szMessage[256] = L"";
 	TCHAR szCaption[256] = L"";
 	LoadString(g_hinst, IDS_05CREDINFOCAPTION, szCaption, ARRAYSIZE(szCaption));
@@ -71,7 +70,6 @@ BOOL TestLogon(HWND hMainWnd)
 		err = LsaConnectUntrusted(&hLsa);
 		/* Find the setuid package and call it */
 		err = LsaLogonUser(hLsa, &Origin, Interactive, authPackage, authBuffer,authBufferSize,nullptr, &Source, (PVOID*)&Profile, &ProfileLen, &Luid, &Token, &Quota, &stat);
-		DWORD dwSize = sizeof(MSV1_0_INTERACTIVE_PROFILE);
 		LsaDeregisterLogonProcess(hLsa);
 		if (err)
 		{
