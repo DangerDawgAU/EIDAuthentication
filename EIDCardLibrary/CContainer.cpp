@@ -31,7 +31,7 @@
 
 #pragma comment(lib, "Cryptui.lib")
 
-#define REMOVALPOLICYKEY TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Removal Policy")
+static constexpr TCHAR REMOVALPOLICYKEY[] = TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Removal Policy");
 
 // Maximum lengths for container/card/provider/reader names (CWE-20 fix for #63)
 constexpr DWORD MAX_CONTAINER_NAME_LENGTH = 1024;
