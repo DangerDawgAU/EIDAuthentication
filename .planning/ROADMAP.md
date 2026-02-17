@@ -178,7 +178,10 @@ Plans:
   1. `import std;` modules feasibility documented with MSVC compatibility notes
   2. `std::flat_map`/`std::flat_set` applied where performance benefits exist
   3. `std::stacktrace` status documented (applied if MSVC bugs resolved)
-**Plans**: TBD
+**Plans**: 1 plan in 1 wave
+
+Plans:
+- [ ] 27-01-PLAN.md - Document C++23 feature deferrals (modules, flat containers, stacktrace)
 
 ### Phase 28: Diagnostics & Logging
 **Goal**: Error messages and tracing provide better context for debugging
