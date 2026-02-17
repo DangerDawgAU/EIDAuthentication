@@ -157,11 +157,11 @@ Plans:
   2. No new issues introduced during v1.2 modernization
   3. Build still compiles cleanly with C++23 and v143 toolset
   4. Milestone sign-off documented
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 20-01: Run SonarQube scan and verify all fixable issues resolved
-- [ ] 20-02: Confirm no new issues introduced during modernization
+- [ ] 20-01-PLAN.md - SonarQube verification (requires user action in UI)
+- [ ] 20-02-PLAN.md - Build verification and milestone sign-off
 
 ---
 
