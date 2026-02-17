@@ -1,354 +1,545 @@
 # Architecture Research
 
-**Domain:** C++ Standard Upgrade Modernization (C++14 to C++23)
-**Researched:** 2026-02-15
+**Domain:** SonarQube Issue Remediation Architecture for C++23 Windows LSASS Codebase
+**Researched:** 2026-02-18
 **Confidence:** HIGH
 
-## Standard Architecture
+## Executive Summary
+
+This research addresses how to organize remediation of ~730 remaining SonarQube issues in the EIDAuthentication Windows smart card authentication package. The existing codebase is already on C++23 with MSVC v143, all 7 projects compile successfully, and security issues are resolved. The focus is purely on maintainability improvements while preserving LSASS safety constraints.
+
+## Issue Remediation Architecture
 
 ### System Overview
 
 ```
 +-------------------------------------------------------------------------+
-|                          EIDAuthentication Solution                      |
+|                    SonarQube Issue Remediation Flow                      |
 +-------------------------------------------------------------------------+
 |                                                                          |
-|  +-------------------------------------------------------------------+  |
-|  |                     EIDCardLibrary (Static Lib)                   |  |
-|  |                     Core Shared Utilities                         |  |
-|  |  [CertificateUtilities] [CredentialManagement] [StringConversion] |  |
-|  |  [SmartCardModule] [GPO] [Tracing] [Package] [Registration]       |  |
-|  +--------------------------------+----------------------------------+  |
-|                                   |                                      |
-|           +-----------------------+-----------------------+              |
-|           |                       |                       |              |
-|           v                       v                       v              |
-|  +------------------+    +------------------+    +------------------+    |
-|  | DLLs (System)    |    | EXEs (User)      |    | EXEs (Admin)     |    |
-|  +------------------+    +------------------+    +------------------+    |
-|  | EIDAuthPackage   |    | EIDConfigWizard  |    | EIDConfigWizard  |    |
-|  | (LSA DLL)        |    |                  |    | Elevated         |    |
-|  +------------------+    +------------------+    +------------------+    |
-|  | EIDCredential    |    | EIDLogManager    |    |                  |    |
-|  | Provider (DLL)   |    |                  |    |                  |    |
-|  +------------------+    +------------------+    +------------------+    |
-|  | EIDPassword      |                                                       |
-|  | ChangeNotify     |                                                       |
-|  +------------------+                                                       |
+|   +-------------------+       +-------------------+                      |
+|   | INDEPENDENT LAYER |       | DEPENDENT LAYER   |                      |
+|   | (No Dependencies) |       | (Requires Prior)  |                      |
+|   +-------------------+       +-------------------+                      |
+|                                                                          |
+|   +-------------+  +-------------+  +-------------+  +----------------+  |
+|   | Macro ->    |  | auto        |  | enum class  |  | Independent    |  |
+|   | constexpr   |  | Conversion  |  | Conversion  |  | Style Issues   |  |
+|   +------+------+  +------+------+  +------+------+  +--------+-------+  |
+|          |                |                |                    |        |
+|          v                v                v                    v        |
+|   +------------------------------------------------------------------+  |
+|   |                     VERIFICATION GATE                            |  |
+|   |              (Build + Static Analysis Check)                     |  |
+|   +------------------------------------------------------------------+  |
+|                                |                                        |
+|   +-----------------------------v-------------------------------------+  |
+|   |                     DEPENDENT LAYER                               |  |
+|   +------------------------------------------------------------------+  |
+|   |                                                                   |  |
+|   |  +-------------+    +-------------+    +-------------------+     |  |
+|   |  | Const       |    | Complexity  |    | Nesting           |     |  |
+|   |  | Correctness |    | Reduction   |    | Reduction         |     |  |
+|   |  +-------------+    +-------------+    +-------------------+     |  |
+|   |        ^                   ^                    ^                |  |
+|   |        |                   |                    |                |  |
+|   |  [Requires macros done]    |  [Requires helpers from complexity] |  |
+|   |                           |                                     |  |
+|   +---------------------------+-------------------------------------+  |
 |                                                                          |
 +-------------------------------------------------------------------------+
 ```
 
-### Component Responsibilities
+### Issue Categories by Dependency
 
-| Project | Type | Responsibility | Dependencies |
-|---------|------|----------------|--------------|
-| EIDCardLibrary | Static Library (.lib) | Core shared utilities: certificate handling, credential management, smart card operations, string conversion, GPO, tracing | None (foundation) |
-| EIDAuthenticationPackage | DLL (.dll) | LSA authentication package - integrates with Windows Local Security Authority | EIDCardLibrary |
-| EIDCredentialProvider | DLL (.dll) | Windows Credential Provider - handles logon UI and authentication | EIDCardLibrary |
-| EIDPasswordChangeNotification | DLL (.dll) | Password change notification DLL - handles password events | EIDCardLibrary |
-| EIDConfigurationWizard | EXE (.exe) | User-mode configuration wizard application | EIDCardLibrary |
-| EIDConfigurationWizardElevated | EXE (.exe) | Elevated admin configuration tasks | EIDCardLibrary |
-| EIDLogManager | EXE (.exe) | Log management utility (requires admin) | EIDCardLibrary |
+#### Layer 1: Independent Issues (No Dependencies)
 
-## Recommended Project Structure
+These issues can be fixed in any order or in parallel. They do not affect each other.
+
+| Issue Category | Count | Description | Rationale |
+|----------------|-------|-------------|-----------|
+| **auto Conversion** | ~40 | Replace redundant type with `auto` | Pure style change, no API impact |
+| **enum class Conversion** | ~8 | Convert unscoped enums to `enum class` | Scoped to definition site |
+| **C-style Cast Review** | ~8 | Review and document/fix C-style casts | Independent per occurrence |
+| **Ellipsis Notation** | ~3 | Review variadic function usage | Independent per function |
+| **Unused Parameters** | ~8 | Handle or document unused parameters | Independent per function |
+| **Range-based For Loops** | ~8 | Convert index loops to range-based | Independent per loop |
+
+#### Layer 2: Foundation Issues (Enable Others)
+
+These issues should be addressed first because other fixes depend on their completion.
+
+| Issue Category | Count | Description | Enables |
+|----------------|-------|-------------|---------|
+| **Macro to constexpr** | ~35 | Convert preprocessor macros to `constexpr` | Const correctness (macros cannot be const) |
+
+#### Layer 3: Dependent Issues (Require Foundation)
+
+These issues require foundation issues to be complete first.
+
+| Issue Category | Count | Description | Dependency |
+|----------------|-------|-------------|------------|
+| **Const Correctness (globals)** | ~60 | Add `const` to global variables | Requires macro -> constexpr (macros cannot be const) |
+| **Const Correctness (functions)** | ~15 | Add `const` to member functions | Independent of macros |
+| **Complexity Reduction** | ~30 | Reduce cognitive complexity | Creates helper functions |
+| **Nesting Reduction** | ~25 | Reduce nesting depth | Requires complexity helpers |
+| **Init-statements** | ~80 | Use if/switch init-statements | Independent, but benefits from nesting reduction |
+
+#### Layer 4: Integration Issues (Affect Multiple Files)
+
+These issues span multiple files and require coordination.
+
+| Issue Category | Count | Description | Complexity |
+|----------------|-------|-------------|------------|
+| **std::array Conversion** | ~30 | Convert C-style arrays to `std::array` | Changes API signatures |
+| **Initialization Lists** | ~10 | Use constructor initialization lists | Changes class structure |
+| **Redundant Casts** | ~10 | Remove unnecessary casts | Requires type analysis |
+| **Rule of Five/Three** | ~15 | Review special member functions | Changes class design |
+
+## Dependency Graph
 
 ```
-EIDAuthentication/
-+-- EIDCardLibrary/              # Core static library (MODERNIZE FIRST)
-|   +-- *.cpp, *.h               # Shared utilities
-|   +-- EIDCardLibrary.vcxproj   # v143 toolset, no /std flag (defaults to C++14)
-|
-+-- EIDAuthenticationPackage/    # LSA DLL (MODERNIZE SECOND)
-|   +-- *.cpp, *.h
-|   +-- EIDAuthenticationPackage.vcxproj  # ProjectReference to EIDCardLibrary
-|
-+-- EIDCredentialProvider/       # Credential Provider DLL (MODERNIZE THIRD)
-|   +-- *.cpp, *.h
-|   +-- EIDCredentialProvider.vcxproj    # ProjectReference to EIDCardLibrary
-|
-+-- EIDPasswordChangeNotification/  # DLL (MODERNIZE WITH OTHER DLLs)
-|   +-- *.cpp, *.h
-|   +-- EIDPasswordChangeNotification.vcxproj
-|
-+-- EIDConfigurationWizard/      # EXE (MODERNIZE AFTER CORE)
-|   +-- *.cpp, *.h
-|   +-- EIDConfigurationWizard.vcxproj
-|
-+-- EIDConfigurationWizardElevated/  # EXE (MODERNIZE WITH OTHER EXEs)
-|   +-- *.cpp, *.h
-|   +-- EIDConfigurationWizardElevated.vcxproj
-|
-+-- EIDLogManager/               # EXE (MODERNIZE WITH OTHER EXEs)
-|   +-- *.cpp, *.h
-|   +-- EIDLogManager.vcxproj
+Macro -> constexpr
+       |
+       +---> Const Correctness (globals can now be const)
+
+Complexity Reduction
+       |
+       +---> Nesting Reduction (helpers reduce both complexity AND nesting)
+
+Independent (parallel execution):
+       +---> auto Conversion
+       +---> enum class Conversion
+       +---> C-style Cast Review
+       +---> Ellipsis Notation
+       +---> Unused Parameters
+       +---> Range-based For Loops
+       +---> Init-statements
+       +---> std::array Conversion (careful: LSASS)
+       +---> Initialization Lists
+       +---> Redundant Casts
+       +---> Rule of Five/Three
+       +---> Const Correctness (functions)
 ```
 
-### Structure Rationale
+## Recommended Phase Structure
 
-- **EIDCardLibrary first:** All other projects depend on it via ProjectReference. Changes propagate through the dependency chain. Must modernize first to enable consumers to use modern features.
-- **DLLs before EXEs:** System components (LSA, Credential Provider) are higher risk and benefit from earlier validation.
-- **Grouped modernization:** DLLs can be modernized together, then EXEs, to minimize context switching.
+### Phase Ordering Rationale
 
-## Architectural Patterns
+Based on dependency analysis, the following phase order ensures:
 
-### Pattern 1: Dependency-First Modernization (Bottom-Up)
+1. **Foundation first** - Issues that unblock others
+2. **Independent parallelization** - Issues that can run concurrently
+3. **Dependent last** - Issues that require foundation work
+4. **Risk mitigation** - High-risk changes isolated and verified
 
-**What:** Modernize projects in reverse dependency order - start with leaf dependencies (no dependencies), work up to root consumers.
+### Recommended Phase Order
 
-**When to use:** Always for C++ standard upgrades across multiple projects.
+| Phase | Focus | Issue Count | Dependencies | Risk Level |
+|-------|-------|-------------|--------------|------------|
+| **31** | Macro to constexpr | ~35 | None | Low |
+| **32** | auto Conversion | ~40 | None | Very Low |
+| **33** | Independent Style Issues | ~27 | None | Very Low |
+| **34** | Const Correctness (globals) | ~60 | Phase 31 | Low |
+| **35** | Const Correctness (functions) | ~15 | None | Low |
+| **36** | Complexity Reduction | ~30 | None | Medium |
+| **37** | Nesting Reduction | ~25 | Phase 36 | Medium |
+| **38** | Init-statements | ~80 | None (but Phase 37 helps) | Low |
+| **39** | Integration Changes | ~65 | Varies | Medium-High |
+| **40** | Final Verification | - | All | N/A |
 
-**Trade-offs:**
-- (+) Isolates ABI issues to the static library boundary
-- (+) Consumers can use new language features immediately after library upgrade
-- (-) Higher risk if core library has issues (affects everything)
+### Phase Detail
 
-**Example:**
-```
-Modernization Order:
-1. EIDCardLibrary     (leaf - no dependencies)
-2. DLLs (parallel)   (depend on EIDCardLibrary)
-   - EIDAuthenticationPackage
-   - EIDCredentialProvider
-   - EIDPasswordChangeNotification
-3. EXEs (parallel)   (depend on EIDCardLibrary)
-   - EIDConfigurationWizard
-   - EIDConfigurationWizardElevated
-   - EIDLogManager
-```
+#### Phase 31: Macro to constexpr (Foundation)
 
-### Pattern 2: Incremental Standard Upgrade (Stepwise)
+**Goal:** Convert ~35 preprocessor macros to `constexpr` constants where safe.
 
-**What:** Upgrade C++ standard in steps (C++14 -> C++17 -> C++20 -> C++23) rather than directly.
+**Issue Types:**
+- Replace macro with "const", "constexpr" or "enum"
 
-**When to use:** Large codebases or when ABI compatibility concerns exist.
+**Files Most Affected:**
+- EIDCardLibrary/*.cpp (constants)
+- EIDConfigurationWizard/*.cpp (message IDs, flags)
 
-**Trade-offs:**
-- (+) Easier to identify which standard introduced a breaking change
-- (+) Can adopt features incrementally
-- (-) More total work (multiple build/test cycles)
-- (-) May not be necessary if Microsoft binary compatibility holds
+**Constraints:**
+- Resource compiler requires `#define` for resource IDs
+- `__FILE__`, `LINE__`, `__FUNCTION__` must remain macros
+- Windows header configuration macros must remain
 
-**Recommendation:** For this project, go directly to C++23 since MSVC Build Tools v14.50 maintains binary compatibility with VS2015+ code. Direct upgrade is acceptable.
+**Success Criteria:**
+1. All convertible macros replaced with `constexpr`
+2. Build passes with no new warnings
+3. Resource compilation unaffected
 
-### Pattern 3: Configuration Synchronization
+#### Phase 32: auto Conversion (Independent)
 
-**What:** Ensure all projects use consistent compiler flags and settings.
+**Goal:** Replace explicit types with `auto` where type is obvious from context.
 
-**When to use:** Multi-project solutions to prevent ODR violations and ABI mismatches.
+**Issue Types:**
+- Replace redundant type with "auto"
 
-**Trade-offs:**
-- (+) Prevents subtle ABI issues
-- (+) Consistent behavior across projects
-- (-) Requires property sheet management
+**Files Most Affected:**
+- EIDCardLibrary/CredentialManagement.cpp
+- EIDCardLibrary/CContainerHolderFactory.cpp
 
-**Example:**
-```xml
-<!-- Create a shared property sheet: CommonSettings.props -->
-<PropertyGroup>
-  <LanguageStandard>stdcpp23</LanguageStandard>
-  <PlatformToolset>v145</PlatformToolset>
-  <RuntimeLibrary Condition="'$(Configuration)'=='Debug'">MultiThreadedDebug</RuntimeLibrary>
-  <RuntimeLibrary Condition="'$(Configuration)'=='Release'">MultiThreaded</RuntimeLibrary>
-</PropertyGroup>
-```
+**Constraints:**
+- Avoid `auto` where type is not obvious (readability)
+- Template iterator declarations benefit most
+
+**Success Criteria:**
+1. ~40 issues resolved
+2. Code readability maintained or improved
+3. Build passes
+
+#### Phase 33: Independent Style Issues (Independent)
+
+**Goal:** Address multiple independent low-risk style issues.
+
+**Issue Types:**
+- Convert to enum class (~8)
+- C-style cast review (~8)
+- Ellipsis notation review (~3)
+- Unused parameter handling (~8)
+
+**Files Most Affected:**
+- Spread across all projects
+
+**Success Criteria:**
+1. ~27 issues resolved or documented as won't-fix
+2. Build passes
+
+#### Phase 34: Const Correctness - Globals (Dependent on Phase 31)
+
+**Goal:** Add `const` to global variables that should be immutable.
+
+**Issue Types:**
+- Global variables should be const
+- Global pointers should be const at every level
+
+**Dependency on Phase 31:**
+- Macros cannot be `const` - must convert to `constexpr` first
+- After macro conversion, these globals can be properly const-qualified
+
+**Files Most Affected:**
+- EIDCardLibrary/Tracing.cpp
+- EIDCardLibrary/Package.cpp
+- EIDAuthenticationPackage/EIDSecuritySupportProvider.cpp
+
+**Won't-Fix Categories:**
+- LSA function pointers (assigned at runtime)
+- Tracing state (dynamically enabled/disabled)
+- DLL state (COM reference counting)
+- UI state (track user selections)
+- Windows API buffers (CryptoAPI requires non-const)
+
+**Success Criteria:**
+1. All legitimately const globals marked `const`
+2. Won't-fix categories documented
+3. Build passes
+
+#### Phase 35: Const Correctness - Functions (Independent)
+
+**Goal:** Add `const` to member functions that should be const.
+
+**Issue Types:**
+- Function should be const
+
+**Files Most Affected:**
+- EIDCardLibrary class methods
+- EIDCredentialProvider COM objects (careful)
+
+**Constraints:**
+- COM interface methods cannot change signature
+- Virtual function overrides must match base
+
+**Success Criteria:**
+1. ~15 issues resolved or documented
+2. Build passes
+
+#### Phase 36: Complexity Reduction (Foundation for Phase 37)
+
+**Goal:** Reduce cognitive complexity in high-complexity functions.
+
+**Issue Types:**
+- Refactor this function to reduce its cognitive complexity
+
+**Creates Helper Functions:**
+- Extract complex boolean conditions
+- Extract validation chains
+- Extract repeated patterns
+
+**These helpers enable Phase 37:**
+- Helper functions reduce both cognitive complexity AND nesting depth
+- Nesting reduction can reuse the extracted helpers
+
+**Files Most Affected:**
+- EIDCardLibrary/StoredCredentialManagement.cpp
+- EIDCardLibrary/CertificateUtilities.cpp
+- EIDAuthenticationPackage/EIDSecuritySupportProvider.cpp
+
+**Won't-Fix Categories:**
+- SEH-protected code
+- Primary authentication functions
+- Complex state machines
+- Crypto validation chains
+
+**Success Criteria:**
+1. ~30 complexity issues reduced or documented
+2. Helper functions extracted where beneficial
+3. Build passes
+
+#### Phase 37: Nesting Reduction (Dependent on Phase 36)
+
+**Goal:** Reduce nesting depth in deeply nested functions.
+
+**Issue Types:**
+- Refactor nesting > 3 if/for/while/switch
+
+**Dependency on Phase 36:**
+- Complexity reduction phase creates helper functions
+- Nesting reduction can leverage same helpers
+- Early return/continue patterns benefit from reduced complexity
+
+**Files Most Affected:**
+- EIDCardLibrary/CertificateUtilities.cpp
+- EIDConfigurationWizard/EIDConfigurationWizardPage03.cpp
+- EIDAuthenticationPackage/EIDAuthenticationPackage.cpp
+
+**Won't-Fix Categories:**
+- SEH-protected code (exception safety)
+- Complex state machines
+- Windows message handlers
+
+**Success Criteria:**
+1. ~25 nesting issues reduced or documented
+2. Build passes
+
+#### Phase 38: Init-statements (Independent but Phase 37 Helps)
+
+**Goal:** Use C++17 if/switch init-statements to limit variable scope.
+
+**Issue Types:**
+- Use "init-statement" in "if" or "switch"
+
+**Phase 37 Synergy:**
+- Nesting reduction often creates patterns where init-statements help
+- Can be done independently, but benefits from cleaner code structure
+
+**Files Most Affected:**
+- Spread across all projects
+
+**Success Criteria:**
+1. ~80 issues resolved
+2. Variable scopes narrowed
+3. Build passes
+
+#### Phase 39: Integration Changes (Multiple Dependencies)
+
+**Goal:** Address changes that span multiple files or affect APIs.
+
+**Issue Types:**
+- Convert to std::array (~30)
+- Initialization lists (~10)
+- Redundant casts (~10)
+- Rule of Five/Three (~15)
+
+**Risk Assessment:**
+- std::array changes API signatures - medium risk
+- Rule of Five/Three changes class design - medium risk
+- Redundant cast removal - low risk
+- Initialization lists - low risk
+
+**LSASS Safety Concerns:**
+- std::array is stack-allocated, generally safe for LSASS
+- Avoid std::vector (dynamic allocation)
+- Test thoroughly in VM before deployment
+
+**Success Criteria:**
+1. ~65 issues resolved or documented
+2. No API breakage
+3. Build passes
+
+#### Phase 40: Final Verification
+
+**Goal:** Confirm all remediation is complete and stable.
+
+**Verification Steps:**
+1. Full solution rebuild (all 7 projects)
+2. Static analysis scan
+3. No new warnings
+4. SonarQube re-scan
+5. Document remaining won't-fix issues
 
 ## Data Flow
 
-### Build Dependency Flow
+### Issue Remediation Flow
 
 ```
-EIDCardLibrary.lib
-       |
-       +---> EIDAuthenticationPackage.dll (links statically)
-       |
-       +---> EIDCredentialProvider.dll (links statically)
-       |
-       +---> EIDPasswordChangeNotification.dll (links statically)
-       |
-       +---> EIDConfigurationWizard.exe (links statically)
-       |
-       +---> EIDConfigurationWizardElevated.exe (links statically)
-       |
-       +---> EIDLogManager.exe (links statically)
+SonarQube Scan Results
+        |
+        v
++-------------------+
+| Categorize Issues |
++-------------------+
+        |
+        +---> Independent Issues ------> [Phase 32, 33, 35, 38]
+        |
+        +---> Foundation Issues ------> [Phase 31, 36]
+        |              |
+        |              v
+        +---> Dependent Issues -------> [Phase 34, 37, 39]
+        |
+        v
++-------------------+
+| Verification Gate |
++-------------------+
+        |
+        v
+Final SonarQube Scan
 ```
 
-### Modernization Validation Flow
+### Build Order Within Phases
 
 ```
-Phase 1: EIDCardLibrary
-    |
-    v
-[Build Library] --> [Unit Tests] --> [Integration Smoke Test]
-    |
-    v
-Phase 2: DLLs (Parallel if desired)
-    |
-    v
-[Build DLLs] --> [Load Tests] --> [LSA/CP Registration Tests]
-    |
-    v
-Phase 3: EXEs
-    |
-    v
-[Build EXEs] --> [Functional Tests] --> [End-to-End Scenarios]
+EIDCardLibrary (Static Library)
+        |
+        +---> EIDAuthenticationPackage (LSA DLL)
+        +---> EIDCredentialProvider (Credential Provider DLL)
+        +---> EIDPasswordChangeNotification (Password Filter DLL)
+        +---> EIDConfigurationWizard (GUI EXE)
+        +---> EIDConfigurationWizardElevated (Elevated EXE)
+        +---> EIDLogManager (Diagnostic EXE)
 ```
 
-### Key Data Flows
-
-1. **Static Linking:** EIDCardLibrary is statically linked into all consumers. No DLL boundary concerns, but all consumers must rebuild when library changes.
-2. **Runtime Integration:** EIDAuthenticationPackage integrates with LSA (lsass.exe), EIDCredentialProvider with LogonUI. These have strict Windows loading requirements.
-3. **Admin Elevation:** EIDConfigurationWizardElevated and EIDLogManager require UAC elevation (RequireAdministrator manifest).
-
-## Modernization Strategy
-
-### Recommended Modernization Order
-
-| Phase | Projects | Rationale | Risk Level |
-|-------|----------|-----------|------------|
-| **1** | EIDCardLibrary | Core dependency - must be first | Medium (affects all) |
-| **2a** | EIDAuthenticationPackage | LSA DLL - system critical | High |
-| **2b** | EIDCredentialProvider | Credential Provider - UI critical | High |
-| **2c** | EIDPasswordChangeNotification | Password notification | Medium |
-| **3a** | EIDConfigurationWizard | User-facing application | Low |
-| **3b** | EIDConfigurationWizardElevated | Admin operations | Low |
-| **3c** | EIDLogManager | Log utility | Low |
-
-### Per-Project Validation Strategy
-
-| Project Type | Validation Approach | Key Tests |
-|--------------|---------------------|-----------|
-| **Static Library** | Unit tests + build verification | Compile, link to test harness, ABI check |
-| **LSA DLL** | Load test in VM, authentication flow | LSA registration, auth sequences |
-| **Credential Provider** | LogonUI integration test | Logon screen appearance, credential handling |
-| **Password Notification DLL** | Password change event test | Event receipt, processing |
-| **EXE (User)** | Functional testing | UI behavior, configuration persistence |
-| **EXE (Admin)** | Elevated context testing | Registry writes, system config changes |
-
-### Build Validation Approach
-
-```powershell
-# Phase 1: Core Library Validation
-1. Build EIDCardLibrary with /std:c++23
-2. Run static analysis (/analyze)
-3. Address all warnings
-4. Build test harness that links library
-5. Verify no linker errors or ABI warnings
-
-# Phase 2: DLL Validation
-1. Build each DLL with /std:c++23
-2. Verify exports (.def files unchanged)
-3. Test DLL load in isolated environment
-4. For LSA: Test in VM with rollback capability
-5. Verify registration/unregistration
-
-# Phase 3: EXE Validation
-1. Build each EXE with /std:c++23
-2. Verify manifests intact (UAC settings)
-3. Functional testing
-4. Performance comparison (optional)
-```
+All phases must verify:
+1. EIDCardLibrary builds first (no dependencies)
+2. All 7 projects build successfully
+3. No new warnings introduced
+4. Static CRT linkage confirmed for LSASS-loaded components
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: Top-Down Modernization
+### Anti-Pattern 1: Ignoring Macro Dependencies
 
-**What people do:** Modernize executables first, then libraries.
+**What people do:** Try to add `const` to globals before converting macros.
 
-**Why it's wrong:** Consumers cannot use new C++ features until their dependencies support them. Creates unnecessary intermediate states.
+**Why it's wrong:** Preprocessor macros cannot be `const`. The code will fail to compile or the macro will remain unaddressable.
 
-**Do this instead:** Always modernize dependencies before consumers (bottom-up).
+**Do this instead:** Always complete macro -> constexpr conversion (Phase 31) before const correctness (Phase 34).
 
-### Anti-Pattern 2: Big-Bang Upgrade
+### Anti-Pattern 2: Treating Nesting Before Complexity
 
-**What people do:** Change /std flag on all projects simultaneously.
+**What people do:** Try to reduce nesting without reducing complexity first.
 
-**Why it's wrong:** When errors occur, impossible to isolate which project introduced the issue. Difficult to create targeted rollbacks.
+**Why it's wrong:** Deeply nested code often has high cognitive complexity. Extracting helpers for complexity automatically helps nesting. Doing nesting first risks duplicating effort.
 
-**Do this instead:** One project at a time, with full validation between each.
+**Do this instead:** Complete complexity reduction (Phase 36) before nesting reduction (Phase 37) to leverage shared helper functions.
 
-### Anti-Pattern 3: Ignoring Runtime Library Consistency
+### Anti-Pattern 3: Using std::vector in LSASS Context
 
-**What people do:** Allow different /MD vs /MDd or /MT vs /MTd settings across projects.
+**What people do:** Convert C-style arrays to `std::vector` for "modernization."
 
-**Why it's wrong:** ODR violations, heap corruption, crashes. Static library built with /MT linked into DLL built with /MD causes runtime failures.
+**Why it's wrong:** `std::vector` uses dynamic allocation which is unsafe in LSASS. LSASS has strict memory constraints and exception handling requirements.
 
-**Do this instead:** Ensure consistent RuntimeLibrary settings across all projects in solution. Current project uses:
-- Debug: `MultiThreadedDebug` (/MTd)
-- Release: `MultiThreaded` (/MT)
+**Do this instead:** Use `std::array` for fixed-size arrays (stack-allocated, no exceptions). Keep C-style arrays if `std::array` is not suitable.
 
-### Anti-Pattern 4: Skipping VM Testing for LSA Components
+### Anti-Pattern 4: Changing COM Interface Signatures
 
-**What people do:** Test LSA DLL changes on development machine.
+**What people do:** Add `const` to COM interface methods.
 
-**Why it's wrong:** LSA crashes can render system unbootable. Recovery requires safe mode or reinstall.
+**Why it's wrong:** COM interfaces are ABI contracts. Changing method signatures breaks binary compatibility.
 
-**Do this instead:** Always test LSA changes in a VM with checkpoints/snapshots for instant rollback.
+**Do this instead:** Document COM methods as won't-fix for const correctness. Focus on internal implementation.
+
+### Anti-Pattern 5: Batch Modifying All Projects Simultaneously
+
+**What people do:** Fix issues across all 7 projects in one massive change.
+
+**Why it's wrong:** When issues occur, impossible to isolate which project introduced the problem. Difficult to create targeted rollbacks.
+
+**Do this instead:** Fix issues project by project, with full verification between each. Start with EIDCardLibrary (leaf dependency).
 
 ## Integration Points
 
-### External Services
+### Project Dependency Integration
 
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Windows LSA (lsass.exe) | Authentication Package API | Requires system restart for registration changes |
-| LogonUI | Credential Provider API | Loaded during logon, lock screen |
-| Smart Card Subsystem | WinSCard API | Via winscard.lib |
-| Certificate Store | CryptoAPI / CNG | Certificate validation and management |
-| Windows Registry | Registry API | GPO and configuration storage |
+| Project | Depends On | Integration Type |
+|---------|------------|------------------|
+| EIDCardLibrary | None | Static library, leaf dependency |
+| EIDAuthenticationPackage | EIDCardLibrary | Static link, LSA integration |
+| EIDCredentialProvider | EIDCardLibrary | Static link, LogonUI integration |
+| EIDPasswordChangeNotification | EIDCardLibrary | Static link, LSASS integration |
+| EIDConfigurationWizard | EIDCardLibrary | Static link, UI application |
+| EIDConfigurationWizardElevated | EIDCardLibrary | Static link, admin operations |
+| EIDLogManager | EIDCardLibrary | Static link, diagnostic tool |
 
-### Internal Boundaries
+### Windows API Integration Points
 
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| EIDCardLibrary -> Consumers | Static linkage | All code inlined into consumer binaries |
-| EIDAuthenticationPackage -> LSA | COM/LSA API | Strict interface requirements |
-| EIDCredentialProvider -> LogonUI | Credential Provider interfaces | COM-based |
-| EXEs -> Registry | Win32 Registry API | Configuration persistence |
+| Integration | Issue Impact | Won't-Fix Category |
+|------------|--------------|-------------------|
+| LSA Function Pointers | Global variables | Runtime-assigned pointers |
+| CryptoAPI Buffers | Const correctness | Non-const char arrays required |
+| Resource Compiler | Macro usage | Resource IDs must be `#define` |
+| Credential Provider | Const methods | COM interface signatures |
+| Windows Headers | Macro usage | Configuration macros |
 
-## Scaling Considerations
+## Verification Strategy
 
-| Concern | Description |
-|---------|-------------|
-| **Build time** | Static linking means full rebuild of consumers when library changes. Consider precompiled headers for faster builds. |
-| **Binary size** | Each consumer embeds full EIDCardLibrary code. Acceptable for this project size. |
-| **Deployment** | No shared DLL dependency - each component is self-contained. Simplifies deployment. |
+### Per-Phase Verification
 
-## Rollback Strategy
+| Check | Tool | Pass Criteria |
+|-------|------|---------------|
+| Compilation | MSBuild | 0 errors |
+| Warnings | /W4 | 0 new warnings |
+| Static Analysis | /analyze | 0 new issues |
+| Linkage | Linker | Static CRT for LSASS |
+| Size | Binary compare | No unexpected growth |
 
-### Version Control Strategy
+### Milestone Completion Verification
 
-```
-Before modernization:
-1. Create branch: feature/cpp23-migration
-2. Tag current state: pre-cpp23-migration
+1. **Build Verification:** All 7 projects compile
+2. **Static Analysis:** No new /analyze warnings
+3. **SonarQube Scan:** Metrics improved
+4. **Won't-Fix Documentation:** All categories documented
+5. **Runtime Smoke Test:** Basic functionality verified (VM)
 
-After each project:
-1. Commit with message: "Modernize EIDCardLibrary to C++23"
-2. Tag: cpp23-EIDCardLibrary-complete
+## LSASS Safety Constraints
 
-If rollback needed:
-1. Revert to tag or use git reset --hard
-2. Projects can be individually rolled back
-```
+### Always Safe in LSASS
 
-### Rollback Triggers
+- `std::array` - Stack-allocated, no exceptions
+- `constexpr` - Compile-time, no runtime cost
+- `const` - No runtime impact
+- `auto` - Type deduction, no runtime impact
+- `enum class` - Scoped enumeration, no runtime impact
+- Early return/continue - Control flow, no allocation
+- Helper function extraction - Code organization, no allocation
 
-| Trigger | Action |
-|---------|--------|
-| Unfixable compiler errors in library | Rollback to C++14, investigate in isolation |
-| Runtime crash in LSA DLL | Immediate rollback, debug in VM |
-| Credential Provider fails to load | Rollback, verify registration |
-| EXE functional regression | Rollback specific EXE only |
+### Never Safe in LSASS
+
+- `std::vector` - Dynamic allocation
+- `std::string` - Dynamic allocation
+- `std::map` / `std::unordered_map` - Dynamic allocation
+- Exceptions - LSASS cannot use exceptions
+- `new` / `delete` - Dynamic allocation
+- `malloc` / `free` - Dynamic allocation
+
+### Conditional (Evaluate Per Case)
+
+- `std::span` - Non-owning view, lifetime analysis required
+- `std::string_view` - Non-owning view, dangling reference risk
+- `std::optional` - Check implementation for allocation
+- `std::expected` - Check implementation for allocation
 
 ## Sources
 
-- [Upgrading C++ Projects to Visual Studio 2026](https://devblogs.microsoft.com/cppblog/upgrading-c-projects-to-visual-studio-2026/) - Official Microsoft guidance on C++ upgrade process (HIGH confidence)
-- [MSVC Conformance Improvements](https://learn.microsoft.com/en-us/cpp/overview/msvc-conformance-improvements?view=msvc-170) - C++23 feature support in MSVC v14.50 (HIGH confidence)
-- [Overview of Potential Upgrade Issues](https://learn.microsoft.com/en-us/cpp/porting/overview-of-potential-upgrade-issues-visual-cpp?view=msvc-170) - Microsoft documentation on upgrade considerations (HIGH confidence)
-- [Modernizing C++: Building Rock Solid Stability](https://drlongnecker.com/blog/2025/03/modernizing-c-building-rock-solid-stability/) - Modernization strategy patterns (MEDIUM confidence)
-- [Visual Studio C++ Multiple Project Solution Setup](https://stackoverflow.com/questions/60539041/visual-studio-c-multiple-project-solution-setup) - Community guidance on multi-project solutions (MEDIUM confidence)
+- [SonarQube C++ Rules](https://rules.sonarsource.com/cpp/) - Issue categories and severity (HIGH confidence)
+- [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/) - Modern C++ patterns (HIGH confidence)
+- [MSVC LSASS Development](https://learn.microsoft.com/en-us/windows/win32/secauthn/authentication-packages) - LSA integration requirements (HIGH confidence)
+- [MSVC C++23 Support](https://learn.microsoft.com/en-us/cpp/overview/msvc-conformance-improvements) - Feature availability (HIGH confidence)
+- v1.0-v1.3 Milestone Documentation - Established patterns and won't-fix categories (HIGH confidence)
 
 ---
-*Architecture research for: C++ Standard Upgrade Modernization*
-*Researched: 2026-02-15*
+
+*Architecture research for: SonarQube Issue Remediation in C++23 Windows LSASS Codebase*
+*Researched: 2026-02-18*
