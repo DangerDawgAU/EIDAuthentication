@@ -50,7 +50,7 @@ struct EID_PRIVATE_DATA
 	USHORT dwSymetricKeyOffset;
 	USHORT dwSymetricKeySize;
 	USHORT dwPasswordOffset;
-	USHORT dwPasswordSize;
+	USHORT usPasswordLen;      // Renamed from dwPasswordSize to avoid shadowing global
 	UCHAR Hash[CERT_HASH_LENGTH];
 	BYTE Data[sizeof(DWORD)];
 };

@@ -430,13 +430,13 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 			pbSecret->dwType = eidpdtCrypted;
 			pbSecret->dwCertificatSize = (USHORT) pCertContext->cbCertEncoded;
 			pbSecret->dwSymetricKeySize = usSymetricKeySize;
-			pbSecret->dwPasswordSize = usEncryptedPasswordSize;
+			pbSecret->usPasswordLen = usEncryptedPasswordSize;
 			pbSecret->dwCertificatOffset = 0;
 			memcpy(pbSecret->Data + pbSecret->dwCertificatOffset, pCertContext->pbCertEncoded, pbSecret->dwCertificatSize);
 			pbSecret->dwSymetricKeyOffset = pbSecret->dwCertificatOffset + pbSecret->dwCertificatSize;
 			memcpy(pbSecret->Data + pbSecret->dwSymetricKeyOffset, pSymetricKey, pbSecret->dwSymetricKeySize);
 			pbSecret->dwPasswordOffset = pbSecret->dwSymetricKeyOffset + usSymetricKeySize;
-			memcpy(pbSecret->Data + pbSecret->dwPasswordOffset, pEncryptedPassword, pbSecret->dwPasswordSize);
+			memcpy(pbSecret->Data + pbSecret->dwPasswordOffset, pEncryptedPassword, pbSecret->usPasswordLen);
 		}
 		else
 		{
@@ -480,12 +480,12 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 			pbSecret->dwType = eidpdtDPAPI;
 			pbSecret->dwCertificatSize = (USHORT)pCertContext->cbCertEncoded;
 			pbSecret->dwSymetricKeySize = 0;  // Not used for DPAPI
-			pbSecret->dwPasswordSize = (USHORT)DataOut.cbData;
+			pbSecret->usPasswordLen = (USHORT)DataOut.cbData;
 			pbSecret->dwCertificatOffset = 0;
 			memcpy(pbSecret->Data + pbSecret->dwCertificatOffset, pCertContext->pbCertEncoded, pbSecret->dwCertificatSize);
 			pbSecret->dwSymetricKeyOffset = pbSecret->dwCertificatOffset + pbSecret->dwCertificatSize;
 			pbSecret->dwPasswordOffset = pbSecret->dwSymetricKeyOffset;  // No symmetric key, so password immediately follows cert
-			memcpy(pbSecret->Data + pbSecret->dwPasswordOffset, DataOut.pbData, pbSecret->dwPasswordSize);
+			memcpy(pbSecret->Data + pbSecret->dwPasswordOffset, DataOut.pbData, pbSecret->usPasswordLen);
 
 			LocalFree(DataOut.pbData);
 		}
@@ -1493,8 +1493,8 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CryptGetKeyParam", GetLastError());
 			__leave;
 		}
-		dwRoundNumber = (DWORD)(pEidPrivateData->dwPasswordSize / dwBlockLen) + 
-			((pEidPrivateData->dwPasswordSize % dwBlockLen) ? 1 : 0);
+		dwRoundNumber = (DWORD)(pEidPrivateData->usPasswordLen / dwBlockLen) + 
+			((pEidPrivateData->usPasswordLen % dwBlockLen) ? 1 : 0);
 		*pszPassword = (PWSTR) EIDAlloc(dwRoundNumber *  dwBlockLen + sizeof(WCHAR));
 		if (!*pszPassword)
 		{
@@ -1502,11 +1502,11 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc 0x%08x", GetLastError());
 			__leave;
 		}
-		memcpy(*pszPassword, pEidPrivateData->Data + pEidPrivateData->dwPasswordOffset, pEidPrivateData->dwPasswordSize);
+		memcpy(*pszPassword, pEidPrivateData->Data + pEidPrivateData->dwPasswordOffset, pEidPrivateData->usPasswordLen);
 
 		for (DWORD dwI = 0; dwI < dwRoundNumber ; dwI++)
 		{
-			dwSize = (dwI == dwRoundNumber -1 ? pEidPrivateData->dwPasswordSize%dwBlockLen : dwBlockLen);
+			dwSize = (dwI == dwRoundNumber -1 ? pEidPrivateData->usPasswordLen%dwBlockLen : dwBlockLen);
 			fStatus = CryptDecrypt(hKey, NULL,(dwI == dwRoundNumber -1 ?TRUE:FALSE),0,
 				((PBYTE) *pszPassword) + dwI * dwBlockLen,&dwSize);
 			if(!fStatus)
@@ -1533,7 +1533,7 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 		if (pEidPrivateData)
 		{
 			// Zero entire structure including password data
-			SecureZeroMemory(pEidPrivateData, sizeof(EID_PRIVATE_DATA) + pEidPrivateData->dwCertificatSize + pEidPrivateData->dwSymetricKeySize + pEidPrivateData->dwPasswordSize);
+			SecureZeroMemory(pEidPrivateData, sizeof(EID_PRIVATE_DATA) + pEidPrivateData->dwCertificatSize + pEidPrivateData->dwSymetricKeySize + pEidPrivateData->usPasswordLen);
 			EIDFree(pEidPrivateData);
 		}
 		if (hKey)
@@ -1642,15 +1642,15 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%x returned by CryptVerifySignature", GetLastError());
 			__leave;
 		}
-		*pszPassword = (PWSTR) EIDAlloc(pEidPrivateData->dwPasswordSize + sizeof(WCHAR));
+		*pszPassword = (PWSTR) EIDAlloc(pEidPrivateData->usPasswordLen + sizeof(WCHAR));
 		if (!*pszPassword)
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc 0x%08x", GetLastError());
 			__leave;
 		}
-		memcpy(*pszPassword, (PBYTE)pEidPrivateData->Data + pEidPrivateData->dwPasswordOffset,pEidPrivateData->dwPasswordSize);
-		(*pszPassword)[pEidPrivateData->dwPasswordSize / sizeof(WCHAR)] = '\0';
+		memcpy(*pszPassword, (PBYTE)pEidPrivateData->Data + pEidPrivateData->dwPasswordOffset,pEidPrivateData->usPasswordLen);
+		(*pszPassword)[pEidPrivateData->usPasswordLen / sizeof(WCHAR)] = '\0';
 		fReturn = TRUE;
 
 	}
@@ -1671,7 +1671,7 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 		if (pEidPrivateData)
 		{
 			// Zero entire structure including password data
-			SecureZeroMemory(pEidPrivateData, sizeof(EID_PRIVATE_DATA) + pEidPrivateData->dwCertificatSize + pEidPrivateData->dwSymetricKeySize + pEidPrivateData->dwPasswordSize);
+			SecureZeroMemory(pEidPrivateData, sizeof(EID_PRIVATE_DATA) + pEidPrivateData->dwCertificatSize + pEidPrivateData->dwSymetricKeySize + pEidPrivateData->usPasswordLen);
 			EIDFree(pEidPrivateData);
 		}
 		if (pKeyProvInfo)
@@ -1789,7 +1789,7 @@ BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD 
 
 		// Signature verified - now decrypt the password using DPAPI
 		DataIn.pbData = (PBYTE)pEidPrivateData->Data + pEidPrivateData->dwPasswordOffset;
-		DataIn.cbData = pEidPrivateData->dwPasswordSize;
+		DataIn.cbData = pEidPrivateData->usPasswordLen;
 
 		if (!CryptUnprotectData(&DataIn, nullptr, nullptr, nullptr, nullptr, CRYPTPROTECT_LOCAL_MACHINE, &DataOut))
 		{
@@ -1832,7 +1832,7 @@ BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD 
 		if (pEidPrivateData)
 		{
 			// Zero entire structure including password data
-			SecureZeroMemory(pEidPrivateData, sizeof(EID_PRIVATE_DATA) + pEidPrivateData->dwCertificatSize + pEidPrivateData->dwSymetricKeySize + pEidPrivateData->dwPasswordSize);
+			SecureZeroMemory(pEidPrivateData, sizeof(EID_PRIVATE_DATA) + pEidPrivateData->dwCertificatSize + pEidPrivateData->dwSymetricKeySize + pEidPrivateData->usPasswordLen);
 			EIDFree(pEidPrivateData);
 		}
 		if (pCertContextVerif)

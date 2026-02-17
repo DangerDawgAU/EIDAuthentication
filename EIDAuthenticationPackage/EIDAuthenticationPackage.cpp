@@ -310,8 +310,8 @@ extern "C"
 					break;
 				}
 				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Has Authorization for rid = 0x%x", pBuffer->dwRid);
-				pPointer = (PBYTE) pBuffer->szPassword - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
-				pBuffer->szPassword = (PWSTR) pPointer;
+				pPointer = (PBYTE) pBuffer->wszPassword - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
+				pBuffer->wszPassword = (PWSTR) pPointer;
 				pPointer = pBuffer->pbCertificate - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
 				pBuffer->pbCertificate = pPointer;
 				pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, pBuffer->pbCertificate, pBuffer->dwCertificateSize);
@@ -322,7 +322,7 @@ extern "C"
 					break;
 				}
 				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Certificate created in memory");
-				fStatus = CStoredCredentialManager::Instance()->CreateCredential(pBuffer->dwRid,pCertContext,pBuffer->szPassword, 0, pBuffer->fEncryptPassword, TRUE);
+				fStatus = CStoredCredentialManager::Instance()->CreateCredential(pBuffer->dwRid,pCertContext,pBuffer->wszPassword, 0, pBuffer->fEncryptPassword, TRUE);
 				if (!fStatus)
 				{
 					pBuffer->dwError = GetLastError();

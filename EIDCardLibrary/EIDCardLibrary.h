@@ -157,7 +157,7 @@ struct EID_CALLPACKAGE_BUFFER
 	EID_CALLPACKAGE_MESSAGE MessageType;
 	DWORD dwError;
 	DWORD dwRid;
-	PWSTR szPassword;		// used if EIDCMCreateStoredCredential
+	PWSTR wszPassword;		// Renamed from szPassword to avoid shadowing global
 	USHORT usPasswordLen;	// can be 0 if null terminated
 	PBYTE pbCertificate;
 	USHORT dwCertificateSize;

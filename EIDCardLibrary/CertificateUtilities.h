@@ -42,8 +42,8 @@ struct UI_CERTIFICATE_INFO
 	LPTSTR szSubject;
 	PCCERT_CONTEXT pRootCertificate;
 	DWORD dwSaveon;
-	LPTSTR szCard;
-	LPTSTR szReader;
+	LPTSTR wszCardName;     // Renamed from szCard to avoid shadowing global
+	LPTSTR wszReaderName;   // Renamed from szReader to avoid shadowing global
 	DWORD dwKeyType;
 	DWORD dwKeySizeInBits;
 	BOOL bIsSelfSigned;
