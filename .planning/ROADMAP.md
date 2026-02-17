@@ -191,7 +191,14 @@ Plans:
   1. Error messages include contextual information for troubleshooting
   2. Key code paths have adequate tracing coverage
   3. Structured logging implemented where feasible (without LSASS impact)
-**Plans**: TBD
+**Plans**: 5 plans in 4 waves
+
+Plans:
+- [ ] 28-01-PLAN.md - Add diagnostic helper functions (EIDLogErrorWithContext, EIDLogStackTrace)
+- [ ] 28-02-PLAN.md - Enhance error messages in credential provider (CEIDCredential.cpp, CEIDProvider.cpp)
+- [ ] 28-03-PLAN.md - Enhance error messages and security audits in authentication package
+- [ ] 28-04-PLAN.md - Enhance error messages in security support provider (SSPI layer)
+- [ ] 28-05-PLAN.md - Build verification and confirm diagnostics enhancements
 
 ### Phase 29: Build Verification
 **Goal**: All v1.3 changes verified to compile and function correctly
