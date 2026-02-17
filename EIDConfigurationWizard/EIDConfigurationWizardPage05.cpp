@@ -101,7 +101,6 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPAR
 			ListView_Update(GetDlgItem(hWnd,IDC_05LIST), dwCurrentCredential);
 		}
 		return TRUE;
-		break;
 	case WM_COMMAND:
 		wmId    = LOWORD(wParam);
 		wmEvent = HIWORD(wParam);

@@ -44,15 +44,15 @@ public:
 	CContainerHolderTest(const CContainerHolderTest&) = delete;
 	CContainerHolderTest& operator=(const CContainerHolderTest&) = delete;
 	void Release();
-	CContainer* GetContainer();
-	int GetIconIndex();
-	BOOL HasSignatureUsageOnly();
-	BOOL IsTrusted();
-	BOOL SupportEncryption();
-	int GetCheckCount();
-	int GetImage(DWORD dwCheckNum);
-	PTSTR GetDescription(DWORD dwCheckNum);
-	PTSTR GetSolveDescription(DWORD dwCheckNum);
+	CContainer* GetContainer() const;
+	int GetIconIndex() const;
+	BOOL HasSignatureUsageOnly() const;
+	BOOL IsTrusted();  // Not const - has side effect (sets _dwTrustError)
+	BOOL SupportEncryption() const;
+	int GetCheckCount() const;
+	int GetImage(DWORD dwCheckNum) const;
+	PTSTR GetDescription(DWORD dwCheckNum) const;
+	PTSTR GetSolveDescription(DWORD dwCheckNum) const;
 	BOOL Solve(DWORD dwCheckNum);
 	HRESULT SetUsageScenario(__in CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,__in DWORD dwFlags);
 private:

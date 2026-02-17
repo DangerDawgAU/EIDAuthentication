@@ -79,7 +79,7 @@ namespace EID {
         size_t len = strnlen(src, maxLen);
 
         // Convert from ANSI to Unicode
-        int wideCharCount = MultiByteToWideChar(CP_ACP, 0, src, (int)len, NULL, 0);
+        int wideCharCount = MultiByteToWideChar(CP_ACP, 0, src, (int)len, nullptr, 0);
         if (wideCharCount <= 0) {
             return std::wstring();
         }
@@ -109,7 +109,7 @@ namespace EID {
         DWORD bufferSize = sizeof(buffer);
         DWORD dataType = 0;
 
-        LONG result = RegQueryValueExW(hKey, valueName.c_str(), NULL, &dataType,
+        LONG result = RegQueryValueExW(hKey, valueName.c_str(), nullptr, &dataType,
                                        (LPBYTE)buffer, &bufferSize);
 
         if (result != ERROR_SUCCESS || dataType != REG_SZ) {
@@ -130,7 +130,7 @@ namespace EID {
             // Buffer too small
             dst->Length = 0;
             dst->MaximumLength = 0;
-            dst->Buffer = NULL;
+            dst->Buffer = nullptr;
             return;
         }
 
@@ -143,7 +143,7 @@ namespace EID {
         } else {
             dst->Length = 0;
             dst->MaximumLength = 0;
-            dst->Buffer = NULL;
+            dst->Buffer = nullptr;
         }
     }
 
@@ -159,11 +159,13 @@ namespace EID {
 
     std::wstring ConvertCharToWString(const char* src)
     {
-        if (!src) {
+        if (!src || src[0] == '\0') {
             return std::wstring();
         }
 
-        size_t len = strlen(src);
+        // Use strnlen with a reasonable max bound for safety (SonarQube cpp:S5813)
+        // Max path + filename on Windows is ~260 characters, use 4096 as safe upper bound
+        size_t len = strnlen(src, 4096);
         return SafeConvert(src, len);
     }
 
@@ -173,13 +175,13 @@ namespace EID {
             return std::string();
         }
 
-        int charCount = WideCharToMultiByte(CP_ACP, 0, src.c_str(), (int)src.length(), NULL, 0, NULL, NULL);
+        int charCount = WideCharToMultiByte(CP_ACP, 0, src.c_str(), (int)src.length(), nullptr, 0, nullptr, nullptr);
         if (charCount <= 0) {
             return std::string();
         }
 
         std::string result(charCount, '\0');
-        WideCharToMultiByte(CP_ACP, 0, src.c_str(), (int)src.length(), &result[0], charCount, NULL, NULL);
+        WideCharToMultiByte(CP_ACP, 0, src.c_str(), (int)src.length(), &result[0], charCount, nullptr, nullptr);
         return result;
     }
 }

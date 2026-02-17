@@ -85,7 +85,7 @@ void CContainerHolderTest::Release()
 	delete this;
 }
 
-int CContainerHolderTest::GetIconIndex()
+int CContainerHolderTest::GetIconIndex() const
 {
 	if (_IsTrusted && !HasSignatureUsageOnly())
 	{
@@ -97,7 +97,7 @@ int CContainerHolderTest::GetIconIndex()
 	}
 }
 
-BOOL CContainerHolderTest::HasSignatureUsageOnly()
+BOOL CContainerHolderTest::HasSignatureUsageOnly() const
 {
 	return !(_pContainer->GetKeySpec() == AT_KEYEXCHANGE || GetPolicyValue(AllowSignatureOnlyKeys));
 }
@@ -114,7 +114,7 @@ BOOL CContainerHolderTest::IsTrusted()
 	}
 	return fReturn;
 }
-BOOL CContainerHolderTest::SupportEncryption()
+BOOL CContainerHolderTest::SupportEncryption() const
 {
 	return _pContainer->GetKeySpec() == AT_KEYEXCHANGE;
 }
@@ -123,18 +123,18 @@ HRESULT CContainerHolderTest::SetUsageScenario(__in CREDENTIAL_PROVIDER_USAGE_SC
 	return S_OK;
 }
 
-CContainer* CContainerHolderTest::GetContainer()
+CContainer* CContainerHolderTest::GetContainer() const
 {
 	return _pContainer;
 }
 
-int CContainerHolderTest::GetCheckCount()
+int CContainerHolderTest::GetCheckCount() const
 {
 	return CHECK_MAX;
 }
-int CContainerHolderTest::GetImage(DWORD dwCheckNum)
+int CContainerHolderTest::GetImage(DWORD dwCheckNum) const
 {
-	
+
 	switch(dwCheckNum)
 	{
 	case CHECK_SIGNATUREONLY:
@@ -157,7 +157,7 @@ int CContainerHolderTest::GetImage(DWORD dwCheckNum)
 	}
 	return 0;
 }
-PTSTR CContainerHolderTest::GetDescription(DWORD dwCheckNum)
+PTSTR CContainerHolderTest::GetDescription(DWORD dwCheckNum) const
 {
 	DWORD dwWords = 1024;
 	PTSTR szDescription = (PTSTR) EIDAlloc(dwWords * sizeof(TCHAR));
@@ -194,7 +194,7 @@ PTSTR CContainerHolderTest::GetDescription(DWORD dwCheckNum)
 	return szDescription;
 }
 
-PTSTR CContainerHolderTest::GetSolveDescription(DWORD dwCheckNum)
+PTSTR CContainerHolderTest::GetSolveDescription(DWORD dwCheckNum) const
 {
 	DWORD dwWords = 1024;
 	PTSTR szDescription = (PTSTR) EIDAlloc(dwWords * sizeof(TCHAR));
