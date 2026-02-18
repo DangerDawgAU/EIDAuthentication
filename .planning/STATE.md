@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 34 - Const Correctness - Globals
+Phase: 35 - Const Correctness - Functions
 Current Plan: 1/1
 Status: Complete
-Last activity: 2026-02-18 — Phase 34 Plan 01 complete
+Last activity: 2026-02-18 — Phase 35 Plan 01 complete
 
-Progress: [======--------------] 40% (4/10 phases)
+Progress: [=======-------------] 50% (5/10 phases)
 
 ## Performance Metrics
 
@@ -48,6 +48,9 @@ Recent decisions for v1.4:
 - Windows API enum types (SAMPLE_FIELD_ID, EID_INTERACTIVE_LOGON_SUBMIT_TYPE, etc.) kept as unscoped for API compatibility
 - All runtime-assigned globals documented as won't-fix with 6 categories: LSA pointers, tracing state, DLL state, SAM function pointers, UI state, file handles
 - No const additions possible for globals - all eligible globals already marked const/constexpr
+- CContainerHolderFactory::HasContainerHolder() and ContainerHolderCount() marked const with const_cast for Lock/Unlock pattern
+- CMessageCredential::GetStatus() marked const (simple getter)
+- COM interface methods documented as won't-fix per CONST-04 - cannot change Windows API contracts
 
 ### Won't-Fix Categories (v1.4)
 
@@ -64,7 +67,7 @@ Recent decisions for v1.4:
 
 ### Pending Todos
 
-None. Ready to start Phase 35.
+None. Ready to start Phase 36.
 
 ### Blockers/Concerns
 
@@ -77,8 +80,8 @@ These are out of scope for Phase 34 and should be addressed in a future phase.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Phase 34 Plan 01 complete
-Resume file: Run `/gsd:plan-phase 35` to continue
+Stopped at: Phase 35 Plan 01 complete
+Resume file: Run `/gsd:plan-phase 36` to continue
 
 ## Key Constraints (Always Remember)
 
@@ -93,4 +96,4 @@ Resume file: Run `/gsd:plan-phase 35` to continue
 
 *Last updated: 2026-02-18*
 *Current milestone: v1.4 SonarQube Zero*
-*Next: `/gsd:plan-phase 35` to continue v1.4 SonarQube Zero*
+*Next: `/gsd:plan-phase 36` to continue v1.4 SonarQube Zero*

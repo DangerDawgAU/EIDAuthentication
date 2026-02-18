@@ -92,7 +92,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 32: Auto Conversion** - Convert redundant type declarations to auto where type is obvious (Complete 2026-02-18)
 - [x] **Phase 33: Independent Style Issues** - Fix C-style casts, enum class conversions, Windows API enum won't-fix (Complete 2026-02-18)
 - [x] **Phase 34: Const Correctness - Globals** - Global variables analyzed, all const-eligible already marked, runtime-assigned documented as won't-fix (Complete 2026-02-18)
-- [ ] **Phase 35: Const Correctness - Functions** - Mark member functions const where state is not modified
+- [x] **Phase 35: Const Correctness - Functions** - Mark member functions const where state is not modified (Complete 2026-02-18)
 - [ ] **Phase 36: Complexity Reduction** - Reduce cognitive complexity via helper function extraction
 - [ ] **Phase 37: Nesting Reduction** - Reduce deep nesting via early return/guard clauses
 - [ ] **Phase 38: Init-statements** - Use init-statements in if/switch where scope benefits
@@ -161,7 +161,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Windows callback methods documented as won't-fix (API compatibility)
   4. Build passes with zero errors after const additions
 **Plans**:
-- [ ] 35-01-PLAN.md - Mark CContainerHolderFactory::HasContainerHolder() and ContainerHolderCount() const, mark CMessageCredential::GetStatus() const, document COM interface methods as won't-fix
+- [x] 35-01-PLAN.md - Mark CContainerHolderFactory::HasContainerHolder() and ContainerHolderCount() const, mark CMessageCredential::GetStatus() const, document COM interface methods as won't-fix (Complete 2026-02-18)
 
 ### Phase 36: Complexity Reduction
 **Goal**: Cognitive complexity reduced via helper function extraction, SEH-protected code documented as won't-fix
@@ -320,7 +320,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 32. Auto Conversion | 1/1 | Complete    | 2026-02-18 |
 | 33. Independent Style Issues | 1/1 | Complete    | 2026-02-18 |
 | 34. Const Correctness - Globals | 1/1 | Complete    | 2026-02-18 |
-| 35. Const Correctness - Functions | 0/1 | Planned | - |
+| 35. Const Correctness - Functions | 1/1 | Complete    | 2026-02-18 |
 | 36. Complexity Reduction | 0/1 | Not started | - |
 | 37. Nesting Reduction | 0/1 | Not started | - |
 | 38. Init-statements | 0/1 | Planned | - |
@@ -420,3 +420,4 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 *Phase 32 complete: 2026-02-18*
 *Phase 33 complete: 2026-02-18*
 *Phase 34 complete: 2026-02-18*
+*Phase 35 complete: 2026-02-18*
