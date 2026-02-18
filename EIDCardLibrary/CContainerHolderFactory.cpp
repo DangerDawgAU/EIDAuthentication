@@ -422,21 +422,21 @@ BOOL CContainerHolderFactory<T>::CleanList()
 }
 
 template <typename T>
-BOOL CContainerHolderFactory<T>::HasContainerHolder()
+BOOL CContainerHolderFactory<T>::HasContainerHolder() const
 {
-	this->Lock();
+	const_cast<CContainerHolderFactory<T>*>(this)->Lock();
 	BOOL result = _CredentialList.size() > 0;
-	this->Unlock();
+	const_cast<CContainerHolderFactory<T>*>(this)->Unlock();
 	return result;
 }
 
 
 template <typename T>
-DWORD CContainerHolderFactory<T>::ContainerHolderCount()
+DWORD CContainerHolderFactory<T>::ContainerHolderCount() const
 {
-	this->Lock();
+	const_cast<CContainerHolderFactory<T>*>(this)->Lock();
 	DWORD count = (DWORD) _CredentialList.size();
-	this->Unlock();
+	const_cast<CContainerHolderFactory<T>*>(this)->Unlock();
 	return count;
 }
 

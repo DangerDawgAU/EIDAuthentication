@@ -43,8 +43,8 @@ public:
 															   __in PBYTE Data, __in DWORD DataSize);
 	VOID Lock();
 	VOID Unlock();
-	BOOL HasContainerHolder();
-	DWORD ContainerHolderCount();
+	BOOL HasContainerHolder() const;
+	DWORD ContainerHolderCount() const;
 	T* GetContainerHolderAt(DWORD dwIndex);
 private:
 	BOOL ConnectNotificationGeneric(__in LPCTSTR szReaderName,__in LPCTSTR szCardName, __in USHORT ActivityCount);
