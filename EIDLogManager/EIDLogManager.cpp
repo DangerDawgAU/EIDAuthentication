@@ -26,7 +26,9 @@
 #endif
 #endif
 
-#define CLSCTX_INPROC_SERVER  1
+// Local override of Windows SDK CLSCTX_INPROC_SERVER (typically CLSCTX_INPROC_SERVER = 0x1 from objbase.h)
+// Using constexpr for type safety while maintaining the same value
+constexpr LONG CLSCTX_INPROC_SERVER_LOCAL = 1;
 
 // Variables globales�:
 HINSTANCE hInst;								// instance actuelle
@@ -141,7 +143,7 @@ void SaveLog(HWND hDlg)
 	{
 		HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog,
 									  nullptr,
-									  CLSCTX_INPROC_SERVER, 
+									  CLSCTX_INPROC_SERVER_LOCAL,
 									  IID_PPV_ARGS(&pSaveDialog));
 
 		if (!SUCCEEDED(hr))
