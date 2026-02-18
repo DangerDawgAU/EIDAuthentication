@@ -204,8 +204,8 @@ static BOOL HandleDeleteOption(HWND hWnd)
 	// delete all data
 	if (!ClearCard(szReader, szCard))
 	{
-		DWORD dwError = GetLastError();
-		if (dwError != SCARD_W_CANCELLED_BY_USER)
+		// C++17 init-statement: dwError is only used within this if block
+		if (DWORD dwError = GetLastError(); dwError != SCARD_W_CANCELLED_BY_USER)
 			MessageBoxWin32Ex(dwError, hWnd);
 		SetWindowLongPtr(hWnd, DWLP_MSGRESULT, -1);
 		return TRUE;
@@ -230,8 +230,8 @@ static BOOL HandleCreateOption(HWND hWnd, PCCERT_CONTEXT pRootCert)
 		}
 		else
 		{
-			DWORD dwError = GetLastError();
-			if (dwError != SCARD_W_CANCELLED_BY_USER)
+			// C++17 init-statement: dwError is only used within this if block
+			if (DWORD dwError = GetLastError(); dwError != SCARD_W_CANCELLED_BY_USER)
 				MessageBoxWin32Ex(dwError, hWnd);
 			SetWindowLongPtr(hWnd, DWLP_MSGRESULT, -1);
 			return TRUE;
@@ -259,8 +259,8 @@ static BOOL HandleUseThisOption(HWND hWnd, PCCERT_CONTEXT pRootCert)
 	if (wValidityYears > MAX_CERT_VALIDITY_YEARS) wValidityYears = MAX_CERT_VALIDITY_YEARS;
 	if (!CreateSmartCardCertificate(pRootCert, szReader, szCard, wValidityYears))
 	{
-		DWORD dwError = GetLastError();
-		if (dwError != SCARD_W_CANCELLED_BY_USER)
+		// C++17 init-statement: dwError is only used within this if block
+		if (DWORD dwError = GetLastError(); dwError != SCARD_W_CANCELLED_BY_USER)
 			MessageBoxWin32Ex(dwError, hWnd);
 		SetWindowLongPtr(hWnd, DWLP_MSGRESULT, -1);
 		return TRUE;
