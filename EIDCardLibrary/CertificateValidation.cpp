@@ -234,7 +234,7 @@ LPCTSTR GetTrustErrorText(DWORD Status)
 		return EID::make_unexpected(HRESULT_FROM_WIN32(GetLastError()));
 	}
 
-	PCERT_ENHKEY_USAGE pCertUsage = static_cast<PCERT_ENHKEY_USAGE>(EIDAlloc(dwSize));
+	auto pCertUsage = static_cast<PCERT_ENHKEY_USAGE>(EIDAlloc(dwSize));
 	if (!pCertUsage)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error 0x%08x returned by EIDAlloc", GetLastError());

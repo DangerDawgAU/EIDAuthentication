@@ -127,7 +127,7 @@ HRESULT CSmartCardConnectionNotifier::Stop()
 
 DWORD WINAPI CSmartCardConnectionNotifier::_ThreadProc(LPVOID lpParameter) 
 {
-	CSmartCardConnectionNotifier *pSmartCardConnectionNotifier = static_cast<CSmartCardConnectionNotifier *>(lpParameter);
+	auto pSmartCardConnectionNotifier = static_cast<CSmartCardConnectionNotifier*>(lpParameter);
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"");
 	pSmartCardConnectionNotifier->WaitForSmartCardInsertion();
 
