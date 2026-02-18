@@ -152,7 +152,7 @@ HRESULT CMessageCredential::GetFieldState(
 		*pcpfs = _rgFieldStatePairs[dwFieldID].cpfs;
 		if (dwFieldID == SMFI_CANCELFORCEPOLICY && (_cpus == CPUS_LOGON || _cpus == CPUS_UNLOCK_WORKSTATION))
 		{
-			if (GetPolicyValue(scforceoption))
+			if (GetPolicyValue(GPOPolicy::scforceoption))
 			{
 				*pcpfs = CPFS_DISPLAY_IN_SELECTED_TILE;
 			}
@@ -183,7 +183,7 @@ HRESULT CMessageCredential::GetStringValue(
 			// Make a copy of the string and return that. The caller
 			// is responsible for freeing it.
 			UINT MessageId;
-			if (_dwStatus == Reading)
+			if (_dwStatus == CMessageCredentialStatus::Reading)
 			{
 				MessageId = 38;
 			}

@@ -322,7 +322,7 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 		{
 			if (IsElevated())
 			{
-				fReturn = SetPolicyValue(AllowTimeInvalidCertificates, 1);
+				fReturn = SetPolicyValue(GPOPolicy::AllowTimeInvalidCertificates, 1);
 				if (!fReturn) dwError = GetLastError();
 			}
 			else

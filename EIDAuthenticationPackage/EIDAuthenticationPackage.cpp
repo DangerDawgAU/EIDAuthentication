@@ -597,7 +597,7 @@ extern "C"
 			{
 				if (szPassword) 
 				{
-					response.Password.Buffer = static_cast<PWSTR>(static_cast<PUCHAR>(*ProtocolReturnBuffer) + sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER));
+					response.Password.Buffer = reinterpret_cast<PWSTR>(static_cast<PUCHAR>(*ProtocolReturnBuffer) + sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER));
 				}
 				StatusReturned = MyLsaDispatchTable->CopyToClientBuffer(ClientRequest, sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER), *ProtocolReturnBuffer, &response);
 				if (StatusReturned == STATUS_SUCCESS && szPassword) 
@@ -803,7 +803,7 @@ extern "C"
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RemapPointer 0x%08X", Status);
 				return Status;
 			}
-			PEID_SMARTCARD_CSP_INFO pSmartCardCspInfo = static_cast<PEID_SMARTCARD_CSP_INFO>(pUnlockLogon->Logon.CspData);
+			PEID_SMARTCARD_CSP_INFO pSmartCardCspInfo = reinterpret_cast<PEID_SMARTCARD_CSP_INFO>(pUnlockLogon->Logon.CspData);
 			EIDDebugPrintEIDUnlockLogonStruct(WINEVENT_LEVEL_VERBOSE, pUnlockLogon);
 			
 			CStoredCredentialManager* manager = CStoredCredentialManager::Instance();

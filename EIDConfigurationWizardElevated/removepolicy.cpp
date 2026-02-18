@@ -13,7 +13,7 @@ INT_PTR CALLBACK	WndProc_RemovePolicy(HWND hWnd, UINT message, WPARAM wParam, [[
 	{
 	case WM_INITDIALOG:
 		CenterWindow(hWnd);
-		dwValue = GetPolicyValue(scremoveoption);
+		dwValue = GetPolicyValue(GPOPolicy::scremoveoption);
 		switch(dwValue)
 		{
 		case 0:
@@ -41,19 +41,19 @@ INT_PTR CALLBACK	WndProc_RemovePolicy(HWND hWnd, UINT message, WPARAM wParam, [[
 		case IDOK:
 			if (IsDlgButtonChecked(hWnd, IDC_NOACTION))
 			{
-				SetPolicyValue(scremoveoption, 0);
+				SetPolicyValue(GPOPolicy::scremoveoption, 0);
 			}
 			else if(IsDlgButtonChecked(hWnd, IDC_LOCK))
 			{
-				SetPolicyValue(scremoveoption, 1);
+				SetPolicyValue(GPOPolicy::scremoveoption, 1);
 			}
 			else if (IsDlgButtonChecked(hWnd, IDC_LOGOFF))
 			{
-				SetPolicyValue(scremoveoption, 2);
+				SetPolicyValue(GPOPolicy::scremoveoption, 2);
 			}
 			else if (IsDlgButtonChecked(hWnd, IDC_DISCONNECT))
 			{
-				SetPolicyValue(scremoveoption, 3);
+				SetPolicyValue(GPOPolicy::scremoveoption, 3);
 			}
 			EndDialog(hWnd, 0);
 			return TRUE;
