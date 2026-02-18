@@ -90,25 +90,25 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 	switch(Message)
 	{
 	case EID_CREDENTIAL_PROVIDER_READER_STATE::EIDCPRSConnecting:
-		if (szCardName)
-		{
-			if (_pMessageCredential)
-			{
-				_pMessageCredential->SetStatus(CMessageCredentialStatus::Reading);
-				_pMessageCredential->IncreaseSmartCardCount();
-			}
-			if (_pcpe != nullptr)
-			{
-				_pcpe->CredentialsChanged(_upAdviseContext);
-				Sleep(100);
-			}
-			_CredentialList.ConnectNotification(szReader,szCardName,ActivityCount);
-			if (_pMessageCredential) _pMessageCredential->SetStatus(CMessageCredentialStatus::EndReading);
+		// Guard clause: skip if no card name
+		if (!szCardName) break;
 
-			if (_pcpe != nullptr)
-			{
-				_pcpe->CredentialsChanged(_upAdviseContext);
-			}
+		if (_pMessageCredential)
+		{
+			_pMessageCredential->SetStatus(CMessageCredentialStatus::Reading);
+			_pMessageCredential->IncreaseSmartCardCount();
+		}
+		if (_pcpe != nullptr)
+		{
+			_pcpe->CredentialsChanged(_upAdviseContext);
+			Sleep(100);
+		}
+		_CredentialList.ConnectNotification(szReader,szCardName,ActivityCount);
+		if (_pMessageCredential) _pMessageCredential->SetStatus(CMessageCredentialStatus::EndReading);
+
+		if (_pcpe != nullptr)
+		{
+			_pcpe->CredentialsChanged(_upAdviseContext);
 		}
 		break;
 	case EID_CREDENTIAL_PROVIDER_READER_STATE::EIDCPRSDisconnected:
@@ -136,40 +136,35 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 
 HRESULT CEIDProvider::Initialize()
 {
+	// Guard clause: already initialized
+	if (_pMessageCredential)
+	{
+		return S_OK;
+	}
+
 	// Create the CEIDCredential (for connected scenarios), the CMessageCredential
     // (for disconnected scenarios), and the CEIDDetection (to detect commands, such
     // as the connect/disconnect here).  We can get SetUsageScenario multiple times
-    // (for example, cancel back out to the CAD screen, and then hit CAD again), 
+    // (for example, cancel back out to the CAD screen, and then hit CAD again),
     // but there's no point in recreating our creds, since they're the same all the
     // time
-    HRESULT hr;
+
+    // For the locked case, a more advanced credprov might only enumerate tiles for the
+    // user whose owns the locked session, since those are the only creds that will work
+
+    _pMessageCredential = new CMessageCredential();
     if (!_pMessageCredential)
     {
-        // For the locked case, a more advanced credprov might only enumerate tiles for the 
-        // user whose owns the locked session, since those are the only creds that will work
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"E_OUTOFMEMORY");
+		return E_OUTOFMEMORY;
+	}
 
-        _pMessageCredential = new CMessageCredential();
-        if (_pMessageCredential)
-        {
-  
-			hr = _pMessageCredential->Initialize(s_rgMessageCredProvFieldDescriptors, s_rgMessageFieldStatePairs, L"Please connect");
-			_CredentialList.Lock();
-			_CredentialList.SetUsageScenario(_cpus,_dwFlags);
-			_CredentialList.Unlock();
-			_pMessageCredential->SetUsageScenario(_cpus,_dwFlags);
-			_pSmartCardConnectionNotifier = new CSmartCardConnectionNotifier(this);
-        }
-        else
-        {
-            hr = E_OUTOFMEMORY;
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"E_OUTOFMEMORY");
-        }
-    }
-    else
-    {
-        //everything's already all set up
-        hr = S_OK;
-    }
+	HRESULT hr = _pMessageCredential->Initialize(s_rgMessageCredProvFieldDescriptors, s_rgMessageFieldStatePairs, L"Please connect");
+	_CredentialList.Lock();
+	_CredentialList.SetUsageScenario(_cpus,_dwFlags);
+	_CredentialList.Unlock();
+	_pMessageCredential->SetUsageScenario(_cpus,_dwFlags);
+	_pSmartCardConnectionNotifier = new CSmartCardConnectionNotifier(this);
 	return hr;
 }
 
