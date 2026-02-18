@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 36 - Complexity Reduction
+Phase: 37 - Nesting Reduction
 Current Plan: 1/1
 Status: Complete
-Last activity: 2026-02-18 — Phase 36 Plan 01 complete
+Last activity: 2026-02-18 — Phase 37 Plan 01 complete
 
-Progress: [========------------] 60% (6/10 phases)
+Progress: [=========-----------] 70% (7/10 phases)
 
 ## Performance Metrics
 
@@ -42,6 +42,7 @@ Recent decisions for v1.4:
 - Phase 31 (Macro to constexpr) is foundation - macros must be constexpr before globals can be const
 - Phase 34 depends on Phase 31 - macro conversion enables global const correctness
 - Phase 37 depends on Phase 36 - complexity helpers reduce nesting depth
+- Phase 37 nesting reduction: SEH-protected functions documented as won't-fix, guard clauses added to non-SEH functions
 - Depth setting: Quick (10 phases matches depth guidance)
 - CLSCTX_INPROC_SERVER renamed to CLSCTX_INPROC_SERVER_LOCAL to avoid confusion with Windows SDK definition
 - CERT_HASH_LENGTH documented as won't-fix because Windows SDK defines it as a macro
@@ -53,6 +54,7 @@ Recent decisions for v1.4:
 - COM interface methods documented as won't-fix per CONST-04 - cannot change Windows API contracts
 - Complexity helpers placed in anonymous namespace for internal linkage
 - SEH blocks cannot be refactored - complexity inside __try documented as won't-fix
+- [Phase 37]: Guard clauses and early return patterns for nesting reduction; SEH-protected functions documented as won't-fix
 
 ### Won't-Fix Categories (v1.4)
 
@@ -66,10 +68,11 @@ Recent decisions for v1.4:
 | std::string/std::vector in LSASS | Heap allocation unsafe in LSASS context |
 | Windows API enum types | Must match Windows definitions |
 | Security-critical explicit types | HRESULT, NTSTATUS, handles need clarity |
+| Phase 37 P01 | 15min | 4 tasks | 3 files |
 
 ### Pending Todos
 
-None. Ready to start Phase 36.
+None. Ready to start Phase 38.
 
 ### Blockers/Concerns
 
@@ -86,8 +89,8 @@ Remaining errors are out of scope for Phase 36 and should be addressed in a futu
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Phase 36 Plan 01 complete
-Resume file: Run `/gsd:plan-phase 37` to continue
+Stopped at: Phase 37 Plan 01 complete
+Resume file: Run `/gsd:plan-phase 38` to continue
 
 ## Key Constraints (Always Remember)
 
@@ -102,4 +105,4 @@ Resume file: Run `/gsd:plan-phase 37` to continue
 
 *Last updated: 2026-02-18*
 *Current milestone: v1.4 SonarQube Zero*
-*Next: `/gsd:plan-phase 37` to continue v1.4 SonarQube Zero*
+*Next: `/gsd:plan-phase 38` to continue v1.4 SonarQube Zero*

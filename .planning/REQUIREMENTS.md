@@ -29,8 +29,8 @@ SonarQube Zero — Eliminate all fixable SonarQube issues and document remaining
 
 - [ ] **STRUCT-01**: Cognitive complexity reduced via helper function extraction
 - [ ] **STRUCT-02**: SEH-protected code documented as won't-fix for complexity
-- [ ] **STRUCT-03**: Deep nesting reduced via early return/guard clauses
-- [ ] **STRUCT-04**: SEH blocks kept intact (no extraction from __try)
+- [x] **STRUCT-03**: Deep nesting reduced via early return/guard clauses
+- [x] **STRUCT-04**: SEH blocks kept intact (no extraction from __try)
 
 ### Modern C++ Patterns
 
@@ -183,8 +183,8 @@ Explicitly excluded. Documented to prevent scope creep.
 | CONST-04 | Phase 35 | Pending |
 | STRUCT-01 | Phase 36 | Pending |
 | STRUCT-02 | Phase 36 | Pending |
-| STRUCT-03 | Phase 37 | Pending |
-| STRUCT-04 | Phase 37 | Pending |
+| STRUCT-03 | Phase 37 | Complete |
+| STRUCT-04 | Phase 37 | Complete |
 | MODERN-01 | Phase 38 | Pending |
 | MODERN-02 | Phase 33 | Complete |
 | MODERN-03 | Phase 39 | Pending |

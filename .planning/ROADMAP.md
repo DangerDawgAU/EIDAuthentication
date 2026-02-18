@@ -94,7 +94,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 34: Const Correctness - Globals** - Global variables analyzed, all const-eligible already marked, runtime-assigned documented as won't-fix (Complete 2026-02-18)
 - [x] **Phase 35: Const Correctness - Functions** - Mark member functions const where state is not modified (Complete 2026-02-18)
 - [x] **Phase 36: Complexity Reduction** - Reduce cognitive complexity via helper function extraction (Complete 2026-02-18)
-- [ ] **Phase 37: Nesting Reduction** - Reduce deep nesting via early return/guard clauses
+- [x] **Phase 37: Nesting Reduction** - Reduce deep nesting via early return/guard clauses (completed 2026-02-18)
 - [ ] **Phase 38: Init-statements** - Use init-statements in if/switch where scope benefits
 - [ ] **Phase 39: Integration Changes** - std::array conversion, LSA safety won't-fix documentation
 - [ ] **Phase 40: Final Verification** - Full build verification, SonarQube scan, won't-fix documentation
@@ -323,7 +323,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 34. Const Correctness - Globals | 1/1 | Complete    | 2026-02-18 |
 | 35. Const Correctness - Functions | 1/1 | Complete    | 2026-02-18 |
 | 36. Complexity Reduction | 0/1 | Complete    | 2026-02-18 |
-| 37. Nesting Reduction | 0/1 | Not started | - |
+| 37. Nesting Reduction | 1/1 | Complete   | 2026-02-18 |
 | 38. Init-statements | 0/1 | Planned | - |
 | 39. Integration Changes | 0/1 | Planned | - |
 | 40. Final Verification | 0/1 | Not started | - |
