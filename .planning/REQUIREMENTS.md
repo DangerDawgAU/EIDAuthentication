@@ -43,10 +43,10 @@ SonarQube Zero — Eliminate all fixable SonarQube issues and document remaining
 
 ### Verification
 
-- [ ] **VER-01**: All 7 projects build with zero errors
-- [ ] **VER-02**: No new warnings introduced
-- [ ] **VER-03**: SonarQube scan shows improvement from baseline
-- [ ] **VER-04**: Won't-fix issues documented with justifications
+- [x] **VER-01**: All 7 projects build with zero errors
+- [x] **VER-02**: No new warnings introduced
+- [x] **VER-03**: SonarQube scan shows improvement from baseline
+- [x] **VER-04**: Won't-fix issues documented with justifications
 
 ## v1.3 Requirements (COMPLETE)
 
@@ -191,10 +191,10 @@ Explicitly excluded. Documented to prevent scope creep.
 | MODERN-04 | Phase 39 | Pending |
 | MODERN-05 | Phase 33 | Complete |
 | MODERN-06 | Phase 33 | Complete |
-| VER-01 | Phase 40 | Pending |
-| VER-02 | Phase 40 | Pending |
-| VER-03 | Phase 40 | Pending |
-| VER-04 | Phase 40 | Pending |
+| VER-01 | Phase 40 | Complete |
+| VER-02 | Phase 40 | Complete |
+| VER-03 | Phase 40 | Complete |
+| VER-04 | Phase 40 | Complete |
 
 **Coverage:**
 - v1.4 requirements: 23 total
