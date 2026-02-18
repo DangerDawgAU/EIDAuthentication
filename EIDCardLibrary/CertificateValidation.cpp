@@ -33,6 +33,144 @@
 // be implicitly converted to non-const LPSTR. This static array provides writable storage.
 static char s_szOidSmartCardLogon[] = szOID_KP_SMARTCARD_LOGON;
 
+//=============================================================================
+// HELPER FUNCTIONS FOR COMPLEXITY REDUCTION
+// These helpers extract chain validation logic to reduce cognitive complexity
+// in IsTrustedCertificate and MakeTrustedCertificate functions.
+//=============================================================================
+
+namespace {
+
+// Build the certificate chain using CertGetCertificateChain
+// Returns the chain context on success, nullptr on failure
+// Complexity reduction helper for certificate validation (Phase 36-01)
+PCCERT_CHAIN_CONTEXT BuildCertificateChain(
+    __in HCERTCHAINENGINE hChainEngine,
+    __in PCCERT_CONTEXT pCertContext,
+    __in PCERT_CHAIN_PARA pChainPara,
+    __in DWORD dwChainFlags)
+{
+    PCCERT_CHAIN_CONTEXT pChainContext = nullptr;
+
+    if (!CertGetCertificateChain(hChainEngine, pCertContext, nullptr, nullptr,
+                                  pChainPara, dwChainFlags, nullptr, &pChainContext))
+    {
+        EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error 0x%08x returned by CertGetCertificateChain",
+                            GetLastError());
+        return nullptr;
+    }
+
+    return pChainContext;
+}
+
+// Verify chain policy using CertVerifyCertificateChainPolicy
+// Returns TRUE if policy verification succeeded, FALSE otherwise
+// Complexity reduction helper for certificate validation (Phase 36-01)
+BOOL VerifyChainPolicy(
+    __in PCCERT_CHAIN_CONTEXT pChainContext,
+    __in PCERT_CHAIN_POLICY_PARA pChainPolicy,
+    __out PCERT_CHAIN_POLICY_STATUS pPolicyStatus)
+{
+    if (!CertVerifyCertificateChainPolicy(CERT_CHAIN_POLICY_BASE, pChainContext,
+                                           pChainPolicy, pPolicyStatus))
+    {
+        EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Certificate chain policy verification failed");
+        EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"CertVerifyCertificateChainPolicy error 0x%08x",
+                            GetLastError());
+        return FALSE;
+    }
+    return TRUE;
+}
+
+// Check chain trust status and determine if there are hard failures
+// Returns TRUE if chain has only soft failures (acceptable), FALSE if hard failures exist
+// Complexity reduction helper for certificate validation (Phase 36-01)
+BOOL CheckChainTrustStatus(__in PCCERT_CHAIN_CONTEXT pChainContext, __out DWORD* pdwError)
+{
+    *pdwError = 0;
+
+    if (!pChainContext->TrustStatus.dwErrorStatus)
+    {
+        return TRUE;  // No errors
+    }
+
+    DWORD dwStatus = pChainContext->TrustStatus.dwErrorStatus;
+
+    // Soft failures: non-security-critical conditions that allow continuation
+    // Revocation status unknown is a soft failure - this system is locally administered
+    // without access to CRL/OCSP infrastructure
+    constexpr DWORD SOFT_FAILURES = CERT_TRUST_IS_NOT_TIME_NESTED |
+                                    CERT_TRUST_REVOCATION_STATUS_UNKNOWN |
+                                    CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT |
+                                    CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT |
+                                    CERT_TRUST_HAS_NOT_PERMITTED_NAME_CONSTRAINT |
+                                    CERT_TRUST_HAS_EXCLUDED_NAME_CONSTRAINT;
+
+    DWORD dwHardFailures = dwStatus & ~SOFT_FAILURES;
+
+    if (dwHardFailures != 0)
+    {
+        *pdwError = dwStatus;
+        EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error %s (0x%08x) returned by CertGetCertificateChain",
+                            GetTrustErrorText(dwStatus), dwStatus);
+        return FALSE;
+    }
+
+    // Soft failures only - log and continue
+    EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Chain has soft failures (0x%08x) - continuing", dwStatus);
+    return TRUE;
+}
+
+// Log chain validation error with descriptive text
+// Complexity reduction helper for certificate validation (Phase 36-01)
+void LogChainValidationError(__in DWORD dwError)
+{
+    LPCTSTR pszErrorText = GetTrustErrorText(dwError);
+    if (pszErrorText)
+    {
+        EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Chain validation error: %s (0x%08x)",
+                            pszErrorText, dwError);
+    }
+    else
+    {
+        EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Chain validation error: 0x%08x", dwError);
+    }
+}
+
+// Check if chain depth exceeds reasonable limits
+// Returns TRUE if depth is acceptable, FALSE if chain is too deep
+// Complexity reduction helper for certificate validation (Phase 36-01)
+BOOL CheckChainDepth(__in PCCERT_CHAIN_CONTEXT pChainContext, __out DWORD* pdwError)
+{
+    *pdwError = 0;
+
+    // Typical chains are 2-3 levels (Root -> [Intermediate] -> End Entity)
+    constexpr DWORD MAX_CHAIN_DEPTH = 5;
+
+    if (pChainContext->cChain > 0 && pChainContext->rgpChain[0]->cElement > MAX_CHAIN_DEPTH)
+    {
+        *pdwError = static_cast<DWORD>(CERT_E_CHAINING);
+        EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Certificate chain depth %d exceeds maximum %d",
+                            pChainContext->rgpChain[0]->cElement, MAX_CHAIN_DEPTH);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+// Check if policy status error is a soft failure that can be ignored
+// Returns TRUE if policy check should continue, FALSE if it's a hard failure
+// Complexity reduction helper for certificate validation (Phase 36-01)
+BOOL IsPolicySoftFailure(__in DWORD dwPolicyError)
+{
+    // Soft policy failures for self-managed PKI
+    return (dwPolicyError == CERT_E_VALIDITYPERIODNESTING ||
+            dwPolicyError == CRYPT_E_NO_REVOCATION_CHECK ||
+            dwPolicyError == CRYPT_E_REVOCATION_OFFLINE);
+}
+
+} // anonymous namespace
+
 void InitChainValidationParams(ChainValidationParams* params)
 {
     params->EnhkeyUsage.cUsageIdentifier = 0;
@@ -298,25 +436,24 @@ BOOL IsCertificateInComputerTrustedPeopleStore(__in PCCERT_CONTEXT pCertContext)
 
 BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFlag)
 {
-    //
-    // Validate certificate chain.
-    //
-	BOOL fValidation = FALSE;
+	// Refactored for complexity reduction (Phase 36-01)
+	// Uses helper functions BuildCertificateChain, VerifyChainPolicy, etc.
 
-	PCCERT_CHAIN_CONTEXT     pChainContext     = nullptr;
-	ChainValidationParams    params;
-	LPSTR					szOid;
-	HCERTCHAINENGINE		hChainEngine		= HCCE_LOCAL_MACHINE;
+	BOOL fValidation = FALSE;
+	PCCERT_CHAIN_CONTEXT pChainContext = nullptr;
+	ChainValidationParams params;
+	LPSTR szOid;
+	HCERTCHAINENGINE hChainEngine = HCCE_LOCAL_MACHINE;
 	DWORD dwError = 0;
-	//---------------------------------------------------------
-	   // Initialize data structures for chain building.
+
+	// Initialize data structures for chain building
 	InitChainValidationParams(&params);
 
 	if (dwFlag & EID_CERTIFICATE_FLAG_USERSTORE)
 	{
 		hChainEngine = HCCE_CURRENT_USER;
 	}
-	
+
 	__try
 	{
 		// Always enforce Smart Card Logon EKU - certificates without this EKU must not authenticate
@@ -324,108 +461,76 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 		szOid = s_szOidSmartCardLogon;
 		params.EnhkeyUsage.rgpszUsageIdentifier = &szOid;
 		params.CertUsage.dwType = USAGE_MATCH_TYPE_OR;
+
 		if (!HasCertificateRightEKU(pCertContext))
 		{
 			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by HasCertificateRightEKU", GetLastError());
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error 0x%08x returned by HasCertificateRightEKU", dwError);
 			__leave;
 		}
-		// Security hardening: Always build and validate the certificate chain
-		// Even for certificates in TrustedPeople store, we verify the chain to ensure:
-		// 1. Certificate signature is valid
-		// 2. Chain integrity is maintained
-		// Revocation checking is not performed - this system is locally administered
-		// without access to CRL/OCSP infrastructure
+
+		// Build certificate chain using helper
 		DWORD dwChainFlags = CERT_CHAIN_ENABLE_PEER_TRUST;
-
-		if(!CertGetCertificateChain(
-			hChainEngine,pCertContext,nullptr,nullptr,&params.ChainPara,dwChainFlags,nullptr,&pChainContext))
+		pChainContext = BuildCertificateChain(hChainEngine, pCertContext, &params.ChainPara, dwChainFlags);
+		if (!pChainContext)
 		{
 			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CertGetCertificateChain", GetLastError());
 			__leave;
 		}
 
-		// Reject chains that exceed a reasonable depth for smart card authentication
-		// Typical chains are 2-3 levels (Root -> [Intermediate] -> End Entity)
-		constexpr DWORD MAX_CHAIN_DEPTH = 5;
-		if (pChainContext->cChain > 0 && pChainContext->rgpChain[0]->cElement > MAX_CHAIN_DEPTH)
+		// Check chain depth using helper
+		if (!CheckChainDepth(pChainContext, &dwError))
 		{
-			dwError = static_cast<DWORD>(CERT_E_CHAINING);
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Certificate chain depth %d exceeds maximum %d", pChainContext->rgpChain[0]->cElement, MAX_CHAIN_DEPTH);
 			__leave;
 		}
 
-		// Check chain trust status - handle various trust issues appropriately
-		if (pChainContext->TrustStatus.dwErrorStatus)
+		// Check chain trust status using helper
+		if (!CheckChainTrustStatus(pChainContext, &dwError))
 		{
-			DWORD dwStatus = pChainContext->TrustStatus.dwErrorStatus;
-
-			// Soft failures: non-security-critical conditions that allow continuation
-			// Revocation status unknown is a soft failure - this system is locally administered
-			// without access to CRL/OCSP infrastructure
-			DWORD dwSoftFailures = CERT_TRUST_IS_NOT_TIME_NESTED |
-			                       CERT_TRUST_REVOCATION_STATUS_UNKNOWN |
-			                       CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT |
-			                       CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT |
-			                       CERT_TRUST_HAS_NOT_PERMITTED_NAME_CONSTRAINT |
-			                       CERT_TRUST_HAS_EXCLUDED_NAME_CONSTRAINT;
-
-			DWORD dwHardFailures = dwStatus & ~dwSoftFailures;
-
-			if (dwHardFailures != 0)
-			{
-				dwError = dwStatus;
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error %s (0x%08x) returned by CertGetCertificateChain",GetTrustErrorText(dwStatus),dwStatus);
-				__leave;
-			}
-			// Soft failures only - log and continue
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Chain has soft failures (0x%08x) - continuing",dwStatus);
+			__leave;
 		}
 
-		if(!CertVerifyCertificateChainPolicy(CERT_CHAIN_POLICY_BASE, pChainContext, &params.ChainPolicy, &params.PolicyStatus))
+		// Verify chain policy using helper
+		if (!VerifyChainPolicy(pChainContext, &params.ChainPolicy, &params.PolicyStatus))
 		{
 			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Certificate chain policy verification failed");
-			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"CertVerifyCertificateChainPolicy error 0x%08x", dwError);
 			__leave;
 		}
 
-		if(params.PolicyStatus.dwError)
+		// Check policy status
+		if (params.PolicyStatus.dwError)
 		{
-			// Soft policy failures for self-managed PKI
-			if (params.PolicyStatus.dwError == CERT_E_VALIDITYPERIODNESTING ||
-			    params.PolicyStatus.dwError == CRYPT_E_NO_REVOCATION_CHECK ||
-			    params.PolicyStatus.dwError == CRYPT_E_REVOCATION_OFFLINE)
+			if (IsPolicySoftFailure(params.PolicyStatus.dwError))
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Policy soft failure (0x%08x) - continuing", params.PolicyStatus.dwError);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Policy soft failure (0x%08x) - continuing",
+				                    params.PolicyStatus.dwError);
 			}
 			else
 			{
 				dwError = params.PolicyStatus.dwError;
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Certificate chain policy check failed");
-				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Policy error %s (0x%08x)",GetTrustErrorText(params.PolicyStatus.dwError),params.PolicyStatus.dwError);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Certificate chain policy check failed");
+				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Policy error %s (0x%08x)",
+				                    GetTrustErrorText(params.PolicyStatus.dwError), params.PolicyStatus.dwError);
 				__leave;
 			}
 		}
 
-		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Chain validated");
+		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"Chain validated");
 
 		// Always enforce time validity - expired certificates must not authenticate
 		LPFILETIME pTimeToVerify = nullptr;
 		if (CertVerifyTimeValidity(pTimeToVerify, pCertContext->pCertInfo))
 		{
 			dwError = static_cast<DWORD>(CERT_E_EXPIRED);
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Certificate time validity check failed");
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Certificate time validity check failed");
 			__leave;
 		}
 
 		fValidation = TRUE;
-		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Valid");
+		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"Valid");
 	}
 	__finally
 	{
-
 		if (pChainContext)
 			CertFreeCertificateChain(pChainContext);
 	}
