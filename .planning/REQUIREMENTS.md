@@ -15,13 +15,13 @@ SonarQube Zero — Eliminate all fixable SonarQube issues and document remaining
 
 ### Auto Modernization
 
-- [ ] **AUTO-01**: Redundant type declarations converted to auto where type is obvious
-- [ ] **AUTO-02**: Security-critical types (HRESULT, NTSTATUS, handles) kept explicit
+- [x] **AUTO-01**: Redundant type declarations converted to auto where type is obvious
+- [x] **AUTO-02**: Security-critical types (HRESULT, NTSTATUS, handles) kept explicit
 
 ### Const Correctness
 
-- [ ] **CONST-01**: Global variables marked const where truly immutable
-- [ ] **CONST-02**: Runtime-assigned globals documented as won't-fix (LSA pointers, DLL state)
+- [x] **CONST-01**: Global variables marked const where truly immutable (all const-eligible already marked)
+- [x] **CONST-02**: Runtime-assigned globals documented as won't-fix (LSA pointers, DLL state, tracing state, UI state, file handles, SAM function pointers)
 - [ ] **CONST-03**: Member functions marked const where state is not modified
 - [ ] **CONST-04**: COM/interface methods documented as won't-fix (cannot change signatures)
 
@@ -172,13 +172,13 @@ Explicitly excluded. Documented to prevent scope creep.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MACRO-01 | Phase 31 | Pending |
-| MACRO-02 | Phase 31 | Pending |
-| MACRO-03 | Phase 31 | Pending |
-| AUTO-01 | Phase 32 | Pending |
-| AUTO-02 | Phase 32 | Pending |
-| CONST-01 | Phase 34 | Pending |
-| CONST-02 | Phase 34 | Pending |
+| MACRO-01 | Phase 31 | Complete |
+| MACRO-02 | Phase 31 | Complete |
+| MACRO-03 | Phase 31 | Complete |
+| AUTO-01 | Phase 32 | Complete |
+| AUTO-02 | Phase 32 | Complete |
+| CONST-01 | Phase 34 | Complete |
+| CONST-02 | Phase 34 | Complete |
 | CONST-03 | Phase 35 | Pending |
 | CONST-04 | Phase 35 | Pending |
 | STRUCT-01 | Phase 36 | Pending |
@@ -186,11 +186,11 @@ Explicitly excluded. Documented to prevent scope creep.
 | STRUCT-03 | Phase 37 | Pending |
 | STRUCT-04 | Phase 37 | Pending |
 | MODERN-01 | Phase 38 | Pending |
-| MODERN-02 | Phase 33 | Pending |
+| MODERN-02 | Phase 33 | Complete |
 | MODERN-03 | Phase 39 | Pending |
 | MODERN-04 | Phase 39 | Pending |
-| MODERN-05 | Phase 33 | Pending |
-| MODERN-06 | Phase 33 | Pending |
+| MODERN-05 | Phase 33 | Complete |
+| MODERN-06 | Phase 33 | Complete |
 | VER-01 | Phase 40 | Pending |
 | VER-02 | Phase 40 | Pending |
 | VER-03 | Phase 40 | Pending |

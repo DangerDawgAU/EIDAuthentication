@@ -91,7 +91,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 31: Macro to constexpr** - Convert safe macros to constexpr, document won't-fix for RC/flow-control macros (Complete 2026-02-18)
 - [x] **Phase 32: Auto Conversion** - Convert redundant type declarations to auto where type is obvious (Complete 2026-02-18)
 - [x] **Phase 33: Independent Style Issues** - Fix C-style casts, enum class conversions, Windows API enum won't-fix (Complete 2026-02-18)
-- [ ] **Phase 34: Const Correctness - Globals** - Mark global variables const where truly immutable
+- [x] **Phase 34: Const Correctness - Globals** - Global variables analyzed, all const-eligible already marked, runtime-assigned documented as won't-fix (Complete 2026-02-18)
 - [ ] **Phase 35: Const Correctness - Functions** - Mark member functions const where state is not modified
 - [ ] **Phase 36: Complexity Reduction** - Reduce cognitive complexity via helper function extraction
 - [ ] **Phase 37: Nesting Reduction** - Reduce deep nesting via early return/guard clauses
@@ -149,7 +149,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Set*() pattern and DllMain initialization checked before marking const
   4. Build passes with zero errors after const additions
 **Plans**:
-- [ ] 34-01-PLAN.md - Analyze all global variables, document runtime-assigned globals as won't-fix (LSA pointers, DLL state, tracing state, UI state, file handles, SAM function pointers)
+- [x] 34-01-PLAN.md - Analyze all global variables, document runtime-assigned globals as won't-fix (LSA pointers, DLL state, tracing state, UI state, file handles, SAM function pointers) (Complete 2026-02-18)
 
 ### Phase 35: Const Correctness - Functions
 **Goal**: Member functions marked const where state is not modified, COM/interface methods documented as won't-fix
@@ -319,7 +319,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 31. Macro to constexpr | 1/1 | Complete    | 2026-02-18 |
 | 32. Auto Conversion | 1/1 | Complete    | 2026-02-18 |
 | 33. Independent Style Issues | 1/1 | Complete    | 2026-02-18 |
-| 34. Const Correctness - Globals | 0/1 | Planned | - |
+| 34. Const Correctness - Globals | 1/1 | Complete    | 2026-02-18 |
 | 35. Const Correctness - Functions | 0/1 | Planned | - |
 | 36. Complexity Reduction | 0/1 | Not started | - |
 | 37. Nesting Reduction | 0/1 | Not started | - |
@@ -419,3 +419,4 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 *Phase 31 complete: 2026-02-18*
 *Phase 32 complete: 2026-02-18*
 *Phase 33 complete: 2026-02-18*
+*Phase 34 complete: 2026-02-18*

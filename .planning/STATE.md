@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 33 - Independent Style Issues
+Phase: 34 - Const Correctness - Globals
 Current Plan: 1/1
 Status: Complete
-Last activity: 2026-02-18 — Phase 33 Plan 01 complete
+Last activity: 2026-02-18 — Phase 34 Plan 01 complete
 
-Progress: [=====---------------] 30% (3/10 phases)
+Progress: [======--------------] 40% (4/10 phases)
 
 ## Performance Metrics
 
@@ -46,6 +46,8 @@ Recent decisions for v1.4:
 - CLSCTX_INPROC_SERVER renamed to CLSCTX_INPROC_SERVER_LOCAL to avoid confusion with Windows SDK definition
 - CERT_HASH_LENGTH documented as won't-fix because Windows SDK defines it as a macro
 - Windows API enum types (SAMPLE_FIELD_ID, EID_INTERACTIVE_LOGON_SUBMIT_TYPE, etc.) kept as unscoped for API compatibility
+- All runtime-assigned globals documented as won't-fix with 6 categories: LSA pointers, tracing state, DLL state, SAM function pointers, UI state, file handles
+- No const additions possible for globals - all eligible globals already marked const/constexpr
 
 ### Won't-Fix Categories (v1.4)
 
@@ -62,17 +64,21 @@ Recent decisions for v1.4:
 
 ### Pending Todos
 
-None. Ready to start Phase 33.
+None. Ready to start Phase 35.
 
 ### Blockers/Concerns
 
-None. v1.4 roadmap is ready for execution.
+Pre-existing build errors from previous phases (documented in 34-01-SUMMARY.md):
+- CertificateValidation.cpp(601): EnforceCSPWhitelist undeclared identifier
+- StoredCredentialManagement.cpp(677): EID_PRIVATE_DATA_TYPE to DWORD conversion error
+
+These are out of scope for Phase 34 and should be addressed in a future phase.
 
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Phase 33 Plan 01 complete
-Resume file: Run `/gsd:plan-phase 34` to continue
+Stopped at: Phase 34 Plan 01 complete
+Resume file: Run `/gsd:plan-phase 35` to continue
 
 ## Key Constraints (Always Remember)
 
@@ -87,4 +93,4 @@ Resume file: Run `/gsd:plan-phase 34` to continue
 
 *Last updated: 2026-02-18*
 *Current milestone: v1.4 SonarQube Zero*
-*Next: `/gsd:plan-phase 34` to start Const Correctness - Globals phase*
+*Next: `/gsd:plan-phase 35` to continue v1.4 SonarQube Zero*
