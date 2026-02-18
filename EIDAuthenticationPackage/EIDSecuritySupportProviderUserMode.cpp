@@ -106,7 +106,7 @@ extern "C"
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-		CUsermodeContext::AddContextInfo(ContextHandle, (PEID_SSP_CALLBACK_MESSAGE) PackedContext->pvBuffer);
+		CUsermodeContext::AddContextInfo(ContextHandle, static_cast<PEID_SSP_CALLBACK_MESSAGE>(PackedContext->pvBuffer));
 		return STATUS_SUCCESS; 
 	}
 

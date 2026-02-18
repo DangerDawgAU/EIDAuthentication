@@ -62,13 +62,13 @@ extern "C"
 	PLSA_STRING LsaInitializeString(PCSTR Source)
 	{
 		size_t Size = strlen(Source);
-		PCHAR Buffer = (PCHAR)EIDAlloc((DWORD) (sizeof(CHAR)*(Size+1)));
+		PCHAR Buffer = static_cast<PCHAR>(EIDAlloc(static_cast<DWORD>(sizeof(CHAR)*(Size+1))));
 		if (Buffer == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Buffer");
 			return NULL;
 		}
 
-		PLSA_STRING Destination = (PLSA_STRING)EIDAlloc(sizeof(LSA_STRING));
+		PLSA_STRING Destination = static_cast<PLSA_STRING>(EIDAlloc(sizeof(LSA_STRING)));
 
 		if (Destination == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Destination");
@@ -78,28 +78,28 @@ extern "C"
 
 		strncpy_s(Buffer,sizeof(CHAR)*(Size+1),
 			Source,sizeof(CHAR)*(Size+1));
-		Destination->Length = (USHORT) ( sizeof(CHAR)*Size);
-		Destination->MaximumLength = (USHORT) (sizeof(CHAR)*(Size+1));
+		Destination->Length = static_cast<USHORT>(sizeof(CHAR)*Size);
+		Destination->MaximumLength = static_cast<USHORT>(sizeof(CHAR)*(Size+1));
 		Destination->Buffer = Buffer;
 		return Destination;
 	}
 
 	PLSA_UNICODE_STRING LsaInitializeUnicodeStringFromWideString(PWSTR Source)
 	{
-		DWORD Size = (DWORD) (wcslen(Source));
+		DWORD Size = static_cast<DWORD>(wcslen(Source));
 		// Validate string length won't overflow USHORT fields in LSA_UNICODE_STRING
 		if (Size > USHRT_MAX / sizeof(WCHAR))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"String too long for UNICODE_STRING (%d chars)", Size);
 			return NULL;
 		}
-		PWSTR Buffer = (PWSTR)EIDAlloc((DWORD) (Size+1) * sizeof(WCHAR));
+		PWSTR Buffer = static_cast<PWSTR>(EIDAlloc(static_cast<DWORD>((Size+1) * sizeof(WCHAR))));
 		if (Buffer == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Buffer");
 			return NULL;
 		}
 
-		PLSA_UNICODE_STRING Destination = (PLSA_UNICODE_STRING)EIDAlloc(sizeof(LSA_UNICODE_STRING));
+		PLSA_UNICODE_STRING Destination = static_cast<PLSA_UNICODE_STRING>(EIDAlloc(sizeof(LSA_UNICODE_STRING)));
 
 		if (Destination == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Destination");
@@ -109,8 +109,8 @@ extern "C"
 
 		wcscpy_s(Buffer,Size+1,
 			Source);
-		Destination->Length = (USHORT) (Size * sizeof(WCHAR));
-		Destination->MaximumLength = (USHORT) ((Size+1) * sizeof(WCHAR));
+		Destination->Length = static_cast<USHORT>(Size * sizeof(WCHAR));
+		Destination->MaximumLength = static_cast<USHORT>((Size+1) * sizeof(WCHAR));
 		Destination->Buffer = Buffer;
 		return Destination;
 	}
@@ -118,12 +118,12 @@ extern "C"
 	PLSA_UNICODE_STRING LsaInitializeUnicodeStringFromUnicodeString(UNICODE_STRING Source)
 	{
 		PLSA_UNICODE_STRING Destination;
-		Destination = (PLSA_UNICODE_STRING)EIDAlloc(sizeof(LSA_UNICODE_STRING));
+		Destination = static_cast<PLSA_UNICODE_STRING>(EIDAlloc(sizeof(LSA_UNICODE_STRING)));
 		if (Destination == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Destination");
 			return NULL;
 		}
-		Destination->Buffer = (WCHAR*)EIDAlloc(Source.Length+sizeof(WCHAR));
+		Destination->Buffer = static_cast<WCHAR*>(EIDAlloc(Source.Length+sizeof(WCHAR)));
 		if (Destination->Buffer == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Destination->Buffer");
 			MyLsaDispatchTable->FreeLsaHeap(Destination);
@@ -257,7 +257,7 @@ extern "C"
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"AuthenticationPackageName = %S",AUTHENTICATIONPACKAGENAME);
 		NTSTATUS Status = STATUS_SUCCESS;
 
-		MyLsaDispatchTable = (PLSA_SECPKG_FUNCTION_TABLE)LsaDispatchTable;
+		MyLsaDispatchTable = reinterpret_cast<PLSA_SECPKG_FUNCTION_TABLE>(LsaDispatchTable);
 
 		*AuthenticationPackageName = LsaInitializeString(AUTHENTICATIONPACKAGENAME);
 
@@ -297,7 +297,7 @@ extern "C"
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 			*ProtocolStatus = STATUS_SUCCESS;
-			PEID_CALLPACKAGE_BUFFER pBuffer = (PEID_CALLPACKAGE_BUFFER) ProtocolSubmitBuffer;
+			PEID_CALLPACKAGE_BUFFER pBuffer = static_cast<PEID_CALLPACKAGE_BUFFER>(ProtocolSubmitBuffer);
 			pBuffer->dwError = 0;
 			
 			switch (pBuffer->MessageType)
@@ -310,8 +310,8 @@ extern "C"
 					break;
 				}
 				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Has Authorization for rid = 0x%x", pBuffer->dwRid);
-				pPointer = (PBYTE) pBuffer->wszPassword - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
-				pBuffer->wszPassword = (PWSTR) pPointer;
+				pPointer = reinterpret_cast<PBYTE>(pBuffer->wszPassword) - reinterpret_cast<ULONG_PTR>(ClientBufferBase) + reinterpret_cast<ULONG_PTR>(pBuffer);
+				pBuffer->wszPassword = reinterpret_cast<PWSTR>(pPointer);
 				pPointer = pBuffer->pbCertificate - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
 				pBuffer->pbCertificate = pPointer;
 				pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, pBuffer->pbCertificate, pBuffer->dwCertificateSize);
@@ -458,7 +458,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(ClientBufferBase);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 		NTSTATUS StatusReturned = STATUS_SUCCESS;
-		PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST pGina = (PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST) ProtocolSubmitBuffer;
+		PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST pGina = static_cast<PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST>(ProtocolSubmitBuffer);
 		PBYTE pbChallenge = NULL;
 		DWORD dwChallengeSize = 0;
 		DWORD dwType = 0;
@@ -502,7 +502,7 @@ extern "C"
 			{
 				if (pbChallenge)
 				{
-					response.pbChallenge = (PUCHAR)*ProtocolReturnBuffer + sizeof(EID_MSGINA_AUTHENTICATION_CHALLENGE_ANSWER);
+					response.pbChallenge = static_cast<PUCHAR>(*ProtocolReturnBuffer) + sizeof(EID_MSGINA_AUTHENTICATION_CHALLENGE_ANSWER);
 				}
 				StatusReturned = MyLsaDispatchTable->CopyToClientBuffer(ClientRequest, sizeof(EID_MSGINA_AUTHENTICATION_CHALLENGE_ANSWER), *ProtocolReturnBuffer, &response);
 				if (StatusReturned == STATUS_SUCCESS && pbChallenge) 
@@ -532,7 +532,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(ClientBufferBase);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 		NTSTATUS StatusReturned = STATUS_SUCCESS;
-		PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST pGina = (PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST) ProtocolSubmitBuffer;
+		PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST pGina = static_cast<PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST>(ProtocolSubmitBuffer);
 		PWSTR szPassword = NULL;
 		EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER response = {0};
 		memset(&response, 0, sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER));
@@ -587,7 +587,7 @@ extern "C"
 				response.dwError = ERROR_INVALID_PARAMETER;
 				__leave;
 			}
-			response.Password.MaximumLength = response.Password.Length = (USHORT)(sizeof(WCHAR) * wcslen(szPassword));
+			response.Password.MaximumLength = response.Password.Length = static_cast<USHORT>(sizeof(WCHAR) * wcslen(szPassword));
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"OK");
 		}
 		__finally
@@ -597,7 +597,7 @@ extern "C"
 			{
 				if (szPassword) 
 				{
-					response.Password.Buffer = (PWSTR)((PUCHAR)*ProtocolReturnBuffer + sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER));
+					response.Password.Buffer = static_cast<PWSTR>(static_cast<PUCHAR>(*ProtocolReturnBuffer) + sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER));
 				}
 				StatusReturned = MyLsaDispatchTable->CopyToClientBuffer(ClientRequest, sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER), *ProtocolReturnBuffer, &response);
 				if (StatusReturned == STATUS_SUCCESS && szPassword) 
@@ -636,7 +636,7 @@ extern "C"
 			*ProtocolStatus = STATUS_SUCCESS;
 			// we take care here of messages requiring the TCB privilege (winlogon, msgina, ...)
 			// the other message are forwarded to LsaApCallPackageUntrusted
-			PEID_CALLPACKAGE_BUFFER pBuffer = (PEID_CALLPACKAGE_BUFFER) ProtocolSubmitBuffer;
+			PEID_CALLPACKAGE_BUFFER pBuffer = static_cast<PEID_CALLPACKAGE_BUFFER>(ProtocolSubmitBuffer);
 			switch (pBuffer->MessageType)
 			{
 			case EIDCMEIDGinaAuthenticationChallenge:
@@ -722,8 +722,8 @@ extern "C"
 			{
 				__leave;
 			}
-			CredIsProtectedW = (CredIsProtectedWFct) GetProcAddress(hModule,"CredIsProtectedW");
-			CredUnprotectW = (CredUnprotectWFct) GetProcAddress(hModule,"CredUnprotectW");
+			CredIsProtectedW = reinterpret_cast<CredIsProtectedWFct>(GetProcAddress(hModule,"CredIsProtectedW"));
+			CredUnprotectW = reinterpret_cast<CredUnprotectWFct>(GetProcAddress(hModule,"CredUnprotectW"));
 			if (CredIsProtectedW == NULL || CredUnprotectW == NULL)
 			{
 				// get here if on Windows XP
@@ -796,14 +796,14 @@ extern "C"
 			
 			// the buffer come from another address space
 			// so the pointers inside the buffer are invalid
-			PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon = (PEID_INTERACTIVE_UNLOCK_LOGON) AuthenticationInformation;
+			PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon = static_cast<PEID_INTERACTIVE_UNLOCK_LOGON>(AuthenticationInformation);
 			Status = RemapPointer(pUnlockLogon,ClientAuthenticationBase, AuthenticationInformationLength);
 			if (Status != STATUS_SUCCESS)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RemapPointer 0x%08X", Status);
 				return Status;
 			}
-			PEID_SMARTCARD_CSP_INFO pSmartCardCspInfo = (PEID_SMARTCARD_CSP_INFO) pUnlockLogon->Logon.CspData;
+			PEID_SMARTCARD_CSP_INFO pSmartCardCspInfo = static_cast<PEID_SMARTCARD_CSP_INFO>(pUnlockLogon->Logon.CspData);
 			EIDDebugPrintEIDUnlockLogonStruct(WINEVENT_LEVEL_VERBOSE, pUnlockLogon);
 			
 			CStoredCredentialManager* manager = CStoredCredentialManager::Instance();
@@ -964,7 +964,7 @@ extern "C"
 			PSID pSid = MyTokenInformation->User.User.Sid;
 			Status = CompletePrimaryCredential(*AuthenticatingAuthority,*AccountName,pSid,LogonId,szPassword,PrimaryCredentials);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"CompletePrimaryCredential OK Status = %d",Status);
-			*SupplementalCredentials = (PSECPKG_SUPPLEMENTAL_CRED_ARRAY) EIDAlloc(sizeof(SECPKG_SUPPLEMENTAL_CRED_ARRAY));
+			*SupplementalCredentials = static_cast<PSECPKG_SUPPLEMENTAL_CRED_ARRAY>(EIDAlloc(sizeof(SECPKG_SUPPLEMENTAL_CRED_ARRAY)));
 			if (*SupplementalCredentials)
 			{
 				(*SupplementalCredentials)->CredentialCount = 0;
@@ -998,7 +998,7 @@ extern "C"
 
 		exportedFunctions->InitializePackage = LsaApInitializePackage;
 		// missing the word NTAPI in NTSecPkg.h
-		exportedFunctions->LogonUserEx2 = (PLSA_AP_LOGON_USER_EX2) LsaApLogonUserEx2;
+		exportedFunctions->LogonUserEx2 = reinterpret_cast<PLSA_AP_LOGON_USER_EX2>(LsaApLogonUserEx2);
 		exportedFunctions->LogonTerminated = LsaApLogonTerminated;
 		exportedFunctions->CallPackage = LsaApCallPackage;
 		exportedFunctions->CallPackagePassthrough = LsaApCallPackagePassthrough;

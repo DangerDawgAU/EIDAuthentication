@@ -176,26 +176,26 @@ extern "C"
 		switch(Class)
 		{
 			case SecpkgGssInfo:
-				*ppInformation = (PSECPKG_EXTENDED_INFORMATION) EIDAlloc(sizeof(SECPKG_EXTENDED_INFORMATION)+GssOidLen);
+				*ppInformation = static_cast<PSECPKG_EXTENDED_INFORMATION>(EIDAlloc(sizeof(SECPKG_EXTENDED_INFORMATION)+GssOidLen));
 				(*ppInformation)->Class = SecpkgGssInfo;
 				(*ppInformation)->Info.GssInfo.EncodedIdLength = GssOidLen;
 				memcpy((*ppInformation)->Info.GssInfo.EncodedId, GssOid,GssOidLen);
 				Status = STATUS_SUCCESS ; 
 				break;
 			case SecpkgContextThunks:
-				*ppInformation = (PSECPKG_EXTENDED_INFORMATION) EIDAlloc(sizeof(SECPKG_EXTENDED_INFORMATION));
+				*ppInformation = static_cast<PSECPKG_EXTENDED_INFORMATION>(EIDAlloc(sizeof(SECPKG_EXTENDED_INFORMATION)));
 				(*ppInformation)->Class = SecpkgContextThunks;
 				(*ppInformation)->Info.ContextThunks.InfoLevelCount = 0; 
 				Status = STATUS_SUCCESS; 
 				break;
 			case SecpkgMutualAuthLevel:
-				*ppInformation = (PSECPKG_EXTENDED_INFORMATION) EIDAlloc(sizeof(SECPKG_EXTENDED_INFORMATION));
+				*ppInformation = static_cast<PSECPKG_EXTENDED_INFORMATION>(EIDAlloc(sizeof(SECPKG_EXTENDED_INFORMATION)));
 				(*ppInformation)->Class = SecpkgMutualAuthLevel;
 				(*ppInformation)->Info.MutualAuthLevel.MutualAuthLevel = MutualAuthLevel; 
 				Status = STATUS_SUCCESS; 
 				break;
 			case SecpkgWowClientDll:
-				*ppInformation = (PSECPKG_EXTENDED_INFORMATION) EIDAlloc(sizeof(SECPKG_EXTENDED_INFORMATION));
+				*ppInformation = static_cast<PSECPKG_EXTENDED_INFORMATION>(EIDAlloc(sizeof(SECPKG_EXTENDED_INFORMATION)));
 				(*ppInformation)->Class = SecpkgWowClientDll;
 				(*ppInformation)->Info.WowClientDll.WowClientDllPath.Buffer = NULL; 
 				(*ppInformation)->Info.WowClientDll.WowClientDllPath.Length = 0;
@@ -203,13 +203,13 @@ extern "C"
 				Status = STATUS_SUCCESS; 
 				break;
 			case SecpkgExtraOids:
-				*ppInformation = (PSECPKG_EXTENDED_INFORMATION) EIDAlloc(sizeof(SECPKG_EXTENDED_INFORMATION));
+				*ppInformation = static_cast<PSECPKG_EXTENDED_INFORMATION>(EIDAlloc(sizeof(SECPKG_EXTENDED_INFORMATION)));
 				(*ppInformation)->Class = SecpkgExtraOids;
 				(*ppInformation)->Info.ExtraOids.OidCount = 0; 
 				Status = STATUS_SUCCESS;
 				break;
 			case SecpkgNego2Info:
-				*ppInformation = (PSECPKG_EXTENDED_INFORMATION) EIDAlloc(sizeof(SECPKG_EXTENDED_INFORMATION));
+				*ppInformation = static_cast<PSECPKG_EXTENDED_INFORMATION>(EIDAlloc(sizeof(SECPKG_EXTENDED_INFORMATION)));
 				(*ppInformation)->Class = SecpkgNego2Info;
 				(*ppInformation)->Info.Nego2Info.PackageFlags = 0;
 				memcpy((*ppInformation)->Info.Nego2Info.AuthScheme,AUTHENTICATIONNAGOTIATEGUID,16);
@@ -398,8 +398,8 @@ extern "C"
 			if (AuthorizationData != nullptr)
 			{ 
 				// copy the authorization data to our user space
-				pAuthIdentityEx = (PSEC_WINNT_AUTH_IDENTITY_EXW)
-												EIDAlloc(sizeof(SEC_WINNT_AUTH_IDENTITY_EXW)); 
+				pAuthIdentityEx = static_cast<PSEC_WINNT_AUTH_IDENTITY_EXW>
+												(EIDAlloc(sizeof(SEC_WINNT_AUTH_IDENTITY_EXW))); 
 				if (!pAuthIdentityEx)
 				{
 					Status = STATUS_INSUFFICIENT_RESOURCES;
@@ -434,13 +434,13 @@ extern "C"
 						EIDLogErrorWithContext("CopyFromClientBuffer", HRESULT_FROM_NT(Status), nullptr);
 						__leave;
 					}
-					pAuthIdentity = (PSEC_WINNT_AUTH_IDENTITY) &pAuthIdentityEx->User; 
+					pAuthIdentity = reinterpret_cast<PSEC_WINNT_AUTH_IDENTITY>(&pAuthIdentityEx->User); 
 					CredSize = pAuthIdentityEx->Length; 
 					Offset = FIELD_OFFSET(SEC_WINNT_AUTH_IDENTITY_EXW, User); 
 				} 
 				else 
 				{ 
-					pAuthIdentity = (PSEC_WINNT_AUTH_IDENTITY_W) pAuthIdentityEx; 
+					pAuthIdentity = reinterpret_cast<PSEC_WINNT_AUTH_IDENTITY_W>(pAuthIdentityEx); 
 					CredSize = sizeof(SEC_WINNT_AUTH_IDENTITY_W); 
 				} 
 		 
@@ -479,11 +479,11 @@ extern "C"
 				BOOL fRes;
 				if (UseUnicode)
 				{
-					fRes = CredUnmarshalCredentialW((LPCWSTR)szCredential,&CredType, (PVOID*) &pCertInfo);
+					fRes = CredUnmarshalCredentialW(reinterpret_cast<LPCWSTR>(szCredential),&CredType, reinterpret_cast<PVOID*>(&pCertInfo));
 				}
 				else
 				{
-					fRes = CredUnmarshalCredentialA((LPCSTR)szCredential,&CredType, (PVOID*) &pCertInfo);
+					fRes = CredUnmarshalCredentialA(reinterpret_cast<LPCSTR>(szCredential),&CredType, reinterpret_cast<PVOID*>(&pCertInfo));
 				}
 				if (!fRes)
 				{
@@ -516,12 +516,12 @@ extern "C"
 				// convert to unicode
 				if (UseUnicode)
 				{
-					szPasswordW = (PWSTR) szPassword;
+					szPasswordW = static_cast<PWSTR>(szPassword);
 					szPassword = NULL;
 				}
 				else
 				{
-					szPasswordW = (PWSTR) EIDAlloc((pAuthIdentity->PasswordLength + 1) * sizeof(WCHAR));
+					szPasswordW = static_cast<PWSTR>(EIDAlloc((pAuthIdentity->PasswordLength + 1) * sizeof(WCHAR)));
 					if (!szPasswordW)
 					{
 						Status = STATUS_INSUFFICIENT_RESOURCES; 
@@ -542,7 +542,7 @@ extern "C"
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc"); 
 					__leave;
 			}
-			*pCredentialHandle = (LSA_SEC_HANDLE) pCredential;
+			*pCredentialHandle = reinterpret_cast<LSA_SEC_HANDLE>(pCredential);
 			*ExpirationTime = Forever;
 		}
 		__finally
@@ -673,14 +673,14 @@ extern "C"
 						status = SEC_E_INSUFFICIENT_MEMORY;
 						__leave;
 					}
-					dwSize = (DWORD)(_tcslen(szName)+1) * sizeof(TCHAR);
-					status = MyLsaDispatchTable->AllocateClientBuffer(NULL, dwSize, (PVOID*) Buffer);
+					dwSize = static_cast<DWORD>((_tcslen(szName)+1) * sizeof(TCHAR));
+					status = MyLsaDispatchTable->AllocateClientBuffer(NULL, dwSize, reinterpret_cast<PVOID*>(Buffer));
 					if (status != STATUS_SUCCESS)
 					{
 						EIDLogErrorWithContext("AllocateClientBuffer", HRESULT_FROM_NT(status), nullptr);
 						__leave;
 					}
-					status = MyLsaDispatchTable->CopyToClientBuffer(NULL, dwSize, *((PVOID*) Buffer), szName);
+					status = MyLsaDispatchTable->CopyToClientBuffer(NULL, dwSize, *reinterpret_cast<PVOID*>(Buffer), szName);
 					if (status != STATUS_SUCCESS)
 					{
 						EIDLogErrorWithContext("CopyToClientBuffer", HRESULT_FROM_NT(status), nullptr);
@@ -739,7 +739,7 @@ extern "C"
 		switch(ContextAttribute) 
 		{
 			case SECPKG_ATTR_SIZES:
-				ContextSizes = (PSecPkgContext_Sizes) pBuffer;
+				ContextSizes = reinterpret_cast<PSecPkgContext_Sizes>(pBuffer);
 				ContextSizes->cbMaxSignature = 0;
 				ContextSizes->cbSecurityTrailer = 0;
 				ContextSizes->cbBlockSize = 0;
@@ -752,7 +752,7 @@ extern "C"
 					return STATUS_INVALID_HANDLE;
 				}
 				pContext = CSecurityContext::GetContextFromHandle(ContextHandle);
-				ContextNames = (PSecPkgContext_Names) pBuffer;
+				ContextNames = reinterpret_cast<PSecPkgContext_Names>(pBuffer);
 				ContextNames->sUserName = pContext->GetUserName();
 				if (ContextNames->sUserName == NULL)
 				{
@@ -762,7 +762,7 @@ extern "C"
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Username = %s",ContextNames->sUserName);
 				break;
 			case SECPKG_ATTR_LIFESPAN:
-				ContextLifespan = (PSecPkgContext_Lifespan) pBuffer;
+				ContextLifespan = reinterpret_cast<PSecPkgContext_Lifespan>(pBuffer);
 				ContextLifespan->tsStart = Never;
 				ContextLifespan->tsExpiry = Forever;
 				break;
@@ -824,7 +824,7 @@ extern "C"
 				}
 				// create new context : first message
 				newContext = CSecurityContext::CreateContext(pCredential);
-				*NewContextHandle = (LSA_SEC_HANDLE) newContext;
+				*NewContextHandle = reinterpret_cast<LSA_SEC_HANDLE>(newContext);
 			}
 			else
 			{
@@ -896,7 +896,7 @@ extern "C"
 			*phToken = INVALID_HANDLE_VALUE;
 			// create the sid from the rid
 			
-			NetStatus = NetUserEnum(NULL, 3, 0, (PBYTE*)&pInfo, MAX_PREFERRED_LENGTH, &dwEntriesRead,&dwTotalEntries, NULL);
+			NetStatus = NetUserEnum(NULL, 3, 0, reinterpret_cast<PBYTE*>(&pInfo), MAX_PREFERRED_LENGTH, &dwEntriesRead,&dwTotalEntries, NULL);
 			if (NetStatus != NERR_Success)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"NetUserEnum = 0x%08X",NetStatus);
@@ -919,13 +919,13 @@ extern "C"
 			GetComputerNameW(szComputer, &dwSize);
 			Workstation.Buffer = szComputer;
 			AuthorityName.Buffer = szComputer;
-			Workstation.Length = Workstation.MaximumLength = (USHORT) (wcslen(szComputer) * sizeof(WCHAR));
-			AuthorityName.Length = AuthorityName.MaximumLength = (USHORT) (wcslen(szComputer) * sizeof(WCHAR));
+			Workstation.Length = Workstation.MaximumLength = static_cast<USHORT>(wcslen(szComputer) * sizeof(WCHAR));
+			AuthorityName.Length = AuthorityName.MaximumLength = static_cast<USHORT>(wcslen(szComputer) * sizeof(WCHAR));
 			AccountName.Buffer = szUserName;
-			AccountName.Length = AccountName.MaximumLength = (USHORT)(wcslen(szUserName) * sizeof(WCHAR));
-			ProfilePath.Length = ProfilePath.MaximumLength = (USHORT)(wcslen(pInfo[dwI].usri3_profile) * sizeof(WCHAR));
+			AccountName.Length = AccountName.MaximumLength = static_cast<USHORT>(wcslen(szUserName) * sizeof(WCHAR));
+			ProfilePath.Length = ProfilePath.MaximumLength = static_cast<USHORT>(wcslen(pInfo[dwI].usri3_profile) * sizeof(WCHAR));
 			ProfilePath.Buffer = pInfo[dwI].usri3_profile;
-			Status = MyLsaDispatchTable->GetAuthDataForUser((PSECURITY_STRING)&AccountName, SecNameSamCompatible, (PSECURITY_STRING)&Prefix, (PUCHAR*) &MyTokenInformation, &TokenLength, NULL);
+			Status = MyLsaDispatchTable->GetAuthDataForUser(reinterpret_cast<PSECURITY_STRING>(&AccountName), SecNameSamCompatible, reinterpret_cast<PSECURITY_STRING>(&Prefix), reinterpret_cast<PUCHAR*>(&MyTokenInformation), &TokenLength, NULL);
 			if (Status != STATUS_SUCCESS) 
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"UserNameToToken failed 0x%08X 0x%08X",Status, SubStatus);
@@ -997,7 +997,7 @@ extern "C"
 				}
 				// create new context : first message
 				newContext = CSecurityContext::CreateContext(pCredential);
-				*NewContextHandle = (LSA_SEC_HANDLE) newContext;
+				*NewContextHandle = reinterpret_cast<LSA_SEC_HANDLE>(newContext);
 			}
 			else
 			{
@@ -1035,7 +1035,7 @@ extern "C"
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SpCreateToken = 0x%08X",Status);
 				__leave;
 			}
-			callbackMessage = (PEID_SSP_CALLBACK_MESSAGE) EIDAlloc(sizeof(EID_SSP_CALLBACK_MESSAGE));
+			callbackMessage = static_cast<PEID_SSP_CALLBACK_MESSAGE>(EIDAlloc(sizeof(EID_SSP_CALLBACK_MESSAGE)));
 			if (!callbackMessage)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"callbackMessage no memory");
