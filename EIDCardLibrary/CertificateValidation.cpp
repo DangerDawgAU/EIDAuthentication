@@ -598,7 +598,7 @@ BOOL IsAllowedCSPProvider(__in LPCWSTR pwszProviderName)
 	EIDSecurityAudit(SECURITY_AUDIT_WARNING, L"Unknown CSP provider '%s' - not in whitelist", pwszProviderName);
 
 	// Check if strict enforcement is enabled via policy
-	if (GetPolicyValue(EnforceCSPWhitelist))
+	if (GetPolicyValue(GPOPolicy::EnforceCSPWhitelist))
 	{
 		EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"CSP provider '%s' blocked by EnforceCSPWhitelist policy", pwszProviderName);
 		return FALSE;
