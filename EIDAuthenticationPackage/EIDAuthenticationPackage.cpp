@@ -37,6 +37,9 @@
 
 #include <iphlpapi.h>
 #include <tchar.h>
+#include <lmaccess.h>
+#include <lmerr.h>
+#include <lm.h>
 
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/Tracing.h"
@@ -1003,6 +1006,196 @@ extern "C"
 		exportedFunctions->CallPackage = LsaApCallPackage;
 		exportedFunctions->CallPackagePassthrough = LsaApCallPackagePassthrough;
 		exportedFunctions->CallPackageUntrusted = LsaApCallPackageUntrusted;
+	}
+
+	// CleanupLsaCredentials - Removes EID credential mappings from LSA Private Data
+	// Called by uninstaller to clean up stored credentials for all local users
+	HRESULT WINAPI CleanupLsaCredentials()
+	{
+		HRESULT hr = S_OK;
+		LSA_OBJECT_ATTRIBUTES ObjectAttributes = {0};
+		LSA_HANDLE LsaPolicyHandle = NULL;
+		NTSTATUS Status = STATUS_SUCCESS;
+		DWORD dwUsersProcessed = 0;
+		DWORD dwUsersRemoved = 0;
+
+		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"CleanupLsaCredentials: Starting LSA credential cleanup");
+
+		__try
+		{
+			// Initialize LSA object attributes
+			ObjectAttributes.Length = sizeof(LSA_OBJECT_ATTRIBUTES);
+
+			// Open LSA policy with necessary access
+			Status = LsaOpenPolicy(
+				NULL,
+				&ObjectAttributes,
+				POLICY_CREATE_SECRET | READ_CONTROL | WRITE_OWNER | WRITE_DAC,
+				&LsaPolicyHandle
+			);
+
+			if (Status != STATUS_SUCCESS)
+			{
+				DWORD dwError = LsaNtStatusToWinError(Status);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"CleanupLsaCredentials: LsaOpenPolicy failed (0x%08x)", dwError);
+				return HRESULT_FROM_WIN32(dwError);
+			}
+
+			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"CleanupLsaCredentials: LSA policy opened");
+
+			// Enumerate local users to find their RIDs
+			// We need to clean up LSA private data for each user
+			LPUSER_INFO_0 pUserInfo = NULL;
+			DWORD dwEntriesRead = 0;
+			DWORD dwTotalEntries = 0;
+			DWORD dwResumeHandle = 0;
+
+			// NetUserEnum requires lmaccess.h and netapi32.lib
+			// We'll use a simpler approach: get well-known SIDs and local accounts
+
+			// Instead of enumerating all users, we'll look for LSA keys that match our pattern
+			// LSA private data keys for EID are named: L$_EID_<RID_in_hex>
+
+			// Try to enumerate local users using NetUserEnum
+			// This is more reliable than trying all possible RIDs
+			Status = NetUserEnum(
+				NULL,
+				0,
+				FILTER_NORMAL_ACCOUNT,
+				(LPBYTE*)&pUserInfo,
+				MAX_PREFERRED_LENGTH,
+				&dwEntriesRead,
+				&dwTotalEntries,
+				&dwResumeHandle
+			);
+
+			if (Status == NERR_Success || Status == ERROR_MORE_DATA)
+			{
+				LPUSER_INFO_0 pCurrent = pUserInfo;
+				for (DWORD i = 0; i < dwEntriesRead; i++)
+				{
+					if (pCurrent == NULL || pCurrent->usri0_name == NULL)
+						break;
+
+					// Get the SID for this user
+					PBYTE pSidBuffer = NULL;
+					DWORD dwSidSize = 0;
+					PWSTR pDomain = NULL;
+					DWORD dwDomainSize = 0;
+					SID_NAME_USE sidUse = SidTypeUnknown;
+
+					// First call to get buffer sizes
+					LookupAccountName(NULL, pCurrent->usri0_name, NULL, &dwSidSize, NULL, &dwDomainSize, &sidUse);
+					if (dwSidSize == 0)
+					{
+						pCurrent++;
+						continue;
+					}
+
+					pSidBuffer = (PBYTE)EIDAlloc(dwSidSize);
+					pDomain = (PWSTR)EIDAlloc(dwDomainSize * sizeof(WCHAR));
+
+					if (pSidBuffer && pDomain)
+					{
+						if (LookupAccountName(NULL, pCurrent->usri0_name, pSidBuffer, &dwSidSize, pDomain, &dwDomainSize, &sidUse))
+						{
+							// Extract RID from SID
+							if (IsValidSid((PSID)pSidBuffer))
+							{
+								DWORD dwSubAuthorityCount = *GetSidSubAuthorityCount((PSID)pSidBuffer);
+								DWORD dwRid = *GetSidSubAuthority((PSID)pSidBuffer, dwSubAuthorityCount - 1);
+
+								// Build the LSA key name: L$_EID_<RID>
+								WCHAR szKeyName[64];
+								swprintf_s(szKeyName, _countof(szKeyName), L"L$_EID_%08X", dwRid);
+
+								// Create LSA_UNICODE_STRING for the key name
+								LSA_UNICODE_STRING LsaKeyName;
+								LsaKeyName.Length = (USHORT)(wcslen(szKeyName) * sizeof(WCHAR));
+								LsaKeyName.MaximumLength = LsaKeyName.Length + sizeof(WCHAR);
+								LsaKeyName.Buffer = szKeyName;
+
+								// Check if this key exists by trying to retrieve it
+								PLSA_UNICODE_STRING pPrivateData = NULL;
+								NTSTATUS retrieveStatus = LsaRetrievePrivateData(
+									LsaPolicyHandle,
+									&LsaKeyName,
+									&pPrivateData
+								);
+
+								if (retrieveStatus == STATUS_SUCCESS && pPrivateData != NULL)
+								{
+									// Key exists - delete it by storing NULL
+									NTSTATUS deleteStatus = LsaStorePrivateData(
+										LsaPolicyHandle,
+										&LsaKeyName,
+										NULL
+									);
+
+									if (deleteStatus == STATUS_SUCCESS)
+									{
+										EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"CleanupLsaCredentials: Removed credential mapping for user: %s (RID: 0x%08x)", pCurrent->usri0_name, dwRid);
+										dwUsersRemoved++;
+									}
+									else
+									{
+										DWORD dwError = LsaNtStatusToWinError(deleteStatus);
+										EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CleanupLsaCredentials: Failed to remove mapping for %s (0x%08x)", pCurrent->usri0_name, dwError);
+									}
+
+									// Free the retrieved data
+									if (pPrivateData != NULL)
+									{
+										LsaFreeMemory(pPrivateData);
+									}
+								}
+
+								dwUsersProcessed++;
+							}
+						}
+
+						if (pDomain) EIDFree(pDomain);
+						if (pSidBuffer) EIDFree(pSidBuffer);
+					}
+
+					pCurrent++;
+				}
+
+				// Free the user enumeration buffer
+				if (pUserInfo)
+				{
+					NetApiBufferFree(pUserInfo);
+				}
+			}
+			else
+			{
+				DWORD dwError = LsaNtStatusToWinError(Status);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CleanupLsaCredentials: NetUserEnum failed (0x%08x)", dwError);
+				// Don't fail - we might still succeed partially
+			}
+
+			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"CleanupLsaCredentials: Processed %d users, removed %d credential mappings", dwUsersProcessed, dwUsersRemoved);
+
+			// Close LSA policy handle
+			if (LsaPolicyHandle != NULL)
+			{
+				LsaClose(LsaPolicyHandle);
+			}
+
+			hr = S_OK;
+		}
+		__except(EIDExceptionHandler(GetExceptionInformation()))
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"CleanupLsaCredentials: Exception 0x%08x", GetExceptionCode());
+			EIDLogStackTrace(GetExceptionCode());
+			if (LsaPolicyHandle != NULL)
+			{
+				LsaClose(LsaPolicyHandle);
+			}
+			hr = E_FAIL;
+		}
+
+		return hr;
 	}
 
 }

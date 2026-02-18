@@ -5,6 +5,7 @@ DllRegister
 DllUnRegister
 DllEnableLogging
 DllDisableLogging
+CleanupLsaCredentials
 LsaApCallPackage
 LsaApCallPackagePassthrough
 LsaApCallPackageUntrusted
