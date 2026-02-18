@@ -34,6 +34,8 @@ constexpr const wchar_t* AUTHENTICATIONPACKAGENAMEW = L"EIDAuthenticationPackage
 
 // The Windows SDK (WinCred.h) defines CERT_HASH_LENGTH as 20 (SHA-1), but we use SHA-256 (32)
 // Undefine first to ensure our definition takes precedence without warnings
+// WON'T-FIX (MACRO-02): Cannot convert to constexpr because Windows SDK defines this as a macro.
+// The preprocessor #undef/#define pattern is required to override the SDK value.
 #undef CERT_HASH_LENGTH
 #define CERT_HASH_LENGTH 32  // SHA-256 hashes are used for cert hashes (security upgrade from SHA-1)
 
