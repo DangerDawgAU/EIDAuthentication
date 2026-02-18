@@ -603,8 +603,8 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 	MGSC_CONTEXT pContext = {};
 	SCARDCONTEXT hSCardContext = NULL;
 	SCARDHANDLE hSCardHandle = NULL;
-	BYTE bAtr[32];
-	DWORD cbAtr = ARRAYSIZE(bAtr);
+	std::array<BYTE, 32> bAtr;
+	DWORD cbAtr = static_cast<DWORD>(bAtr.size());
 	LONG lReturn;
 	DWORD dwSize;
 	DWORD dwState;
@@ -652,7 +652,7 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 			__leave;
 		}
 		dwSize = ARRAYSIZE(szReaderTemp);
-		lReturn = SCardStatus(hSCardHandle, szReaderTemp, &dwSize, &dwState, &dwProtocol, bAtr,&cbAtr);
+		lReturn = SCardStatus(hSCardHandle, szReaderTemp, &dwSize, &dwState, &dwProtocol, bAtr.data(),&cbAtr);
 		if ( SCARD_S_SUCCESS != lReturn )
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardStatus 0x%08X",lReturn);
@@ -666,7 +666,7 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 			dwError = lReturn;
 			__leave;
 		}
-		dwError = MgScCardAcquireContext(&pContext,hSCardContext,hSCardHandle,szCard,bAtr,cbAtr,0);
+		dwError = MgScCardAcquireContext(&pContext,hSCardContext,hSCardHandle,szCard,bAtr.data(),cbAtr,0);
 		if ( dwError )
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"MgScCardAcquireContext 0x%08X",lReturn);

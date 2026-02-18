@@ -38,6 +38,7 @@
 #include "StringConversion.h"
 #include <string>
 #include <span>
+#include <array>
 
 constexpr LPCTSTR CREDENTIALPROVIDER = MS_ENH_RSA_AES_PROV;
 constexpr DWORD CREDENTIALKEYLENGTH = 256;
@@ -2366,7 +2367,7 @@ BOOL CStoredCredentialManager::HasStoredCredential(__in DWORD dwRid)
 
 
 struct ENCRYPTED_LM_OWF_PASSWORD {
-    unsigned char data[16];
+    std::array<unsigned char, 16> data;
 };
 using PENCRYPTED_LM_OWF_PASSWORD = ENCRYPTED_LM_OWF_PASSWORD*;
 using ENCRYPTED_NT_OWF_PASSWORD = ENCRYPTED_LM_OWF_PASSWORD;
@@ -2480,7 +2481,7 @@ NTSTATUS CStoredCredentialManager::CheckPassword( __in DWORD dwRid, __in PWSTR s
  SAMPR_HANDLE hDomain = nullptr;
  SAMPR_HANDLE hUser = nullptr;
  PSAMPR_USER_INTERNAL1_INFORMATION UserInfo = nullptr;
-	unsigned char bHash[16];
+	std::array<unsigned char, 16> bHash;
 	UNICODE_STRING EncryptedPassword;
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 	__try
@@ -2533,7 +2534,7 @@ NTSTATUS CStoredCredentialManager::CheckPassword( __in DWORD dwRid, __in PWSTR s
 		EncryptedPassword.Length = (USHORT) wcslen(szPassword) * sizeof(WCHAR);
 		EncryptedPassword.MaximumLength = (USHORT) wcslen(szPassword) * sizeof(WCHAR);
 		EncryptedPassword.Buffer = szPassword;
-		Status = SystemFunction007(&EncryptedPassword, bHash);
+		Status = SystemFunction007(&EncryptedPassword, bHash.data());
 		if (Status!= STATUS_SUCCESS)	
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SystemFunction007 failed 0x%08x",Status);

@@ -42,6 +42,7 @@ constexpr const wchar_t* AUTHENTICATIONPACKAGENAMEW = L"EIDAuthenticationPackage
 #pragma warning(pop)
 
 #include <utility>
+#include <array>
 
 #include "ErrorHandling.h"
 
@@ -163,7 +164,7 @@ struct EID_CALLPACKAGE_BUFFER
 	USHORT usPasswordLen;	// can be 0 if null terminated
 	PBYTE pbCertificate;
 	USHORT dwCertificateSize;
-	UCHAR Hash[CERT_HASH_LENGTH]; // to get challenge
+	std::array<UCHAR, CERT_HASH_LENGTH> Hash; // to get challenge
 	BOOL fEncryptPassword;
 
 };
@@ -209,7 +210,7 @@ constexpr DWORD EID_CERTIFICATE_FLAG_USERSTORE = 0x00000001;
 
 struct EID_NEGOCIATE_MESSAGE
 {
-	BYTE Signature[8];
+	std::array<BYTE, 8> Signature;
 	DWORD MessageType;
 	DWORD Flags;
 	USHORT TargetLen;
@@ -218,14 +219,14 @@ struct EID_NEGOCIATE_MESSAGE
 	USHORT WorkstationLen;
 	USHORT WorkstationMaxLen;
 	USHORT WorkstationOffset;
-	UCHAR Hash[CERT_HASH_LENGTH];
+	std::array<UCHAR, CERT_HASH_LENGTH> Hash;
 	DWORD Version;
 };
 using PEID_NEGOCIATE_MESSAGE = EID_NEGOCIATE_MESSAGE*;
 
 struct EID_CHALLENGE_MESSAGE
 {
-	BYTE Signature[8];
+	std::array<BYTE, 8> Signature;
 	DWORD MessageType;
 	DWORD Flags;
 	DWORD UsernameLen;
@@ -238,7 +239,7 @@ using PEID_CHALLENGE_MESSAGE = EID_CHALLENGE_MESSAGE*;
 
 struct EID_RESPONSE_MESSAGE
 {
-	BYTE Signature[8];
+	std::array<BYTE, 8> Signature;
 	DWORD MessageType;
 	DWORD ResponseLen;
 	DWORD ResponseOffset;

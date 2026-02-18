@@ -326,12 +326,12 @@ NTSTATUS CSecurityContext::BuildNegociateMessage(PSecBufferDesc Buffer)
 	PEID_NEGOCIATE_MESSAGE message = (PEID_NEGOCIATE_MESSAGE) Buffer->pBuffers[0].pvBuffer;
 	memset(message, 0, sizeof(EID_NEGOCIATE_MESSAGE));
 	static_assert(sizeof(message->Signature) == sizeof(EID_MESSAGE_SIGNATURE), "Signature buffer sizes must match");
-	memcpy_s(message->Signature, sizeof(message->Signature), EID_MESSAGE_SIGNATURE, sizeof(EID_MESSAGE_SIGNATURE));
+	memcpy_s(message->Signature.data(), message->Signature.size(), EID_MESSAGE_SIGNATURE, sizeof(EID_MESSAGE_SIGNATURE));
 	message->MessageType = static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTNegociate);
 	message->Version = EID_MESSAGE_VERSION;
 	static_assert(sizeof(Hash) == sizeof(_pCredential->_rgbHashOfCert), "Hash buffer sizes must match");
 	memcpy_s(Hash, sizeof(Hash), _pCredential->_rgbHashOfCert, sizeof(Hash));
-	memcpy_s(message->Hash, sizeof(message->Hash), _pCredential->_rgbHashOfCert, sizeof(message->Hash));
+	memcpy_s(message->Hash.data(), message->Hash.size(), _pCredential->_rgbHashOfCert, message->Hash.size());
 	_State = EID_MESSAGE_STATE::EIDMSNegociate;
 	return SEC_I_CONTINUE_NEEDED;
 }
@@ -350,14 +350,14 @@ NTSTATUS CSecurityContext::ReceiveNegociateMessage(PSecBufferDesc Buffer)
 		return STATUS_INVALID_SIGNATURE;
 	}
 	static_assert(sizeof(EID_MESSAGE_SIGNATURE) == sizeof(message->Signature), "Signature buffer sizes must match");
-	if (memcmp(EID_MESSAGE_SIGNATURE, message->Signature, sizeof(message->Signature)) != 0)
+	if (memcmp(EID_MESSAGE_SIGNATURE, message->Signature.data(), message->Signature.size()) != 0)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"STATUS_INVALID_SIGNATURE");
 		return STATUS_INVALID_SIGNATURE;
 	}
 
 	static_assert(sizeof(Hash) == sizeof(message->Hash), "Hash buffer sizes must match");
-	memcpy_s(Hash, sizeof(Hash), message->Hash, sizeof(Hash));
+	memcpy_s(Hash, sizeof(Hash), message->Hash.data(), message->Hash.size());
 	_State = EID_MESSAGE_STATE::EIDMSNegociate;
 	return STATUS_SUCCESS;
 }
@@ -381,7 +381,7 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 		PEID_CHALLENGE_MESSAGE message = (PEID_CHALLENGE_MESSAGE) Buffer->pBuffers[0].pvBuffer;
 		memset(message, 0, sizeof(EID_CHALLENGE_MESSAGE));
 		static_assert(sizeof(message->Signature) == sizeof(EID_MESSAGE_SIGNATURE), "Signature buffer sizes must match");
-		memcpy_s(message->Signature, sizeof(message->Signature), EID_MESSAGE_SIGNATURE, sizeof(EID_MESSAGE_SIGNATURE));
+		memcpy_s(message->Signature.data(), message->Signature.size(), EID_MESSAGE_SIGNATURE, sizeof(EID_MESSAGE_SIGNATURE));
 		message->MessageType = static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTChallenge);
 		message->Version = EID_MESSAGE_VERSION;
 		CStoredCredentialManager* manager = CStoredCredentialManager::Instance();
@@ -449,7 +449,7 @@ NTSTATUS CSecurityContext::ReceiveChallengeMessage(PSecBufferDesc Buffer)
 		return STATUS_INVALID_SIGNATURE;
 	}
 	static_assert(sizeof(EID_MESSAGE_SIGNATURE) == sizeof(message->Signature), "Signature buffer sizes must match");
-	if (memcmp(EID_MESSAGE_SIGNATURE, message->Signature, sizeof(message->Signature)) != 0)
+	if (memcmp(EID_MESSAGE_SIGNATURE, message->Signature.data(), message->Signature.size()) != 0)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"STATUS_INVALID_SIGNATURE");
 		return STATUS_INVALID_SIGNATURE;
@@ -476,7 +476,7 @@ NTSTATUS CSecurityContext::BuildResponseMessage(PSecBufferDesc Buffer)
 	PEID_RESPONSE_MESSAGE message = (PEID_RESPONSE_MESSAGE) Buffer->pBuffers[0].pvBuffer;
 	memset(message, 0, sizeof(EID_RESPONSE_MESSAGE));
 	static_assert(sizeof(message->Signature) == sizeof(EID_MESSAGE_SIGNATURE), "Signature buffer sizes must match");
-	memcpy_s(message->Signature, sizeof(message->Signature), EID_MESSAGE_SIGNATURE, sizeof(EID_MESSAGE_SIGNATURE));
+	memcpy_s(message->Signature.data(), message->Signature.size(), EID_MESSAGE_SIGNATURE, sizeof(EID_MESSAGE_SIGNATURE));
 	message->MessageType = static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTResponse);
 	message->Version = EID_MESSAGE_VERSION;
 	CStoredCredentialManager* manager = CStoredCredentialManager::Instance();
@@ -501,7 +501,7 @@ NTSTATUS CSecurityContext::ReceiveResponseMessage(PSecBufferDesc Buffer)
 		return STATUS_INVALID_SIGNATURE;
 	}
 	static_assert(sizeof(EID_MESSAGE_SIGNATURE) == sizeof(message->Signature), "Signature buffer sizes must match");
-	if (memcmp(EID_MESSAGE_SIGNATURE, message->Signature, sizeof(message->Signature)) != 0)
+	if (memcmp(EID_MESSAGE_SIGNATURE, message->Signature.data(), message->Signature.size()) != 0)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"STATUS_INVALID_SIGNATURE");
 		return STATUS_INVALID_SIGNATURE;
