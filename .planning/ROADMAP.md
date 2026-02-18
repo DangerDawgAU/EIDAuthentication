@@ -145,7 +145,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Runtime-assigned globals (LSA pointers, DLL state, tracing state) documented as won't-fix
   3. Set*() pattern and DllMain initialization checked before marking const
   4. Build passes with zero errors after const additions
-**Plans**: TBD
+**Plans**:
+- [ ] 34-01-PLAN.md - Analyze all global variables, document runtime-assigned globals as won't-fix (LSA pointers, DLL state, tracing state, UI state, file handles, SAM function pointers)
 
 ### Phase 35: Const Correctness - Functions
 **Goal**: Member functions marked const where state is not modified, COM/interface methods documented as won't-fix
@@ -315,7 +316,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 31. Macro to constexpr | 0/1 | Not started | - |
 | 32. Auto Conversion | 0/1 | Not started | - |
 | 33. Independent Style Issues | 0/1 | Not started | - |
-| 34. Const Correctness - Globals | 0/1 | Not started | - |
+| 34. Const Correctness - Globals | 0/1 | Planned | - |
 | 35. Const Correctness - Functions | 0/1 | Planned | - |
 | 36. Complexity Reduction | 0/1 | Not started | - |
 | 37. Nesting Reduction | 0/1 | Not started | - |
@@ -409,6 +410,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 *v1.2 complete: 2026-02-17*
 *v1.3 complete: 2026-02-18*
 *v1.4 roadmap created: 2026-02-18*
+*Phase 34 planned: 2026-02-18*
 *Phase 35 planned: 2026-02-18*
 *Phase 38 planned: 2026-02-18*
 *Phase 39 planned: 2026-02-18*
