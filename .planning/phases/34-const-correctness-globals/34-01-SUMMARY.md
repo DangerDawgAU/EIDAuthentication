@@ -188,6 +188,20 @@ None - plan executed exactly as written. Analysis confirmed all globals are prop
 ## Issues Encountered
 None. Analysis proceeded smoothly.
 
+## Deferred Items
+
+Pre-existing build errors detected (out of scope for this phase - no source code changes made):
+
+1. **CertificateValidation.cpp(601):** `EnforceCSPWhitelist` undeclared identifier
+   - Likely enum value reference issue from previous phase
+   - Not related to global const analysis
+
+2. **StoredCredentialManagement.cpp(677):** Cannot convert from `EID_PRIVATE_DATA_TYPE` to `DWORD`
+   - Type mismatch issue from enum conversion in previous phase
+   - Not related to global const analysis
+
+These errors are documented for resolution in a future phase.
+
 ## User Setup Required
 None - no external service configuration required.
 
