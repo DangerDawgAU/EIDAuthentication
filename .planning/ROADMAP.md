@@ -93,7 +93,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 33: Independent Style Issues** - Fix C-style casts, enum class conversions, Windows API enum won't-fix (Complete 2026-02-18)
 - [x] **Phase 34: Const Correctness - Globals** - Global variables analyzed, all const-eligible already marked, runtime-assigned documented as won't-fix (Complete 2026-02-18)
 - [x] **Phase 35: Const Correctness - Functions** - Mark member functions const where state is not modified (Complete 2026-02-18)
-- [ ] **Phase 36: Complexity Reduction** - Reduce cognitive complexity via helper function extraction
+- [x] **Phase 36: Complexity Reduction** - Reduce cognitive complexity via helper function extraction (Complete 2026-02-18)
 - [ ] **Phase 37: Nesting Reduction** - Reduce deep nesting via early return/guard clauses
 - [ ] **Phase 38: Init-statements** - Use init-statements in if/switch where scope benefits
 - [ ] **Phase 39: Integration Changes** - std::array conversion, LSA safety won't-fix documentation
@@ -172,7 +172,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. SEH-protected code documented as won't-fix (cannot extract from __try blocks)
   3. Helper functions maintain SEH safety (no heap allocation in LSASS context)
   4. Build passes with zero errors after complexity reduction
-**Plans**: TBD
+**Plans**:
+- [x] 36-01-PLAN.md - Extract encryption helpers from CreateCredential, extract validation helpers from certificate functions, create SEH won't-fix documentation (STRUCT-01, STRUCT-02) (Complete 2026-02-18)
 
 ### Phase 37: Nesting Reduction
 **Goal**: Deep nesting reduced via early return and guard clauses, SEH blocks kept intact

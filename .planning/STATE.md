@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 35 - Const Correctness - Functions
+Phase: 36 - Complexity Reduction
 Current Plan: 1/1
 Status: Complete
-Last activity: 2026-02-18 — Phase 35 Plan 01 complete
+Last activity: 2026-02-18 — Phase 36 Plan 01 complete
 
-Progress: [=======-------------] 50% (5/10 phases)
+Progress: [========------------] 60% (6/10 phases)
 
 ## Performance Metrics
 
@@ -51,6 +51,8 @@ Recent decisions for v1.4:
 - CContainerHolderFactory::HasContainerHolder() and ContainerHolderCount() marked const with const_cast for Lock/Unlock pattern
 - CMessageCredential::GetStatus() marked const (simple getter)
 - COM interface methods documented as won't-fix per CONST-04 - cannot change Windows API contracts
+- Complexity helpers placed in anonymous namespace for internal linkage
+- SEH blocks cannot be refactored - complexity inside __try documented as won't-fix
 
 ### Won't-Fix Categories (v1.4)
 
@@ -71,17 +73,21 @@ None. Ready to start Phase 36.
 
 ### Blockers/Concerns
 
-Pre-existing build errors from previous phases (documented in 34-01-SUMMARY.md):
-- CertificateValidation.cpp(601): EnforceCSPWhitelist undeclared identifier
-- StoredCredentialManagement.cpp(677): EID_PRIVATE_DATA_TYPE to DWORD conversion error
+Pre-existing build errors from previous phases (documented in multiple SUMMARY.md files):
+- GPOPolicy enum scoping issues in multiple files (scforceoption, scremoveoption, AllowTimeInvalidCertificates, Reading, EndReading)
+- EIDAuthenticationPackage.cpp cast errors
 
-These are out of scope for Phase 34 and should be addressed in a future phase.
+**Fixed in Phase 36:**
+- CertificateValidation.cpp(601): EnforceCSPWhitelist scoping - FIXED
+- StoredCredentialManagement.cpp(767): EID_PRIVATE_DATA_TYPE to DWORD cast - FIXED
+
+Remaining errors are out of scope for Phase 36 and should be addressed in a future phase.
 
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Phase 35 Plan 01 complete
-Resume file: Run `/gsd:plan-phase 36` to continue
+Stopped at: Phase 36 Plan 01 complete
+Resume file: Run `/gsd:plan-phase 37` to continue
 
 ## Key Constraints (Always Remember)
 
@@ -96,4 +102,4 @@ Resume file: Run `/gsd:plan-phase 36` to continue
 
 *Last updated: 2026-02-18*
 *Current milestone: v1.4 SonarQube Zero*
-*Next: `/gsd:plan-phase 36` to continue v1.4 SonarQube Zero*
+*Next: `/gsd:plan-phase 37` to continue v1.4 SonarQube Zero*
