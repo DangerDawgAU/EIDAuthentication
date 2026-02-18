@@ -3,39 +3,84 @@
 **Defined:** 2026-02-15
 **Core Value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
 
-## v1.3 Requirements (CURRENT)
+## v1.4 Requirements (CURRENT)
+
+SonarQube Zero — Eliminate all fixable SonarQube issues and document remaining won't-fix with justifications.
+
+### Macro Modernization
+
+- [ ] **MACRO-01**: Simple value macros converted to constexpr where safe
+- [ ] **MACRO-02**: Resource compiler macros documented as won't-fix (cannot convert .rc macros)
+- [ ] **MACRO-03**: Flow-control macros documented as won't-fix
+
+### Auto Modernization
+
+- [ ] **AUTO-01**: Redundant type declarations converted to auto where type is obvious
+- [ ] **AUTO-02**: Security-critical types (HRESULT, NTSTATUS, handles) kept explicit
+
+### Const Correctness
+
+- [ ] **CONST-01**: Global variables marked const where truly immutable
+- [ ] **CONST-02**: Runtime-assigned globals documented as won't-fix (LSA pointers, DLL state)
+- [ ] **CONST-03**: Member functions marked const where state is not modified
+- [ ] **CONST-04**: COM/interface methods documented as won't-fix (cannot change signatures)
+
+### Code Structure
+
+- [ ] **STRUCT-01**: Cognitive complexity reduced via helper function extraction
+- [ ] **STRUCT-02**: SEH-protected code documented as won't-fix for complexity
+- [ ] **STRUCT-03**: Deep nesting reduced via early return/guard clauses
+- [ ] **STRUCT-04**: SEH blocks kept intact (no extraction from __try)
+
+### Modern C++ Patterns
+
+- [ ] **MODERN-01**: Init-statements used in if/switch where scope benefits
+- [ ] **MODERN-02**: C-style casts replaced with named casts (static_cast, etc.)
+- [ ] **MODERN-03**: C-style arrays converted to std::array where stack size permits
+- [ ] **MODERN-04**: std::string/std::vector documented as won't-fix (LSASS safety)
+- [ ] **MODERN-05**: Enum types converted to enum class where safe
+- [ ] **MODERN-06**: Windows API enum types documented as won't-fix
+
+### Verification
+
+- [ ] **VER-01**: All 7 projects build with zero errors
+- [ ] **VER-02**: No new warnings introduced
+- [ ] **VER-03**: SonarQube scan shows improvement from baseline
+- [ ] **VER-04**: Won't-fix issues documented with justifications
+
+## v1.3 Requirements (COMPLETE)
 
 Deep Modernization — Continue v1.2 work with more aggressive refactoring.
 
 ### SonarQube Resolution
 
-- [ ] **SONAR-01**: Review and resolve style preference issues (~124 "replace with auto")
-- [ ] **SONAR-02**: Review and resolve macro issues (~111 "replace with const/constexpr")
-- [ ] **SONAR-03**: Review and resolve global variable const issues (~63 remaining)
-- [ ] **SONAR-04**: Review and resolve nesting depth issues (~52 deep nesting)
+- [x] **SONAR-01**: Review and resolve style preference issues (~124 "replace with auto")
+- [x] **SONAR-02**: Review and resolve macro issues (~111 "replace with const/constexpr")
+- [x] **SONAR-03**: Review and resolve global variable const issues (~63 remaining)
+- [x] **SONAR-04**: Review and resolve nesting depth issues (~52 deep nesting)
 
 ### Code Refactoring
 
-- [ ] **REFACT-01**: Reduce cognitive complexity in key functions (~24 high complexity)
-- [ ] **REFACT-02**: Extract helper functions from deeply nested code blocks
-- [ ] **REFACT-03**: Consolidate duplicate code patterns (17 duplication blocks)
+- [x] **REFACT-01**: Reduce cognitive complexity in key functions (~24 high complexity)
+- [x] **REFACT-02**: Extract helper functions from deeply nested code blocks
+- [x] **REFACT-03**: Consolidate duplicate code patterns (17 duplication blocks)
 
 ### C++23 Advanced Features
 
-- [ ] **CPP23-01**: Evaluate `import std;` modules feasibility
-- [ ] **CPP23-02**: Apply `std::flat_map` / `std::flat_set` where applicable
-- [ ] **CPP23-03**: Modernize with `std::stacktrace` (if MSVC bugs fixed)
+- [x] **CPP23-01**: Evaluate `import std;` modules feasibility — Deferred
+- [x] **CPP23-02**: Apply `std::flat_map` / `std::flat_set` where applicable — Deferred
+- [x] **CPP23-03**: Modernize with `std::stacktrace` (if MSVC bugs fixed) — Won't Fix
 
 ### Diagnostics & Logging
 
-- [ ] **DIAG-01**: Enhance error messages with more context
-- [ ] **DIAG-02**: Improve tracing coverage for key code paths
-- [ ] **DIAG-03**: Add structured logging where feasible
+- [x] **DIAG-01**: Enhance error messages with more context
+- [x] **DIAG-02**: Improve tracing coverage for key code paths
+- [x] **DIAG-03**: Add structured logging where feasible
 
 ### Verification
 
-- [ ] **VER-01**: Build verification after all changes
-- [ ] **VER-02**: Final SonarQube scan showing improvement
+- [x] **VER-01**: Build verification after all changes
+- [x] **VER-02**: Final SonarQube scan showing improvement
 
 ## v1 Requirements (COMPLETE)
 
@@ -119,34 +164,44 @@ Explicitly excluded. Documented to prevent scope creep.
 | Domain-joined support | Local accounts only per original scope |
 | New authentication features | Modernization only, no new capabilities |
 | Code signing | Separate concern, out of scope |
+| std::string/std::vector | Heap allocation unsafe in LSASS context |
 
 ## Traceability
 
-### v1.3 Requirements (Current Milestone)
+### v1.4 Requirements (Current Milestone)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SONAR-01 | Phase 21 | Pending |
-| SONAR-02 | Phase 22 | Pending |
-| SONAR-03 | Phase 23 | Pending |
-| SONAR-04 | Phase 24 | Pending |
-| REFACT-01 | Phase 25 | Pending |
-| REFACT-02 | Phase 25 | Pending |
-| REFACT-03 | Phase 26 | Pending |
-| CPP23-01 | Phase 27 | Pending |
-| CPP23-02 | Phase 27 | Pending |
-| CPP23-03 | Phase 27 | Pending |
-| DIAG-01 | Phase 28 | Pending |
-| DIAG-02 | Phase 28 | Pending |
-| DIAG-03 | Phase 28 | Pending |
-| VER-01 | Phase 29 | Pending |
-| VER-02 | Phase 30 | Pending |
+| MACRO-01 | Phase 31 | Pending |
+| MACRO-02 | Phase 31 | Pending |
+| MACRO-03 | Phase 31 | Pending |
+| AUTO-01 | Phase 32 | Pending |
+| AUTO-02 | Phase 32 | Pending |
+| CONST-01 | Phase 34 | Pending |
+| CONST-02 | Phase 34 | Pending |
+| CONST-03 | Phase 35 | Pending |
+| CONST-04 | Phase 35 | Pending |
+| STRUCT-01 | Phase 36 | Pending |
+| STRUCT-02 | Phase 36 | Pending |
+| STRUCT-03 | Phase 37 | Pending |
+| STRUCT-04 | Phase 37 | Pending |
+| MODERN-01 | Phase 38 | Pending |
+| MODERN-02 | Phase 33 | Pending |
+| MODERN-03 | Phase 39 | Pending |
+| MODERN-04 | Phase 39 | Pending |
+| MODERN-05 | Phase 33 | Pending |
+| MODERN-06 | Phase 33 | Pending |
+| VER-01 | Phase 40 | Pending |
+| VER-02 | Phase 40 | Pending |
+| VER-03 | Phase 40 | Pending |
+| VER-04 | Phase 40 | Pending |
 
 **Coverage:**
-- v1.3 requirements: 15 total
-- Mapped to phases: 15
+- v1.4 requirements: 23 total
+- Mapped to phases: 23
 - Unmapped: 0 ✓
 
 ---
+
 *Requirements defined: 2026-02-15*
-*Last updated: 2026-02-17 after v1.3 milestone start*
+*Last updated: 2026-02-18 after v1.4 milestone start*
