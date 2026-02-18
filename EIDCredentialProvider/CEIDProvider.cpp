@@ -337,8 +337,8 @@ HRESULT CEIDProvider::GetFieldDescriptorAt(
 					if (Handle)
 					{
 						DWORD dwMessageLen = 256;
-						auto Message = static_cast<PWSTR>(CoTaskMemAlloc(dwMessageLen*sizeof(WCHAR)));
-						if (Message)
+						// C++17 init-statement: Message is only used within this if block
+						if (PWSTR Message = static_cast<PWSTR>(CoTaskMemAlloc(dwMessageLen*sizeof(WCHAR))))
 						{
 							LoadString(Handle, 4, Message, dwMessageLen);
 							(*ppcpfd)->pszLabel = Message;
@@ -490,9 +490,8 @@ HRESULT CEIDProvider_CreateInstance(REFIID riid, void** ppv)
 {
     HRESULT hr;
 	if (riid != IID_ICredentialProvider) return E_NOINTERFACE;
-    auto pProvider = new CEIDProvider();
-
-    if (pProvider)
+    // C++17 init-statement: pProvider is only used within this if block
+    if (CEIDProvider* pProvider = new CEIDProvider())
     {
         hr = pProvider->QueryInterface(riid, ppv);
         pProvider->Release();

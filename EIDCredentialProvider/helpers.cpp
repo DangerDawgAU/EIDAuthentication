@@ -294,8 +294,8 @@ static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT messa
 			case NM_RETURN:
 				{
 					PNMLINK pNMLink = (PNMLINK)lParam;
-					LITEM item = pNMLink->item;
-					if (wcscmp(item.szID, L"idinfo") == 0)
+					// C++17 init-statement: item is only used within this if block
+					if (LITEM item = pNMLink->item; wcscmp(item.szID, L"idinfo") == 0)
 					{
 						// launch the password reset wizard
 						HMODULE keymgrDll = nullptr;

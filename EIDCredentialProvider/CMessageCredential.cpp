@@ -199,8 +199,8 @@ HRESULT CMessageCredential::GetStringValue(
 			if (Handle)
 			{
 				DWORD dwMessageLen = 256;
-				auto Message = static_cast<PWSTR>(CoTaskMemAlloc(dwMessageLen*sizeof(WCHAR)));
-				if (Message)
+				// C++17 init-statement: Message is only used within this if block
+				if (PWSTR Message = static_cast<PWSTR>(CoTaskMemAlloc(dwMessageLen*sizeof(WCHAR))))
 				{
 					LoadString(Handle, MessageId, Message, dwMessageLen);
 					*ppwsz = Message;

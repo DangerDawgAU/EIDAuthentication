@@ -63,14 +63,13 @@ private:
 
 
 
-// Boilerplate method to create an instance of our provider. 
+// Boilerplate method to create an instance of our provider.
 HRESULT CEIDFilter_CreateInstance(REFIID riid, void** ppv)
 {
     HRESULT hr;
 	if (riid != IID_ICredentialProviderFilter) return E_NOINTERFACE;
-    CEIDFilter* pFilter = new CEIDFilter();
-
-    if (pFilter)
+    // C++17 init-statement: pFilter is only used within this if block
+    if (CEIDFilter* pFilter = new CEIDFilter())
     {
         hr = pFilter->QueryInterface(riid, ppv);
         pFilter->Release();
@@ -79,7 +78,7 @@ HRESULT CEIDFilter_CreateInstance(REFIID riid, void** ppv)
     {
         hr = E_OUTOFMEMORY;
     }
-    
+
     return hr;
 }
 
