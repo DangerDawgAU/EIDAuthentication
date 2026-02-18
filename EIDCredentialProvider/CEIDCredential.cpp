@@ -524,103 +524,104 @@ HRESULT EIDUnlockLogonInit(
 }
 
 
-// Collect the username and password into a serialized credential for the correct usage scenario 
-// (logon/unlock is what's demonstrated in this sample).  LogonUI then passes these credentials 
+// Collect the username and password into a serialized credential for the correct usage scenario
+// (logon/unlock is what's demonstrated in this sample).  LogonUI then passes these credentials
 // back to the system to log on.
 // http://msdn.microsoft.com/en-us/library/bb776026(VS.85).aspx
 HRESULT CEIDCredential::GetSerialization(
     CREDENTIAL_PROVIDER_GET_SERIALIZATION_RESPONSE* pcpgsr,
-    CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION* pcpcs, 
-    PWSTR* ppwszOptionalStatusText, 
+    CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION* pcpcs,
+    PWSTR* ppwszOptionalStatusText,
     CREDENTIAL_PROVIDER_STATUS_ICON* pcpsiOptionalStatusIcon
     )
 {
     UNREFERENCED_PARAMETER(ppwszOptionalStatusText);
     UNREFERENCED_PARAMETER(pcpsiOptionalStatusIcon);
     HRESULT hr;
-	
+
     WCHAR wsz[MAX_COMPUTERNAME_LENGTH+1];
     DWORD cch = ARRAYSIZE(wsz);
-    if (GetComputerNameW(wsz, &cch))
-    {
-        PWSTR pwzProtectedPin;
 
-        hr = ProtectIfNecessaryAndCopyPassword(_rgFieldStrings[SFI_PIN], _cpus, _dwFlags,  &pwzProtectedPin);
-
-        if (SUCCEEDED(hr))
-        {
-            EID_INTERACTIVE_UNLOCK_LOGON kiul;
-
-            // Initialize kiul with weak references to our credential.
-            hr = EIDUnlockLogonInit(wsz, _rgFieldStrings[SFI_USERNAME], pwzProtectedPin, _cpus,  &kiul);
-
-            if (SUCCEEDED(hr))
-            {
-                // We use EID_INTERACTIVE_UNLOCK_LOGON in both unlock and logon scenarios.  It contains a
-                // EID_INTERACTIVE_LOGON to hold the creds plus a LUID that is filled in for us by Winlogon
-                // as necessary.
-				PEID_SMARTCARD_CSP_INFO pCspInfo = _pContainer->GetCSPInfo();
-				if (pCspInfo)
-				{
-					hr = EIDUnlockLogonPack(kiul, pCspInfo, &pcpcs->rgbSerialization, &pcpcs->cbSerialization);
-					_pContainer->FreeCSPInfo(pCspInfo);
-
-					if (SUCCEEDED(hr))
-					{
-						ULONG ulAuthPackage;
-
-						hr = RetrieveNegotiateAuthPackage(&ulAuthPackage);
-						if (SUCCEEDED(hr))
-						{
-							pcpcs->ulAuthenticationPackage = ulAuthPackage;
-							pcpcs->clsidCredentialProvider = CLSID_CEIDProvider;
-
-							// At this point the credential has created the serialized credential used for logon
-							// By setting this to CPGSR_RETURN_CREDENTIAL_FINISHED we are letting logonUI know
-							// that we have all the information we need and it should attempt to submit the 
-							// serialized credential.
-							*pcpgsr = CPGSR_RETURN_CREDENTIAL_FINISHED;
-						}
-						else
-						{
-							EIDLogErrorWithContext("GetSerialization::RetrieveNegotiateAuthPackage", hr, nullptr);
-						}
-					}
-					else
-					{
-						EIDLogErrorWithContext("GetSerialization::EIDUnlockLogonPack", hr, nullptr);
-					}
-				}
-				else
-				{
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pCspInfo NULL");
-				}
-            }
-			else
-			{
-				EIDLogErrorWithContext("GetSerialization::EIDUnlockLogonInit", hr, nullptr);
-			}
-            CoTaskMemFree(pwzProtectedPin);
-        }
-		else
-		{
-			EIDLogErrorWithContext("GetSerialization::ProtectIfNecessaryAndCopyPassword", hr, nullptr);
-		}
-    }
-    else
+    // Guard clause: GetComputerNameW failed
+    if (!GetComputerNameW(wsz, &cch))
     {
         DWORD dwErr = GetLastError();
         hr = HRESULT_FROM_WIN32(dwErr);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetComputerNameW failed 0x%08x",dwErr);
-    }
-	if (!SUCCEEDED(hr))
-	{
 		EIDLogErrorWithContext("GetSerialization", hr, nullptr);
-	}
-	else
-	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"OK");
-	}
+        return hr;
+    }
+
+    PWSTR pwzProtectedPin = nullptr;
+    hr = ProtectIfNecessaryAndCopyPassword(_rgFieldStrings[SFI_PIN], _cpus, _dwFlags, &pwzProtectedPin);
+
+    // Guard clause: password protection failed
+    if (FAILED(hr))
+    {
+        EIDLogErrorWithContext("GetSerialization::ProtectIfNecessaryAndCopyPassword", hr, nullptr);
+        EIDLogErrorWithContext("GetSerialization", hr, nullptr);
+        return hr;
+    }
+
+    EID_INTERACTIVE_UNLOCK_LOGON kiul;
+
+    // Initialize kiul with weak references to our credential.
+    hr = EIDUnlockLogonInit(wsz, _rgFieldStrings[SFI_USERNAME], pwzProtectedPin, _cpus, &kiul);
+    CoTaskMemFree(pwzProtectedPin);
+
+    // Guard clause: logon init failed
+    if (FAILED(hr))
+    {
+        EIDLogErrorWithContext("GetSerialization::EIDUnlockLogonInit", hr, nullptr);
+        EIDLogErrorWithContext("GetSerialization", hr, nullptr);
+        return hr;
+    }
+
+    // We use EID_INTERACTIVE_UNLOCK_LOGON in both unlock and logon scenarios.  It contains a
+    // EID_INTERACTIVE_LOGON to hold the creds plus a LUID that is filled in for us by Winlogon
+    // as necessary.
+    PEID_SMARTCARD_CSP_INFO pCspInfo = _pContainer->GetCSPInfo();
+
+    // Guard clause: no CSP info
+    if (!pCspInfo)
+    {
+        EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pCspInfo NULL");
+        EIDLogErrorWithContext("GetSerialization", E_FAIL, nullptr);
+        return E_FAIL;
+    }
+
+    hr = EIDUnlockLogonPack(kiul, pCspInfo, &pcpcs->rgbSerialization, &pcpcs->cbSerialization);
+    _pContainer->FreeCSPInfo(pCspInfo);
+
+    // Guard clause: logon pack failed
+    if (FAILED(hr))
+    {
+        EIDLogErrorWithContext("GetSerialization::EIDUnlockLogonPack", hr, nullptr);
+        EIDLogErrorWithContext("GetSerialization", hr, nullptr);
+        return hr;
+    }
+
+    ULONG ulAuthPackage;
+    hr = RetrieveNegotiateAuthPackage(&ulAuthPackage);
+
+    // Guard clause: auth package retrieval failed
+    if (FAILED(hr))
+    {
+        EIDLogErrorWithContext("GetSerialization::RetrieveNegotiateAuthPackage", hr, nullptr);
+        EIDLogErrorWithContext("GetSerialization", hr, nullptr);
+        return hr;
+    }
+
+    pcpcs->ulAuthenticationPackage = ulAuthPackage;
+    pcpcs->clsidCredentialProvider = CLSID_CEIDProvider;
+
+    // At this point the credential has created the serialized credential used for logon
+    // By setting this to CPGSR_RETURN_CREDENTIAL_FINISHED we are letting logonUI know
+    // that we have all the information we need and it should attempt to submit the
+    // serialized credential.
+    *pcpgsr = CPGSR_RETURN_CREDENTIAL_FINISHED;
+
+    EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"OK");
     return hr;
 }
 
