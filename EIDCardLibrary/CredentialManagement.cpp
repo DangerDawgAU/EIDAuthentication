@@ -586,17 +586,17 @@ NTSTATUS CUsermodeContext::AddContextInfo(ULONG_PTR pHandle, PEID_SSP_CALLBACK_M
 
 NTSTATUS CUsermodeContext::DeleteContextInfo(ULONG_PTR pHandle)
 {
-	auto it = UserModeContexts.find(pHandle);
-	if (it == UserModeContexts.end())
-	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_HANDLE 0X%08X", pHandle);
-		return SEC_E_INVALID_HANDLE;
-	}
-	else
+	// C++17 init-statement: it is only used within this if/else block
+	if (auto it = UserModeContexts.find(pHandle); it != UserModeContexts.end())
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Context 0X%08X deleted", pHandle);
 		UserModeContexts.erase(it);
 		return STATUS_SUCCESS;
+	}
+	else
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_HANDLE 0X%08X", pHandle);
+		return SEC_E_INVALID_HANDLE;
 	}
 }
 
@@ -615,14 +615,14 @@ NTSTATUS CUsermodeContext::GetImpersonationHandle(ULONG_PTR pHandle,PHANDLE Impe
 
 CUsermodeContext* CUsermodeContext::GetContextFromHandle(ULONG_PTR pHandle)
 {
-	auto it = UserModeContexts.find(pHandle);
-	if (it == UserModeContexts.end())
+	// C++17 init-statement: it is only used within this if/else block
+	if (auto it = UserModeContexts.find(pHandle); it != UserModeContexts.end())
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Context not found = 0x%08X", pHandle);
-		return nullptr;
+		return (*it).second;
 	}
 	else
 	{
-		return (*it).second;
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Context not found = 0x%08X", pHandle);
+		return nullptr;
 	}
 }
