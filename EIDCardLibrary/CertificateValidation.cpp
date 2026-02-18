@@ -84,7 +84,7 @@ void InitChainValidationParams(ChainValidationParams* params)
 	BOOL fResult;
 
 	// check input
-	if (GetPolicyValue(AllowSignatureOnlyKeys) == 0 && pCspInfo->KeySpec == AT_SIGNATURE)
+	if (GetPolicyValue(GPOPolicy::AllowSignatureOnlyKeys) == 0 && pCspInfo->KeySpec == AT_SIGNATURE)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Policy denies AT_SIGNATURE Key");
 		return EID::make_unexpected(HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED));
@@ -220,7 +220,7 @@ LPCTSTR GetTrustErrorText(DWORD Status)
 [[nodiscard]] EID::ResultVoid HasCertificateRightEKUInternal(
     __in PCCERT_CONTEXT pCertContext) noexcept
 {
-	if (GetPolicyValue(AllowCertificatesWithNoEKU) != 0)
+	if (GetPolicyValue(GPOPolicy::AllowCertificatesWithNoEKU) != 0)
 	{
 		// Policy allows certificates without EKU - success
 		return {};
@@ -454,7 +454,7 @@ BOOL MakeTrustedCertifcate(PCCERT_CONTEXT pCertContext)
     // Initialize data structures for chain building.
 	InitChainValidationParams(&params);
 
-	if (GetPolicyValue(AllowCertificatesWithNoEKU))
+	if (GetPolicyValue(GPOPolicy::AllowCertificatesWithNoEKU))
 	{
 		params.EnhkeyUsage.cUsageIdentifier = 0;
 		params.EnhkeyUsage.rgpszUsageIdentifier = nullptr;

@@ -133,7 +133,7 @@ struct EID_INTERACTIVE_PROFILE
 };
 using PEID_INTERACTIVE_PROFILE = EID_INTERACTIVE_PROFILE*;
 
-enum EID_CREDENTIAL_PROVIDER_READER_STATE
+enum class EID_CREDENTIAL_PROVIDER_READER_STATE
 {
 	EIDCPRSConnecting,
 	EIDCPRSConnected,
@@ -246,7 +246,7 @@ struct EID_RESPONSE_MESSAGE
 };
 using PEID_RESPONSE_MESSAGE = EID_RESPONSE_MESSAGE*;
 
-enum EID_MESSAGE_STATE
+enum class EID_MESSAGE_STATE
 {
 	EIDMSNone,
 	EIDMSNegociate,
@@ -255,7 +255,7 @@ enum EID_MESSAGE_STATE
 	EIDMSComplete,
 };
 
-enum EID_MESSAGE_TYPE
+enum class EID_MESSAGE_TYPE
 {
 	EIDMTNegociate = 1,
 	EIDMTChallenge = 2,
@@ -266,7 +266,7 @@ constexpr DWORD EID_MESSAGE_VERSION = 1;
 // Signature is exactly 8 bytes (7 chars + null terminator) to match message Signature[8] fields
 constexpr char EID_MESSAGE_SIGNATURE[8] = "EIDAuth";
 
-enum EID_SSP_CALLER
+enum class EID_SSP_CALLER
 {
 	EIDSSPInitialize,
 	EIDSSPAccept,

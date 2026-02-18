@@ -44,8 +44,8 @@ CMessageCredential::CMessageCredential():
     ZeroMemory(_rgFieldStatePairs, sizeof(_rgFieldStatePairs));
     ZeroMemory(_rgFieldStrings, sizeof(_rgFieldStrings));
 	_dwSmartCardCount = 0;
-	_dwStatus = Idle;
-	_dwOldStatus = Idle;
+	_dwStatus = CMessageCredentialStatus::Idle;
+	_dwOldStatus = CMessageCredentialStatus::Idle;
 }
 
 CMessageCredential::~CMessageCredential()

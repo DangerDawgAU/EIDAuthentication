@@ -253,7 +253,7 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 				{
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Unable to retrieve smart card name 0x%08x", Status);
 				}
-				Callback(EIDCPRSConnecting, rgscState[dwI].szReader, pmszCards, (rgscState[dwI].dwEventState) >> 16);
+				Callback(EID_CREDENTIAL_PROVIDER_READER_STATE::EIDCPRSConnecting, rgscState[dwI].szReader, pmszCards, (rgscState[dwI].dwEventState) >> 16);
 				SCardFreeMemory(_hSCardContext, pmszCards);
 				rgscState[dwI].dwCurrentState = SCARD_STATE_PRESENT;
 			}
@@ -263,7 +263,7 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 				(SCARD_STATE_PRESENT & rgscState[dwI].dwCurrentState) &&
 				!(SCARD_STATE_MUTE & rgscState[dwI].dwCurrentState))
 			{
-				Callback(EIDCPRSDisconnected, rgscState[dwI].szReader, nullptr, 0);
+				Callback(EID_CREDENTIAL_PROVIDER_READER_STATE::EIDCPRSDisconnected, rgscState[dwI].szReader, nullptr, 0);
 				rgscState[dwI].dwCurrentState = SCARD_STATE_EMPTY;
 			}
 
@@ -295,7 +295,7 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 			if (Status == SCARD_E_SYSTEM_CANCELLED &&
 				(SCARD_STATE_PRESENT & rgscState[dwI].dwEventState))
 			{
-				Callback(EIDCPRSDisconnected,rgscState[dwI].szReader, nullptr, 0);
+				Callback(EID_CREDENTIAL_PROVIDER_READER_STATE::EIDCPRSDisconnected,rgscState[dwI].szReader, nullptr, 0);
 			}
 			EIDFree((PVOID)rgscState[dwI].szReader);
 		}
@@ -314,7 +314,7 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 	// synchronization event
 	CloseHandle(_hAccessStartedEvent);
 	_hAccessStartedEvent = nullptr;
-	Callback(EIDCPRSThreadFinished,_T(""), nullptr, 0);
+	Callback(EID_CREDENTIAL_PROVIDER_READER_STATE::EIDCPRSThreadFinished,_T(""), nullptr, 0);
 	return Status;
 }
 

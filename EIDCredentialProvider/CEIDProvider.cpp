@@ -89,12 +89,12 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 
 	switch(Message)
 	{
-	case EIDCPRSConnecting:
+	case EID_CREDENTIAL_PROVIDER_READER_STATE::EIDCPRSConnecting:
 		if (szCardName)
 		{
 			if (_pMessageCredential)
 			{
-				_pMessageCredential->SetStatus(Reading);
+				_pMessageCredential->SetStatus(CMessageCredentialStatus::Reading);
 				_pMessageCredential->IncreaseSmartCardCount();
 			}
 			if (_pcpe != nullptr)
@@ -103,7 +103,7 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 				Sleep(100);
 			}
 			_CredentialList.ConnectNotification(szReader,szCardName,ActivityCount);
-			if (_pMessageCredential) _pMessageCredential->SetStatus(EndReading);
+			if (_pMessageCredential) _pMessageCredential->SetStatus(CMessageCredentialStatus::EndReading);
 
 			if (_pcpe != nullptr)
 			{
@@ -111,7 +111,7 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 			}
 		}
 		break;
-	case EIDCPRSDisconnected:
+	case EID_CREDENTIAL_PROVIDER_READER_STATE::EIDCPRSDisconnected:
 		if (_pMessageCredential)
 		{
 			_pMessageCredential->SetStatus(Reading);

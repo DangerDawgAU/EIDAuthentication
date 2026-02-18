@@ -245,7 +245,7 @@ BOOL CContainer::ViewCertificate(HWND hWnd) const
 	certViewInfo.pCertContext = _pCertContext;
 	certViewInfo.cPurposes = 0;
 	certViewInfo.rgszPurposes = nullptr;
-	if (!GetPolicyValue(AllowCertificatesWithNoEKU))
+	if (!GetPolicyValue(GPOPolicy::AllowCertificatesWithNoEKU))
 	{
 		certViewInfo.cPurposes = 1;
 		szOid = szOID_KP_SMARTCARD_LOGON;

@@ -22,7 +22,7 @@
 #include <span>
 
 
-enum EID_PRIVATE_DATA_TYPE
+enum class EID_PRIVATE_DATA_TYPE
 {
 	eidpdtClearText=1,
 	eidpdtCrypted = 2,
@@ -34,12 +34,12 @@ enum EID_PRIVATE_DATA_TYPE
 // Marked constexpr+noexcept for compile-time evaluation and LSASS compatibility
 constexpr bool IsValidPrivateDataType(EID_PRIVATE_DATA_TYPE type) noexcept
 {
-    return type >= eidpdtClearText && type <= eidpdtDPAPI;
+    return type >= EID_PRIVATE_DATA_TYPE::eidpdtClearText && type <= EID_PRIVATE_DATA_TYPE::eidpdtDPAPI;
 }
 
 // Compile-time validation of private data type enum bounds
-static_assert(IsValidPrivateDataType(eidpdtClearText), "eidpdtClearText must be a valid type");
-static_assert(IsValidPrivateDataType(eidpdtDPAPI), "eidpdtDPAPI must be a valid type");
+static_assert(IsValidPrivateDataType(EID_PRIVATE_DATA_TYPE::eidpdtClearText), "eidpdtClearText must be a valid type");
+static_assert(IsValidPrivateDataType(EID_PRIVATE_DATA_TYPE::eidpdtDPAPI), "eidpdtDPAPI must be a valid type");
 
 using PEID_PRIVATE_DATA_TYPE = EID_PRIVATE_DATA_TYPE*;
 struct EID_PRIVATE_DATA

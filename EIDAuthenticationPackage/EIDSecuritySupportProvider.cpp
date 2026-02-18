@@ -1042,7 +1042,7 @@ extern "C"
 				__leave;
 			}
 			// duplicate the handle to the process space
-			callbackMessage->Caller = EIDSSPAccept;
+			callbackMessage->Caller = EID_SSP_CALLER::EIDSSPAccept;
 			Status = MyLsaDispatchTable->DuplicateHandle(hToken, &callbackMessage->hToken);
 			if (Status != STATUS_SUCCESS)
 			{

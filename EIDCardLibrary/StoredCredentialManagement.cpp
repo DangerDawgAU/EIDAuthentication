@@ -266,7 +266,7 @@ BOOL CStoredCredentialManager::GetCertContextFromRid(__in DWORD dwRid, __out PCC
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertCreateCertificateContext 0x%08x",dwError);
 			__leave;
 		}
-		*pfEncryptPassword = (pEidPrivateData->dwType == eidpdtCrypted);
+		*pfEncryptPassword = (pEidPrivateData->dwType == EID_PRIVATE_DATA_TYPE::eidpdtCrypted);
 		fReturn = TRUE;
 	}
 	__finally
@@ -429,7 +429,7 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 			}
 
 			// copy data
-			pbSecret->dwType = eidpdtCrypted;
+			pbSecret->dwType = EID_PRIVATE_DATA_TYPE::eidpdtCrypted;
 			pbSecret->dwCertificatSize = (USHORT) pCertContext->cbCertEncoded;
 			pbSecret->dwSymetricKeySize = usSymetricKeySize;
 			pbSecret->usPasswordLen = usEncryptedPasswordSize;
@@ -479,7 +479,7 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 			}
 
 			// copy data
-			pbSecret->dwType = eidpdtDPAPI;
+			pbSecret->dwType = EID_PRIVATE_DATA_TYPE::eidpdtDPAPI;
 			pbSecret->dwCertificatSize = (USHORT)pCertContext->cbCertEncoded;
 			pbSecret->dwSymetricKeySize = 0;  // Not used for DPAPI
 			pbSecret->usPasswordLen = (USHORT)DataOut.cbData;
@@ -677,7 +677,7 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 		*pType = pEidPrivateData->dwType;
 		switch(*pType)
 		{
-		case eidpdtCrypted:
+		case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted):
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwType = eidpdtCrypted");
 			*pdwChallengeSize = pEidPrivateData->dwSymetricKeySize;
 			*ppChallenge = (PBYTE) EIDAlloc(pEidPrivateData->dwSymetricKeySize);
@@ -689,7 +689,7 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 			}
 			memcpy(*ppChallenge, pEidPrivateData->Data + pEidPrivateData->dwSymetricKeyOffset, pEidPrivateData->dwSymetricKeySize); 
 			break;
-		case eidpdtClearText:
+		case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtClearText):
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwType = eidpdtClearText");
 			fStatus = GetSignatureChallenge(ppChallenge, pdwChallengeSize);
 			if (!fStatus)
@@ -699,7 +699,7 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 				__leave;
 			}
 			break;
-		case eidpdtDPAPI:
+		case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtDPAPI):
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwType = eidpdtDPAPI");
 			fStatus = GetSignatureChallenge(ppChallenge, pdwChallengeSize);
 			if (!fStatus)
@@ -958,9 +958,9 @@ BOOL CStoredCredentialManager::GetResponseFromChallenge(__in PBYTE pChallenge, _
 {
 	switch(dwChallengeType)
 	{
-	case eidpdtClearText:
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtClearText):
 		return GetResponseFromSignatureChallenge(pChallenge,dwChallengeSize,pCertContext,Pin,pSymetricKey,usSize);
-	case eidpdtCrypted:
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted):
 		return GetResponseFromCryptedChallenge(pChallenge,dwChallengeSize,pCertContext,Pin,pSymetricKey,usSize);
 	default:
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Type not implemented");
@@ -1411,11 +1411,11 @@ BOOL CStoredCredentialManager::GetPasswordFromChallengeResponse(__in DWORD dwRid
 {
 	switch(dwChallengeType)
 	{
-	case eidpdtClearText:
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtClearText):
 		return GetPasswordFromSignatureChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
-	case eidpdtCrypted:
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted):
 		return GetPasswordFromCryptedChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
-	case eidpdtDPAPI:
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtDPAPI):
 		return GetPasswordFromDPAPIChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
 	default:
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Type not implemented");

@@ -22,7 +22,7 @@
 
 #include <utility>
 
-enum GPOPolicy
+enum class GPOPolicy
 {
   AllowSignatureOnlyKeys,
   AllowCertificatesWithNoEKU,
@@ -45,12 +45,12 @@ enum GPOPolicy
 // Marked constexpr+noexcept for compile-time evaluation and LSASS compatibility
 constexpr bool IsValidPolicy(GPOPolicy policy) noexcept
 {
-    return policy >= AllowSignatureOnlyKeys && policy <= EnforceCSPWhitelist;
+    return policy >= GPOPolicy::AllowSignatureOnlyKeys && policy <= GPOPolicy::EnforceCSPWhitelist;
 }
 
 // Compile-time validation of GPOPolicy enum bounds
-static_assert(IsValidPolicy(AllowSignatureOnlyKeys), "AllowSignatureOnlyKeys must be a valid policy");
-static_assert(IsValidPolicy(EnforceCSPWhitelist), "EnforceCSPWhitelist must be a valid policy");
+static_assert(IsValidPolicy(GPOPolicy::AllowSignatureOnlyKeys), "AllowSignatureOnlyKeys must be a valid policy");
+static_assert(IsValidPolicy(GPOPolicy::EnforceCSPWhitelist), "EnforceCSPWhitelist must be a valid policy");
 
 DWORD GetPolicyValue(GPOPolicy Policy);
 BOOL SetPolicyValue(GPOPolicy Policy, DWORD dwValue);

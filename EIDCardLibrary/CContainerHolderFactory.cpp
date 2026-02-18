@@ -103,7 +103,7 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 	}
 	
 	// if policy 
-	if (GetPolicyValue(AllowSignatureOnlyKeys) || _cpus == CPUS_INVALID)
+	if (GetPolicyValue(GPOPolicy::AllowSignatureOnlyKeys) || _cpus == CPUS_INVALID)
 	{
 		dwKeyNumMax = 2;
 	}
