@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 
 ## Current Position
 
-Phase: 37 - Nesting Reduction
+Phase: 38 - Init-Statements
 Current Plan: 1/1
 Status: Complete
-Last activity: 2026-02-18 — Phase 37 Plan 01 complete
+Last activity: 2026-02-18 — Phase 38 Plan 01 complete
 
-Progress: [=========-----------] 70% (7/10 phases)
+Progress: [==========----------] 80% (8/10 phases)
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Recent decisions for v1.4:
 - Complexity helpers placed in anonymous namespace for internal linkage
 - SEH blocks cannot be refactored - complexity inside __try documented as won't-fix
 - [Phase 37]: Guard clauses and early return patterns for nesting reduction; SEH-protected functions documented as won't-fix
+- [Phase 38]: C++17 if-init patterns for scoped variable declarations; iterator condition logic inverted for find patterns; variables needing outer scope or pass-by-address documented as won't-convert
 
 ### Won't-Fix Categories (v1.4)
 
@@ -69,10 +70,11 @@ Recent decisions for v1.4:
 | Windows API enum types | Must match Windows definitions |
 | Security-critical explicit types | HRESULT, NTSTATUS, handles need clarity |
 | Phase 37 P01 | 15min | 4 tasks | 3 files |
+| Phase 38 P01 | 25min | 4 tasks | 6 files |
 
 ### Pending Todos
 
-None. Ready to start Phase 38.
+None. Ready to start Phase 39.
 
 ### Blockers/Concerns
 
@@ -89,8 +91,8 @@ Remaining errors are out of scope for Phase 36 and should be addressed in a futu
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Phase 37 Plan 01 complete
-Resume file: Run `/gsd:plan-phase 38` to continue
+Stopped at: Phase 38 Plan 01 complete
+Resume file: Run `/gsd:plan-phase 39` to continue
 
 ## Key Constraints (Always Remember)
 
