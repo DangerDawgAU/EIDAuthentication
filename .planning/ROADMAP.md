@@ -88,7 +88,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Milestone Goal:** Eliminate all fixable SonarQube issues and document remaining won't-fix with justifications
 
-- [ ] **Phase 31: Macro to constexpr** - Convert safe macros to constexpr, document won't-fix for RC/flow-control macros
+- [x] **Phase 31: Macro to constexpr** - Convert safe macros to constexpr, document won't-fix for RC/flow-control macros (Complete 2026-02-18)
 - [ ] **Phase 32: Auto Conversion** - Convert redundant type declarations to auto where type is obvious
 - [ ] **Phase 33: Independent Style Issues** - Fix C-style casts, enum class conversions, Windows API enum won't-fix
 - [ ] **Phase 34: Const Correctness - Globals** - Mark global variables const where truly immutable
@@ -112,7 +112,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Resource compiler macros (used in .rc files) documented as won't-fix with justification
   3. Flow-control macros documented as won't-fix with SEH/context justification
   4. Build passes with zero errors after macro conversions
-**Plans**: TBD
+**Plans**:
+- [x] 31-01-PLAN.md - Convert MAX_ULONG, CLSCTX_INPROC_SERVER to constexpr; document CERT_HASH_LENGTH as won't-fix (MACRO-02)
 
 ### Phase 32: Auto Conversion
 **Goal**: Redundant type declarations converted to auto where type is obvious from initializer
@@ -313,7 +314,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 31. Macro to constexpr | 0/1 | Not started | - |
+| 31. Macro to constexpr | 1/1 | Complete | 2026-02-18 |
 | 32. Auto Conversion | 0/1 | Not started | - |
 | 33. Independent Style Issues | 0/1 | Not started | - |
 | 34. Const Correctness - Globals | 0/1 | Planned | - |
@@ -413,4 +414,4 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 *Phase 34 planned: 2026-02-18*
 *Phase 35 planned: 2026-02-18*
 *Phase 38 planned: 2026-02-18*
-*Phase 39 planned: 2026-02-18*
+*Phase 31 complete: 2026-02-18*

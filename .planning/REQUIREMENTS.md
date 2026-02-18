@@ -9,9 +9,9 @@ SonarQube Zero — Eliminate all fixable SonarQube issues and document remaining
 
 ### Macro Modernization
 
-- [ ] **MACRO-01**: Simple value macros converted to constexpr where safe
-- [ ] **MACRO-02**: Resource compiler macros documented as won't-fix (cannot convert .rc macros)
-- [ ] **MACRO-03**: Flow-control macros documented as won't-fix
+- [x] **MACRO-01**: Simple value macros converted to constexpr where safe
+- [x] **MACRO-02**: Resource compiler macros documented as won't-fix (cannot convert .rc macros)
+- [x] **MACRO-03**: Flow-control macros documented as won't-fix
 
 ### Auto Modernization
 

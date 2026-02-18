@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-18)
 ## Current Position
 
 Phase: 31 - Macro to constexpr
-Plan: None assigned yet
-Status: Not started
-Last activity: 2026-02-18 — v1.4 roadmap created
+Current Plan: 1/1
+Status: Complete
+Last activity: 2026-02-18 — Phase 31 Plan 01 complete
 
-Progress: [--------------------] 0% (0/10 phases)
+Progress: [==------------------] 10% (1/10 phases)
 
 ## Performance Metrics
 
@@ -43,6 +43,8 @@ Recent decisions for v1.4:
 - Phase 34 depends on Phase 31 - macro conversion enables global const correctness
 - Phase 37 depends on Phase 36 - complexity helpers reduce nesting depth
 - Depth setting: Quick (10 phases matches depth guidance)
+- CLSCTX_INPROC_SERVER renamed to CLSCTX_INPROC_SERVER_LOCAL to avoid confusion with Windows SDK definition
+- CERT_HASH_LENGTH documented as won't-fix because Windows SDK defines it as a macro
 
 ### Won't-Fix Categories (v1.4)
 
@@ -59,7 +61,7 @@ Recent decisions for v1.4:
 
 ### Pending Todos
 
-None. Ready to start Phase 31.
+None. Ready to start Phase 32.
 
 ### Blockers/Concerns
 
@@ -68,8 +70,8 @@ None. v1.4 roadmap is ready for execution.
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: v1.4 roadmap created
-Resume file: Run `/gsd:plan-phase 31` to begin
+Stopped at: Phase 31 Plan 01 complete
+Resume file: Run `/gsd:plan-phase 32` to continue
 
 ## Key Constraints (Always Remember)
 
@@ -84,4 +86,4 @@ Resume file: Run `/gsd:plan-phase 31` to begin
 
 *Last updated: 2026-02-18*
 *Current milestone: v1.4 SonarQube Zero*
-*Next: `/gsd:plan-phase 31` to start Macro to constexpr phase*
+*Next: `/gsd:plan-phase 32` to start Auto Conversion phase*
