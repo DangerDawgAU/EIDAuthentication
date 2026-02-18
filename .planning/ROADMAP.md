@@ -314,7 +314,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 31. Macro to constexpr | 1/1 | Complete | 2026-02-18 |
+| 31. Macro to constexpr | 1/1 | Complete    | 2026-02-18 |
 | 32. Auto Conversion | 0/1 | Not started | - |
 | 33. Independent Style Issues | 0/1 | Not started | - |
 | 34. Const Correctness - Globals | 0/1 | Planned | - |
