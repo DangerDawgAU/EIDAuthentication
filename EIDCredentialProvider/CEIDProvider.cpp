@@ -342,7 +342,7 @@ HRESULT CEIDProvider::GetFieldDescriptorAt(
 					if (Handle)
 					{
 						DWORD dwMessageLen = 256;
-						PWSTR Message = (PWSTR) CoTaskMemAlloc(dwMessageLen*sizeof(WCHAR));
+						auto Message = static_cast<PWSTR>(CoTaskMemAlloc(dwMessageLen*sizeof(WCHAR)));
 						if (Message)
 						{
 							LoadString(Handle, 4, Message, dwMessageLen);
@@ -495,7 +495,7 @@ HRESULT CEIDProvider_CreateInstance(REFIID riid, void** ppv)
 {
     HRESULT hr;
 	if (riid != IID_ICredentialProvider) return E_NOINTERFACE;
-    CEIDProvider* pProvider = new CEIDProvider();
+    auto pProvider = new CEIDProvider();
 
     if (pProvider)
     {

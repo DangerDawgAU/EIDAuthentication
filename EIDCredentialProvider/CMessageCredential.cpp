@@ -199,7 +199,7 @@ HRESULT CMessageCredential::GetStringValue(
 			if (Handle)
 			{
 				DWORD dwMessageLen = 256;
-				PWSTR Message = (PWSTR) CoTaskMemAlloc(dwMessageLen*sizeof(WCHAR));
+				auto Message = static_cast<PWSTR>(CoTaskMemAlloc(dwMessageLen*sizeof(WCHAR)));
 				if (Message)
 				{
 					LoadString(Handle, MessageId, Message, dwMessageLen);

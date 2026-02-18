@@ -131,7 +131,7 @@ HRESULT CClassFactory_CreateInstance(REFCLSID rclsid, REFIID riid, void** ppv)
     HRESULT hr;
     if (CLSID_CEIDProvider == rclsid )
     {
-        CClassFactory* pcf = new CClassFactory;
+        auto pcf = new CClassFactory;
         if (pcf)
         {
             hr = pcf->QueryInterface(riid, ppv);

@@ -61,8 +61,7 @@ HRESULT FieldDescriptorCoAllocCopy(
     HRESULT hr;
     DWORD cbStruct = sizeof(CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR);
 
-    CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR* pcpfd =
-        (CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR*)CoTaskMemAlloc(cbStruct);
+    auto pcpfd = static_cast<CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR*>(CoTaskMemAlloc(cbStruct));
 
     if (pcpfd)
     {
