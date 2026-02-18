@@ -200,7 +200,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Large stack buffers kept as C-style arrays (stack safety)
   3. std::string/std::vector documented as won't-fix with LSASS heap safety justification
   4. Build passes with zero errors after integration changes
-**Plans**: TBD
+**Plans**:
+- [ ] 39-01-PLAN.md - Convert small C-style arrays to std::array, document won't-fix categories for LSASS safety
 
 ### Phase 40: Final Verification
 **Goal**: Confirm all remediation is complete, stable, and documented
@@ -318,7 +319,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 36. Complexity Reduction | 0/1 | Not started | - |
 | 37. Nesting Reduction | 0/1 | Not started | - |
 | 38. Init-statements | 0/1 | Not started | - |
-| 39. Integration Changes | 0/1 | Not started | - |
+| 39. Integration Changes | 0/1 | Planned | - |
 | 40. Final Verification | 0/1 | Not started | - |
 
 ---
@@ -408,3 +409,4 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 *v1.3 complete: 2026-02-18*
 *v1.4 roadmap created: 2026-02-18*
 *Phase 35 planned: 2026-02-18*
+*Phase 39 planned: 2026-02-18*
