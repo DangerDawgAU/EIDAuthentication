@@ -169,6 +169,8 @@ BOOL EncryptPasswordWithDPAPI(__in PWSTR szPassword, __in USHORT usPasswordSize,
 
 } // anonymous namespace
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetUsernameFromCertContext(__in PCCERT_CONTEXT pContext, __out PWSTR *pszUsername, __out PDWORD pdwRid)
 {
 	NET_API_STATUS Status;
@@ -268,6 +270,8 @@ BOOL CStoredCredentialManager::HasStoredCredential(__in PCCERT_CONTEXT pContext)
 	return FALSE;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetCertContextFromHash(__in PBYTE pbHash, __out PCCERT_CONTEXT* ppContext, __out PDWORD pdwRid)
 {
 	NET_API_STATUS Status;
@@ -334,6 +338,8 @@ BOOL CStoredCredentialManager::GetCertContextFromHash(__in PBYTE pbHash, __out P
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetCertContextFromRid(__in DWORD dwRid, __out PCCERT_CONTEXT* ppContext, __out PBOOL pfEncryptPassword)
 {
 	BOOL fReturn = FALSE, fStatus;
@@ -394,6 +400,10 @@ BOOL CStoredCredentialManager::GetCertContextFromRid(__in DWORD dwRid, __out PCC
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
+// Uses helper functions CalculateSecretSize, BuildSecretData, EncryptPasswordWithDPAPI
+// to reduce cognitive complexity while maintaining SEH safety.
 BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CONTEXT pCertContext, __in PWSTR szPassword, __in_opt USHORT usPasswordLen, __in BOOL fEncryptPassword, __in BOOL fCheckPassword)
 {
 	// Refactored for complexity reduction (Phase 36-01)
@@ -625,6 +635,8 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::UpdateCredential(__in PLUID pLuid, __in PUNICODE_STRING Password)
 {
 	DWORD dwRid = 0;
@@ -698,6 +710,8 @@ BOOL CStoredCredentialManager::UpdateCredential(__in PLUID pLuid, __in PUNICODE_
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::UpdateCredential(__in DWORD dwRid, __in PWSTR szPassword, __in_opt USHORT usPasswordLen)
 {
 	BOOL fReturn = FALSE, fStatus;
@@ -737,6 +751,8 @@ BOOL CStoredCredentialManager::UpdateCredential(__in DWORD dwRid, __in PWSTR szP
 	SetLastError(dwError);
 	return fReturn;
 }
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppChallenge, __out PDWORD pdwChallengeSize, __out PDWORD pType)
 {
 	BOOL fReturn = FALSE, fStatus;
@@ -819,6 +835,8 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetSignatureChallenge(__out PBYTE* ppChallenge, __out PDWORD pdwChallengeSize)
 {
 	BOOL fReturn = FALSE, fStatus;
@@ -879,6 +897,8 @@ BOOL CStoredCredentialManager::RemoveStoredCredential(__in DWORD dwRid)
 {
 	return StorePrivateData(dwRid, nullptr, 0);
 }
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::RemoveAllStoredCredential()
 {
 	NET_API_STATUS Status;
@@ -909,6 +929,8 @@ BOOL CStoredCredentialManager::RemoveAllStoredCredential()
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetPassword(__in DWORD dwRid, __in PCCERT_CONTEXT pContext, __in PWSTR szPin, __out PWSTR *pszPassword)
 {
 	BOOL fReturn = FALSE;
@@ -1057,6 +1079,8 @@ BOOL CStoredCredentialManager::GetResponseFromChallenge(__in PBYTE pChallenge, _
 		return FALSE;
 	}
 }
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetResponseFromCryptedChallenge(__in PBYTE pChallenge, __in DWORD dwChallengeSize, __in PCCERT_CONTEXT pCertContext, __in PWSTR Pin, __out PBYTE *pSymetricKey, __out DWORD *usSize)
 {
 	BOOL fReturn = FALSE;
@@ -1209,6 +1233,8 @@ BOOL CStoredCredentialManager::GetResponseFromCryptedChallenge(__in PBYTE pChall
 }
 
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetResponseFromSignatureChallenge(__in PBYTE pbChallenge, __in DWORD dwChallengeSize, __in PCCERT_CONTEXT pCertContext, __in PWSTR szPin, __out PBYTE *ppResponse, __out PDWORD pdwResponseSize)
 {
 	UNREFERENCED_PARAMETER(dwChallengeSize);
@@ -1340,6 +1366,8 @@ struct KEY_BLOB {
 
 // create a symetric key which can be used to crypt data and
 // which is saved and protected by the public key
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GenerateSymetricKeyAndEncryptIt(__in HCRYPTPROV hProv, __in HCRYPTKEY hKey, __out HCRYPTKEY *phKey, __out PBYTE* pSymetricKey, __out USHORT *usSize)
 {
 	BOOL fReturn = FALSE;
@@ -1427,6 +1455,8 @@ BOOL CStoredCredentialManager::GenerateSymetricKeyAndEncryptIt(__in HCRYPTPROV h
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __in PWSTR szPassword, __in_opt USHORT dwPasswordLen, __out PBYTE *pEncryptedPassword, __out USHORT *usSize)
 {
 	BOOL fReturn = FALSE;
@@ -1513,6 +1543,8 @@ BOOL CStoredCredentialManager::GetPasswordFromChallengeResponse(__in DWORD dwRid
 	}
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
 {
 	UNREFERENCED_PARAMETER(ppChallenge);
@@ -1647,6 +1679,8 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
 {
 	BOOL fReturn = FALSE, fStatus;
@@ -1790,6 +1824,8 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
 {
 	BOOL fReturn = FALSE, fStatus;
@@ -1950,6 +1986,8 @@ BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD 
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize)
 {
 	UNREFERENCED_PARAMETER(dwChallengeSize);
@@ -2094,6 +2132,8 @@ void CStoredCredentialManager::ProcessSecretBufferDebugInternal(__in DWORD dwRid
     EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"ProcessSecretBufferDebugInternal: RID 0x%08X, size %u", dwRid, dwSecretSize);
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE pbSecret, __in_opt USHORT usSecretSize)
 {
 	// Convert C-style buffer to span for internal processing
@@ -2208,6 +2248,8 @@ BOOL CStoredCredentialManager::StorePrivateDataDebug(__in DWORD dwRid, __in_opt 
 	return FALSE;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData)
 {
 	if (!EIDIsComponentInLSAContext())
@@ -2426,6 +2468,8 @@ NTSTATUS LoadSamSrv()
 	return STATUS_SUCCESS;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 NTSTATUS CStoredCredentialManager::CheckPassword( __in DWORD dwRid, __in PWSTR szPassword)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
