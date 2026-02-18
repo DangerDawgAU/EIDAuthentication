@@ -323,7 +323,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 34. Const Correctness - Globals | 1/1 | Complete    | 2026-02-18 |
 | 35. Const Correctness - Functions | 1/1 | Complete    | 2026-02-18 |
 | 36. Complexity Reduction | 0/1 | Complete    | 2026-02-18 |
-| 37. Nesting Reduction | 1/1 | Complete   | 2026-02-18 |
+| 37. Nesting Reduction | 1/1 | Complete    | 2026-02-18 |
 | 38. Init-statements | 0/1 | Planned | - |
 | 39. Integration Changes | 0/1 | Planned | - |
 | 40. Final Verification | 0/1 | Not started | - |
