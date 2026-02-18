@@ -120,7 +120,7 @@ public:
 		_dwFlags = dwFlags;
 	}
 
-	CMessageCredentialStatus GetStatus()
+	CMessageCredentialStatus GetStatus() const
 	{
 		return _dwStatus;
 	}
