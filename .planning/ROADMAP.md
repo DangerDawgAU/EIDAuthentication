@@ -189,7 +189,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. Variable declarations scoped to if/switch blocks using init-statements
   2. Iterator scope limited using if-init pattern
   3. Build passes with zero errors after init-statement additions
-**Plans**: TBD
+**Plans**:
+- [ ] 38-01-PLAN.md - Convert ~49 init-statement opportunities across EIDCredentialProvider, EIDCardLibrary, and EIDConfigurationWizard projects
 
 ### Phase 39: Integration Changes
 **Goal**: std::array conversion where stack size permits, LSA safety patterns documented as won't-fix
@@ -318,7 +319,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 35. Const Correctness - Functions | 0/1 | Planned | - |
 | 36. Complexity Reduction | 0/1 | Not started | - |
 | 37. Nesting Reduction | 0/1 | Not started | - |
-| 38. Init-statements | 0/1 | Not started | - |
+| 38. Init-statements | 0/1 | Planned | - |
 | 39. Integration Changes | 0/1 | Planned | - |
 | 40. Final Verification | 0/1 | Not started | - |
 
@@ -409,4 +410,5 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 *v1.3 complete: 2026-02-18*
 *v1.4 roadmap created: 2026-02-18*
 *Phase 35 planned: 2026-02-18*
+*Phase 38 planned: 2026-02-18*
 *Phase 39 planned: 2026-02-18*
