@@ -112,7 +112,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Resource compiler macros (used in .rc files) documented as won't-fix with justification
   3. Flow-control macros documented as won't-fix with SEH/context justification
   4. Build passes with zero errors after macro conversions
-**Plans**: 1 plan (40-01-PLAN.md - Build verification, warning baseline, SonarQube documentation, won-fix catalog)
+**Plans**: TBD
 
 ### Phase 32: Auto Conversion
 **Goal**: Redundant type declarations converted to auto where type is obvious from initializer
@@ -123,7 +123,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. New object declarations converted to auto (e.g., `auto ptr = new Type()`)
   3. Security-critical types (HRESULT, NTSTATUS, handles) kept explicit - documented as won't-fix
   4. Build passes with zero errors after auto conversions
-**Plans**: 1 plan (40-01-PLAN.md - Build verification, warning baseline, SonarQube documentation, won-fix catalog)
+**Plans**: TBD
 
 ### Phase 33: Independent Style Issues
 **Goal**: Independent style improvements: C-style casts, enum class, Windows API enum won't-fix
@@ -134,7 +134,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Internal enum types converted to enum class where safe
   3. Windows API enum types documented as won't-fix with API compatibility justification
   4. Build passes with zero errors after style changes
-**Plans**: 1 plan (40-01-PLAN.md - Build verification, warning baseline, SonarQube documentation, won-fix catalog)
+**Plans**: TBD
 
 ### Phase 34: Const Correctness - Globals
 **Goal**: Global variables marked const where truly immutable, runtime-assigned documented as won't-fix
@@ -145,7 +145,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Runtime-assigned globals (LSA pointers, DLL state, tracing state) documented as won't-fix
   3. Set*() pattern and DllMain initialization checked before marking const
   4. Build passes with zero errors after const additions
-**Plans**: 1 plan (40-01-PLAN.md - Build verification, warning baseline, SonarQube documentation, won-fix catalog)
+**Plans**: TBD
 
 ### Phase 35: Const Correctness - Functions
 **Goal**: Member functions marked const where state is not modified, COM/interface methods documented as won't-fix
@@ -156,7 +156,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. COM interface methods documented as won't-fix (cannot change signatures)
   3. Windows callback methods documented as won't-fix (API compatibility)
   4. Build passes with zero errors after const additions
-**Plans**: 1 plan (40-01-PLAN.md - Build verification, warning baseline, SonarQube documentation, won-fix catalog)
+**Plans**:
+- [ ] 35-01-PLAN.md - Mark CContainerHolderFactory::HasContainerHolder() and ContainerHolderCount() const, mark CMessageCredential::GetStatus() const, document COM interface methods as won't-fix
 
 ### Phase 36: Complexity Reduction
 **Goal**: Cognitive complexity reduced via helper function extraction, SEH-protected code documented as won't-fix
@@ -167,7 +168,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. SEH-protected code documented as won't-fix (cannot extract from __try blocks)
   3. Helper functions maintain SEH safety (no heap allocation in LSASS context)
   4. Build passes with zero errors after complexity reduction
-**Plans**: 1 plan (40-01-PLAN.md - Build verification, warning baseline, SonarQube documentation, won-fix catalog)
+**Plans**: TBD
 
 ### Phase 37: Nesting Reduction
 **Goal**: Deep nesting reduced via early return and guard clauses, SEH blocks kept intact
@@ -178,7 +179,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Deep nesting reduced using helper functions from Phase 36
   3. SEH blocks documented as won't-fix (no extraction from __try)
   4. Build passes with zero errors after nesting reduction
-**Plans**: 1 plan (40-01-PLAN.md - Build verification, warning baseline, SonarQube documentation, won-fix catalog)
+**Plans**: TBD
 
 ### Phase 38: Init-statements
 **Goal**: Init-statements used in if/switch where scope benefits code clarity
@@ -188,7 +189,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. Variable declarations scoped to if/switch blocks using init-statements
   2. Iterator scope limited using if-init pattern
   3. Build passes with zero errors after init-statement additions
-**Plans**: 1 plan (40-01-PLAN.md - Build verification, warning baseline, SonarQube documentation, won-fix catalog)
+**Plans**: TBD
 
 ### Phase 39: Integration Changes
 **Goal**: std::array conversion where stack size permits, LSA safety patterns documented as won't-fix
@@ -199,7 +200,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Large stack buffers kept as C-style arrays (stack safety)
   3. std::string/std::vector documented as won't-fix with LSASS heap safety justification
   4. Build passes with zero errors after integration changes
-**Plans**: 1 plan (40-01-PLAN.md - Build verification, warning baseline, SonarQube documentation, won-fix catalog)
+**Plans**: TBD
 
 ### Phase 40: Final Verification
 **Goal**: Confirm all remediation is complete, stable, and documented
@@ -210,7 +211,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. No new warnings introduced compared to baseline
   3. SonarQube scan shows improvement from v1.4 baseline
   4. All won't-fix issues documented with specific justifications
-**Plans**: 1 plan (40-01-PLAN.md - Build verification, warning baseline, SonarQube documentation, won-fix catalog)
+**Plans**: TBD
 
 ---
 
@@ -313,7 +314,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 32. Auto Conversion | 0/1 | Not started | - |
 | 33. Independent Style Issues | 0/1 | Not started | - |
 | 34. Const Correctness - Globals | 0/1 | Not started | - |
-| 35. Const Correctness - Functions | 0/1 | Not started | - |
+| 35. Const Correctness - Functions | 0/1 | Planned | - |
 | 36. Complexity Reduction | 0/1 | Not started | - |
 | 37. Nesting Reduction | 0/1 | Not started | - |
 | 38. Init-statements | 0/1 | Not started | - |
@@ -406,3 +407,4 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 *v1.2 complete: 2026-02-17*
 *v1.3 complete: 2026-02-18*
 *v1.4 roadmap created: 2026-02-18*
+*Phase 35 planned: 2026-02-18*
