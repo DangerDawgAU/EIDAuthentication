@@ -59,7 +59,7 @@ extern "C"
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-		NTSTATUS Status = STATUS_INVALID_PARAMETER;
+		NTSTATUS Status = STATUS_INVALID_PARAMETER;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		__try
 		{
 			if (LsaVersion != SECPKG_INTERFACE_VERSION) 
@@ -202,7 +202,7 @@ extern "C"
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-		NTSTATUS Status = CUsermodeContext::GetImpersonationHandle(ContextHandle, ImpersonationToken);
+		NTSTATUS Status = CUsermodeContext::GetImpersonationHandle(ContextHandle, ImpersonationToken);  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Leave Status = 0x%08X", Status);
 		return Status; 
 	}

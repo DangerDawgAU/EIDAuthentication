@@ -244,7 +244,7 @@ CSecurityContext* CSecurityContext::GetContextFromHandle(ULONG_PTR context)
 
 NTSTATUS CSecurityContext::InitializeSecurityContextInput(PSecBufferDesc Buffer)
 {
-	NTSTATUS Status = STATUS_INVALID_SIGNATURE;
+	NTSTATUS Status = STATUS_INVALID_SIGNATURE;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	switch (_State)
 	{
 		case EID_MESSAGE_STATE::EIDMSNegociate:
@@ -259,7 +259,7 @@ NTSTATUS CSecurityContext::InitializeSecurityContextInput(PSecBufferDesc Buffer)
 }
 NTSTATUS CSecurityContext::InitializeSecurityContextOutput(PSecBufferDesc Buffer)
 {
-	NTSTATUS Status = STATUS_INVALID_SIGNATURE;
+	NTSTATUS Status = STATUS_INVALID_SIGNATURE;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	switch (_State)
 	{
 		case EID_MESSAGE_STATE::EIDMSNone:
@@ -278,7 +278,7 @@ NTSTATUS CSecurityContext::InitializeSecurityContextOutput(PSecBufferDesc Buffer
 }
 NTSTATUS CSecurityContext::AcceptSecurityContextInput(PSecBufferDesc Buffer)
 {
-	NTSTATUS Status = STATUS_INVALID_SIGNATURE;
+	NTSTATUS Status = STATUS_INVALID_SIGNATURE;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	switch (_State)
 	{
 		case EID_MESSAGE_STATE::EIDMSNone:
@@ -368,7 +368,7 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 	DWORD dwTotalEntries;
 	DWORD dwI;
 	USER_INFO_3 *pInfo = nullptr;
-	NTSTATUS Status = STATUS_SUCCESS;
+	NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	__try
 	{
 		Buffer->pBuffers[0].BufferType = SECBUFFER_TOKEN;
@@ -573,7 +573,7 @@ CUsermodeContext::CUsermodeContext(PEID_SSP_CALLBACK_MESSAGE pMessage)
 
 NTSTATUS CUsermodeContext::AddContextInfo(ULONG_PTR pHandle, PEID_SSP_CALLBACK_MESSAGE pMessage)
 {
-	NTSTATUS Status = STATUS_SUCCESS;
+	NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	CUsermodeContext* pContext = GetContextFromHandle(pHandle);
 	if (!pContext)
 	{
@@ -602,7 +602,7 @@ NTSTATUS CUsermodeContext::DeleteContextInfo(ULONG_PTR pHandle)
 
 NTSTATUS CUsermodeContext::GetImpersonationHandle(ULONG_PTR pHandle,PHANDLE ImpersonationToken)
 {
-	NTSTATUS Status = STATUS_SUCCESS;
+	NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	CUsermodeContext* pContext = GetContextFromHandle(pHandle);
 	if (!pContext)
 	{
