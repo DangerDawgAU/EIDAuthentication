@@ -81,7 +81,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts
-          path: artifacts
+          path: x64/Release
 
       - name: Setup NSIS
         uses: joncloud/makensis-action@v1
@@ -89,7 +89,10 @@ jobs:
           script-file: 'Installer/Installerx64.nsi'
 
       - name: Move installer to artifacts
-        run: mv EIDInstallx64.exe artifacts/
+        run: |
+          mkdir -p artifacts
+          mv EIDInstallx64.exe artifacts/
+          mv x64/Release/* artifacts/
 
       - name: Create source code archive
         run: |
