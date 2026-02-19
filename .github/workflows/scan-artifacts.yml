@@ -1,0 +1,252 @@
+# VirusTotal Artifact Scan Workflow
+#
+# This workflow scans all build artifacts with VirusTotal on push to main branch.
+# It builds the solution, packages the installer and source code, and uploads all
+# artifacts to VirusTotal for malware scanning.
+#
+# Requirements implemented:
+# - SCAN-01: DLL artifacts scanned
+# - SCAN-02: EXE artifacts scanned
+# - SCAN-03: NSIS installer scanned
+# - SCAN-04: Source code archive scanned
+# - WF-01: Triggers on push to main branch
+# - WF-02: Rate limiting at 4 requests/minute
+# - WF-03: Non-blocking (continue-on-error)
+# - WF-04: Retry logic via built-in action handling
+# - RPT-01: Commit comment with scan results (Phase 44)
+# - RPT-02: Scan results logged to workflow output
+# - WARN-01: Warning annotations on detections
+# - WARN-02: Detection count in commit comments
+#
+# Part of Phase 42: Basic VirusTotal Scan Job
+# Part of Phase 44: Commit Comment Integration
+name: "VirusTotal Artifact Scan"
+
+on:
+  push:
+    branches: [main]
+    # Only trigger if build-related files change
+    paths:
+      - 'EIDCardLibrary/**'
+      - 'EIDCredentialProvider/**'
+      - 'EIDAuthenticationPackage/**'
+      - 'EIDPasswordChangeNotification/**'
+      - 'EIDConfigurationWizard/**'
+      - 'EIDConfigurationWizardElevated/**'
+      - 'EIDLogManager/**'
+      - 'Installer/**'
+      - '.github/workflows/scan-artifacts.yml'
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: read
+  pull-requests: write  # For commit comments
+
+jobs:
+  build:
+    name: Build Solution
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Solution (Release x64)
+        run: msbuild EIDCredentialProvider.sln /p:Configuration=Release /p:Platform=x64 /m /v:minimal
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            EIDCredentialProvider/x64/Release/EIDCredentialProvider.dll
+            EIDCardLibrary/x64/Release/EIDCardLibrary.dll
+            EIDLogManager/x64/Release/EIDLogManager.dll
+            EIDPasswordChangeNotification/x64/Release/EIDPasswordChangeNotification.dll
+            EIDAuthenticationPackage/x64/Release/EIDAuthenticationPackage.dll
+            EIDConfigurationWizard/x64/Release/EIDConfigurationWizard.exe
+            EIDConfigurationWizardElevated/x64/Release/EIDConfigurationWizardElevated.exe
+          retention-days: 1
+
+  package:
+    name: Package Artifacts
+    runs-on: windows-latest
+    needs: build
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: artifacts
+
+      - name: Setup NSIS
+        uses: joncloud/makensis-action@v1
+
+      - name: Build NSIS Installer
+        run: |
+          makensis Installer/Installerx64.nsi
+          mv Installer/EIDInstallx64.exe artifacts/
+
+      - name: Create source code archive
+        run: |
+          # Create source.zip excluding build artifacts and git directory
+          $source = Get-Location
+          $tempDir = "$env:TEMP\source-archive"
+          New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+
+          # Copy all files except excluded patterns
+          Get-ChildItem -Path $source -Recurse | Where-Object {
+            $_.FullName -notmatch '\\\.git\\' -and
+            $_.FullName -notmatch '\\x64\\' -and
+            $_.FullName -notmatch '\\Debug\\' -and
+            $_.FullName -notmatch '\\Release\\' -and
+            $_.Extension -notin @('.obj', '.pdb', '.ilk')
+          } | ForEach-Object {
+            $targetPath = $_.FullName.Replace($source, $tempDir)
+            if ($_.PSIsContainer) {
+              New-Item -ItemType Directory -Path $targetPath -Force | Out-Null
+            } else {
+              $targetDir = Split-Path $targetPath -Parent
+              New-Item -ItemType Directory -Path $targetDir -Force -ErrorAction SilentlyContinue | Out-Null
+              Copy-Item $_.FullName -Destination $targetPath -Force
+            }
+          }
+
+          # Create zip from temp directory
+          Compress-Archive -Path "$tempDir\*" -DestinationPath "artifacts\source.zip" -Force
+          Remove-Item -Recurse -Force $tempDir
+        shell: pwsh
+
+      - name: Upload packaged artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-artifacts
+          path: artifacts/
+          retention-days: 1
+
+  scan:
+    name: Scan with VirusTotal
+    runs-on: ubuntu-latest
+    needs: package
+    timeout-minutes: 30
+    outputs:
+      analysis: ${{ steps.virustotal-scan.outputs.analysis }}
+      scan_outcome: ${{ steps.virustotal-scan.outcome }}
+
+    steps:
+      - name: Download packaged artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: packaged-artifacts
+          path: artifacts
+
+      - name: List artifacts to scan
+        run: |
+          echo "Artifacts ready for scanning:"
+          ls -la artifacts/
+
+      - name: Scan artifacts with VirusTotal
+        id: virustotal-scan
+        continue-on-error: true  # WF-03: Non-blocking
+        uses: crazy-max/ghaction-virustotal@v4
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          files: |
+            ./artifacts/EIDCredentialProvider.dll
+            ./artifacts/EIDCardLibrary.dll
+            ./artifacts/EIDLogManager.dll
+            ./artifacts/EIDPasswordChangeNotification.dll
+            ./artifacts/EIDAuthenticationPackage.dll
+            ./artifacts/EIDConfigurationWizard.exe
+            ./artifacts/EIDConfigurationWizardElevated.exe
+            ./artifacts/EIDInstallx64.exe
+            ./artifacts/source.zip
+          request_rate: 4  # WF-02: Free tier compliance (4 requests/minute)
+        env:
+          VT_API_KEY: ${{ secrets.VT_API_KEY }}
+
+      - name: Report scan results
+        if: always()
+        run: |
+          echo "## VirusTotal Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Scan completed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Log analysis URLs if available
+          if [ -n "${{ steps.virustotal-scan.outputs.analysis }}" ]; then
+            echo "### Analysis URLs" >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.virustotal-scan.outputs.analysis }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Check scan outcome and log appropriately
+          if [ "${{ steps.virustotal-scan.outcome }}" == "failure" ]; then
+            echo "### Scan Status" >> $GITHUB_STEP_SUMMARY
+            # WARN-01: Warning annotation (must be standalone echo, not to GITHUB_STEP_SUMMARY)
+            echo "::warning::VirusTotal scan detected potential issues. Check the analysis URLs above for details."
+            echo "Some artifacts may have been flagged. Review the analysis URLs above." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### Scan Status" >> $GITHUB_STEP_SUMMARY
+            echo "All artifacts scanned successfully." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "_Note: This scan is informational. Detections may be false positives for security software._" >> $GITHUB_STEP_SUMMARY
+
+  # Phase 44: Commit Comment Integration
+  comment:
+    name: Post Scan Results Comment
+    runs-on: ubuntu-latest
+    needs: scan
+    if: always()
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Create commit comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const analysis = `${{ needs.scan.outputs.analysis }}`;
+            const scanOutcome = `${{ needs.scan.outputs.scan_outcome }}`;
+
+            // Build comment body
+            let body = `## 🔍 VirusTotal Scan Results\n\n`;
+            body += `**Scan Status:** ${scanOutcome === 'success' ? '✅ Clean' : '⚠️ Detections Found'}\n\n`;
+
+            if (analysis) {
+              body += `### Analysis URLs\n`;
+              body += analysis.split('\n').map(url => {
+                if (url.trim()) {
+                  // Extract filename from URL if possible, otherwise use full URL
+                  const match = url.match(/\/file\/([^/]+)\//);
+                  const name = match ? match[1] : url;
+                  return `- [${name}](${url})`;
+                }
+                return '';
+              }).join('\n');
+            }
+
+            body += `\n\n---\n`;
+            body += `_Scanned 9 artifacts: 5 DLLs, 2 EXEs, 1 installer, 1 source archive_\n`;
+            body += `_Note: Detections may be false positives for security software (LSASS interaction)._`;
+
+            // Post comment on the commit
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: body
+            });

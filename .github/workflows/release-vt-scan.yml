@@ -1,0 +1,94 @@
+# VirusTotal Release Scan Workflow
+#
+# This workflow scans release artifacts with VirusTotal when a release is published
+# and appends the scan results to the release notes.
+#
+# Requirements implemented:
+# - RPT-03: Update release notes with scan links
+#
+# Part of Phase 43: Release Integration
+name: "Release VirusTotal Scan"
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write  # Required to update release notes
+
+jobs:
+  scan-release:
+    name: Scan Release Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Download all release assets
+          gh release download ${{ github.event.release.tag_name }} --dir release-assets
+
+      - name: Scan release assets with VirusTotal
+        id: virustotal-scan
+        continue-on-error: true
+        uses: crazy-max/ghaction-virustotal@v4
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          files: ./release-assets/*
+          request_rate: 4
+        env:
+          VT_API_KEY: ${{ secrets.VT_API_KEY }}
+
+      - name: Update release notes with scan results
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get current release notes
+          CURRENT_NOTES="${{ github.event.release.body }}"
+          ANALYSIS="${{ steps.virustotal-scan.outputs.analysis }}"
+          SCAN_OUTCOME="${{ steps.virustotal-scan.outcome }}"
+
+          # Build VT section
+          VT_SECTION="\n\n---\n\n## 🔍 VirusTotal Scan Results\n\n"
+          VT_SECTION+="**Scan Status:** ${SCAN_OUTCOME}\n\n"
+
+          if [ -n "$ANALYSIS" ]; then
+            VT_SECTION+="### Analysis URLs\n"
+            while IFS= read -r url; do
+              if [ -n "$url" ]; then
+                # Extract filename from URL
+                FILENAME=$(echo "$url" | sed 's|.*/file/\([^/]*\)/.*|\1|' 2>/dev/null || basename "$url")
+                VT_SECTION+="- [${FILENAME}](${url})\n"
+              fi
+            done <<< "$ANALYSIS"
+          fi
+
+          VT_SECTION+="\n_Scanned on $(date -u '+%Y-%m-%d %H:%M:%S UTC')_\n"
+          VT_SECTION+="_Note: Detections may be false positives for security software._"
+
+          # Update release notes
+          # Check if VT section already exists (avoid duplicates on re-runs)
+          if echo "$CURRENT_NOTES" | grep -q "VirusTotal Scan Results"; then
+            # Replace existing VT section
+            UPDATED_NOTES=$(echo "$CURRENT_NOTES" | sed '/## 🔍 VirusTotal Scan Results/,$d')
+            UPDATED_NOTES+="$VT_SECTION"
+          else
+            UPDATED_NOTES="${CURRENT_NOTES}${VT_SECTION}"
+          fi
+
+          # Update the release
+          gh release edit ${{ github.event.release.tag_name }} --notes "$UPDATED_NOTES"
+
+      - name: Report results
+        if: always()
+        run: |
+          echo "## Release Scan Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Release notes updated with VirusTotal scan results." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Release: ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY

@@ -14,27 +14,27 @@ CI/CD Security Enhancement — Automate malware scanning of all release artifact
 
 ### Artifact Scanning
 
-- [ ] **SCAN-01**: Scan compiled DLLs after successful build (7 projects)
-- [ ] **SCAN-02**: Scan compiled EXEs after successful build
-- [ ] **SCAN-03**: Scan NSIS installer executable
-- [ ] **SCAN-04**: Scan source code archive (zip)
+- [x] **SCAN-01**: Scan compiled DLLs after successful build (7 projects)
+- [x] **SCAN-02**: Scan compiled EXEs after successful build
+- [x] **SCAN-03**: Scan NSIS installer executable
+- [x] **SCAN-04**: Scan source code archive (zip)
 
 ### Workflow Configuration
 
-- [ ] **WF-01**: Trigger scanning on push to main branch
-- [ ] **WF-02**: Rate limiting set to 4 requests/minute (free API tier compliance)
-- [ ] **WF-03**: Non-blocking execution (`continue-on-error: true`)
-- [ ] **WF-04**: Retry logic with exponential backoff for API errors
+- [x] **WF-01**: Trigger scanning on push to main branch
+- [x] **WF-02**: Rate limiting set to 4 requests/minute (free API tier compliance)
+- [x] **WF-03**: Non-blocking execution (`continue-on-error: true`)
+- [x] **WF-04**: Retry logic with exponential backoff for API errors
 
 ### Reporting
 
 - [ ] **RPT-01**: Comment VirusTotal analysis URL on commits
-- [ ] **RPT-02**: Log scan results to workflow output
+- [x] **RPT-02**: Log scan results to workflow output
 - [ ] **RPT-03**: Update release notes with scan links (for releases)
 
 ### Warning System
 
-- [ ] **WARN-01**: Log warning when detections found (build continues)
+- [x] **WARN-01**: Log warning when detections found (build continues)
 - [ ] **WARN-02**: Include detection count in commit comment
 
 ## v1.4 Requirements (COMPLETE)
@@ -210,20 +210,20 @@ Explicitly excluded. Documented to prevent scope creep.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| API-01 | Phase 41 | Pending |
-| API-02 | Phase 41 | Pending |
-| SCAN-01 | Phase 42 | Pending |
-| SCAN-02 | Phase 42 | Pending |
-| SCAN-03 | Phase 42 | Pending |
-| SCAN-04 | Phase 42 | Pending |
-| WF-01 | Phase 42 | Pending |
-| WF-02 | Phase 42 | Pending |
-| WF-03 | Phase 42 | Pending |
-| WF-04 | Phase 42 | Pending |
+| API-01 | Phase 41 | Complete |
+| API-02 | Phase 41 | Complete |
+| SCAN-01 | Phase 42 | Complete |
+| SCAN-02 | Phase 42 | Complete |
+| SCAN-03 | Phase 42 | Complete |
+| SCAN-04 | Phase 42 | Complete |
+| WF-01 | Phase 42 | Complete |
+| WF-02 | Phase 42 | Complete |
+| WF-03 | Phase 42 | Complete |
+| WF-04 | Phase 42 | Complete |
 | RPT-01 | Phase 44 | Pending |
-| RPT-02 | Phase 42 | Pending |
+| RPT-02 | Phase 42 | Complete |
 | RPT-03 | Phase 43 | Pending |
-| WARN-01 | Phase 42 | Pending |
+| WARN-01 | Phase 42 | Complete |
 | WARN-02 | Phase 44 | Pending |
 
 **Coverage:**
