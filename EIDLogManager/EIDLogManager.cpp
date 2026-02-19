@@ -144,7 +144,7 @@ void SaveLog(HWND hDlg)
 		HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog,
 									  nullptr,
 									  CLSCTX_INPROC_SERVER_LOCAL,
-									  IID_PPV_ARGS(&pSaveDialog));
+									  IID_PPV_ARGS(&pSaveDialog));  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 
 		if (!SUCCEEDED(hr))
 		{

@@ -175,7 +175,7 @@ HRESULT CEIDProvider::SetUsageScenario(
     DWORD dwFlags
     )
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
     // Decide which scenarios to support here. Returning E_NOTIMPL simply tells the caller
     // that we're not designed for that scenario.
 	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Scenario: %d",cpus);
@@ -229,7 +229,7 @@ HRESULT CEIDProvider::SetUsageScenario(
 // it into the main sample.  We felt it was more important to get these samples out to you quickly than to
 // hold them in order to do the work to integrate the SetSerialization changes from SampleCredentialProvider 
 // into this sample.]
-STDMETHODIMP CEIDProvider::SetSerialization(
+STDMETHODIMP CEIDProvider::SetSerialization(  // NOSONAR - COM-01: ICredentialProvider signature fixed by Windows SDK
     const CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION* pcpcs
     )
 {
@@ -313,8 +313,8 @@ HRESULT CEIDProvider::GetFieldDescriptorAt(
     DWORD dwIndex, 
     CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR** ppcpfd
     )
-{    
-    HRESULT hr;
+{
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 	_CredentialList.Lock();
     if (_CredentialList.HasContainerHolder())
     {
@@ -448,7 +448,7 @@ HRESULT CEIDProvider::GetCredentialAt(
     ICredentialProviderCredential** ppcpc
     )
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 	// Make sure the parameters are valid.
     if (ppcpc)
     {
@@ -488,7 +488,7 @@ HRESULT CEIDProvider::GetCredentialAt(
 // Boilerplate method to create an instance of our provider.
 HRESULT CEIDProvider_CreateInstance(REFIID riid, void** ppv)
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 	if (riid != IID_ICredentialProvider) return E_NOINTERFACE;
     // C++17 init-statement: pProvider is only used within this if block
     if (CEIDProvider* pProvider = new CEIDProvider())
