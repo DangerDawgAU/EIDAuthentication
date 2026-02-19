@@ -11,6 +11,9 @@ on:
   workflow_dispatch:
     # Manual trigger only - for verification purposes
 
+permissions:
+  contents: read
+
 jobs:
   verify-api-key:
     name: Verify VirusTotal API Key
