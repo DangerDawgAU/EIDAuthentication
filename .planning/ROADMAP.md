@@ -124,7 +124,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. VT_API_KEY secret exists in GitHub repository settings
   2. API key is never visible in workflow logs or code (masked via `${{ secrets.VT_API_KEY }}`)
   3. Secret is accessible to workflows on main branch pushes
-**Plans**: TBD
+**Plans**: 1 plan
+- [ ] 41-01-PLAN.md — Configure VT_API_KEY secret and verify API access
 
 ### Phase 42: Basic VirusTotal Scan Job
 **Goal**: All build artifacts are scanned with VirusTotal on push to main, results visible in workflow logs
@@ -408,7 +409,7 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 41. Prerequisites and Secret Setup | 0/TBD | Not started | - |
+| 41. Prerequisites and Secret Setup | 0/1 | Planned | - |
 | 42. Basic VirusTotal Scan Job | 0/TBD | Not started | - |
 | 43. Release Integration | 0/TBD | Not started | - |
 | 44. Commit Comment Integration | 0/TBD | Not started | - |
