@@ -91,8 +91,14 @@ jobs:
       - name: Move installer to artifacts
         run: |
           mkdir -p artifacts
-          mv EIDInstallx64.exe artifacts/
+          # NSIS outputs to the directory containing the script or current dir
+          if [ -f "EIDInstallx64.exe" ]; then
+            mv EIDInstallx64.exe artifacts/
+          elif [ -f "Installer/EIDInstallx64.exe" ]; then
+            mv Installer/EIDInstallx64.exe artifacts/
+          fi
           mv x64/Release/* artifacts/
+        shell: bash
 
       - name: Create source code archive
         run: |
