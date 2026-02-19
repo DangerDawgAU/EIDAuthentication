@@ -85,12 +85,11 @@ jobs:
 
       - name: Setup NSIS
         uses: joncloud/makensis-action@v1
+        with:
+          script-file: 'Installer/Installerx64.nsi'
 
-      - name: Build NSIS Installer
-        run: |
-          makensis Installer/Installerx64.nsi
-          # NSIS outputs to current directory
-          mv EIDInstallx64.exe artifacts/
+      - name: Move installer to artifacts
+        run: mv EIDInstallx64.exe artifacts/
 
       - name: Create source code archive
         run: |
