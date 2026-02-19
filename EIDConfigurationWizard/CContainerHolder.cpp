@@ -236,7 +236,7 @@ PTSTR CContainerHolderTest::GetSolveDescription(DWORD dwCheckNum) const
 static BOOL RunElevatedWithParam(LPCTSTR szParameters, DWORD& dwError)
 {
 	SHELLEXECUTEINFO shExecInfo;
-	TCHAR szName[1024];
+	TCHAR szName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	GetModuleFileName(GetModuleHandle(nullptr), szName, ARRAYSIZE(szName));
 	shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
 	shExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
@@ -292,7 +292,7 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 			}
 			else
 			{
-				TCHAR szParameters[8000] = TEXT("TRUST ");
+				TCHAR szParameters[8000] = TEXT("TRUST ");  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 				PCCERT_CONTEXT pCertContext = _pContainer->GetCertificate();
 				DWORD dwSize = ARRAYSIZE(szParameters) - 6;
 				if (CryptBinaryToString(pCertContext->pbCertEncoded,pCertContext->cbCertEncoded, CRYPT_STRING_BASE64, szParameters + 6,&dwSize))

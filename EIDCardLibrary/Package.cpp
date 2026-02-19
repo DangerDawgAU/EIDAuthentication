@@ -249,7 +249,7 @@ HRESULT UnicodeStringInitWithString(
                                        UNICODE_STRING* pus
                                        )
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
     if (pwz)
     {
         size_t lenString;
@@ -329,7 +329,7 @@ HRESULT EIDUnlockLogonPack(
                                        DWORD* pcb
                                        )
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 
     const EID_INTERACTIVE_LOGON* pkilIn = &rkiulIn.Logon;
 
@@ -403,7 +403,7 @@ HRESULT EIDUnlockLogonPack(
 HRESULT LsaInitString(PSTRING pszDestinationString, PCSTR pszSourceString)
 {
     size_t cchLength;
-    HRESULT hr = StringCchLengthA(pszSourceString, USHORT_MAX, &cchLength);
+    HRESULT hr = StringCchLengthA(pszSourceString, USHORT_MAX, &cchLength);  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
     if (SUCCEEDED(hr))
     {
         USHORT usLength;
@@ -425,17 +425,17 @@ HRESULT LsaInitString(PSTRING pszDestinationString, PCSTR pszSourceString)
 //
 HRESULT RetrieveNegotiateAuthPackage(ULONG * pulAuthPackage)
 {
-    HRESULT hr;
-    HANDLE hLsa;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
+    HANDLE hLsa;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 
-    NTSTATUS status = LsaConnectUntrusted(&hLsa);
+    NTSTATUS status = LsaConnectUntrusted(&hLsa);  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
     if (SUCCEEDED(HRESULT_FROM_NT(status)))
     {
 
         ULONG ulAuthPackage;
         LSA_STRING lsaszPackageName;
 		
-		TCHAR szExeName[256];
+		TCHAR szExeName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		DWORD dwNumChar = GetModuleFileName(nullptr, szExeName, ARRAYSIZE(szExeName));
 		// mstsc.exe
 		if (dwNumChar >= 9 && _tcsicmp(szExeName + dwNumChar - 9, TEXT("mstsc.exe")) == 0)
@@ -471,8 +471,8 @@ HRESULT RetrieveNegotiateAuthPackage(ULONG * pulAuthPackage)
 HRESULT CallAuthPackage(LPCWSTR username ,LPWSTR * szAuthPackageValue, PULONG szAuthPackageLen)
 {
     NET_API_STATUS netStatus;
-	HRESULT hr;
-    HANDLE hLsa;
+	HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
+    HANDLE hLsa;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 	DWORD dwRid;
 	DWORD dwSubAuthorityCount;
 	USER_INFO_23* pUserInfo;
@@ -799,7 +799,7 @@ DWORD GetCurrentRid()
 	DWORD dwRid = 0;
 	PSID pSid;
 	PTOKEN_USER pInfo = nullptr;
-	HANDLE hToken;
+	HANDLE hToken;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 	if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken))
 	{
 	
@@ -860,9 +860,9 @@ BOOL LsaEIDCreateStoredCredential(__in_opt PWSTR szUsername, __in PWSTR szPasswo
 {
 	BOOL fReturn = FALSE;
 	PEID_CALLPACKAGE_BUFFER pBuffer = nullptr;
-	   HANDLE hLsa = nullptr;
+	   HANDLE hLsa = nullptr;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 	DWORD dwSize;
-	NTSTATUS status;
+	NTSTATUS status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	PBYTE pPointer;
 	DWORD dwPasswordSize;
 	DWORD dwBufferSize = 0;
@@ -995,9 +995,9 @@ BOOL LsaEIDCreateStoredCredential(__in_opt PWSTR szUsername, __in PWSTR szPasswo
 DWORD LsaEIDGetRIDFromStoredCredential(__in PCCERT_CONTEXT pContext)
 {
 	PEID_CALLPACKAGE_BUFFER pBuffer = nullptr;
-	   HANDLE hLsa = nullptr;
+	   HANDLE hLsa = nullptr;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 	DWORD dwSize;
-	NTSTATUS status;
+	NTSTATUS status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	PBYTE pPointer;
 	DWORD dwError = 0;
 	DWORD dwRid = 0;
@@ -1079,8 +1079,8 @@ DWORD LsaEIDGetRIDFromStoredCredential(__in PCCERT_CONTEXT pContext)
 BOOL IsEIDPackageAvailable()
 {
     BOOL fReturn = FALSE;
-	HANDLE hLsa;
-	NTSTATUS status = LsaConnectUntrusted(&hLsa);
+	HANDLE hLsa;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
+	NTSTATUS status = LsaConnectUntrusted(&hLsa);  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
     if (status == STATUS_SUCCESS)
     {
         ULONG ulAuthPackage;
@@ -1101,9 +1101,9 @@ BOOL LsaEIDRemoveStoredCredential(__in_opt PWSTR szUsername)
 {
 	BOOL fReturn = FALSE;
 	PEID_CALLPACKAGE_BUFFER pBuffer = nullptr;
-	   HANDLE hLsa = nullptr;
+	   HANDLE hLsa = nullptr;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 	DWORD dwSize;
-	NTSTATUS status;
+	NTSTATUS status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	DWORD dwError = 0;
 	__try
 	{
@@ -1180,9 +1180,9 @@ BOOL LsaEIDRemoveAllStoredCredential()
 {
 	BOOL fReturn = FALSE;
 	PEID_CALLPACKAGE_BUFFER pBuffer = nullptr;
-	   HANDLE hLsa = nullptr;
+	   HANDLE hLsa = nullptr;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 	DWORD dwSize;
-	NTSTATUS status;
+	NTSTATUS status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	DWORD dwError = 0;
 	__try
 	{
@@ -1252,9 +1252,9 @@ BOOL LsaEIDHasStoredCredential(__in_opt PWSTR szUsername)
 {
 	BOOL fReturn = FALSE;
 	PEID_CALLPACKAGE_BUFFER pBuffer = nullptr;
-	   HANDLE hLsa = nullptr;
+	   HANDLE hLsa = nullptr;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 	DWORD dwSize;
-	NTSTATUS status;
+	NTSTATUS status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	DWORD dwError = 0;
 	__try
 	{

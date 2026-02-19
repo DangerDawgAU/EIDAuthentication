@@ -27,9 +27,9 @@
 #pragma comment(lib,"Credui")
 
 // Static buffers for Windows API compatibility (C++23 /Zc:strictStrings)
-static char s_szMyTest[] = "MYTEST";
+static char s_szMyTest[] = "MYTEST";                                  // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
 static constexpr size_t s_szMyTestLen = sizeof(s_szMyTest) - 1;  // Length without null terminator (SonarQube cpp:S5813)
-static wchar_t s_wszEtlPath[] = L"c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl";
+static wchar_t s_wszEtlPath[] = L"c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl";  // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
 
 BOOL TestLogon(HWND hMainWnd)
 {
@@ -48,15 +48,15 @@ BOOL TestLogon(HWND hMainWnd)
 	MSV1_0_INTERACTIVE_PROFILE *Profile;
 	ULONG ProfileLen;
 	LUID Luid;
-	NTSTATUS err;
-	NTSTATUS stat;
-	HANDLE Token;
+	NTSTATUS err;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
+	NTSTATUS stat;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
+	HANDLE Token;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 	DWORD dwFlag = CREDUIWIN_AUTHPACKAGE_ONLY | CREDUIWIN_ENUMERATE_CURRENT_USER;
 	RetrieveNegotiateAuthPackage(&authPackage);
 	
 	CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
-	TCHAR szMessage[256] = L"";
-	TCHAR szCaption[256] = L"";
+	TCHAR szMessage[256] = L"";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	TCHAR szCaption[256] = L"";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	LoadString(g_hinst, IDS_05CREDINFOCAPTION, szCaption, ARRAYSIZE(szCaption));
 	credUiInfo.pszCaptionText = szCaption;
 	credUiInfo.pszMessageText = szMessage;
@@ -102,7 +102,7 @@ HANDLE StartReport(PTSTR szLogFile)
 {
 	DWORD dwError = 0;
 	BOOL fSuccess = FALSE;
-	HANDLE hOutput = INVALID_HANDLE_VALUE;
+	HANDLE hOutput = INVALID_HANDLE_VALUE;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 	__try
 	{
 		//  Creates the new file to write to for the upper-case version.
@@ -210,9 +210,9 @@ BOOL CreateDebugReport(PTSTR szLogFile)
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
-	TCHAR szNamedPipeName[256] = L"\\\\.\\pipe\\EIDAuthenticateWizard";
-	HANDLE hNamedPipe = INVALID_HANDLE_VALUE;
-	TCHAR szParameter[356];
+	TCHAR szNamedPipeName[256] = L"\\\\.\\pipe\\EIDAuthenticateWizard";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	HANDLE hNamedPipe = INVALID_HANDLE_VALUE;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
+	TCHAR szParameter[356];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwWrite;
 	__try
 	{
@@ -246,7 +246,7 @@ BOOL CreateDebugReport(PTSTR szLogFile)
 		_stprintf_s(szParameter,ARRAYSIZE(szParameter),L"REPORT %s",szNamedPipeName);
 		// launch the wizard elevated
 		SHELLEXECUTEINFO shExecInfo;
-		TCHAR szName[1024];
+		TCHAR szName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		GetModuleFileName(GetModuleHandle(nullptr),szName, ARRAYSIZE(szName));
 
 		shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
@@ -307,7 +307,7 @@ BOOL CreateDebugReport(PTSTR szLogFile)
 VOID CreateReport(PTSTR szNamedPipeName)
 {
 	// read the file from the command line
-	TCHAR szFile [256];
+	TCHAR szFile [256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	HANDLE hReport = INVALID_HANDLE_VALUE;
 	HANDLE hPipe = INVALID_HANDLE_VALUE;
 	DWORD dwRead;

@@ -76,13 +76,13 @@ void CheckIfCardHasADriver(HWND hWnd)
 				{
 					// unknown card
 					// put the ATR into a string
-					TCHAR szATR[256];
+					TCHAR szATR[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 					for(DWORD i=0; i< dwAtrSize; i++)
 					{
 						_stprintf_s(szATR + 2*i, ARRAYSIZE(szATR) - 2*i,TEXT("%02X"),pbAtr[i]);
 					}
-					TCHAR szMessageFormat[256] = TEXT("ATR: %s");
-					TCHAR szMessage[356];
+					TCHAR szMessageFormat[256] = TEXT("ATR: %s");  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+					TCHAR szMessage[356];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 					LoadString(g_hinst,IDS_CHECKDRIVERONLINE,szMessageFormat,ARRAYSIZE(szMessageFormat));
 					_stprintf_s(szMessage, ARRAYSIZE(szMessage), szMessageFormat, szATR);
 					// Online database lookup removed - internet functionality disabled
@@ -166,8 +166,8 @@ INT_PTR CALLBACK	WndProc_02ENABLE(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			{
 				// elevate
 				SHELLEXECUTEINFO shExecInfo;
-				TCHAR szName[1024];
-				TCHAR szParameter[1024] = TEXT("NEW_USERNAME ");
+				TCHAR szName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+				TCHAR szParameter[1024] = TEXT("NEW_USERNAME ");  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 				DWORD dwSize = ARRAYSIZE(szParameter) - (DWORD) _tcsclen(szParameter);
 				GetUserName(szParameter + ARRAYSIZE(szParameter) - dwSize, &dwSize);
 

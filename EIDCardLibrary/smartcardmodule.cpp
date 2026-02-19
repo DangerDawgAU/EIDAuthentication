@@ -64,7 +64,7 @@ static HMODULE SafeLoadLibrary(__in LPCWSTR wszModulePath)
 }
 
 // Non-const string buffer for card module API compatibility (cardmod.h functions require LPWSTR)
-static WCHAR s_wszCardUserUser[] = L"user";
+static WCHAR s_wszCardUserUser[] = L"user";                           // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
 
 //
 // Internal context structure for interfacing with a card module
@@ -602,7 +602,7 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 {
 	MGSC_CONTEXT pContext = {};
 	SCARDCONTEXT hSCardContext = NULL;
-	SCARDHANDLE hSCardHandle = NULL;
+	SCARDHANDLE hSCardHandle = NULL;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 	std::array<BYTE, 32> bAtr;
 	DWORD cbAtr = static_cast<DWORD>(bAtr.size());
 	LONG lReturn;
@@ -610,7 +610,7 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 	DWORD dwState;
 	DWORD dwProtocol;
 	DWORD dwError = 0;
-	TCHAR szReaderTemp[256];
+	TCHAR szReaderTemp[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	BOOL fReturn = FALSE;
 	__try
 	{

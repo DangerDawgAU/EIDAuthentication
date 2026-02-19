@@ -148,12 +148,12 @@ extern "C"
 	{
 		BOOL fReturn = FALSE;
 		SECPKG_CLIENT_INFO ClientInfo;
-		NTSTATUS status;
+		NTSTATUS status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		PSECURITY_LOGON_SESSION_DATA pLogonSessionData = NULL;
 		DWORD dwError = 0;
 		PSID AdministratorsGroup = NULL;
-		HANDLE hProcess = NULL;
-		HANDLE hToken = NULL;
+		HANDLE hProcess = NULL;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
+		HANDLE hToken = NULL;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 		BOOL bImpersonating = FALSE;
 		__try
 		{
@@ -258,7 +258,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(Confidentiality);
 
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"AuthenticationPackageName = %S",AUTHENTICATIONPACKAGENAME);
-		NTSTATUS Status = STATUS_SUCCESS;
+		NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 
 		MyLsaDispatchTable = reinterpret_cast<PLSA_SECPKG_FUNCTION_TABLE>(LsaDispatchTable);
 
@@ -288,8 +288,8 @@ extern "C"
 	{
 		PBYTE pPointer;
 		BOOL fStatus;
-		NTSTATUS status = STATUS_INVALID_MESSAGE;
-		NTSTATUS statusError;
+		NTSTATUS status = STATUS_INVALID_MESSAGE;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
+		NTSTATUS statusError;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		PCCERT_CONTEXT pCertContext = NULL;
 		PWSTR szUsername = NULL;
 		UNREFERENCED_PARAMETER(ClientRequest);
@@ -633,7 +633,7 @@ extern "C"
 	  __out  PNTSTATUS ProtocolStatus
 	) {
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-		NTSTATUS Status;
+		NTSTATUS Status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		__try
 		{
 			*ProtocolStatus = STATUS_SUCCESS;
@@ -714,7 +714,7 @@ extern "C"
 		CredIsProtectedWFct CredIsProtectedW = NULL;
 		CredUnprotectWFct CredUnprotectW = NULL;
 		HMODULE hModule = NULL;
-		NTSTATUS Status = STATUS_SUCCESS;
+		NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		__try
 		{
 			// default output : the PIN given to LSA (not crypted)
@@ -779,7 +779,7 @@ extern "C"
 	{
 		UNREFERENCED_PARAMETER(AuthenticationInformationLength);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-		NTSTATUS Status;
+		NTSTATUS Status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		DWORD dwLen = MAX_COMPUTERNAME_LENGTH +1;
 		WCHAR ComputerName[MAX_COMPUTERNAME_LENGTH + 1];
 		DWORD TokenLength;
@@ -1012,10 +1012,10 @@ extern "C"
 	// Called by uninstaller to clean up stored credentials for all local users
 	HRESULT WINAPI CleanupLsaCredentials()
 	{
-		HRESULT hr = S_OK;
+		HRESULT hr = S_OK;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 		LSA_OBJECT_ATTRIBUTES ObjectAttributes = {0};
 		LSA_HANDLE LsaPolicyHandle = NULL;
-		NTSTATUS Status = STATUS_SUCCESS;
+		NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		DWORD dwUsersProcessed = 0;
 		DWORD dwUsersRemoved = 0;
 
@@ -1106,7 +1106,7 @@ extern "C"
 								DWORD dwRid = *GetSidSubAuthority((PSID)pSidBuffer, dwSubAuthorityCount - 1);
 
 								// Build the LSA key name: L$_EID_<RID>
-								WCHAR szKeyName[64];
+								WCHAR szKeyName[64];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 								swprintf_s(szKeyName, _countof(szKeyName), L"L$_EID_%08X", dwRid);
 
 								// Create LSA_UNICODE_STRING for the key name

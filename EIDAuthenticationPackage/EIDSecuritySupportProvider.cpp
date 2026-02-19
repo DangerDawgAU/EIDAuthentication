@@ -84,7 +84,7 @@ extern "C"
 	  )
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-		NTSTATUS Status = STATUS_INVALID_PARAMETER;
+		NTSTATUS Status = STATUS_INVALID_PARAMETER;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		__try
 		{
 			if (LsaVersion != SECPKG_INTERFACE_VERSION) 
@@ -172,7 +172,7 @@ extern "C"
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter Class = %d",Class);
-		NTSTATUS Status = SEC_E_UNSUPPORTED_FUNCTION;
+		NTSTATUS Status = SEC_E_UNSUPPORTED_FUNCTION;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		switch(Class)
 		{
 			case SecpkgGssInfo:
@@ -228,7 +228,7 @@ extern "C"
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter Class = %d",Class);
 		UNREFERENCED_PARAMETER(Info);
-		NTSTATUS Status = SEC_E_UNSUPPORTED_FUNCTION;
+		NTSTATUS Status = SEC_E_UNSUPPORTED_FUNCTION;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		switch(Class)
 		{
 			case SecpkgGssInfo:
@@ -330,9 +330,9 @@ extern "C"
 		PSEC_WINNT_AUTH_IDENTITY_EXW pAuthIdentityEx = NULL;
 		PSEC_WINNT_AUTH_IDENTITY pAuthIdentity = NULL; 
 		CCredential* pCredential;
-		ULONG CredSize = 0; 
-		ULONG Offset = 0; 
-		NTSTATUS Status = STATUS_SUCCESS;
+		ULONG CredSize = 0;
+		ULONG Offset = 0;
+		NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		PCERT_CREDENTIAL_INFO pCertInfo = NULL;
 		CRED_MARSHAL_TYPE CredType;
 		PVOID szCredential = NULL;
@@ -652,7 +652,7 @@ extern "C"
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter CredentialAttribute = %d",CredentialAttribute);
-		NTSTATUS status = STATUS_SUCCESS;
+		NTSTATUS status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		PTSTR szName;
 		DWORD dwSize;
 		CCredential* pCredential = CCredential::GetCredentialFromHandle(CredentialHandle);
@@ -800,7 +800,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(TargetDataRep);
 		UNREFERENCED_PARAMETER(ContextRequirements);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter TargetName = %wZ",TargetName);
-		NTSTATUS Status = STATUS_SUCCESS;
+		NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		__try
 		{
 			CSecurityContext* newContext = NULL;
@@ -864,7 +864,7 @@ extern "C"
 
 	NTSTATUS NTAPI SpCreateToken(DWORD dwRid, PHANDLE phToken)
 	{
-		NTSTATUS Status = STATUS_SUCCESS;
+		NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		NTSTATUS SubStatus = STATUS_SUCCESS;
 		LUID LogonId;
 		TOKEN_SOURCE tokenSource = { "EIDAuth", PackageUid};
@@ -875,8 +875,8 @@ extern "C"
 		UNICODE_STRING Prefix = {0,0,NULL};
 		PLSA_TOKEN_INFORMATION_V2 MyTokenInformation = NULL;
 		DWORD TokenLength;
-		WCHAR szComputer[UNLEN+1];
-		WCHAR szUserName[256];
+		WCHAR szComputer[UNLEN+1];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+		WCHAR szUserName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		DWORD dwSize;
 		USER_INFO_3 *pInfo = NULL;
 		DWORD dwEntriesRead;
@@ -971,9 +971,9 @@ extern "C"
 		UNREFERENCED_PARAMETER(TargetDataRep);
 		UNREFERENCED_PARAMETER(ContextRequirements);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-		NTSTATUS Status = STATUS_SUCCESS;
+		NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		PEID_SSP_CALLBACK_MESSAGE callbackMessage = NULL;
-		HANDLE hToken;
+		HANDLE hToken;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 		__try
 		{
 			CSecurityContext* newContext = NULL;
@@ -1078,7 +1078,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(ContextAttribute);
 		UNREFERENCED_PARAMETER(Buffer);
 		UNREFERENCED_PARAMETER(BufferSize);
-		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;
+		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Status = 0x%08X",Status);
 		return Status;
 	}

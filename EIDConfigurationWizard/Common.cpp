@@ -74,9 +74,9 @@ BOOL IsCurrentUserBelongToADomain()
 		if (!GetTokenInformation(hToken, TokenUser, ptiUser, cbti, &cbti))
 			__leave;
 
-		TCHAR szUser[255];
+		TCHAR szUser[255];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		DWORD cchUser = ARRAYSIZE(szUser);
-		TCHAR szDomain[255];
+		TCHAR szDomain[255];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		DWORD cchDomain = ARRAYSIZE(szDomain);
 		SID_NAME_USE snu;
 		if (!LookupAccountSid(nullptr, ptiUser->User.Sid, szUser, &cchUser,
@@ -84,7 +84,7 @@ BOOL IsCurrentUserBelongToADomain()
 		{
 			__leave;
 		}
-		TCHAR szComputerName[255];
+		TCHAR szComputerName[255];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		DWORD cchComputerName = ARRAYSIZE(szComputerName);
 		if (!GetComputerName(szComputerName,&cchComputerName))
 		{

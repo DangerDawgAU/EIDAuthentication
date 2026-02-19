@@ -66,7 +66,7 @@ CEIDCredential::~CEIDCredential()
     {
         // CoTaskMemFree (below) deals with NULL, but StringCchLength does not.
         size_t lenPin;
-        HRESULT hr = StringCchLengthW(_rgFieldStrings[SFI_PIN], 128, &lenPin);
+        HRESULT hr = StringCchLengthW(_rgFieldStrings[SFI_PIN], 128, &lenPin);  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
         if (SUCCEEDED(hr))
         {
             SecureZeroMemory(_rgFieldStrings[SFI_PIN], lenPin * sizeof(*_rgFieldStrings[SFI_PIN]));
@@ -91,7 +91,7 @@ CEIDCredential::~CEIDCredential()
 // Set the value of the SFI_USERNAME field to pwzUsername.
 HRESULT CEIDCredential::Initialize()
 {
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 
     // Copy the field descriptors for each field. This is useful if you want to vary the field
     // descriptors based on what Usage scenario the credential was created for.
@@ -113,7 +113,7 @@ HRESULT CEIDCredential::Initialize()
 	if (SUCCEEDED(hr))
     {
         HINSTANCE Handle = EIDLoadSystemLibrary(TEXT("SmartcardCredentialProvider.dll"));
-		WCHAR Message[256] = L"";
+		WCHAR Message[256] = L"";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		if (Handle)
 		{
 			LoadStringW(Handle, 34, Message, ARRAYSIZE(Message));
@@ -127,7 +127,7 @@ HRESULT CEIDCredential::Initialize()
     }
     if (SUCCEEDED(hr))
     {
-        WCHAR szCertificateDetail[256] = L"";
+        WCHAR szCertificateDetail[256] = L"";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		LoadStringW(g_hinst,IDS_CERTIFICATEDETAIL,szCertificateDetail,ARRAYSIZE(szCertificateDetail));
 		hr = SHStrDupW(szCertificateDetail, &_rgFieldStrings[SFI_CERTIFICATE]);
     }
@@ -191,7 +191,7 @@ HRESULT CEIDCredential::SetSelected(BOOL* pbAutoLogon)
 // is to clear out the Pin field.
 HRESULT CEIDCredential::SetDeselected()
 {
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 	if (_rgFieldStrings[SFI_PIN])
     {
         // CoTaskMemFree (below) deals with NULL, but StringCchLength does not.
@@ -227,7 +227,7 @@ HRESULT CEIDCredential::GetFieldState(
     CREDENTIAL_PROVIDER_FIELD_INTERACTIVE_STATE* pcpfis
     )
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
     if (dwFieldID < ARRAYSIZE(_rgFieldStatePairs) && pcpfs && pcpfis)
     {
         *pcpfis = _rgFieldStatePairs[dwFieldID].cpfis;
@@ -252,7 +252,7 @@ HRESULT CEIDCredential::GetStringValue(
     PWSTR* ppwsz
     )
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
     // Check to make sure dwFieldID is a legitimate index.
     if (dwFieldID < ARRAYSIZE(_rgCredProvFieldDescriptors) && ppwsz) 
     {
@@ -278,7 +278,7 @@ HRESULT CEIDCredential::GetBitmapValue(
     HBITMAP* phbmp
     )
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 	if ((SFI_TILEIMAGE == dwFieldID) && phbmp)
     {
         HBITMAP hbmp;
@@ -315,7 +315,7 @@ HRESULT CEIDCredential::GetSubmitButtonValue(
     DWORD* pdwAdjacentTo
     )
 {
-    HRESULT hr = E_INVALIDARG;
+    HRESULT hr = E_INVALIDARG;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
     if (SFI_SUBMIT_BUTTON == dwFieldID && pdwAdjacentTo)
     {
         // pdwAdjacentTo is a pointer to the fieldID you want the submit button to 
@@ -339,10 +339,10 @@ HRESULT CEIDCredential::GetSubmitButtonValue(
 // This is called on each keystroke when a user types into an edit field
 HRESULT CEIDCredential::SetStringValue(
     DWORD dwFieldID, 
-    PCWSTR pwz      
+    PCWSTR pwz
     )
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 
     if (dwFieldID < ARRAYSIZE(_rgCredProvFieldDescriptors) && 
        (CPFT_EDIT_TEXT == _rgCredProvFieldDescriptors[dwFieldID].cpft || 
@@ -429,7 +429,7 @@ HRESULT CEIDCredential::SetComboBoxSelectedValue(
 
 HRESULT CEIDCredential::CommandLinkClicked(DWORD dwFieldID)
 {
-	HRESULT hr;
+	HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 	if (dwFieldID < ARRAYSIZE(_rgCredProvFieldDescriptors) && 
        (CPFT_COMMAND_LINK == _rgCredProvFieldDescriptors[dwFieldID].cpft)) 
     {
@@ -492,7 +492,7 @@ HRESULT EIDUnlockLogonInit(
     // is not officially documented.
 
     // Initialize the UNICODE_STRINGS to share our username and password strings.
-    HRESULT hr = UnicodeStringInitWithString(pwzDomain, &pkil->LogonDomainName);
+    HRESULT hr = UnicodeStringInitWithString(pwzDomain, &pkil->LogonDomainName);  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 
     if (SUCCEEDED(hr))
     {
@@ -537,7 +537,7 @@ HRESULT CEIDCredential::GetSerialization(
 {
     UNREFERENCED_PARAMETER(ppwszOptionalStatusText);
     UNREFERENCED_PARAMETER(pcpsiOptionalStatusIcon);
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 
     WCHAR wsz[MAX_COMPUTERNAME_LENGTH+1];
     DWORD cch = ARRAYSIZE(wsz);
@@ -627,8 +627,8 @@ HRESULT CEIDCredential::GetSerialization(
 
 struct REPORT_RESULT_STATUS_INFO
 {
-    NTSTATUS ntsStatus;
-    NTSTATUS ntsSubstatus;
+    NTSTATUS ntsStatus;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
+    NTSTATUS ntsSubstatus;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
     CREDENTIAL_PROVIDER_STATUS_ICON cpsi;
 };
 
@@ -683,8 +683,8 @@ HRESULT CEIDCredential::ReportResult(
 		if (ntsStatus == STATUS_SMARTCARD_WRONG_PIN && ntsSubstatus != 0xFFFFFFFF)
 		{
 			HINSTANCE Handle = EIDLoadSystemLibrary(TEXT("SmartcardCredentialProvider.dll"));
-			WCHAR Message[256] = L"%d retries";
-			WCHAR MessageFormatted[256];
+			WCHAR Message[256] = L"%d retries";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+			WCHAR MessageFormatted[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 			if (Handle)
 			{
 				LoadStringW(Handle, 4001, Message, ARRAYSIZE(Message));

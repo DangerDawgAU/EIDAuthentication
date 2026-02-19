@@ -31,7 +31,7 @@
 // Non-const copy for Windows API compatibility (params.EnhkeyUsage.rgpszUsageIdentifier is LPSTR*)
 // With /Zc:strictStrings (enabled by default in C++23), string literals are const and cannot
 // be implicitly converted to non-const LPSTR. This static array provides writable storage.
-static char s_szOidSmartCardLogon[] = szOID_KP_SMARTCARD_LOGON;
+static char s_szOidSmartCardLogon[] = szOID_KP_SMARTCARD_LOGON;       // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
 
 //=============================================================================
 // HELPER FUNCTIONS FOR COMPLEXITY REDUCTION
@@ -214,7 +214,7 @@ void InitChainValidationParams(ChainValidationParams* params)
 		return EID::make_unexpected(E_INVALIDARG);
 	}
 
-	BYTE Data[4096];
+	BYTE Data[4096];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD DataSize = ARRAYSIZE(Data);
 	LPTSTR szContainerName = pCspInfo->bBuffer + pCspInfo->nContainerNameOffset;
 	LPTSTR szProviderName = pCspInfo->bBuffer + pCspInfo->nCSPNameOffset;

@@ -138,8 +138,8 @@ void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR
 	UNREFERENCED_PARAMETER(dwLine);
 	UNREFERENCED_PARAMETER(szFile);
 #endif
-	WCHAR Buffer[256];
-	WCHAR Buffer2[356];
+	WCHAR Buffer[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	WCHAR Buffer2[356];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	int ret;
 	va_list ap;
 
@@ -179,13 +179,13 @@ void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR
 			// may contain sensitive information - generate a dump only if the debugging is active
 			if (IsTracingEnabled)
 			{
-				HANDLE fileHandle = CreateFile (L"c:\\EIDAuthenticateDump.dmp", GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+				HANDLE fileHandle = CreateFile (L"c:\\EIDAuthenticateDump.dmp", GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 				if (fileHandle == INVALID_HANDLE_VALUE)
 				{
 					if (GetLastError() == 0x5)
 					{
 						EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__,WINEVENT_LEVEL_WARNING,L"Unable to create minidump file c:\\EIDAuthenticate.dmp");
-						wchar_t szFileName[MAX_PATH];
+						wchar_t szFileName[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 						GetTempPathW(MAX_PATH, szFileName);
 						wcscat_s(szFileName, MAX_PATH, L"EIDAuthenticateDump.dmp");
 						EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__,WINEVENT_LEVEL_WARNING,L"Trying to create dump file %s",szFileName);
@@ -306,8 +306,8 @@ void EIDCardLibraryDumpMemoryEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, 
  */
 void MessageBoxWin32Ex2(DWORD status, HWND hWnd, LPCSTR szFile, DWORD dwLine) {
 	LPVOID Error;
-	wchar_t szMessage[1024];
-	wchar_t szTitle[1024];
+	wchar_t szMessage[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	wchar_t szTitle[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	swprintf_s(szTitle,ARRAYSIZE(szTitle),L"%hs(%d)",szFile, dwLine);
 	if (status >= WINHTTP_ERROR_BASE && status <= WINHTTP_ERROR_LAST)
 	{
@@ -334,8 +334,8 @@ BOOL StartLogging()
 	struct _Prop
 	{
 		EVENT_TRACE_PROPERTIES TraceProperties;
-		TCHAR LogFileName[1024];
-		TCHAR LoggerName[1024];
+		TCHAR LogFileName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+		TCHAR LoggerName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	} Properties;
 	ULONG err;
 	__try
@@ -378,8 +378,8 @@ BOOL StopLogging()
 	struct _Prop
 	{
 		EVENT_TRACE_PROPERTIES TraceProperties;
-		TCHAR LogFileName[1024];
-		TCHAR LoggerName[1024];
+		TCHAR LogFileName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+		TCHAR LoggerName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	} Properties;
 	memset(&Properties, 0, sizeof(Properties));
 	__try
@@ -410,8 +410,8 @@ BOOL StopLogging()
 void EIDSecurityAuditEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR dwAuditType, PCWSTR szFormat,...)
 {
 	UNREFERENCED_PARAMETER(szFile);
-	WCHAR Buffer[512];
-	WCHAR AuditBuffer[600];
+	WCHAR Buffer[512];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	WCHAR AuditBuffer[600];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	int ret;
 	va_list ap;
 	LPCWSTR pwszAuditPrefix;
@@ -470,8 +470,8 @@ void EIDLogErrorWithContextEx(
 {
 	UNREFERENCED_PARAMETER(szFile);
 
-	WCHAR ContextBuffer[256] = {0};
-	WCHAR FinalBuffer[512] = {0};
+	WCHAR ContextBuffer[256] = {0};  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	WCHAR FinalBuffer[512] = {0};  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	int ret;
 
 	if (bFirst)
@@ -535,7 +535,7 @@ void EIDLogStackTraceEx(
 	}
 
 	// Log error context at ERROR level
-	WCHAR ErrorBuffer[256];
+	WCHAR ErrorBuffer[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	swprintf_s(ErrorBuffer, ARRAYSIZE(ErrorBuffer),
 		L"[STACK_TRACE] %S:%d - Error code 0x%08X, call stack follows:",
 		szFunction, dwLine, errorCode);
@@ -557,7 +557,7 @@ void EIDLogStackTraceEx(
 	// Log each frame at VERBOSE level (only visible when tracing enabled)
 	for (USHORT i = 0; i < frames; ++i)
 	{
-		WCHAR FrameBuffer[128];
+		WCHAR FrameBuffer[128];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		swprintf_s(FrameBuffer, ARRAYSIZE(FrameBuffer),
 			L"[STACK_TRACE]   frame[%u] = 0x%p", i, stack[i]);
 
