@@ -65,7 +65,7 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 	// Validate Policy enum bounds to prevent array overflow
 	if (!IsValidPolicy(Policy))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Invalid policy index %d", (int)Policy);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Invalid policy index %d", static_cast<int>(Policy));
 		return 0;
 	}
 	HKEY key;
@@ -74,38 +74,39 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 	DWORD type=REG_SZ;
 	wchar_t szValue[2] = L"0";
 	DWORD size2 = sizeof(szValue);
-	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,MyGPOInfo[Policy].Key,0, KEY_READ, &key)==ERROR_SUCCESS){
+	const int policyIndex = static_cast<int>(Policy);
+	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,MyGPOInfo[policyIndex].Key,0, KEY_READ, &key)==ERROR_SUCCESS){
 		// scremoveoption: DWORD value stored as PTSTR
-		if (Policy == scremoveoption && RegQueryValueEx(key,MyGPOInfo[Policy].Value,nullptr, &type,(LPBYTE) &szValue, &size2)==ERROR_SUCCESS)
+		if (Policy == GPOPolicy::scremoveoption && RegQueryValueEx(key,MyGPOInfo[policyIndex].Value,nullptr, &type,(LPBYTE) &szValue, &size2)==ERROR_SUCCESS)
 		{
-			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Policy %s found = %s",MyGPOInfo[Policy].Value,szValue);
+			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Policy %s found = %s",MyGPOInfo[policyIndex].Value,szValue);
 			value = _tstoi(szValue);
 		}
-		else if (RegQueryValueEx(key,MyGPOInfo[Policy].Value,nullptr, &type,(LPBYTE) &value, &size)==ERROR_SUCCESS)
+		else if (RegQueryValueEx(key,MyGPOInfo[policyIndex].Value,nullptr, &type,(LPBYTE) &value, &size)==ERROR_SUCCESS)
 		{
 			// Validate registry value type to prevent misinterpretation of non-DWORD data
 			if (type != REG_DWORD)
 			{
 				value = 0;
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Policy %s has unexpected type %d, ignoring",MyGPOInfo[Policy].Value,type);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Policy %s has unexpected type %d, ignoring",MyGPOInfo[policyIndex].Value,type);
 			}
 			else
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Policy %s found = %x",MyGPOInfo[Policy].Value,value);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Policy %s found = %x",MyGPOInfo[policyIndex].Value,value);
 			}
 		}
 		else
 		{
 			value = 0;
-			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Policy %s value not found = %x",MyGPOInfo[Policy].Value,value);
+			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Policy %s value not found = %x",MyGPOInfo[policyIndex].Value,value);
 		}
 		RegCloseKey(key);
 	}
 	else
 	{
 		value = 0;
-		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Policy %s key not found = %x",MyGPOInfo[Policy].Value,value);
-		
+		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Policy %s key not found = %x",MyGPOInfo[policyIndex].Value,value);
+
 	}
 	return value;
 }
@@ -122,9 +123,10 @@ BOOL SetRemovePolicyValue(DWORD dwActivate)
 	swprintf_s(szValue, ARRAYSIZE(szValue), L"%d", dwActivate);
 	__try
 	{
+		constexpr int scremoveoptionIndex = static_cast<int>(GPOPolicy::scremoveoption);
 		lReturn = RegSetKeyValue(HKEY_LOCAL_MACHINE,
-			MyGPOInfo[scremoveoption].Key,
-			MyGPOInfo[scremoveoption].Value, REG_SZ, szValue, sizeof(wchar_t)*ARRAYSIZE(szValue));
+			MyGPOInfo[scremoveoptionIndex].Key,
+			MyGPOInfo[scremoveoptionIndex].Value, REG_SZ, szValue, sizeof(wchar_t)*ARRAYSIZE(szValue));
 		if ( lReturn != ERROR_SUCCESS)
 		{
 			dwError = lReturn;
@@ -200,20 +202,21 @@ BOOL SetPolicyValue(GPOPolicy Policy, DWORD dwValue)
 	// Validate Policy enum bounds to prevent array overflow
 	if (!IsValidPolicy(Policy))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Invalid policy index %d", (int)Policy);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Invalid policy index %d", static_cast<int>(Policy));
 		return FALSE;
 	}
 	BOOL fReturn = FALSE;
-	if (Policy == scremoveoption)
+	const int policyIndex = static_cast<int>(Policy);
+	if (Policy == GPOPolicy::scremoveoption)
 	{
 		// special case because a service has to be configured and the value is stored as string instead of DWORD
 		fReturn = SetRemovePolicyValue(dwValue);
 	}
 	else
 	{
-		fReturn = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-				MyGPOInfo[Policy].Key,
-				MyGPOInfo[Policy].Value, REG_DWORD, &dwValue,sizeof(dwValue));
+		fReturn = RegSetKeyValue(	HKEY_LOCAL_MACHINE,
+				MyGPOInfo[policyIndex].Key,
+				MyGPOInfo[policyIndex].Value, REG_DWORD, &dwValue,sizeof(dwValue));
 	}
 	return fReturn;
 }

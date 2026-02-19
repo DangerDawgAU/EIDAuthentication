@@ -12,7 +12,7 @@ INT_PTR CALLBACK WndProc_ForcePolicy(HWND hWnd, UINT message, WPARAM wParam, [[m
 	{
 	case WM_INITDIALOG:
 		CenterWindow(hWnd);
-		if (GetPolicyValue(scforceoption) > 0)
+		if (GetPolicyValue(GPOPolicy::scforceoption) > 0)
 		{
 			CheckRadioButton(hWnd, IDC_FORCEDISABLE, IDC_FORCEENABLE, IDC_FORCEENABLE);
 		}
@@ -28,7 +28,7 @@ INT_PTR CALLBACK WndProc_ForcePolicy(HWND hWnd, UINT message, WPARAM wParam, [[m
 		switch(wmId)
 		{
 		case IDOK:
-			SetPolicyValue(scforceoption,IsDlgButtonChecked(hWnd, IDC_FORCEENABLE));
+			SetPolicyValue(GPOPolicy::scforceoption,IsDlgButtonChecked(hWnd, IDC_FORCEENABLE));
 			EndDialog(hWnd, 0);
 			return TRUE;
 		case IDCANCEL:

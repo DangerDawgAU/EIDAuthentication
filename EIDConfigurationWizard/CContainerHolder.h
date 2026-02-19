@@ -24,7 +24,7 @@
 #include "global.h"
 #include <utility>
 
-enum CheckType {
+enum class CheckType {
 	CHECK_SIGNATUREONLY = 0,
 	CHECK_TRUST = 1,
 	CHECK_CRYPTO = 2,

@@ -1,299 +1,935 @@
-# Feature Research: C++23 Language/Library Features
+# Feature Research: SonarQube Issue Remediation
 
-**Domain:** C++23 features for Windows security-critical codebase (LSASS context)
-**Researched:** 2026-02-15
-**Confidence:** HIGH (verified with Microsoft Learn, cppreference, Microsoft C++ Blog)
+**Domain:** C++23 SonarQube code quality fixes for Windows LSASS codebase
+**Researched:** 2026-02-18
+**Confidence:** HIGH (based on codebase analysis, C++ Core Guidelines, SonarQube rules)
+
+---
+
+## Executive Summary
+
+This research covers best practices and modern C++23 techniques for fixing ~730 SonarQube issues in the EIDAuthentication codebase. The codebase is already on C++23 with MSVC, compiles cleanly, and has resolved all security issues. This milestone focuses purely on maintainability improvements (CODE_SMELL type issues).
+
+**Key Findings:**
+1. **Most issues are table stakes** - Standard C++23 modernization patterns with well-established solutions
+2. **LSASS constraints drive decisions** - No exceptions, no dynamic allocation in hot paths, no STL across API boundaries
+3. **Windows API compatibility limits options** - Some "fixes" are actually anti-patterns in this context
+4. **Incremental approach essential** - Fix by category, not by file, to maintain consistency
 
 ---
 
 ## Feature Landscape
 
-### Table Stakes (Must Adopt - Safety/Correctness)
+### Table Stakes (Standard Remediation Patterns)
 
-These features provide measurable safety improvements. Missing them in security-critical code is a liability.
+These are well-established patterns for each SonarQube issue category. Every project should follow these.
 
-| Feature | Why Expected | MSVC Status | Complexity | Notes |
-|---------|--------------|-------------|------------|-------|
-| `std::expected<T, E>` | Exception-less error handling for LSASS | **VS 2022 17.3+** (MSVC 19.33) | MEDIUM | Replace HRESULT patterns with typed error handling; monadic operations in 17.6+ |
-| `if consteval` | Compile-time vs runtime branching | **VS 2022 17.14.3+** (bug-fixed) | LOW | Distinguishes constant evaluation context |
-| `constexpr` enhancements | More compile-time validation | **VS 2022 17.13+** | LOW | Virtual functions in constexpr, relaxed restrictions |
-| `std::to_underlying` | Safer enum conversions | **VS 2022 17.3+** | LOW | Replaces `static_cast<std::underlying_type_t<T>>` |
-| `std::unreachable()` | Mark impossible code paths | **VS 2022 17.3+** | LOW | Helps optimizer + static analysis; use carefully in security code |
-| `#warning` directive | Compile-time deprecation notices | **VS 2026 18.0** (MSVC 14.50) | LOW | Standardized migration warnings |
-| Deducing `this` (explicit object) | Cleaner CRTP patterns | **VS 2022 17.2+** | MEDIUM | Reduces template metaprogramming complexity |
+| Issue Category | SonarQube Count | Why Expected | Complexity | LSASS Safety |
+|----------------|-----------------|--------------|------------|--------------|
+| **Global variable const correctness** | 102 | C++ core guideline; prevents accidental modification | LOW | Safe - compile-time check |
+| **C-style cast removal** | ~50 | Type safety; prevents undefined behavior | LOW | Safe - use appropriate cast |
+| **[[fallthrough]] annotation** | 1 (blocker) | C++17 standard; documents intentional fallthrough | LOW | Safe - explicit annotation |
+| **Merge nested if statements** | 17 | Reduces nesting depth | LOW | Safe - preserves logic |
+| **Empty block comments** | 17 | Documents intentional empty blocks | LOW | Safe - comment only |
+| **Variable shadowing** | ~20 | Prevents logic errors | LOW | Safe - rename variable |
 
-### Differentiators (Nice to Have - Code Quality)
+### Differentiators (Context-Dependent Remediation)
 
-These improve code quality but aren't essential for security. Adopt incrementally.
+These require judgment based on LSASS constraints and Windows API compatibility.
 
-| Feature | Value Proposition | MSVC Status | Complexity | Notes |
-|---------|-------------------|-------------|------------|-------|
-| `std::format` / `std::format_string` | Type-safe formatting | **VS 2022 17.2+** | LOW | Replaces `sprintf`/`snprintf`; avoid in LSASS (logging only) |
-| `std::print` / `std::println` | Modern console output | **VS 2022 17.12+** | LOW | **AVOID in LSASS** - no console; use for test/debug builds only |
-| `auto(x)` decay-copy | Cleaner template code | **VS 2026 18.0+** | LOW | Simplifies explicit decay operations |
-| Multidimensional `operator[]` | Cleaner array access | **VS 2022 17.3+** | LOW | `arr[i, j]` instead of `arr(i, j)` |
-| `std::string::contains()` | Simpler string searching | **VS 2022 17.1+** | LOW | Note: also added `contains` to `string_view` |
-| `std::is_scoped_enum` | Type trait for enums | **VS 2022 17.3+** | LOW | Template metaprogramming helper |
-| Static `operator[]` | Type-erased subscript | **VS 2022 17.3+** | MEDIUM | Enables more generic code |
-| `std::mdspan` | Multidimensional array view | **VS 2022 17.10+** | MEDIUM | Useful for buffer handling; verify memory safety |
-| `consteval` (improved) | Guaranteed compile-time | **VS 2022 17.14+** | MEDIUM | Stricter than `constexpr`; had MSVC bugs, fixed in 17.14 |
+| Issue Category | SonarQube Count | Value Proposition | Complexity | LSASS Safety |
+|----------------|-----------------|-------------------|------------|--------------|
+| **C-style array to std::array** | 28 | Bounds safety, size() method | MEDIUM | **CAUTION** - stack size, ABI |
+| **C-style char array to std::string** | 149 | Memory safety, easier manipulation | MEDIUM | **CAUTION** - no STL across DLL |
+| **Macro to constexpr** | 111 | Type safety, debugging, scope | MEDIUM | **CAUTION** - some macros required |
+| **Replace redundant type with auto** | 126 | Reduces duplication | LOW | **CAUTION** - may obscure types |
+| **Deep nesting reduction** | 52 | Readability, maintainability | MEDIUM-HIGH | Safe - preserves logic |
+| **Define identifiers separately** | 50 | Readability, easier debugging | LOW | Safe - simple refactor |
+| **Range-based for loops** | ~30 | Simpler iteration, fewer bugs | LOW | Safe - equivalent logic |
+| **enum class conversion** | ~20 | Type safety, scoped enumerators | MEDIUM | **CAUTION** - Windows API interop |
+| **Init-statements in if/switch** | ~15 | Limits variable scope | LOW | Safe - scope management |
+| **auto usage clarity** | ~40 | Context-dependent; may help or hurt | LOW | **CAUTION** - type clarity |
 
-### Anti-Features (Deliberately NOT Use)
+### Anti-Features (What NOT to Do)
 
-Features to explicitly avoid in this security-critical Windows LSASS context.
+Patterns that SonarQube suggests but should be avoided in this LSASS codebase.
 
-| Anti-Feature | Why Avoid | MSVC Status | What to Do Instead |
-|--------------|-----------|-------------|-------------------|
-| `std::print` / `std::println` in LSASS | No console in LSASS; UTF-8 buffer bugs | Implemented | Use ETW logging or `OutputDebugString` |
-| Exceptions | LSASS stability; stack unwinding overhead | N/A | `std::expected<T, E>` with error codes |
-| `import std;` (modules) | Immature MSVC support; CMake issues | Partial (VS 2022 17.5+) | Traditional `#include` headers |
-| `std::stacktrace` | Known bugs; underlying API issues | Partial (buggy) | `CaptureStackBackTrace` Win32 API |
-| `std::flat_map` / `std::flat_set` | **NOT IMPLEMENTED** in MSVC | Missing | `std::map`, `std::unordered_map` |
-| `std::generator` | **NOT IMPLEMENTED** in MSVC | Missing | Callbacks, ranges, iterators |
-| Coroutines | Stack complexity in LSASS; memory overhead | Implemented | Synchronous patterns |
-| Dynamic CRT (`/MD`) | LSASS isolation issues | N/A | Static CRT (`/MT`) |
-| `/std:c++23` flag | **NOT YET STABLE** | Missing | `/std:c++23preview` or `/std:c++latest` |
-| v145 toolset | Drops Windows 7/8/8.1 support | VS 2026 | v143 toolset (VS 2022) |
+| Anti-Feature | Why Suggested | Why Problematic Here | What to Do Instead |
+|--------------|---------------|----------------------|-------------------|
+| **std::string across DLL boundaries** | Modern C++ practice | ABI incompatibility; memory allocator mismatch | Keep C-style strings at API boundaries |
+| **std::vector for all arrays** | Bounds checking, dynamic sizing | Heap allocation in LSASS; stack preferred | Use std::array for fixed-size, evaluate case-by-case |
+| **Eliminate all macros** | Type safety, scoping | Windows API requires some (WIN32_NO_STATUS, SECURITY_WIN32) | Convert only type/constant macros; keep flow-control macros |
+| **Always use auto** | Reduces redundancy | Obscures types in security-critical code (HRESULT vs NTSTATUS) | Use auto for iterators/long types; explicit for domain types |
+| **Aggressive refactoring for complexity** | Reduces cognitive load | Risk of introducing bugs in security-critical paths | Extract helpers judiciously; extensive testing required |
+| **enum class everywhere** | Type safety | Windows APIs use plain enums with specific values | Convert internal enums; keep Windows API enums as-is |
+
+---
+
+## Detailed Remediation Guide by Category
+
+### 1. Global Variable Const Correctness (102 issues)
+
+**SonarQube Rule:** Global variables should be const
+
+**Why it matters:** Prevents accidental modification, enables compiler optimizations, documents intent.
+
+**Before (typical pattern in codebase):**
+```cpp
+// CertificateValidation.cpp:34
+static char s_szOidSmartCardLogon[] = szOID_KP_SMARTCARD_LOGON;
+// CertificateUtilities.cpp:36-44
+static char s_szOidClientAuth[] = szOID_PKIX_KP_CLIENT_AUTH;
+static char s_szOidServerAuth[] = szOID_PKIX_KP_SERVER_AUTH;
+// ... more OID arrays
+```
+
+**After (Windows API compatible fix):**
+```cpp
+// These MUST remain non-const because Windows API (CERT_ENHKEY_USAGE.rgpszUsageIdentifier)
+// requires LPSTR* (non-const char**). This is intentional for Windows API compatibility.
+// Comment documents WHY it's not const, satisfying code review requirements.
+static char s_szOidSmartCardLogon[] = szOID_KP_SMARTCARD_LOGON;  // Non-const for LPSTR* compatibility
+
+// For truly constant globals (not passed to Windows APIs):
+static constexpr TCHAR REMOVALPOLICYKEY[] = TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Removal Policy");
+// Or:
+static const LPCWSTR ALLOWED_PROVIDERS[] = { /* ... */ };
+```
+
+**Decision Matrix:**
+| Condition | Fix | Mark Won't Fix? |
+|-----------|-----|-----------------|
+| Passed to Windows API requiring non-const | Add comment explaining why | Yes, with comment |
+| Used internally only | Make `static constexpr` or `static const` | No, fix it |
+| Modified at runtime | No change needed (not a SonarQube issue) | N/A |
+
+**LSASS Safety:** HIGH - Compile-time check only, no runtime impact.
+
+---
+
+### 2. C-Style Cast Removal (~50 issues)
+
+**SonarQube Rule:** C-style casts should not be used
+
+**Why it matters:** C-style casts can silently perform dangerous conversions. Named casts document intent.
+
+**Before:**
+```cpp
+// CertificateValidation.cpp:116
+if (!CryptGetKeyParam(phUserKey, KP_CERTIFICATE, (BYTE*)Data, &DataSize, 0))
+
+// CertificateUtilities.cpp:639
+CertEnhKeyUsage.rgpszUsageIdentifier = (LPSTR*) EIDAlloc(sizeof(LPSTR)*CertEnhKeyUsage.cUsageIdentifier);
+
+// CContainer.cpp:52
+LPTSTR szResult = (LPTSTR) EIDAlloc((DWORD)(sizeof(TCHAR) * (len + 1)));
+```
+
+**After:**
+```cpp
+// Use reinterpret_cast for pointer type conversions (Windows API interop)
+if (!CryptGetKeyParam(phUserKey, KP_CERTIFICATE, reinterpret_cast<BYTE*>(Data), &DataSize, 0))
+
+// Use static_cast for related type conversions
+CertEnhKeyUsage.rgpszUsageIdentifier = static_cast<LPSTR*>(EIDAlloc(sizeof(LPSTR) * CertEnhKeyUsage.cUsageIdentifier));
+
+// For memory allocation, consider a helper to reduce boilerplate:
+template<typename T>
+T* eid_alloc(size_t count) {
+    return static_cast<T*>(EIDAlloc(static_cast<DWORD>(sizeof(T) * count)));
+}
+// Usage:
+LPTSTR szResult = eid_alloc<TCHAR>(len + 1);
+```
+
+**Decision Matrix:**
+| Cast Type | C++ Cast | Notes |
+|-----------|----------|-------|
+| Pointer to pointer (same base) | `static_cast<To*>` | Related pointer types |
+| Pointer to pointer (unrelated) | `reinterpret_cast<To*>` | Windows API void* |
+| Removing const | `const_cast<To>` | **RARE** - usually bug |
+| Numeric conversion | `static_cast<To>` | With narrowing check |
+| Any combination | Named cast | Never C-style |
+
+**LSASS Safety:** HIGH - Equivalent code, clearer intent.
+
+---
+
+### 3. Macro to Constexpr Conversion (111 issues)
+
+**SonarQube Rule:** Replace macro with "const", "constexpr" or "enum"
+
+**Why it matters:** Macros have no scope, no type, no debugging info, and can cause unexpected behavior.
+
+**When SAFE to convert:**
+```cpp
+// Before:
+#define MAX_CONTAINER_NAME_LENGTH 1024
+#define MAX_READER_NAME_LENGTH 256
+
+// After (already done in some files):
+constexpr DWORD MAX_CONTAINER_NAME_LENGTH = 1024;
+constexpr DWORD MAX_READER_NAME_LENGTH = 256;
+```
+
+**When NOT SAFE to convert:**
+```cpp
+// These MUST remain macros - they control Windows header behavior
+#define WIN32_NO_STATUS 1  // Controls ntstatus.h inclusion behavior
+#define SECURITY_WIN32    // Controls sspi.h behavior
+#define _CRTDBG_MAP_ALLOC // Controls CRT debug allocation
+
+// Flow-control macros used with __try/__leave/__finally
+#define CHECK_DWORD(_X) { if (ERROR_SUCCESS != (status = (_X))) { __leave; } }
+// Cannot be constexpr - it's control flow, not a value
+
+// Tracing macros that use __FILE__, __LINE__, __FUNCTION__
+#define EIDCardLibraryTrace(level, format, ...) \
+    EIDCardLibraryTraceEx(__FILE__, __LINE__, __FUNCTION__, level, format, __VA_ARGS__)
+// These must be macros to capture source location
+```
+
+**Decision Matrix:**
+| Macro Type | Convertible? | Replacement |
+|------------|--------------|-------------|
+| Constant value | Yes | `constexpr` or `const` |
+| Type alias | Yes | `using` alias |
+| Function-like (simple) | Maybe | `constexpr` function |
+| Function-like (control flow) | No | Keep as macro |
+| Token pasting/stringizing | No | Keep as macro |
+| Conditional compilation | No | Keep as macro |
+| Windows header control | No | Keep as macro |
+| Source location capture | No | Keep as macro |
+
+**LSASS Safety:** MEDIUM - Ensure constexpr functions are truly constexpr (no hidden runtime costs).
+
+---
+
+### 4. Deep Nesting Reduction (52 issues)
+
+**SonarQube Rule:** Refactor code with nesting depth > 3
+
+**Why it matters:** Deep nesting reduces readability and increases cognitive load.
+
+**Pattern 1: Early Return / Guard Clause**
+
+**Before:**
+```cpp
+NTSTATUS DoSomething(Parameter* p) {
+    NTSTATUS status = STATUS_SUCCESS;
+    __try {
+        if (p != nullptr) {
+            if (p->IsValid()) {
+                if (p->HasPermission()) {
+                    // ... actual work at depth 4+
+                    if (SomethingElse()) {
+                        // ... even deeper
+                    }
+                }
+            }
+        }
+    } __finally {
+        // cleanup
+    }
+    return status;
+}
+```
+
+**After:**
+```cpp
+NTSTATUS DoSomething(Parameter* p) {
+    // Guard clauses at top - fail fast
+    if (p == nullptr) {
+        return STATUS_INVALID_PARAMETER;
+    }
+    if (!p->IsValid()) {
+        return STATUS_INVALID_PARAMETER;
+    }
+    if (!p->HasPermission()) {
+        return STATUS_ACCESS_DENIED;
+    }
+
+    // Main logic at reduced depth
+    __try {
+        // ... actual work at depth 1-2
+    } __finally {
+        // cleanup
+    }
+    return STATUS_SUCCESS;
+}
+```
+
+**Pattern 2: Extract Helper Function**
+
+**Before:**
+```cpp
+void ProcessCertificates() {
+    for (auto& cert : certificates) {
+        if (cert.IsValid()) {
+            for (auto& chain : cert.Chains()) {
+                if (chain.IsTrusted()) {
+                    // ... nested processing
+                }
+            }
+        }
+    }
+}
+```
+
+**After:**
+```cpp
+// Extract nested logic to helper
+static bool ProcessChainIfNeeded(const Chain& chain) {
+    if (!chain.IsTrusted()) {
+        return false;
+    }
+    // ... chain processing
+    return true;
+}
+
+static bool ProcessCertificateIfNeeded(const Certificate& cert) {
+    if (!cert.IsValid()) {
+        return false;
+    }
+    for (const auto& chain : cert.Chains()) {
+        ProcessChainIfNeeded(chain);
+    }
+    return true;
+}
+
+void ProcessCertificates() {
+    for (const auto& cert : certificates) {
+        ProcessCertificateIfNeeded(cert);
+    }
+}
+```
+
+**Pattern 3: Continue/Break in Loops**
+
+**Before:**
+```cpp
+for (DWORD i = 0; i < count; i++) {
+    if (items[i].IsValid()) {
+        if (items[i].HasData()) {
+            // process
+        }
+    }
+}
+```
+
+**After:**
+```cpp
+for (DWORD i = 0; i < count; i++) {
+    if (!items[i].IsValid()) {
+        continue;  // Early skip
+    }
+    if (!items[i].HasData()) {
+        continue;  // Early skip
+    }
+    // process at lower depth
+}
+```
+
+**LSASS Safety:** HIGH - Logic equivalence is verifiable. Extract helpers must follow LSASS rules (no exceptions, careful allocation).
+
+---
+
+### 5. C-Style Array to std::array (28 issues)
+
+**SonarQube Rule:** Use "std::array" or "std::vector" instead of C-style array
+
+**Why it matters:** Bounds safety, `.size()` method, iterators, no pointer decay.
+
+**When SAFE to convert:**
+```cpp
+// Before:
+BYTE Data[4096];
+DWORD DataSize = ARRAYSIZE(Data);
+
+// After:
+std::array<BYTE, 4096> Data{};
+DWORD DataSize = static_cast<DWORD>(Data.size());
+
+// Even better with C++23:
+std::array<BYTE, 4096> Data{};
+DWORD DataSize = std::to_underlying(Data.size());  // If size_t to DWORD
+```
+
+**When NOT SAFE to convert:**
+```cpp
+// Fixed-size buffers for Windows API - evaluate stack impact
+WCHAR szUserName[256];  // 512 bytes on stack
+// std::array<WCHAR, 256> has same stack size, so OK
+
+// But large buffers may need to stay as-is:
+BYTE CertificateBuffer[65536];  // 64KB on stack
+// This is already questionable - might need heap allocation anyway
+
+// Arrays in structures for Windows API compatibility:
+struct EID_SMARTCARD_CSP_INFO {
+    DWORD dwCspInfoLen;
+    // ... other fields ...
+    BYTE bBuffer[ANYSIZE_ARRAY];  // Must remain C-array for Windows API
+};
+```
+
+**Decision Matrix:**
+| Condition | Convert? | Notes |
+|-----------|----------|-------|
+| Local fixed-size buffer < 4KB | Yes | Same stack size, safer API |
+| Local fixed-size buffer > 4KB | Evaluate | May need heap anyway |
+| Windows API structure member | No | Must match Windows layout |
+| Global/static array | Maybe | std::array has same storage |
+| Passed to API expecting pointer | Yes | `.data()` method |
+
+**LSASS Safety:** MEDIUM - Verify stack usage. Large std::array still consumes stack.
+
+---
+
+### 6. C-Style Char Array to std::string (149 issues)
+
+**SonarQube Rule:** Use "std::string" instead of C-style char array
+
+**Why it matters:** Memory safety, automatic cleanup, easier manipulation.
+
+**CRITICAL LSASS CONSTRAINT:**
+```cpp
+// NEVER pass std::string across DLL boundaries
+// NEVER pass std::string to/from LSA functions
+
+// WRONG - will cause heap corruption:
+HRESULT WINAPI GetUserName(__out std::wstring& name) {
+    name = L"username";  // Allocates in wrong heap!
+}
+
+// CORRECT - C-style at boundary, std::string internally:
+HRESULT WINAPI GetUserName(__out_ecount(cchName) LPWSTR name, __in DWORD cchName) {
+    std::wstring internalName = GetUserNameInternal();
+    wcscpy_s(name, cchName, internalName.c_str());
+    return S_OK;
+}
+```
+
+**Pattern for LSASS:**
+```cpp
+// Internal function - use std::string/std::wstring
+std::expected<std::wstring, HRESULT> GetUserNameInternal() noexcept {
+    std::wstring name;
+    name.reserve(256);
+    // ... build name ...
+    return name;
+}
+
+// Exported function - C-style interface
+HRESULT WINAPI GetUserName(__out_ecount(cchName) LPWSTR name, __in DWORD cchName) {
+    if (!name || cchName == 0) return E_POINTER;
+
+    auto result = GetUserNameInternal();
+    if (!result) {
+        return result.error();
+    }
+
+    const auto& internalName = *result;
+    if (internalName.size() + 1 > cchName) {
+        return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+    }
+
+    wcscpy_s(name, cchName, internalName.c_str());
+    return S_OK;
+}
+```
+
+**Decision Matrix:**
+| Location | Convert? | Pattern |
+|----------|----------|---------|
+| Internal helper function | Yes | Use `std::wstring` freely |
+| Function parameters (internal) | Yes | `std::wstring_view` for read-only |
+| Function parameters (exported) | No | Keep `LPWSTR` / `LPCWSTR` |
+| Return value (internal) | Yes | `std::expected<std::wstring, E>` |
+| Return value (exported) | No | Output parameter + `LPWSTR` |
+| Class member | Yes | `std::wstring` with proper cleanup |
+| Global | No | Security issue anyway |
+
+**LSASS Safety:** MEDIUM - Strict boundary discipline required. Review all cross-DLL usages.
+
+---
+
+### 7. Auto Usage Clarity (126 + ~40 issues)
+
+**SonarQube Rule:** Replace redundant type with "auto" / Use auto appropriately
+
+**Why it matters:** Can reduce redundancy or obscure types, depending on context.
+
+**When auto IMPROVES clarity:**
+```cpp
+// Iterators - obvious type from context
+for (auto it = container.begin(); it != container.end(); ++it)
+
+// Factory functions where return type is clear
+auto context = CertCreateCertificateContext(...);  // Obviously PCCERT_CONTEXT
+auto lock = std::unique_lock(mutex);  // Obviously unique_lock
+
+// Long, complex types that obscure intent
+auto callback = static_cast<PRShowRestoreFromMsginaW>(
+    GetProcAddress(keymgrDll, "PRShowRestoreFromMsginaW"));
+
+// Range-based for
+for (const auto& cert : certificates)
+```
+
+**When auto REDUCES clarity (avoid):**
+```cpp
+// Security-critical types - be explicit about HRESULT vs NTSTATUS vs DWORD
+HRESULT hr = DoSomething();  // GOOD: Explicitly HRESULT
+NTSTATUS status = NtDoSomething();  // GOOD: Explicitly NTSTATUS
+auto result = DoSomething();  // BAD: What type? What error handling?
+
+// Numeric types where precision matters
+DWORD size = GetDataSize();  // GOOD: Explicitly 32-bit
+auto size = GetDataSize();  // BAD: Is it size_t? DWORD? int?
+
+// Pointer ownership semantics
+PCCERT_CONTEXT cert = CertDuplicateCertificateContext(...);  // GOOD: Must call CertFree
+auto cert = CertDuplicateCertificateContext(...);  // BAD: Ownership unclear
+
+// Boolean return values in security context
+BOOL success = CheckAccess(...);  // GOOD: Explicitly BOOL, not int
+bool allowed = IsAllowed(...);  // GOOD: Explicitly bool
+auto result = CheckAccess(...);  // BAD: Is it BOOL, bool, HRESULT?
+```
+
+**Decision Matrix:**
+| Context | Use auto? | Rationale |
+|---------|-----------|-----------|
+| Iterators | Yes | Redundant type |
+| Factory result (type obvious) | Yes | Type clear from call |
+| Complex template type | Yes | Type less important than behavior |
+| Error/success type | **No** | Critical to see HRESULT vs bool |
+| Numeric calculation | **No** | Type affects precision |
+| Pointer with ownership | **No** | Ownership must be clear |
+| Security decision result | **No** | Must see type for audit |
+
+**LSASS Safety:** MEDIUM - Type clarity critical for security review.
+
+---
+
+### 8. Init-Statements in If/Switch (C++17) (~15 issues)
+
+**SonarQube Rule:** (Various) Limit variable scope
+
+**Why it matters:** Variables only exist where needed, reduces scope for bugs.
+
+**Pattern: if init-statement**
+```cpp
+// Before:
+{
+    HANDLE hToken = GetToken();
+    if (hToken != nullptr) {
+        // use hToken
+        CloseHandle(hToken);
+    }
+}
+
+// After (C++17):
+if (HANDLE hToken = GetToken(); hToken != nullptr) {
+    // use hToken
+    CloseHandle(hToken);
+}
+// hToken out of scope here
+```
+
+**Pattern: switch init-statement**
+```cpp
+// Before:
+{
+    auto status = GetStatus();
+    switch (status) {
+        case STATUS_SUCCESS: /* ... */ break;
+        // ...
+    }
+}
+
+// After (C++17):
+switch (auto status = GetStatus(); status) {
+    case STATUS_SUCCESS: /* ... */ break;
+    // ...
+}
+// status out of scope
+```
+
+**LSASS Safety:** HIGH - Pure scope reduction, no behavior change.
+
+---
+
+### 9. Range-Based For Loops (~30 issues)
+
+**SonarQube Rule:** (Various) Use range-based for where appropriate
+
+**Why it matters:** Simpler syntax, fewer off-by-one errors, automatic bounds.
+
+**Before:**
+```cpp
+for (DWORD dwI = 0; dwI < dwEntriesRead; dwI++) {
+    ProcessUser(pUserInfo[dwI].usri3_name);
+}
+```
+
+**After:**
+```cpp
+// If we can create a span/view:
+auto users = std::span(pUserInfo, dwEntriesRead);
+for (const auto& user : users) {
+    ProcessUser(user.usri3_name);
+}
+
+// Or with pointer arithmetic:
+for (DWORD i = 0; i < dwEntriesRead; i++) {
+    const auto& user = pUserInfo[i];
+    ProcessUser(user.usri3_name);
+}
+```
+
+**When NOT to use range-based for:**
+```cpp
+// Need index for other purposes
+for (DWORD i = 0; i < count; i++) {
+    if (NeedIndex(i)) {
+        DoSomethingWithIndex(i, items[i]);
+    }
+}
+
+// Modifying container size during iteration
+for (auto it = items.begin(); it != items.end(); ) {
+    if (ShouldRemove(*it)) {
+        it = items.erase(it);  // Range-based for would break
+    } else {
+        ++it;
+    }
+}
+
+// Windows API array with explicit count
+// Keep as-is if the count is needed for API calls
+```
+
+**LSASS Safety:** HIGH - Equivalent logic, simpler code.
+
+---
+
+### 10. Enum Class Conversion (~20 issues)
+
+**SonarQube Rule:** Use enum class instead of plain enum
+
+**Why it matters:** Type safety, scoped enumerators, no implicit conversions.
+
+**When SAFE to convert:**
+```cpp
+// Before:
+enum PolicyValue {
+    AllowSignatureOnlyKeys = 0,
+    AllowCertificatesWithNoEKU = 1,
+    EnforceCSPWhitelist = 2
+};
+
+// After:
+enum class PolicyValue : DWORD {
+    AllowSignatureOnlyKeys = 0,
+    AllowCertificatesWithNoEKU = 1,
+    EnforceCSPWhitelist = 2
+};
+
+// Usage requires explicit scoping:
+if (GetPolicyValue(PolicyValue::AllowSignatureOnlyKeys) == 0)
+
+// Conversion to underlying type:
+DWORD value = std::to_underlying(PolicyValue::AllowSignatureOnlyKeys);
+// Or pre-C++23:
+DWORD value = static_cast<DWORD>(PolicyValue::AllowSignatureOnlyKeys);
+```
+
+**When NOT SAFE to convert:**
+```cpp
+// Windows API enums - must match Windows definition
+enum _SECURITY_LOGON_TYPE {
+    Interactive = 2,
+    Network = 3,
+    // ...
+};
+
+// Don't convert - Windows API expects this exact type
+```
+
+**Decision Matrix:**
+| Condition | Convert? | Notes |
+|-----------|----------|-------|
+| Internal-only enum | Yes | Type safety benefits |
+| Used with Windows API | No | Must match Windows type |
+| Values serialized/stored | Maybe | Need explicit conversion |
+| Implicit conversion relied upon | No | Would break code |
+
+**LSASS Safety:** MEDIUM - Verify no implicit conversions relied upon.
+
+---
+
+### 11. [[fallthrough]] Annotation (1 blocker issue)
+
+**SonarQube Rule:** Switch cases should end with unconditional break/return/[[fallthrough]]
+
+**Why it matters:** Documents intentional fallthrough; catches accidental fallthrough.
+
+**Before:**
+```cpp
+switch (status) {
+    case STATUS_SUCCESS:
+        // Do success processing
+    case STATUS_PENDING:
+        // Handle both success and pending
+        break;
+}
+```
+
+**After:**
+```cpp
+switch (status) {
+    case STATUS_SUCCESS:
+        // Do success processing
+        [[fallthrough]];  // C++17 attribute
+    case STATUS_PENDING:
+        // Handle both success and pending
+        break;
+}
+```
+
+**LSASS Safety:** HIGH - Zero runtime impact, pure annotation.
+
+---
+
+### 12. Cognitive Complexity Reduction (52+ issues)
+
+**SonarQube Rule:** (Cognitive Complexity) Reduce cognitive complexity
+
+**Why it matters:** Highly complex code is hard to review, test, and maintain.
+
+**Definition:** Cognitive complexity measures:
+- Nesting depth (adds to score)
+- Break/continue in loops (adds to score)
+- Multiple conditions (adds to score)
+- else/else if (adds to score)
+
+**Remediation Strategies:**
+
+1. **Extract functions** - Move complex logic to well-named helpers
+2. **Use guard clauses** - Return early to reduce nesting
+3. **Use lookup tables** - Replace complex switch/if chains with data
+4. **Polymorphism** - Replace type-checking conditionals with virtual calls (limited in LSASS)
+
+**Example - Lookup Table Pattern:**
+```cpp
+// Before: High cognitive complexity
+LPCTSTR GetTrustErrorText(DWORD Status) {
+    LPCTSTR pszName = nullptr;
+    switch(Status) {
+        ERRORTOTEXT(CERT_E_EXPIRED)
+        ERRORTOTEXT(CERT_E_VALIDITYPERIODNESTING)
+        ERRORTOTEXT(CERT_E_ROLE)
+        // ... 20+ more cases ...
+        default:
+            pszName = nullptr;
+            break;
+    }
+    return pszName;
+}
+
+// After: Lower cognitive complexity with lookup table
+// (This is actually a good use of a macro for the lookup table!)
+static const struct {
+    DWORD error;
+    LPCWSTR name;
+} ErrorNames[] = {
+    { CERT_E_EXPIRED, L"CERT_E_EXPIRED" },
+    { CERT_E_VALIDITYPERIODNESTING, L"CERT_E_VALIDITYPERIODNESTING" },
+    // ...
+};
+
+LPCTSTR GetTrustErrorText(DWORD Status) {
+    for (const auto& entry : ErrorNames) {
+        if (entry.error == Status) {
+            return entry.name;
+        }
+    }
+    return nullptr;
+}
+```
+
+**LSASS Safety:** MEDIUM - Complex refactoring needs careful review and testing.
 
 ---
 
 ## Feature Dependencies
 
 ```
-C++23 Preview (/std:c++23preview)
-    |
-    +-- std::expected<T, E>
-    |       |
-    |       +-- requires: C++23 monadic operations (and_then, transform)
-    |
-    +-- Deducing this
-    |       |
-    |       +-- replaces: CRTP patterns
-    |
-    +-- if consteval
-            |
-            +-- requires: consteval functions
-            +-- conflicts-with: runtime-only code paths
+Global const correctness
+    └── Independent - can be done in any order
 
-C++20 Foundation
-    |
-    +-- std::format
-    +-- std::span
-    +-- Concepts
-    +-- std::string::starts_with / ends_with (C++20, not C++23)
+Macro to constexpr
+    ├── requires: Identifying Windows API macros (don't convert)
+    └── enables: Type-safe constants
 
-Windows 7 Compatibility
-    |
-    +-- requires: v143 toolset
-    +-- conflicts-with: v145 toolset (VS 2026)
-    +-- conflicts-with: Some newer Windows SDK APIs
+Deep nesting reduction
+    ├── requires: Understanding __try/__finally semantics
+    ├── enables: Easier maintenance
+    └── conflicts: With aggressive inlining
+
+std::array conversion
+    ├── requires: Stack size analysis
+    ├── enables: Bounds checking
+    └── conflicts: With Windows API fixed-layout structures
+
+std::string conversion
+    ├── requires: Identifying all DLL boundary crossings
+    ├── enables: Memory safety internally
+    └── conflicts: With LSA/SSPI API requirements
+
+C-style cast removal
+    ├── requires: Understanding pointer type relationships
+    └── enables: Type-safe casts
+
+enum class conversion
+    ├── requires: Identifying Windows API enums
+    └── conflicts: With Windows API enums
 ```
-
-### Dependency Notes
-
-- **`std::expected` requires C++23 preview**: Full monadic interface (`and_then`, `transform`, `or_else`) available in VS 2022 17.6+
-- **`if consteval` requires consteval context**: Only meaningful when combined with `consteval` functions or `constexpr` if branches
-- **Deducing `this` replaces CRTP**: Eliminates need for curiously recurring template pattern in many cases
-- **v143 toolset required for Windows 7**: v145 (VS 2026) drops Windows 7/8/8.1 support per MSVC 14.50 release notes
 
 ---
 
 ## MVP Definition
 
-### Phase 1: Foundation (Adopt First)
+### Phase 1: Quick Wins (Fix First)
 
-Essential safety improvements - prioritize these.
+Low-risk, high-value fixes with clear patterns.
 
-- [x] **`std::expected<T, E>`** - Replace HRESULT error handling with typed errors; adopt monadic interface
-- [x] **`if consteval`** - Enable compile-time vs runtime branching
-- [x] **`std::to_underlying`** - Safer enum to integer conversions
-- [x] **`std::unreachable()`** - Mark impossible code paths (with extreme care in security code)
-- [x] **Deducing `this`** - Modernize CRTP patterns in existing code
+- [x] **[[fallthrough]] annotation** - 1 blocker, trivial fix
+- [x] **Global const correctness** - 102 issues, most are simple
+- [x] **Empty block comments** - 17 issues, trivial
+- [x] **Merge nested if** - 17 issues, low risk
+- [x] **C-style cast removal** - ~50 issues, clear replacements
 
-**Rationale:** These features provide the highest safety value with lowest risk. All are stable in MSVC 19.43+.
+**Estimated: ~187 issues, 2-3 days**
 
-### Phase 2: Quality Improvements (After Foundation)
+### Phase 2: Standard Modernization (After Phase 1)
 
-Code quality improvements - adopt after Phase 1 is complete.
+Medium-risk fixes with established patterns.
 
-- [ ] **`std::format`** - Replace `sprintf`/`snprintf` in non-LSASS code (Configuration Wizard, logging)
-- [ ] **`constexpr` enhancements** - Move more computations to compile-time
-- [ ] **`auto(x)` decay-copy** - Simplify template code
-- [ ] **`std::string::contains()`** - Cleaner string operations
-- [ ] **Multidimensional `operator[]`** - If applicable to buffer handling
+- [x] **Macro to constexpr** - 111 issues, need Windows API awareness
+- [x] **Define identifiers separately** - 50 issues, simple refactor
+- [x] **Init-statements in if/switch** - ~15 issues, C++17 feature
+- [x] **Range-based for loops** - ~30 issues, equivalent logic
+- [x] **Variable shadowing** - ~20 issues, rename variables
+- [x] **Selective auto usage** - ~60 issues (half of auto suggestions)
 
-**Rationale:** These improve code quality but require more extensive code changes.
+**Estimated: ~286 issues, 3-5 days**
 
-### Phase 3: Future Consideration (Not Yet)
+### Phase 3: Complex Refactoring (After Phase 2)
 
-Features to defer until MSVC support matures or requirements change.
+Higher-risk fixes requiring careful review.
 
-- [ ] **`import std;`** - Wait for stable MSVC modules support
-- [ ] **`std::stacktrace`** - Wait for MSVC bug fixes
-- [ ] **`std::flat_map`** - Wait for MSVC implementation
-- [ ] **`/std:c++23` stable flag** - Wait for official MSVC release
-- [ ] **v145 toolset** - Only if Windows 7 support is dropped
+- [x] **Deep nesting reduction** - 52 issues, logic restructuring
+- [x] **Cognitive complexity** - 52+ issues, extract helpers
+- [x] **C-style array to std::array** - 28 issues, stack size analysis
+- [x] **C-style char to std::string** - 149 issues, API boundary care
+- [x] **enum class conversion** - ~20 issues, Windows API interop
 
-**Rationale:** These features either have incomplete/buggy implementations or require breaking compatibility changes.
+**Estimated: ~301 issues, 5-10 days**
+
+### Phase 4: Won't Fix (Mark with Justification)
+
+Issues that should not be fixed due to Windows API or LSASS constraints.
+
+- [x] **Global non-const for Windows API** - ~40 issues - Windows API requires non-const
+- [x] **Flow-control macros** - ~20 issues - Cannot be constexpr
+- [x] **Windows header macros** - ~10 issues - Required for Windows headers
+- [x] **Auto for security types** - ~60 issues - Type clarity needed
+- [x] **Windows API enum types** - ~10 issues - Must match Windows
+
+**Estimated: ~140 issues to mark Won't Fix**
 
 ---
 
 ## Feature Prioritization Matrix
 
-| Feature | Security Value | Implementation Cost | MSVC Stability | Priority |
-|---------|---------------|---------------------|----------------|----------|
-| `std::expected<T, E>` | HIGH | MEDIUM | STABLE | **P1** |
-| `if consteval` | MEDIUM | LOW | STABLE | **P1** |
-| `std::to_underlying` | MEDIUM | LOW | STABLE | **P1** |
-| `std::unreachable()` | MEDIUM | LOW | STABLE | **P1** |
-| Deducing `this` | LOW | MEDIUM | STABLE | **P1** |
-| `std::format` | LOW | MEDIUM | STABLE | P2 |
-| `constexpr` enhancements | MEDIUM | MEDIUM | STABLE | P2 |
-| `auto(x)` decay-copy | LOW | LOW | STABLE | P2 |
-| `std::string::contains()` | LOW | LOW | STABLE | P2 |
-| `import std;` | LOW | HIGH | IMMATURE | P3 |
-| `std::stacktrace` | LOW | MEDIUM | BUGGY | P3 |
-| `std::flat_map` | LOW | MEDIUM | MISSING | P3 |
+| Category | Value | Risk | Volume | Priority |
+|----------|-------|------|--------|----------|
+| [[fallthrough]] annotation | HIGH | LOW | 1 | **P1** |
+| Global const correctness | HIGH | LOW | 102 | **P1** |
+| C-style cast removal | HIGH | LOW | ~50 | **P1** |
+| Empty block comments | LOW | LOW | 17 | **P1** |
+| Merge nested if | MEDIUM | LOW | 17 | **P1** |
+| Macro to constexpr | MEDIUM | LOW | 111 | **P2** |
+| Define identifiers separately | LOW | LOW | 50 | **P2** |
+| Variable shadowing | MEDIUM | LOW | ~20 | **P2** |
+| Init-statements | MEDIUM | LOW | ~15 | **P2** |
+| Range-based for | MEDIUM | LOW | ~30 | **P2** |
+| Deep nesting reduction | HIGH | MEDIUM | 52 | **P3** |
+| Cognitive complexity | HIGH | MEDIUM | 52+ | **P3** |
+| std::array conversion | MEDIUM | MEDIUM | 28 | **P3** |
+| std::string conversion | HIGH | MEDIUM | 149 | **P3** |
+| enum class conversion | MEDIUM | MEDIUM | ~20 | **P3** |
+| Auto usage (selective) | LOW | LOW | ~60 | **P2** |
 
 **Priority key:**
-- **P1:** Must adopt - safety/correctness improvements
-- **P2:** Should adopt - code quality improvements
-- **P3:** Defer - immature or missing implementations
+- **P1:** Must fix - Low risk, clear patterns
+- **P2:** Should fix - Some judgment needed
+- **P3:** Careful fix - Review and testing required
 
 ---
 
-## Security-Critical Considerations
+## Competitor/Reference Analysis
 
-### LSASS Context Constraints
-
-Running in LSASS imposes specific constraints on C++23 feature adoption:
-
-| Constraint | Impact | Guidance |
-|------------|--------|----------|
-| No exceptions allowed | Critical | Use `std::expected<T, E>` exclusively; mark functions `noexcept` |
-| No console I/O | High | `std::print`/`std::println` will fail; use ETW or debug output |
-| Memory pressure | Medium | Prefer stack allocation; avoid dynamic containers in hot paths |
-| Stack complexity | Medium | Avoid coroutines; prefer synchronous patterns |
-| Static CRT required | High | Use `/MT` not `/MD` for runtime isolation |
-
-### C-Style API Boundaries
-
-The project has LSA and Credential Provider interfaces requiring C-compatible exports:
-
-| Pattern | C++23 Solution |
-|---------|----------------|
-| `HRESULT` returns | `std::expected<T, HRESULT>` at internal boundaries; convert to `HRESULT` at API boundary |
-| `BOOL` returns | `std::expected<T, error_code>` internally; convert to `BOOL` at API boundary |
-| String parameters | `std::wstring_view` internally; `LPCWSTR` at API boundary |
-| Buffer parameters | `std::span<T>` internally; `T*` + `size_t*` at API boundary |
-| Error information | `std::expected` error type; convert to `HRESULT` or `GetLastError()` pattern |
-
-### Exception Safety Pattern
-
-```cpp
-// BEFORE (C++14 pattern with HRESULT)
-HRESULT ReadCardData(_Out_ CardData* data) {
-    if (!data) return E_POINTER;
-    HRESULT hr = ValidateCard();
-    if (FAILED(hr)) return hr;
-    hr = ReadFromCard(data);
-    if (FAILED(hr)) return hr;
-    return S_OK;
-}
-
-// AFTER (C++23 pattern with std::expected)
-std::expected<CardData, CardError> ReadCardData() noexcept {
-    auto validation = ValidateCard();
-    if (!validation) {
-        return std::unexpected(validation.error());
-    }
-    return ReadFromCard();  // Returns expected<CardData, CardError>
-}
-
-// API boundary conversion
-HRESULT LSA_ReadCardData(_Out_ CardData* data) noexcept {
-    if (!data) return E_POINTER;
-    auto result = ReadCardData();
-    if (!result) {
-        return result.error().ToHRESULT();
-    }
-    *data = *result;
-    return S_OK;
-}
-```
+| Pattern | C++ Core Guidelines | MSVC Guidelines | SonarQube | Our Approach |
+|---------|---------------------|-----------------|-----------|--------------|
+| Global const | ES.3, Con.1 | Prefer constexpr | S1255 | Fix, except Windows API |
+| C-style cast | ES.49, Pro.Ccasts | Use named casts | S930 | Fix with appropriate cast |
+| Macros | ES.45, Enum.3 | Prefer constexpr | S501 | Convert only values |
+| std::array | ES.107, SL.4 | Prefer containers | S5955 | Evaluate stack size |
+| std::string | SL.str.1 | Use std::string | S5199 | Internal only |
+| auto | ES.11, ES.12 | Use judiciously | S6199 | Security types explicit |
+| enum class | Enum.3, Enum.8 | Prefer enum class | S5728 | Internal enums only |
 
 ---
 
-## Compiler Support Reference
+## LSASS Safety Checklist
 
-### MSVC Version Requirements
+For each fix, verify:
 
-| Feature | Minimum VS Version | Minimum MSVC | Notes |
-|---------|-------------------|--------------|-------|
-| `std::expected` | VS 2022 17.3 | 19.33 | Monadic ops in 17.6 |
-| `if consteval` | VS 2022 17.14.3 | 19.44 | Bug fixes required |
-| Deducing `this` | VS 2022 17.2 | 19.32 | Full support |
-| `std::format` | VS 2022 17.2 | 19.32 | Complete |
-| `std::print` | VS 2022 17.12 | 19.40+ | UTF-8 bugs exist |
-| `std::to_underlying` | VS 2022 17.3 | 19.33 | Simple utility |
-| `std::unreachable` | VS 2022 17.3 | 19.33 | Optimization hint |
-| `std::mdspan` | VS 2022 17.10 | 19.38+ | Multidimensional view |
-| `auto(x)` decay-copy | VS 2026 18.0 | 19.50 | Latest only |
-| `#warning` directive | VS 2026 18.0 | 19.50 | Latest only |
-
-### Recommended Configuration
-
-```xml
-<!-- .vcxproj settings for C++23 security-critical code -->
-<PropertyGroup>
-  <LanguageStandard>stdcpp23preview</LanguageStandard>
-  <PlatformToolset>v143</PlatformToolset>
-  <RuntimeLibrary>MultiThreaded</RuntimeLibrary>  <!-- /MT for LSASS -->
-  <SDLCheck>true</SDLCheck>
-  <ControlFlowGuard>Guard</ControlFlowGuard>
-</PropertyGroup>
-```
+- [ ] **No exceptions** - Fix does not introduce exception-throwing code
+- [ ] **No heap in hot paths** - Fix does not add heap allocation in authentication path
+- [ ] **No STL across boundaries** - Fix does not pass STL types across DLL boundaries
+- [ ] **Stack size stable** - Fix does not significantly increase stack usage
+- [ ] **Error handling preserved** - Fix does not change error handling behavior
+- [ ] **Logic equivalence** - Fix produces identical behavior for all inputs
+- [ ] **Windows API compatible** - Fix works with Windows API types and calling conventions
+- [ ] **Security review** - Complex fixes reviewed for security implications
 
 ---
 
 ## Sources
 
-### Official Documentation
-- [Microsoft Learn - MSVC C++23 Conformance](https://learn.microsoft.com/en-us/cpp/overview/msvc-conformance-improvements?view=msvc-170) (HIGH confidence)
-- [Microsoft Learn - std::expected](https://devblogs.microsoft.com/cppblog/cpp23s-optional-and-expected/) (HIGH confidence)
-- [Microsoft Learn - C++23 Deducing This](https://devblogs.microsoft.com/cppblog/cpp23-deducing-this/) (HIGH confidence)
-- [Microsoft Learn - Compiler Options](https://learn.microsoft.com/en-us/cpp/build/reference/compiler-options) (HIGH confidence)
+### C++ Standards and Guidelines
+- [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) - HIGH confidence
+- [cppreference - C++23](https://en.cppreference.com/w/cpp/23) - HIGH confidence
+- [cppreference - C++17](https://en.cppreference.com/w/cpp/17) - HIGH confidence
 
-### Community References
-- [cppreference - C++23 Compiler Support](https://en.cppreference.com/w/cpp/compiler_support/23) (HIGH confidence)
-- [cppreference - std::expected](https://en.cppreference.com/w/cpp/utility/expected) (HIGH confidence)
-- [C++ Stories - C++23 Library Features](https://www.cppstories.com/2024/cpp23_lib/) (MEDIUM confidence)
-- [Modernes C++ - std::expected](https://www.modernescpp.com/index.php/c23-a-new-way-of-error-handling-with-stdexpected/) (MEDIUM confidence)
+### Microsoft Documentation
+- [Microsoft Learn - MSVC C++ Conformance](https://learn.microsoft.com/en-us/cpp/overview/msvc-conformance-improvements) - HIGH confidence
+- [Microsoft Learn - C++ Best Practices](https://learn.microsoft.com/en-us/cpp/cpp/) - HIGH confidence
 
-### Bug Reports and Issues
-- [GitHub - MSVC std::stacktrace issues](https://developercommunity.visualstudio.com/t/10692305) (MEDIUM confidence)
-- [GitHub - MSVC std::print UTF-8 bug](https://github.com/microsoft/STL/issues/5894) (HIGH confidence)
-- [GitHub - modules-report MSVC status](https://github.com/royjacobson/modules-report) (MEDIUM confidence)
+### SonarQube Rules
+- [SonarQube C++ Rules](https://rules.sonarsource.com/cpp/) - HIGH confidence
+- SonarQube analysis of EIDAuthentication codebase - HIGH confidence (project-specific)
 
-### Security References
-- [Microsoft Security Blog - LSASS Protection](https://www.microsoft.com/en-us/security/blog/2022/10/05/detecting-and-preventing-lsass-credential-dumping-attacks/) (HIGH confidence)
-- [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) (HIGH confidence)
+### Code Analysis
+- EIDAuthentication codebase analysis - HIGH confidence (direct analysis)
+- SonarQube issue counts from analysis report - HIGH confidence
 
 ---
 
-## Summary
-
-For EIDAuthentication C++23 modernization in a security-critical LSASS context:
-
-1. **Must Adopt (P1):** `std::expected`, `if consteval`, `std::to_underlying`, `std::unreachable`, Deducing `this`
-2. **Should Adopt (P2):** `std::format`, `constexpr` enhancements, `auto(x)`, `std::string::contains()`
-3. **Avoid:** Exceptions, `std::print` in LSASS, modules (`import std`), `std::stacktrace`, `std::flat_map`
-4. **Toolset:** v143 (VS 2022) for Windows 7 compatibility; v145 drops Win7
-5. **Flag:** `/std:c++23preview` (stable `/std:c++23` not yet available)
-
-**Confidence Assessment:** HIGH - All findings verified against official Microsoft documentation, cppreference, and community sources.
-
----
-
-*Feature research for: C++23 modernization of Windows security-critical codebase*
-*Researched: 2026-02-15*
+*Feature research for: SonarQube issue remediation in C++23 Windows LSASS codebase*
+*Researched: 2026-02-18*

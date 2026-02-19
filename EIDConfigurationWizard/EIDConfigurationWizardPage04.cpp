@@ -76,13 +76,13 @@ BOOL PopulateListViewCheckData(HWND hWndListViewList, HWND hWndListViewCheck)
 		grp.iGroupId = index;
 		switch(index)
 		{
-		case CHECK_SIGNATUREONLY:
+		case static_cast<int>(CheckType::CHECK_SIGNATUREONLY):
 			LoadString(g_hinst,IDS_04TESTSIGNATURE, szMessage, ARRAYSIZE(szMessage));
 			break;
-		case CHECK_TRUST:
+		case static_cast<int>(CheckType::CHECK_TRUST):
 			LoadString(g_hinst,IDS_04TESTTRUST, szMessage, ARRAYSIZE(szMessage));
 			break;
-		case CHECK_CRYPTO:
+		case static_cast<int>(CheckType::CHECK_CRYPTO):
 			LoadString(g_hinst,IDS_04TESTCRYPTO, szMessage, ARRAYSIZE(szMessage));
 			break;
 		default:

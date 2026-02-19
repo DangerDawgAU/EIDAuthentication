@@ -36,6 +36,7 @@
 #include "guid.h"
 #include "StringConversion.h"
 #include <string>
+#include <array>
 
 #pragma comment(lib,"Dbghelp")
 
@@ -240,7 +241,7 @@ void EIDCardLibraryDumpMemoryEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, 
 {
 	DWORD i;
 	DWORD j;
-	UCHAR buffer[10];
+	std::array<UCHAR, 10> buffer;
 	WCHAR szFormat[] = L"%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d";
 	WCHAR szFormat2[] = L"%c%c%c%c%c%c%c%c%c%c";
 	PUCHAR memory = (PUCHAR) memoryParam;

@@ -30,7 +30,7 @@
 #include <intsafe.h>
 #include <utility>
 
-#define MAX_ULONG  ((ULONG)(-1))
+constexpr ULONG MAX_ULONG = static_cast<ULONG>(-1);
 
 // The indexes of each of the fields in our credential provider's tiles.
 enum SAMPLE_FIELD_ID 

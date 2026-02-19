@@ -103,6 +103,7 @@
     <Link>
       <OutputFile>$(OutDir)$(ProjectName).dll</OutputFile>
       <ModuleDefinitionFile>EIDAuthenticationPackage.def</ModuleDefinitionFile>
+      <AdditionalDependencies>netapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>%(DelayLoadDLLs);advapi32.dll</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -130,6 +131,7 @@
     <Link>
       <OutputFile>$(OutDir)$(ProjectName).dll</OutputFile>
       <ModuleDefinitionFile>EIDAuthenticationPackage.def</ModuleDefinitionFile>
+      <AdditionalDependencies>netapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>%(DelayLoadDLLs);advapi32.dll</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -159,6 +161,7 @@
       <AdditionalOptions>/LTCG  %(AdditionalOptions)</AdditionalOptions>
       <OutputFile>$(OutDir)$(ProjectName).dll</OutputFile>
       <ModuleDefinitionFile>EIDAuthenticationPackage.def</ModuleDefinitionFile>
+      <AdditionalDependencies>netapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>%(DelayLoadDLLs);advapi32.dll</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -192,6 +195,7 @@
       <AdditionalOptions>/LTCG  %(AdditionalOptions)</AdditionalOptions>
       <OutputFile>$(OutDir)$(ProjectName).dll</OutputFile>
       <ModuleDefinitionFile>EIDAuthenticationPackage.def</ModuleDefinitionFile>
+      <AdditionalDependencies>netapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>%(DelayLoadDLLs);advapi32.dll</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>

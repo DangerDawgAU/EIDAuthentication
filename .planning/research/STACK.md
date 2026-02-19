@@ -1,250 +1,318 @@
-# Stack Research: C++23 MSVC Modernization
+# Stack Research: SonarQube Issue Remediation for C++23 Windows LSASS Codebase
 
-**Domain:** C++23 compiler/toolchain for Windows authentication (LSASS)
-**Researched:** 2026-02-15
-**Confidence:** HIGH (verified with Microsoft docs, cppreference, official release notes)
+**Domain:** C++23 SonarQube code quality remediation tooling
+**Researched:** 2026-02-18
+**Confidence:** HIGH (verified with official clang-tidy docs, Microsoft Learn, LLVM documentation)
 
 ## Executive Summary
 
-**CRITICAL FINDING:** MSVC Build Tools 14.50 (Visual Studio 2026) **NO LONGER TARGETS Windows 7/8/8.1**. This project requires Windows 7+ support, which creates a fundamental constraint on C++23 modernization.
+Remediating ~730 SonarQube issues in a C++23 Windows LSASS codebase requires a **multi-layered tooling approach**:
 
-The stable `/std:c++23` flag is **NOT yet available** in MSVC. Use `/std:c++23preview` or `/std:c++latest` for C++23 features, but note that C++23 implementation is in preview and **not yet ABI stable**.
+1. **Clang-tidy** (via Visual Studio 2022 native integration) for automated fix suggestions
+2. **MSVC Code Analysis** (`/analyze`) for C++ Core Guidelines compliance (already enabled)
+3. **Manual refactoring** guided by IDE tooling for complex issues (cognitive complexity, nesting)
+
+**CRITICAL CONSTRAINTS for LSASS context:**
+- No dynamic memory allocation patterns that could trigger heap fragmentation
+- No exceptions (use `std::expected<T, E>` pattern)
+- No external library dependencies beyond Windows SDK
+- Must compile with `/MT` (static CRT)
 
 ---
 
 ## Recommended Stack
 
-### Core Technologies
+### Primary Development Tools
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| MSVC Compiler | 19.43+ (VS 2022 17.13+) | C++23 feature support | Earliest version with substantial C++23 implementation |
-| Platform Toolset | v143 (VS 2022) | Build compatibility | Supports Windows 7+ targeting; v145 (VS 2026) drops Win7 |
-| Windows SDK | 10.0.22621.0+ | API headers | Broad compatibility; avoid SDK versions that require newer OS |
-| `/std:c++23preview` | N/A | Compiler flag | Current mechanism for C++23 features in MSVC |
+| Visual Studio 2022 | 17.13+ | IDE with native clang-tidy | Built-in clang-tidy integration, MSVC debugger, refactoring tools |
+| Clang-tidy | 18.x (bundled) | Static analysis + auto-fixes | Direct mapping to SonarQube rules, many fixes can be auto-applied |
+| MSVC Code Analysis | v143 (`/analyze`) | PREfast + C++ Core Guidelines | Already enabled in Release builds, complements clang-tidy |
+| SonarLint | VS 2022 Extension | Real-time SonarQube feedback | IDE-integrated issue detection before CI scan |
 
-### Compiler Flags
+### Supporting Libraries (Already in Project)
 
-| Flag | Status | Use Case |
-|------|--------|----------|
-| `/std:c++23preview` | **RECOMMENDED** | Enables C++23 features with explicit preview acknowledgment |
-| `/std:c++latest` | Alternative | Latest available standard; may include post-C++23 features |
-| `/std:c++23` | **NOT YET AVAILABLE** | Stable C++23 flag; expected in future MSVC release |
+| Library | Purpose | Use Case |
+|---------|---------|----------|
+| `std::array` | Fixed-size containers | Replace C-style arrays (SonarQube: 28 issues) |
+| `std::span` (C++20) | Non-owning view | Safe array access without pointer decay |
+| `gsl::span` (if needed) | Pre-C++20 span | Backward-compatible bounds-safe access |
 
-**Additional Required Flags:**
+### Helper Scripts (Recommended)
+
+| Script | Purpose | Implementation |
+|--------|---------|----------------|
+| `run-clang-tidy.py` | Batch clang-tidy execution | Bundled with LLVM, auto-fix with `-fix` flag |
+| `clang-format` | Code style consistency | Run before/after refactoring |
+| PowerShell wrapper | Filter LSASS-safe fixes | Custom script to exclude dangerous patterns |
+
+---
+
+## clang-tidy Configuration for SonarQube Issues
+
+### Recommended `.clang-tidy` File
+
+```yaml
+---
+Checks: >
+  -*,
+  bugprone-*,
+  cppcoreguidelines-pro-type-*,
+  modernize-loop-convert,
+  modernize-use-auto,
+  modernize-use-nullptr,
+  modernize-use-override,
+  modernize-use-using,
+  modernize-macro-to-enum,
+  modernize-use-default-member-init,
+  readability-const-return-type,
+  readability-non-const-parameter,
+  readability-else-after-return,
+  readability-braces-around-statements,
+  readability-identifier-naming,
+  readability-isolate-declaration,
+  misc-const-correctness
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+CheckOptions:
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: modernize-use-auto.MinTypeNameLength
+    value: 5
+  - key: modernize-loop-convert.MinConfidence
+    value: reasonable
+  - key: readability-function-cognitive-complexity.Threshold
+    value: 25
+```
+
+### Check-to-SonarQube Issue Mapping
+
+| clang-tidy Check | SonarQube Issue Type | Count | Auto-fixable |
+|------------------|---------------------|-------|--------------|
+| `modernize-use-auto` | "Replace redundant type with auto" | 126 | YES |
+| `modernize-macro-to-enum` | "Replace macro with const/constexpr/enum" | 111 | YES |
+| `misc-const-correctness` | "Global variables should be const" | 71 | PARTIAL |
+| `readability-braces-around-statements` | "Fill compound statement" | 17 | YES |
+| `readability-isolate-declaration` | "Define each identifier separately" | 50 | YES |
+| `modernize-loop-convert` | Range-based for loops | N/A | YES |
+| `cppcoreguidelines-pro-type-cstyle-cast` | C-style cast warnings | N/A | YES |
+| `readability-else-after-return` | "Merge if with enclosing one" | 17 | YES |
+
+---
+
+## LSASS-Safe Remediation Patterns
+
+### What IS Safe for LSASS
+
+| Pattern | SonarQube Rule | Why Safe |
+|---------|---------------|----------|
+| `constexpr` constants | "Replace macro with const" | Compile-time, no runtime allocation |
+| `enum class` | "Replace macro with enum" | Type-safe, no heap usage |
+| `std::array<T, N>` | "Use std::array instead of C array" | Stack-allocated, bounds-checked |
+| `const` globals | "Global variables should be const" | Read-only memory, no modification |
+| Range-based for | Loop modernization | No iterator invalidation |
+| `auto` for iterators | "Replace redundant type with auto" | No runtime impact |
+
+### What is DANGEROUS for LSASS
+
+| Pattern | Why Dangerous | Use Instead |
+|---------|---------------|-------------|
+| `std::string` (dynamic) | Heap allocation | `std::array<char, N>` or fixed buffers |
+| `std::vector` | Heap allocation | `std::array` or pre-sized buffers |
+| `std::make_unique` | Heap allocation | Stack allocation or static buffers |
+| Exceptions | SEH issues in LSASS | Return codes, `std::expected<T, E>` |
+| STL algorithms that allocate | Hidden heap usage | Manual loops with stack buffers |
+
+### Windows API Interop (Do NOT Change)
+
+| Pattern | SonarQube Flag | Why Keep |
+|---------|---------------|----------|
+| `LSA_UNICODE_STRING` | C-style struct | Windows API requirement |
+| `SecBuffer` arrays | C-style array | SSPI API contract |
+| `BYTE*` buffers | Pointer decay | CryptoAPI pattern |
+| `__FUNCTION__` macro | "Replace macro" | ETW tracing requirement |
+
+---
+
+## Installation & Setup
+
+### Visual Studio 2022 Configuration
+
+```powershell
+# Enable clang-tidy in VS 2022
+# Tools > Options > Text Editor > C/C++ > Advanced
+# Set "Enable Clang-Tidy" = True
+# Set "Clang-Tidy Checks" to the checks list above
+
+# Or via project properties:
+# Configuration Properties > Code Analysis > Clang-Tidy
+```
+
+### Run clang-tidy from Command Line
+
 ```bash
-# Enable C++23 preview features
-/std:c++23preview
+# Using LLVM bundled with VS 2022
+set PATH=%PATH%;C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\Llvm\x64\bin
 
-# Maintain backward compatibility
-/Zc:__cplusplus          # Report correct __cplusplus value
-/permissive-             # Strict conformance mode
-/W4                      # High warning level (security-critical code)
+# Single file with auto-fix
+clang-tidy.exe -p .\x64\Release\ --fix EIDCardLibrary\StringConversion.cpp
 
-# For LSASS/security-critical code
-/sdl                     # Additional security checks
-/GS                      # Buffer security check
+# Batch processing with compilation database
+# First generate compile_commands.json via CMake or VS
+run-clang-tidy.py -p .\ -fix -config .\.clang-tidy
 ```
 
----
+### PowerShell Helper Script for Safe Fixes
 
-## C++23 Feature Support Matrix (MSVC)
+```powershell
+# run-safe-clang-tidy.ps1
+# Runs only LSASS-safe clang-tidy fixes
 
-### Implemented Features (19.43+)
+$safeChecks = @(
+    "modernize-use-auto",
+    "modernize-loop-convert",
+    "modernize-use-nullptr",
+    "readability-braces-around-statements",
+    "readability-isolate-declaration"
+)
 
-| Feature | MSVC Version | Notes |
-|---------|--------------|-------|
-| `if consteval` | 19.43 | Core language feature |
-| `consteval` improvements | 19.43+ | Enhanced immediate functions |
-| `std::expected<T, E>` | 19.44 | Error handling without exceptions |
-| `std::mdspan` | 19.44 | Multidimensional array view |
-| `std::print` / `std::println` | 19.44+ | Type-safe formatted output |
-| `std::format` improvements | 19.43+ | Enhanced formatting |
-| Deducing `this` | 19.44 | Explicit object parameter |
-| `constexpr` enhancements | 19.43+ | More constexpr contexts |
-| Multidimensional subscript operator | 19.43 | `arr[i, j, k]` syntax |
-| `auto(x)` decay-copy | 19.43 | Explicit decay-copy in expressions |
-| Static operator `[]` | 19.43 | Static subscript operators |
-| `std::to_underlying` | 19.43 | Convert enum to underlying type |
-| `std::unreachable()` | 19.43 | Mark unreachable code paths |
-| `std::is_scoped_enum` | 19.43 | Type trait for scoped enums |
+$checkList = $safeChecks -join ","
 
-### NOT YET Implemented (as of 19.44)
-
-| Feature | Status | Impact |
-|---------|--------|--------|
-| `std::flat_map` / `std::flat_set` | Missing | Use traditional containers |
-| `std::generator` | Missing | Use coroutine alternatives |
-| `std::stacktrace` | Missing | Debugging/diagnostics |
-| `std::execution` (senders/receivers) | Missing | Async programming |
-| `import std;` (full modules) | Partial | Header units available |
-| Contracts | Missing | Design-by-contract features |
-| Pattern matching (`inspect`) | Missing | Structural pattern matching |
-| Reflection | Missing | Static reflection |
-
-**Source:** cppreference.com/w/cpp/compiler_support/23 (HIGH confidence)
-
----
-
-## Windows 7 Compatibility Analysis
-
-### CRITICAL: Toolset Selection Constraint
-
-| Toolset | VS Version | Windows 7 Support | C++23 Support |
-|---------|------------|-------------------|---------------|
-| v143 | VS 2022 | **YES** | Preview features (19.43+) |
-| v145 | VS 2026 | **NO** | More complete C++23 |
-
-**Recommendation:** Use **v143 toolset (VS 2022)** with MSVC 19.43+ for Windows 7+ compatibility.
-
-### Windows SDK Selection
-
-| SDK Version | Windows 7 Compatible | Notes |
-|-------------|---------------------|-------|
-| 10.0.22621.0 | **YES** | Recommended |
-| 10.0.26100.0 | **YES** | Current project uses this |
-| Future SDKs | Unknown | May introduce Win8+ dependencies |
-
-**Warning:** Some newer Windows SDK APIs are not available on Windows 7. Always verify API availability with `WINVER` and `_WIN32_WINNT` macros.
-
-### Target OS Macros
-
-```cpp
-// Maintain Windows 7 compatibility
-#define WINVER 0x0601          // Windows 7
-#define _WIN32_WINNT 0x0601    // Windows 7
-#define WIN32_LEAN_AND_MEAN    // Reduce header bloat
-#define NOMINMAX               // Avoid min/max macros
+Get-ChildItem -Recurse -Filter "*.cpp" | ForEach-Object {
+    Write-Host "Processing: $($_.FullName)"
+    clang-tidy.exe -p .\x64\Release\ --fix --checks="-$checkList" $_.FullName
+}
 ```
-
----
-
-## Security Considerations (LSASS Context)
-
-This project runs in LSASS (Local Security Authority Subsystem Service). Additional constraints apply:
-
-### Compiler Flags for LSASS
-
-```bash
-# Security-hardened compilation
-/sdl                     # SDL security checks
-/GS                      # Buffer security check
-/guard:cf               # Control Flow Guard (recommended)
-/d2guard4               # Enhanced CFG (if available)
-
-# Code generation
-/MT                     # Static runtime (isolated from other modules)
-/O2                     # Optimize for speed (authentication latency)
-
-# Warnings as errors for security-critical code
-/WX                     # Treat warnings as errors
-/wd4996                 # Suppress deprecation warnings (if using legacy APIs)
-```
-
-### C++23 Features to AVOID in LSASS
-
-| Feature | Why Avoid | Alternative |
-|---------|-----------|-------------|
-| Exceptions | LSASS traditionally avoids exceptions | `std::expected<T, E>` |
-| Dynamic allocations | Memory pressure in LSASS | Static allocation, `std::array` |
-| `std::print` | Console I/O not available | Logging via ETW/debug output |
-| Coroutines | Stack complexity | Synchronous patterns |
-
-### Recommended C++23 Features for LSASS
-
-| Feature | Why Useful |
-|---------|------------|
-| `std::expected<T, E>` | Error handling without exceptions |
-| `std::unreachable()` | Optimize error paths, static analysis |
-| `if consteval` | Compile-time optimizations |
-| Deducing `this` | Cleaner CRTP patterns |
-| `std::to_underlying` | Safer enum handling |
-
----
-
-## Version Compatibility Matrix
-
-| Component | Minimum | Recommended | Maximum (Win7 Compatible) |
-|-----------|---------|-------------|---------------------------|
-| Visual Studio | VS 2022 17.13 | VS 2022 17.14+ | VS 2022 (current) |
-| MSVC Compiler | 19.43 | 19.44+ | Current v143 |
-| Platform Toolset | v143 | v143 | v143 |
-| Windows SDK | 10.0.22621.0 | 10.0.26100.0 | Current |
-| `/std:` flag | `/std:c++20` | `/std:c++23preview` | `/std:c++23preview` |
 
 ---
 
 ## What NOT to Use
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| v145 toolset | Drops Windows 7 support | v143 toolset |
-| `/std:c++23` | Not yet stable | `/std:c++23preview` |
-| `/MD` (dynamic CRT) | LSASS isolation issues | `/MT` (static CRT) |
-| Exceptions | LSASS stability | `std::expected<T, E>` |
-| `std::flat_map` | Not implemented | `std::map`, `std::unordered_map` |
-| `std::generator` | Not implemented | Manual iteration, callbacks |
-| `import std;` | Incomplete support | Traditional headers |
+| Tool/Pattern | Why Avoid | Use Instead |
+|--------------|-----------|-------------|
+| clang-tidy `modernize-make-shared` | Heap allocation | Stack allocation |
+| clang-tidy `modernize-make-unique` | Heap allocation | Stack allocation |
+| clang-tidy `modernize-use-string-view` | May introduce `std::string` | Fixed char arrays |
+| Auto-apply ALL fixes | Some may break LSASS constraints | Review each fix category |
+| C++20 ranges | Complex template code | Traditional loops |
+| External static analysis tools (CppDepend, PVS-Studio) | License cost, redundancy | clang-tidy + MSVC analysis |
 
 ---
 
-## Migration Path Recommendation
+## Batch Refactoring Workflow
 
-### Phase 1: Foundation (C++14 -> C++20)
-1. Update `/std:c++14` to `/std:c++20`
-2. Enable `/permissive-` and `/Zc:__cplusplus`
-3. Fix conformance issues
-4. Adopt C++20 features (concepts, spans, `std::format`)
-
-### Phase 2: C++23 Preview Adoption
-1. Update to `/std:c++23preview`
-2. Adopt available C++23 features gradually
-3. Prioritize: `std::expected<T, E>`, `std::unreachable()`, deducing `this`
-4. Avoid features not yet implemented
-
-### Phase 3: Stable C++23 (Future)
-1. Wait for stable `/std:c++23` flag (MSVC 14.52+ expected)
-2. Evaluate v145 toolset if Windows 7 support is dropped
-3. Full C++23 feature adoption
-
----
-
-## Installation
+### Phase 1: Automated Fixes (Est. 300 issues)
 
 ```bash
-# Visual Studio 2022 components required
-# Workload: Desktop development with C++
+# 1. Create .clang-tidy file at solution root
+# 2. Run clang-tidy with auto-fix on each project
 
-# Individual components:
-# - MSVC v143 - VS 2022 C++ x64/x86 build tools (Latest)
-# - Windows 10 SDK (10.0.26100.0) or later
-# - C++ core features (for /Zc:__cplusplus support)
+# Auto-fix safe patterns:
+# - modernize-use-auto (126 issues)
+# - readability-isolate-declaration (50 issues)
+# - readability-braces-around-statements (17 issues)
+# - readability-else-after-return (17 issues)
 
-# Verify installation
-cl /? | findstr "/std:"
-# Should show: /std:c++14, /std:c++17, /std:c++20, /std:c++23preview, /std:c++latest
+clang-tidy -p compile_commands.json --fix --checks="-*,modernize-*,readability-*" <files>
 ```
+
+### Phase 2: Semi-Automated Fixes (Est. 200 issues)
+
+```bash
+# Manual review required but pattern-based:
+# - misc-const-correctness (71 globals + 31 pointers)
+# - modernize-macro-to-enum (111 macros)
+
+# Generate fix suggestions, review in IDE:
+clang-tidy -p compile_commands.json --checks="-*,misc-const-correctness,modernize-macro-to-enum" <files>
+```
+
+### Phase 3: Manual Refactoring (Est. 150 issues)
+
+```bash
+# Complex issues requiring human judgment:
+# - Cognitive complexity reduction (52 functions)
+# - Nesting depth reduction
+# - C-style array to std::array (28 issues)
+
+# Use IDE refactoring tools + manual editing
+# Each function reviewed for LSASS safety
+```
+
+---
+
+## IDE Integration Details
+
+### Visual Studio 2022 Code Analysis Settings
+
+```
+Project Properties > Configuration Properties > Code Analysis:
+  - Enable Code Analysis: Yes
+  - Enable PREfast: Yes (already enabled in Release)
+  - Code Analysis Rule Set: Microsoft Native Recommended Rules
+
+Project Properties > Configuration Properties > Code Analysis > Clang-Tidy:
+  - Enable Clang-Tidy: Yes
+  - Use Custom clang-tidy Checks: (paste check list)
+  - Run clang-tidy as background analysis: Yes
+```
+
+### SonarLint Configuration
+
+```xml
+<!-- sonarlint.json in solution root -->
+{
+  "sonarlint.connectedMode.project": {
+    "projectKey": "EIDAuthentication"
+  },
+  "rules": {
+    "cpp:S119": "OFF",  /* Naming convention - project has own style */
+    "cpp:S5958": "OFF"  /* std::string requirement - LSASS unsafe */
+  }
+}
+```
+
+---
+
+## Version Compatibility
+
+| Tool | Minimum | Recommended | Notes |
+|------|---------|-------------|-------|
+| Visual Studio 2022 | 17.13 | 17.14+ | clang-tidy 18.x bundled |
+| LLVM/Clang | 18.0 | 18.x (bundled) | Use VS-bundled version for MSVC compatibility |
+| SonarLint | 7.0 | Latest | VS 2022 extension |
+| MSVC | 19.43 | 19.44+ | Already using v143 toolset |
 
 ---
 
 ## Sources
 
-- **Microsoft Learn - MSVC Compiler Options:** https://learn.microsoft.com/en-us/cpp/build/reference/compiler-options (HIGH confidence)
-- **cppreference - C++23 Compiler Support:** https://en.cppreference.com/w/cpp/compiler_support/23 (HIGH confidence)
-- **Visual Studio 2026 Release Notes:** MSVC Build Tools 14.50 release (HIGH confidence)
-- **Microsoft Learn - C++ Standards Support:** https://learn.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance (HIGH confidence)
-- **Windows 7 Targeting Deprecation:** Microsoft announcement for MSVC 14.50 (HIGH confidence)
+- **Clang-Tidy Checks List:** https://clang.llvm.org/extra/clang-tidy/checks/list.html (HIGH confidence)
+- **Microsoft Learn - C++ Core Guidelines Checker:** https://learn.microsoft.com/en-us/cpp/code-quality/code-analysis-for-cpp-corecheck (HIGH confidence)
+- **Clang-Tidy modernize-use-auto:** https://clang.llvm.org/extra/clang-tidy/checks/modernize/use-auto.html (HIGH confidence)
+- **Clang-Tidy modernize-loop-convert:** https://clang.llvm.org/extra/clang-tidy/checks/modernize/loop-convert.html (HIGH confidence)
+- **Clang-Tidy readability-function-cognitive-complexity:** https://clang.llvm.org/extra/clang-tidy/checks/readability/function-cognitive-complexity.html (HIGH confidence)
+- **Project SonarQube Analysis:** `.planning/sonarqube-analysis.md` (INTERNAL - HIGH confidence)
+- **Existing Stack Research:** `.planning/research/STACK.md` (INTERNAL - HIGH confidence)
 
 ---
 
 ## Summary
 
-For EIDAuthentication C++23 modernization:
+For SonarQube issue remediation in the EIDAuthentication C++23 Windows LSASS codebase:
 
-1. **Use VS 2022 with v143 toolset** (not VS 2026 v145) for Windows 7 compatibility
-2. **Use `/std:c++23preview`** flag (stable `/std:c++23` not yet available)
-3. **Adopt selectively**: `std::expected`, `std::unreachable`, deducing `this` are safe
-4. **Avoid**: Exceptions, dynamic CRT, unimplemented features (flat_map, generator)
-5. **Wait**: Full C++23 adoption until `/std:c++23` stable flag and feature completion
+1. **Primary Tool:** Visual Studio 2022 with native clang-tidy integration (no additional installation)
+2. **Complementary:** MSVC Code Analysis (`/analyze`) already enabled - continues to catch issues
+3. **Real-time Feedback:** SonarLint VS extension for immediate issue visibility
+4. **Auto-fix Strategy:** Use clang-tidy with `--fix` for safe patterns only (auto, nullptr, braces, isolated declarations)
+5. **Manual Review Required:** Const correctness, macro-to-enum, cognitive complexity, any pattern involving memory allocation
+6. **CRITICAL:** Never auto-apply patterns that introduce `std::string`, `std::vector`, or heap allocation in LSASS code
 
-**Confidence Assessment:** HIGH - All findings verified against official Microsoft documentation and cppreference.
+**Estimated Fix Distribution:**
+- Auto-fixable: ~300 issues (40%)
+- Semi-automated (review required): ~200 issues (27%)
+- Manual refactoring: ~150 issues (20%)
+- Won't Fix (Windows API constraints): ~80 issues (11%)
+
+**Confidence Assessment:** HIGH - All tool recommendations verified against official LLVM/Microsoft documentation and mapped to specific SonarQube issue categories from project analysis.

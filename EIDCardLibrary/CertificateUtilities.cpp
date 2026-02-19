@@ -26,6 +26,7 @@
 #include "EIDCardLibrary.h"
 #include "CertificateUtilities.h"
 #include "Tracing.h"
+#include <array>
 
 #pragma comment (lib,"Scarddlg")
 #pragma comment (lib,"Rpcrt4")
@@ -393,8 +394,8 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 	HCRYPTKEY hKey = NULL;  // Windows handle type - keep as NULL
 	CRYPT_KEY_PROV_INFO KeyProvInfo = {0};
 	LPTSTR szContainerName=nullptr;
-    FILETIME ftTime;   
-	BYTE SerialNumber[8];  
+    FILETIME ftTime;
+	std::array<BYTE, 8> SerialNumber;
 	DWORD dwKeyType = 0;
 	DWORD cbPublicKeyInfo = 0;
 	BOOL pfCallerFreeProvOrNCryptKey = FALSE;
@@ -700,17 +701,17 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			SystemTimeToFileTime(&pCertificateInfo->EndTime, &ftTime);   
 			CertInfo.NotAfter = ftTime;   
 
-			// Create Random Serial Number   
-			if (!CryptGenRandom(hCryptProvNewCertificate, 8, SerialNumber))   
-			{   
+			// Create Random Serial Number
+			if (!CryptGenRandom(hCryptProvNewCertificate, static_cast<DWORD>(SerialNumber.size()), SerialNumber.data()))
+			{
 				dwError = GetLastError();
 				EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"CryptGenRandom 0x%08X", dwError);
 				__leave;
 			}   
 
-			// Set Serial Number of Certificate   
-			CertInfo.SerialNumber.cbData = 8;   
-			CertInfo.SerialNumber.pbData = SerialNumber;   
+			// Set Serial Number of Certificate
+			CertInfo.SerialNumber.cbData = static_cast<DWORD>(SerialNumber.size());
+			CertInfo.SerialNumber.pbData = SerialNumber.data();   
 			
 			// public key
 			//////////////

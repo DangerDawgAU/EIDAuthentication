@@ -99,7 +99,7 @@ int CContainerHolderTest::GetIconIndex() const
 
 BOOL CContainerHolderTest::HasSignatureUsageOnly() const
 {
-	return !(_pContainer->GetKeySpec() == AT_KEYEXCHANGE || GetPolicyValue(AllowSignatureOnlyKeys));
+	return !(_pContainer->GetKeySpec() == AT_KEYEXCHANGE || GetPolicyValue(GPOPolicy::AllowSignatureOnlyKeys));
 }
 
 BOOL CContainerHolderTest::IsTrusted()
@@ -132,24 +132,24 @@ CContainer* CContainerHolderTest::GetContainer() const
 
 int CContainerHolderTest::GetCheckCount() const
 {
-	return CHECK_MAX;
+	return static_cast<int>(CheckType::CHECK_MAX);
 }
 int CContainerHolderTest::GetImage(DWORD dwCheckNum) const
 {
 
 	switch(dwCheckNum)
 	{
-	case CHECK_SIGNATUREONLY:
+	case static_cast<DWORD>(CheckType::CHECK_SIGNATUREONLY):
 		if (!HasSignatureUsageOnly())
 			return CHECK_SUCCESS;
 		else
 			return CHECK_FAILED;
-	case CHECK_TRUST:
+	case static_cast<DWORD>(CheckType::CHECK_TRUST):
 		if (_IsTrusted)
 			return CHECK_SUCCESS;
 		else
 			return CHECK_FAILED;
-	case CHECK_CRYPTO:
+	case static_cast<DWORD>(CheckType::CHECK_CRYPTO):
 		if (_SupportEncryption)
 			return CHECK_SUCCESS;
 		else
@@ -167,13 +167,13 @@ PTSTR CContainerHolderTest::GetDescription(DWORD dwCheckNum) const
 	szDescription[0] = 0;
 	switch(dwCheckNum)
 	{
-	case CHECK_SIGNATUREONLY:
+	case static_cast<DWORD>(CheckType::CHECK_SIGNATUREONLY):
 		if (!HasSignatureUsageOnly())
 			LoadString(g_hinst,IDS_04SIGNATUREONLYOK,szDescription, dwWords);
 		else
 			LoadString(g_hinst,IDS_04SIGNATUREONLYNOK,szDescription, dwWords);
 		break;
-	case CHECK_TRUST:
+	case static_cast<DWORD>(CheckType::CHECK_TRUST):
 		if (_IsTrusted)
 			LoadString(g_hinst,IDS_04TRUSTOK,szDescription, dwWords);
 		else
@@ -184,7 +184,7 @@ PTSTR CContainerHolderTest::GetDescription(DWORD dwCheckNum) const
 			}
 		}
 		break;
-	case CHECK_CRYPTO:
+	case static_cast<DWORD>(CheckType::CHECK_CRYPTO):
 		if (_SupportEncryption)
 			LoadString(g_hinst,IDS_04ENCRYPTIONOK,szDescription, dwWords);
 		else
@@ -204,13 +204,13 @@ PTSTR CContainerHolderTest::GetSolveDescription(DWORD dwCheckNum) const
 	szDescription[0] = 0;
 	switch(dwCheckNum)
 	{
-	case CHECK_SIGNATUREONLY:
+	case static_cast<DWORD>(CheckType::CHECK_SIGNATUREONLY):
 		if (HasSignatureUsageOnly())
 		{
 			LoadString(g_hinst,IDS_04CHANGESIGNATUREPOLICY,szDescription, dwWords);
 		}
 		break;
-	case CHECK_TRUST:
+	case static_cast<DWORD>(CheckType::CHECK_TRUST):
 		if (!_IsTrusted)
 		{
 			if (_dwTrustError & CERT_TRUST_IS_UNTRUSTED_ROOT || _dwTrustError & CERT_TRUST_IS_PARTIAL_CHAIN)
@@ -267,11 +267,11 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 	DWORD dwError = 0;
 	switch(dwCheckNum)
 	{
-	case CHECK_SIGNATUREONLY:
+	case static_cast<DWORD>(CheckType::CHECK_SIGNATUREONLY):
 		{
 			if (IsElevated())
 			{
-				fReturn = SetPolicyValue(AllowSignatureOnlyKeys, 1);
+				fReturn = SetPolicyValue(GPOPolicy::AllowSignatureOnlyKeys, 1);
 				if (!fReturn) dwError = GetLastError();
 			}
 			else
@@ -280,7 +280,7 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 			}
 		}
 		break;
-	case CHECK_TRUST:
+	case static_cast<DWORD>(CheckType::CHECK_TRUST):
 		if (_dwTrustError & CERT_TRUST_IS_UNTRUSTED_ROOT || _dwTrustError & CERT_TRUST_IS_PARTIAL_CHAIN)
 		{
 			if (IsElevated())
@@ -310,7 +310,7 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 		{
 			if (IsElevated())
 			{
-				fReturn = SetPolicyValue(AllowCertificatesWithNoEKU, 1);
+				fReturn = SetPolicyValue(GPOPolicy::AllowCertificatesWithNoEKU, 1);
 				if (!fReturn) dwError = GetLastError();
 			}
 			else
@@ -322,7 +322,7 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 		{
 			if (IsElevated())
 			{
-				fReturn = SetPolicyValue(AllowTimeInvalidCertificates, 1);
+				fReturn = SetPolicyValue(GPOPolicy::AllowTimeInvalidCertificates, 1);
 				if (!fReturn) dwError = GetLastError();
 			}
 			else

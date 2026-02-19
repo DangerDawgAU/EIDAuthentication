@@ -9,7 +9,8 @@ This roadmap transforms the EIDAuthentication Windows smart card authentication 
 - **v1.0 C++23 Modernization** - Phases 1-6 (COMPLETE 2026-02-16)
 - **v1.1 SonarQube Quality Remediation** - Phases 7-14 (COMPLETE 2026-02-17)
 - **v1.2 Code Modernization** - Phases 15-20 (COMPLETE 2026-02-17)
-- **v1.3 Deep Modernization** - Phases 21-30 (IN PROGRESS)
+- **v1.3 Deep Modernization** - Phases 21-30 (COMPLETE 2026-02-18)
+- **v1.4 SonarQube Zero** - Phases 31-40 (IN PROGRESS)
 
 ## Phases
 
@@ -65,166 +66,159 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 </details>
 
-### v1.3 Deep Modernization (IN PROGRESS)
+### v1.3 Deep Modernization (COMPLETE)
 
-**Milestone Goal:** Resolve remaining SonarQube issues and refactor complex code while adding advanced C++23 features
+<details>
+<summary>v1.3 Phases 21-30 - SHIPPED 2026-02-18</summary>
 
-- [x] **Phase 21: SonarQube Style Issues** - Replace explicit types with auto where clearer (completed 2026-02-17)
-- [x] **Phase 22: SonarQube Macro Issues** - Convert macros to const/constexpr where safe (completed 2026-02-17)
-- [x] **Phase 23: SonarQube Const Issues** - Mark remaining global variables const (completed 2026-02-17)
-- [x] **Phase 24: SonarQube Nesting Issues** - Reduce deep nesting in key functions (completed 2026-02-17)
-- [x] **Phase 25: Code Refactoring - Complexity** - Reduce cognitive complexity and extract helpers (completed 2026-02-17)
-- [x] **Phase 26: Code Refactoring - Duplicates** - Consolidate duplicate code patterns (completed 2026-02-17)
-- [x] **Phase 27: C++23 Advanced Features** - Evaluate modules, flat containers, stacktrace (completed 2026-02-17)
-- [x] **Phase 28: Diagnostics & Logging** - Enhance error messages and tracing (completed 2026-02-17)
-- [x] **Phase 29: Build Verification** - Verify all changes compile and work (completed 2026-02-17)
-- [x] **Phase 30: Final SonarQube Scan** - Confirm improvement in code quality metrics (completed 2026-02-17)
+- [x] **Phase 21: SonarQube Style Issues** - Replace explicit types with auto where clearer (completed 2026-02-17)
+- [x] **Phase 22: SonarQube Macro Issues** - Convert macros to const/constexpr where safe (completed 2026-02-17)
+- [x] **Phase 23: SonarQube Const Issues** - Mark remaining global variables const (completed 2026-02-17)
+- [x] **Phase 24: SonarQube Nesting Issues** - Reduce deep nesting in key functions (completed 2026-02-17)
+- [x] **Phase 25: Code Refactoring - Complexity** - Reduce cognitive complexity and extract helpers (completed 2026-02-17)
+- [x] **Phase 26: Code Refactoring - Duplicates** - Consolidate duplicate code patterns (completed 2026-02-17)
+- [x] **Phase 27: C++23 Advanced Features** - Evaluate modules, flat containers, stacktrace (completed 2026-02-17)
+- [x] **Phase 28: Diagnostics & Logging** - Enhance error messages and tracing (completed 2026-02-17)
+- [x] **Phase 29: Build Verification** - Verify all changes compile and work (completed 2026-02-17)
+- [x] **Phase 30: Final SonarQube Scan** - Confirm improvement in code quality metrics (completed 2026-02-17)
+
+</details>
+
+### v1.4 SonarQube Zero (IN PROGRESS)
+
+**Milestone Goal:** Eliminate all fixable SonarQube issues and document remaining won't-fix with justifications
+
+- [x] **Phase 31: Macro to constexpr** - Convert safe macros to constexpr, document won't-fix for RC/flow-control macros (Complete 2026-02-18)
+- [x] **Phase 32: Auto Conversion** - Convert redundant type declarations to auto where type is obvious (Complete 2026-02-18)
+- [x] **Phase 33: Independent Style Issues** - Fix C-style casts, enum class conversions, Windows API enum won't-fix (Complete 2026-02-18)
+- [x] **Phase 34: Const Correctness - Globals** - Global variables analyzed, all const-eligible already marked, runtime-assigned documented as won't-fix (Complete 2026-02-18)
+- [x] **Phase 35: Const Correctness - Functions** - Mark member functions const where state is not modified (Complete 2026-02-18)
+- [x] **Phase 36: Complexity Reduction** - Reduce cognitive complexity via helper function extraction (Complete 2026-02-18)
+- [x] **Phase 37: Nesting Reduction** - Reduce deep nesting via early return/guard clauses (completed 2026-02-18)
+- [x] **Phase 38: Init-statements** - C++17 if-init patterns for scoped variable declarations (completed 2026-02-18)
+- [x] **Phase 39: Integration Changes** - std::array conversion, LSA safety won't-fix documentation (Complete 2026-02-18)
+- [x] **Phase 40: Final Verification** - Full build verification, SonarQube scan, won't-fix documentation (completed 2026-02-18)
 
 ---
 
-## v1.3 Phase Details
+## v1.4 Phase Details
 
-### Phase 21: SonarQube Style Issues
-**Goal**: Code uses `auto` consistently where type is obvious from context
-**Depends on**: Phase 20
-**Requirements**: SONAR-01
+### Phase 31: Macro to constexpr
+**Goal**: Simple value macros converted to constexpr, won't-fix documented for resource compiler and flow-control macros
+**Depends on**: Nothing (foundation phase)
+**Requirements**: MACRO-01, MACRO-02, MACRO-03
 **Success Criteria** (what must be TRUE):
-  1. SonarQube shows 0 remaining "replace with auto" issues (or all remaining documented)
-  2. Code uses `auto` for iterator declarations and obvious types
-  3. Build passes with no new warnings
-**Plans**: 3 plans in 2 waves
+  1. All simple value macros that can be constexpr are converted
+  2. Resource compiler macros (used in .rc files) documented as won't-fix with justification
+  3. Flow-control macros documented as won't-fix with SEH/context justification
+  4. Build passes with zero errors after macro conversions
+**Plans**:
+- [x] 31-01-PLAN.md - Convert MAX_ULONG, CLSCTX_INPROC_SERVER to constexpr; document CERT_HASH_LENGTH as won't-fix (MACRO-02)
 
-Plans:
-- [ ] 21-01-PLAN.md - Convert iterator declarations to auto in CredentialManagement.cpp
-- [ ] 21-02-PLAN.md - Convert template iterator declarations to auto in CContainerHolderFactory.cpp
-- [ ] 21-03-PLAN.md - Build verification and confirm auto conversions
-
-### Phase 22: SonarQube Macro Issues
-**Goal**: Constants use `const`/`constexpr` instead of preprocessor macros where safe
-**Depends on**: Phase 21
-**Requirements**: SONAR-02
+### Phase 32: Auto Conversion
+**Goal**: Redundant type declarations converted to auto where type is obvious from initializer
+**Depends on**: Nothing (independent phase)
+**Requirements**: AUTO-01, AUTO-02
 **Success Criteria** (what must be TRUE):
-  1. SonarQube shows 0 remaining macro issues (or all remaining documented with Windows API justification)
-  2. Constants that can use `constexpr` are converted
-  3. Build passes with no new warnings
-**Plans**: 3 plans in 2 waves
+  1. Iterator declarations converted to auto (e.g., `auto it = map.begin()`)
+  2. New object declarations converted to auto (e.g., `auto ptr = new Type()`)
+  3. Security-critical types (HRESULT, NTSTATUS, handles) kept explicit - documented as won't-fix
+  4. Build passes with zero errors after auto conversions
+**Plans**:
+- [x] 32-01-PLAN.md - Convert new object declarations, iterator declarations, and static_cast results to auto
 
-Plans:
-- [ ] 22-01-PLAN.md - Convert simple macros to constexpr in EIDCardLibrary files
-- [ ] 22-02-PLAN.md - Convert numeric macros to constexpr in Wizard pages and utilities
-- [ ] 22-03-PLAN.md - Build verification and document won't-fix macros
-
-### Phase 23: SonarQube Const Issues
-**Goal**: Global variables that should be immutable are marked `const`
-**Depends on**: Phase 22
-**Requirements**: SONAR-03
+### Phase 33: Independent Style Issues
+**Goal**: Independent style improvements: C-style casts, enum class, Windows API enum won't-fix
+**Depends on**: Nothing (independent phase)
+**Requirements**: MODERN-02, MODERN-05, MODERN-06
 **Success Criteria** (what must be TRUE):
-  1. SonarQube shows 0 remaining global variable const issues (or all remaining documented)
-  2. Read-only global variables are properly marked const
-  3. Build passes with no new warnings
-**Plans**: 1 plan in 1 wave
+  1. C-style casts replaced with named casts (static_cast, reinterpret_cast, const_cast)
+  2. Internal enum types converted to enum class where safe
+  3. Windows API enum types documented as won't-fix with API compatibility justification
+  4. Build passes with zero errors after style changes
+**Plans**:
+- [x] 33-01-PLAN.md - Convert internal enum types to enum class, replace C-style casts with named casts in EIDAuthenticationPackage, document Windows API enum types as won't-fix (MODERN-02, MODERN-05, MODERN-06)
 
-Plans:
-- [ ] 23-01-PLAN.md - Verify won't-fix categories and document remaining global const issues
-
-### Phase 24: SonarQube Nesting Issues
-**Goal**: Key functions have reduced nesting depth for improved readability
-**Depends on**: Phase 23
-**Requirements**: SONAR-04
+### Phase 34: Const Correctness - Globals
+**Goal**: Global variables marked const where truly immutable, runtime-assigned documented as won't-fix
+**Depends on**: Phase 31 (macros must be constexpr before globals can be const)
+**Requirements**: CONST-01, CONST-02
 **Success Criteria** (what must be TRUE):
-  1. SonarQube nesting depth issues reduced or documented with justification
-  2. Complex functions refactored with early returns or extracted helpers
-  3. All refactored functions compile and build passes
-**Plans**: 3 plans in 2 waves
+  1. Compile-time constant globals marked const
+  2. Runtime-assigned globals (LSA pointers, DLL state, tracing state) documented as won't-fix
+  3. Set*() pattern and DllMain initialization checked before marking const
+  4. Build passes with zero errors after const additions
+**Plans**:
+- [x] 34-01-PLAN.md - Analyze all global variables, document runtime-assigned globals as won't-fix (LSA pointers, DLL state, tracing state, UI state, file handles, SAM function pointers) (Complete 2026-02-18)
 
-Plans:
-- [ ] 24-01-PLAN.md - Extract option handlers from WndProc_03NEW in EIDConfigurationWizardPage03.cpp
-- [ ] 24-02-PLAN.md - Apply early continue/return patterns in CSmartCardNotifier and CertificateUtilities
-- [ ] 24-03-PLAN.md - Build verification and document won't-fix nesting categories
-
-### Phase 25: Code Refactoring - Complexity
-**Goal**: High-complexity functions are simpler and more maintainable
-**Depends on**: Phase 24
-**Requirements**: REFACT-01, REFACT-02
+### Phase 35: Const Correctness - Functions
+**Goal**: Member functions marked const where state is not modified, COM/interface methods documented as won't-fix
+**Depends on**: Nothing (independent of macro work)
+**Requirements**: CONST-03, CONST-04
 **Success Criteria** (what must be TRUE):
-  1. Cognitive complexity metrics improved in key functions
-  2. Helper functions extracted from deeply nested blocks
-  3. Build passes and functionality preserved
-**Plans**: 3 plans in 2 waves
+  1. Member functions that don't modify state marked const
+  2. COM interface methods documented as won't-fix (cannot change signatures)
+  3. Windows callback methods documented as won't-fix (API compatibility)
+  4. Build passes with zero errors after const additions
+**Plans**:
+- [x] 35-01-PLAN.md - Mark CContainerHolderFactory::HasContainerHolder() and ContainerHolderCount() const, mark CMessageCredential::GetStatus() const, document COM interface methods as won't-fix (Complete 2026-02-18)
 
-Plans:
-- [ ] 25-01-PLAN.md - Extract certificate helpers from SelectFirstCertificateWithPrivateKey
-- [ ] 25-02-PLAN.md - Extract UI handlers from WndProc_04CHECKS
-- [ ] 25-03-PLAN.md - Build verification and document won't-fix complexity categories
-
-### Phase 26: Code Refactoring - Duplicates
-**Goal**: Duplicate code patterns consolidated into reusable functions
-**Depends on**: Phase 25
-**Requirements**: REFACT-03
+### Phase 36: Complexity Reduction
+**Goal**: Cognitive complexity reduced via helper function extraction, SEH-protected code documented as won't-fix
+**Depends on**: Nothing (foundation for Phase 37)
+**Requirements**: STRUCT-01, STRUCT-02
 **Success Criteria** (what must be TRUE):
-  1. SonarQube duplications reduced or documented
-  2. Common patterns extracted into shared utilities
-  3. Build passes and functionality preserved
-**Plans**: 1 plan in 1 wave
+  1. High cognitive complexity functions have helper functions extracted
+  2. SEH-protected code documented as won't-fix (cannot extract from __try blocks)
+  3. Helper functions maintain SEH safety (no heap allocation in LSASS context)
+  4. Build passes with zero errors after complexity reduction
+**Plans**:
+- [x] 36-01-PLAN.md - Extract encryption helpers from CreateCredential, extract validation helpers from certificate functions, create SEH won't-fix documentation (STRUCT-01, STRUCT-02) (Complete 2026-02-18)
 
-Plans:
-- [ ] 26-01-PLAN.md - Verify existing shared helpers, document duplications as won't-fix
-
-### Phase 27: C++23 Advanced Features
-**Goal**: Modern C++23 features evaluated and applied where beneficial
-**Depends on**: Phase 26
-**Requirements**: CPP23-01, CPP23-02, CPP23-03
+### Phase 37: Nesting Reduction
+**Goal**: Deep nesting reduced via early return and guard clauses, SEH blocks kept intact
+**Depends on**: Phase 36 (complexity helpers reduce nesting)
+**Requirements**: STRUCT-03, STRUCT-04
 **Success Criteria** (what must be TRUE):
-  1. `import std;` modules feasibility documented with MSVC compatibility notes
-  2. `std::flat_map`/`std::flat_set` applied where performance benefits exist
-  3. `std::stacktrace` status documented (applied if MSVC bugs resolved)
-**Plans**: 1 plan in 1 wave
+  1. Guard clauses added at function entry for early return
+  2. Deep nesting reduced using helper functions from Phase 36
+  3. SEH blocks documented as won't-fix (no extraction from __try)
+  4. Build passes with zero errors after nesting reduction
+**Plans**: TBD
 
-Plans:
-- [ ] 27-01-PLAN.md - Document C++23 feature deferrals (modules, flat containers, stacktrace)
-
-### Phase 28: Diagnostics & Logging
-**Goal**: Error messages and tracing provide better context for debugging
-**Depends on**: Phase 27
-**Requirements**: DIAG-01, DIAG-02, DIAG-03
+### Phase 38: Init-statements
+**Goal**: Init-statements used in if/switch where scope benefits code clarity
+**Depends on**: Nothing (independent, but Phase 37 helps with cleaner code)
+**Requirements**: MODERN-01
 **Success Criteria** (what must be TRUE):
-  1. Error messages include contextual information for troubleshooting
-  2. Key code paths have adequate tracing coverage
-  3. Structured logging implemented where feasible (without LSASS impact)
-**Plans**: 5 plans in 4 waves
+  1. Variable declarations scoped to if/switch blocks using init-statements
+  2. Iterator scope limited using if-init pattern
+  3. Build passes with zero errors after init-statement additions
+**Plans**:
+- [x] 38-01-PLAN.md - Convert ~49 init-statement opportunities across EIDCredentialProvider, EIDCardLibrary, and EIDConfigurationWizard projects (Complete 2026-02-18)
 
-Plans:
-- [ ] 28-01-PLAN.md - Add diagnostic helper functions (EIDLogErrorWithContext, EIDLogStackTrace)
-- [ ] 28-02-PLAN.md - Enhance error messages in credential provider (CEIDCredential.cpp, CEIDProvider.cpp)
-- [ ] 28-03-PLAN.md - Enhance error messages and security audits in authentication package
-- [ ] 28-04-PLAN.md - Enhance error messages in security support provider (SSPI layer)
-- [ ] 28-05-PLAN.md - Build verification and confirm diagnostics enhancements
-
-### Phase 29: Build Verification
-**Goal**: All v1.3 changes verified to compile and function correctly
-**Depends on**: Phase 28
-**Requirements**: VER-01
+### Phase 39: Integration Changes
+**Goal**: std::array conversion where stack size permits, LSA safety patterns documented as won't-fix
+**Depends on**: Phases 31-38 (all other changes complete)
+**Requirements**: MODERN-03, MODERN-04
 **Success Criteria** (what must be TRUE):
-  1. All 7 projects compile with zero errors
-  2. No new warnings introduced
-  3. Existing functionality preserved (no regressions)
-**Plans**: 1 plan in 1 wave
+  1. C-style arrays converted to std::array where stack size permits
+  2. Large stack buffers kept as C-style arrays (stack safety)
+  3. std::string/std::vector documented as won't-fix with LSASS heap safety justification
+  4. Build passes with zero errors after integration changes
+**Plans**:
+- [x] 39-01-PLAN.md - Convert small C-style arrays to std::array, document won't-fix categories for LSASS safety (Complete 2026-02-18)
 
-Plans:
-- [ ] 29-01-PLAN.md - Final build verification for v1.3 Deep Modernization
-
-### Phase 30: Final SonarQube Scan
-**Goal**: SonarQube confirms improvement in code quality metrics
-**Depends on**: Phase 29
-**Requirements**: VER-02
+### Phase 40: Final Verification
+**Goal**: Confirm all remediation is complete, stable, and documented
+**Depends on**: Phases 31-39 (all phases complete)
+**Requirements**: VER-01, VER-02, VER-03, VER-04
 **Success Criteria** (what must be TRUE):
-  1. SonarQube scan completed with v1.3 baseline
-  2. Quality metrics show improvement over v1.2
-  3. All remaining issues documented with justifications
-**Plans**: 1 plan in 1 wave
-
-Plans:
-- [ ] 30-01-PLAN.md - Create v1.3 completion documentation and quality summary
+  1. All 7 projects build with zero errors
+  2. No new warnings introduced compared to baseline
+  3. SonarQube scan shows improvement from v1.4 baseline
+  4. All won't-fix issues documented with specific justifications
+**Plans**: TBD
 
 ---
 
@@ -293,23 +287,46 @@ Phases execute in numeric order: 15 -> 16 -> 17 -> 18 -> 19 -> 20
 
 </details>
 
-### v1.3 Deep Modernization (IN PROGRESS)
+### v1.3 Deep Modernization (COMPLETE)
+
+<details>
+<summary>v1.3 Progress</summary>
 
 **Execution Order:**
 Phases execute in numeric order: 21 -> 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29 -> 30
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 21. SonarQube Style | 0/3 | Complete    | 2026-02-17 |
-| 22. SonarQube Macros | 0/TBD | Complete    | 2026-02-17 |
-| 23. SonarQube Const | 0/TBD | Complete    | 2026-02-17 |
-| 24. SonarQube Nesting | 0/TBD | Complete    | 2026-02-17 |
-| 25. Code Complexity | 0/TBD | Complete    | 2026-02-17 |
-| 26. Code Duplicates | 0/1 | Complete    | 2026-02-17 |
-| 27. C++23 Features | 0/TBD | Complete    | 2026-02-17 |
-| 28. Diagnostics | 0/TBD | Complete    | 2026-02-17 |
-| 29. Build Verification | 0/TBD | Complete    | 2026-02-17 |
-| 30. Final Scan | 0/TBD | Complete    | 2026-02-17 |
+| 21. SonarQube Style | 0/3 | Complete | 2026-02-17 |
+| 22. SonarQube Macros | 0/TBD | Complete | 2026-02-17 |
+| 23. SonarQube Const | 0/TBD | Complete | 2026-02-17 |
+| 24. SonarQube Nesting | 0/TBD | Complete | 2026-02-17 |
+| 25. Code Complexity | 0/TBD | Complete | 2026-02-17 |
+| 26. Code Duplicates | 0/1 | Complete | 2026-02-17 |
+| 27. C++23 Features | 0/TBD | Complete | 2026-02-17 |
+| 28. Diagnostics | 0/TBD | Complete | 2026-02-17 |
+| 29. Build Verification | 0/TBD | Complete | 2026-02-17 |
+| 30. Final Scan | 0/TBD | Complete | 2026-02-17 |
+
+</details>
+
+### v1.4 SonarQube Zero (IN PROGRESS)
+
+**Execution Order:**
+Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 31. Macro to constexpr | 1/1 | Complete    | 2026-02-18 |
+| 32. Auto Conversion | 1/1 | Complete    | 2026-02-18 |
+| 33. Independent Style Issues | 1/1 | Complete    | 2026-02-18 |
+| 34. Const Correctness - Globals | 1/1 | Complete    | 2026-02-18 |
+| 35. Const Correctness - Functions | 1/1 | Complete    | 2026-02-18 |
+| 36. Complexity Reduction | 0/1 | Complete    | 2026-02-18 |
+| 37. Nesting Reduction | 1/1 | Complete    | 2026-02-18 |
+| 38. Init-statements | 1/1 | Complete    | 2026-02-18 |
+| 39. Integration Changes | 1/1 | Complete    | 2026-02-18 |
+| 40. Final Verification | 1/1 | Complete    | 2026-02-18 |
 
 ---
 
@@ -356,7 +373,7 @@ Phases execute in numeric order: 21 -> 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28 ->
 
 **Total v1.2 Coverage:** 13/13 requirements mapped (100%)
 
-### v1.3 Requirements (IN PROGRESS)
+### v1.3 Requirements (COMPLETE)
 
 | Category | Requirements | Phase |
 |----------|--------------|-------|
@@ -373,9 +390,35 @@ Phases execute in numeric order: 21 -> 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28 ->
 
 **Total v1.3 Coverage:** 15/15 requirements mapped (100%)
 
+### v1.4 Requirements (IN PROGRESS)
+
+| Category | Requirements | Phase |
+|----------|--------------|-------|
+| Macro Modernization | MACRO-01, MACRO-02, MACRO-03 | Phase 31 |
+| Auto Modernization | AUTO-01, AUTO-02 | Phase 32 |
+| Modern C++ Patterns | MODERN-02, MODERN-05, MODERN-06 | Phase 33 |
+| Const Correctness | CONST-01, CONST-02 | Phase 34 |
+| Const Correctness | CONST-03, CONST-04 | Phase 35 |
+| Code Structure | STRUCT-01, STRUCT-02 | Phase 36 |
+| Code Structure | STRUCT-03, STRUCT-04 | Phase 37 |
+| Modern C++ Patterns | MODERN-01 | Phase 38 |
+| Modern C++ Patterns | MODERN-03, MODERN-04 | Phase 39 |
+| Verification | VER-01, VER-02, VER-03, VER-04 | Phase 40 |
+
+**Total v1.4 Coverage:** 23/23 requirements mapped (100%)
+
 ---
 *Roadmap created: 2026-02-15*
 *v1.0 complete: 2026-02-16*
 *v1.1 complete: 2026-02-17*
 *v1.2 complete: 2026-02-17*
-*v1.3 roadmap created: 2026-02-17*
+*v1.3 complete: 2026-02-18*
+*v1.4 roadmap created: 2026-02-18*
+*Phase 34 planned: 2026-02-18*
+*Phase 35 planned: 2026-02-18*
+*Phase 38 planned: 2026-02-18*
+*Phase 31 complete: 2026-02-18*
+*Phase 32 complete: 2026-02-18*
+*Phase 33 complete: 2026-02-18*
+*Phase 34 complete: 2026-02-18*
+*Phase 35 complete: 2026-02-18*

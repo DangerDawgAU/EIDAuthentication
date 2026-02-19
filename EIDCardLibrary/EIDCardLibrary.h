@@ -34,12 +34,15 @@ constexpr const wchar_t* AUTHENTICATIONPACKAGENAMEW = L"EIDAuthenticationPackage
 
 // The Windows SDK (WinCred.h) defines CERT_HASH_LENGTH as 20 (SHA-1), but we use SHA-256 (32)
 // Undefine first to ensure our definition takes precedence without warnings
+// WON'T-FIX (MACRO-02): Cannot convert to constexpr because Windows SDK defines this as a macro.
+// The preprocessor #undef/#define pattern is required to override the SDK value.
 #undef CERT_HASH_LENGTH
 #define CERT_HASH_LENGTH 32  // SHA-256 hashes are used for cert hashes (security upgrade from SHA-1)
 
 #pragma warning(pop)
 
 #include <utility>
+#include <array>
 
 #include "ErrorHandling.h"
 
@@ -131,7 +134,7 @@ struct EID_INTERACTIVE_PROFILE
 };
 using PEID_INTERACTIVE_PROFILE = EID_INTERACTIVE_PROFILE*;
 
-enum EID_CREDENTIAL_PROVIDER_READER_STATE
+enum class EID_CREDENTIAL_PROVIDER_READER_STATE
 {
 	EIDCPRSConnecting,
 	EIDCPRSConnected,
@@ -161,7 +164,7 @@ struct EID_CALLPACKAGE_BUFFER
 	USHORT usPasswordLen;	// can be 0 if null terminated
 	PBYTE pbCertificate;
 	USHORT dwCertificateSize;
-	UCHAR Hash[CERT_HASH_LENGTH]; // to get challenge
+	std::array<UCHAR, CERT_HASH_LENGTH> Hash; // to get challenge
 	BOOL fEncryptPassword;
 
 };
@@ -207,7 +210,7 @@ constexpr DWORD EID_CERTIFICATE_FLAG_USERSTORE = 0x00000001;
 
 struct EID_NEGOCIATE_MESSAGE
 {
-	BYTE Signature[8];
+	std::array<BYTE, 8> Signature;
 	DWORD MessageType;
 	DWORD Flags;
 	USHORT TargetLen;
@@ -216,14 +219,14 @@ struct EID_NEGOCIATE_MESSAGE
 	USHORT WorkstationLen;
 	USHORT WorkstationMaxLen;
 	USHORT WorkstationOffset;
-	UCHAR Hash[CERT_HASH_LENGTH];
+	std::array<UCHAR, CERT_HASH_LENGTH> Hash;
 	DWORD Version;
 };
 using PEID_NEGOCIATE_MESSAGE = EID_NEGOCIATE_MESSAGE*;
 
 struct EID_CHALLENGE_MESSAGE
 {
-	BYTE Signature[8];
+	std::array<BYTE, 8> Signature;
 	DWORD MessageType;
 	DWORD Flags;
 	DWORD UsernameLen;
@@ -236,7 +239,7 @@ using PEID_CHALLENGE_MESSAGE = EID_CHALLENGE_MESSAGE*;
 
 struct EID_RESPONSE_MESSAGE
 {
-	BYTE Signature[8];
+	std::array<BYTE, 8> Signature;
 	DWORD MessageType;
 	DWORD ResponseLen;
 	DWORD ResponseOffset;
@@ -244,7 +247,7 @@ struct EID_RESPONSE_MESSAGE
 };
 using PEID_RESPONSE_MESSAGE = EID_RESPONSE_MESSAGE*;
 
-enum EID_MESSAGE_STATE
+enum class EID_MESSAGE_STATE
 {
 	EIDMSNone,
 	EIDMSNegociate,
@@ -253,7 +256,7 @@ enum EID_MESSAGE_STATE
 	EIDMSComplete,
 };
 
-enum EID_MESSAGE_TYPE
+enum class EID_MESSAGE_TYPE
 {
 	EIDMTNegociate = 1,
 	EIDMTChallenge = 2,
@@ -264,7 +267,7 @@ constexpr DWORD EID_MESSAGE_VERSION = 1;
 // Signature is exactly 8 bytes (7 chars + null terminator) to match message Signature[8] fields
 constexpr char EID_MESSAGE_SIGNATURE[8] = "EIDAuth";
 
-enum EID_SSP_CALLER
+enum class EID_SSP_CALLER
 {
 	EIDSSPInitialize,
 	EIDSSPAccept,

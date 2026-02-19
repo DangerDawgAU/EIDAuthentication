@@ -30,7 +30,7 @@
 #include "EIDCredentialProvider.h"
 #include <utility>
 
-enum CMessageCredentialStatus
+enum class CMessageCredentialStatus
 {
 	Idle,
 	Reading,
@@ -96,17 +96,17 @@ public:
 	{
 		_dwSmartCardCount--;
 	}
-	void SetStatus(DWORD dwStatus) 
+	void SetStatus(CMessageCredentialStatus dwStatus)
 	{
-		if (dwStatus == EndReading)
+		if (dwStatus == CMessageCredentialStatus::EndReading)
 		{
 			if (_dwSmartCardCount)
 			{
-				_dwStatus = Error;
+				_dwStatus = CMessageCredentialStatus::Error;
 			}
 			else
 			{
-				_dwStatus = Idle;
+				_dwStatus = CMessageCredentialStatus::Idle;
 			}
 		}
 		else
@@ -120,7 +120,7 @@ public:
 		_dwFlags = dwFlags;
 	}
 
-	DWORD GetStatus()
+	CMessageCredentialStatus GetStatus() const
 	{
 		return _dwStatus;
 	}
@@ -142,10 +142,10 @@ public:
                                                                                             // from the name of the 
                                                                                             // field held in 
                                                                                             // _rgCredProvFieldDescriptors.
-	ICredentialProviderCredentialEvents*	_pCredProvCredentialEvents;    
+	ICredentialProviderCredentialEvents*	_pCredProvCredentialEvents;
 	DWORD									_dwSmartCardCount;
-	DWORD									_dwStatus;
-	DWORD									_dwOldStatus;
+	CMessageCredentialStatus				_dwStatus;
+	CMessageCredentialStatus				_dwOldStatus;
 	CREDENTIAL_PROVIDER_USAGE_SCENARIO    _cpus; // The usage scenario for which we were enumerated.
 	DWORD								  _dwFlags;
 };

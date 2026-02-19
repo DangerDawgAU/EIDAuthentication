@@ -78,17 +78,17 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		}
 		else if (_tcscmp(pszCommandLine[0],L"ENABLESIGNATUREONLY") == 0)
 		{
-			SetPolicyValue(AllowSignatureOnlyKeys, 1);
+			SetPolicyValue(GPOPolicy::AllowSignatureOnlyKeys, 1);
 			return 0;
 		}
 		else if (_tcscmp(pszCommandLine[0],L"ENABLENOEKU") == 0)
 		{
-			SetPolicyValue(AllowCertificatesWithNoEKU, 1);
+			SetPolicyValue(GPOPolicy::AllowCertificatesWithNoEKU, 1);
 			return 0;
 		}
 		else if (_tcscmp(pszCommandLine[0],L"ENABLETIMEINVALID") == 0)
 		{
-			SetPolicyValue(AllowTimeInvalidCertificates, 1);
+			SetPolicyValue(GPOPolicy::AllowTimeInvalidCertificates, 1);
 			return 0;
 		}
 		else if (_tcscmp(pszCommandLine[0],L"TRUST") == 0)

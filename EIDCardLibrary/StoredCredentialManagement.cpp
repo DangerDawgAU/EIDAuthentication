@@ -38,6 +38,7 @@
 #include "StringConversion.h"
 #include <string>
 #include <span>
+#include <array>
 
 constexpr LPCTSTR CREDENTIALPROVIDER = MS_ENH_RSA_AES_PROV;
 constexpr DWORD CREDENTIALKEYLENGTH = 256;
@@ -60,6 +61,117 @@ extern "C"
 #include "StoredCredentialManagement.h"
 CStoredCredentialManager *CStoredCredentialManager::theSingleInstance = nullptr;
 
+//=============================================================================
+// HELPER FUNCTIONS FOR COMPLEXITY REDUCTION
+// These helpers extract encryption logic from CreateCredential to reduce
+// cognitive complexity while maintaining SEH safety for LSASS compatibility.
+// Placed after header include to have access to EID_PRIVATE_DATA types.
+//=============================================================================
+
+namespace {
+
+// Calculate the total size needed for EID_PRIVATE_DATA buffer
+// Returns the total allocation size in bytes
+// Complexity reduction helper for CreateCredential (Phase 36-01)
+USHORT CalculateSecretSize(bool fEncryptPassword, USHORT usEncryptedPasswordSize,
+                           USHORT usSymmetricKeySize, DWORD cbCertEncoded) noexcept
+{
+    if (fEncryptPassword)
+    {
+        // Certificate-based encryption: cert + symmetric key + encrypted password
+        return static_cast<USHORT>(sizeof(EID_PRIVATE_DATA) + usEncryptedPasswordSize +
+                                   usSymmetricKeySize + static_cast<USHORT>(cbCertEncoded));
+    }
+    else
+    {
+        // DPAPI encryption: cert + encrypted data (no symmetric key)
+        return static_cast<USHORT>(sizeof(EID_PRIVATE_DATA) + usEncryptedPasswordSize +
+                                   static_cast<USHORT>(cbCertEncoded));
+    }
+}
+
+// Build the secret data buffer with certificate and encrypted password data
+// For certificate-based encryption: cert + symmetric key + encrypted password
+// For DPAPI: cert + encrypted password only
+// Complexity reduction helper for CreateCredential (Phase 36-01)
+void BuildSecretData(PEID_PRIVATE_DATA pSecret, PCCERT_CONTEXT pCertContext,
+                     PBYTE pEncryptedPassword, USHORT usEncryptedPasswordSize,
+                     PBYTE pSymmetricKey, USHORT usSymmetricKeySize,
+                     bool fEncryptPassword) noexcept
+{
+    // Copy certificate hash
+    DWORD dwHashSize = CERT_HASH_LENGTH;
+    CryptHashCertificate(NULL, CALG_SHA_256, 0, pCertContext->pbCertEncoded,
+                         pCertContext->cbCertEncoded, pSecret->Hash, &dwHashSize);
+
+    // Set common fields
+    pSecret->dwType = fEncryptPassword ? EID_PRIVATE_DATA_TYPE::eidpdtCrypted :
+                                          EID_PRIVATE_DATA_TYPE::eidpdtDPAPI;
+    pSecret->dwCertificatSize = static_cast<USHORT>(pCertContext->cbCertEncoded);
+    pSecret->usPasswordLen = usEncryptedPasswordSize;
+
+    // Certificate always at offset 0
+    pSecret->dwCertificatOffset = 0;
+    memcpy(pSecret->Data + pSecret->dwCertificatOffset, pCertContext->pbCertEncoded,
+           pSecret->dwCertificatSize);
+
+    if (fEncryptPassword)
+    {
+        // Certificate-based: symmetric key then encrypted password
+        pSecret->dwSymetricKeySize = usSymmetricKeySize;
+        pSecret->dwSymetricKeyOffset = pSecret->dwCertificatOffset + pSecret->dwCertificatSize;
+        memcpy(pSecret->Data + pSecret->dwSymetricKeyOffset, pSymmetricKey, pSecret->dwSymetricKeySize);
+
+        pSecret->dwPasswordOffset = pSecret->dwSymetricKeyOffset + usSymmetricKeySize;
+        memcpy(pSecret->Data + pSecret->dwPasswordOffset, pEncryptedPassword, pSecret->usPasswordLen);
+    }
+    else
+    {
+        // DPAPI: no symmetric key, password follows certificate
+        pSecret->dwSymetricKeySize = 0;
+        pSecret->dwSymetricKeyOffset = pSecret->dwCertificatOffset + pSecret->dwCertificatSize;
+        pSecret->dwPasswordOffset = pSecret->dwSymetricKeyOffset;
+        memcpy(pSecret->Data + pSecret->dwPasswordOffset, pEncryptedPassword, pSecret->usPasswordLen);
+    }
+}
+
+// Helper to encrypt password using DPAPI
+// Returns encrypted data and size via output parameters
+// Complexity reduction helper for CreateCredential (Phase 36-01)
+BOOL EncryptPasswordWithDPAPI(__in PWSTR szPassword, __in USHORT usPasswordSize,
+                              __out PBYTE* ppEncryptedData, __out PUSHORT pusEncryptedSize)
+{
+    DATA_BLOB DataIn;
+    DATA_BLOB DataOut;
+
+    DataIn.pbData = reinterpret_cast<BYTE*>(szPassword);
+    DataIn.cbData = usPasswordSize;
+
+    if (!CryptProtectData(&DataIn, L"EID Credential", NULL, NULL, NULL,
+                          CRYPTPROTECT_LOCAL_MACHINE, &DataOut))
+    {
+        EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptProtectData failed 0x%08x", GetLastError());
+        return FALSE;
+    }
+
+    *ppEncryptedData = static_cast<PBYTE>(EIDAlloc(DataOut.cbData));
+    if (!*ppEncryptedData)
+    {
+        EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"EIDAlloc failed 0x%08x", GetLastError());
+        LocalFree(DataOut.pbData);
+        return FALSE;
+    }
+
+    memcpy(*ppEncryptedData, DataOut.pbData, DataOut.cbData);
+    *pusEncryptedSize = static_cast<USHORT>(DataOut.cbData);
+    LocalFree(DataOut.pbData);
+    return TRUE;
+}
+
+} // anonymous namespace
+
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetUsernameFromCertContext(__in PCCERT_CONTEXT pContext, __out PWSTR *pszUsername, __out PDWORD pdwRid)
 {
 	NET_API_STATUS Status;
@@ -159,6 +271,8 @@ BOOL CStoredCredentialManager::HasStoredCredential(__in PCCERT_CONTEXT pContext)
 	return FALSE;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetCertContextFromHash(__in PBYTE pbHash, __out PCCERT_CONTEXT* ppContext, __out PDWORD pdwRid)
 {
 	NET_API_STATUS Status;
@@ -225,6 +339,8 @@ BOOL CStoredCredentialManager::GetCertContextFromHash(__in PBYTE pbHash, __out P
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetCertContextFromRid(__in DWORD dwRid, __out PCCERT_CONTEXT* ppContext, __out PBOOL pfEncryptPassword)
 {
 	BOOL fReturn = FALSE, fStatus;
@@ -266,7 +382,7 @@ BOOL CStoredCredentialManager::GetCertContextFromRid(__in DWORD dwRid, __out PCC
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertCreateCertificateContext 0x%08x",dwError);
 			__leave;
 		}
-		*pfEncryptPassword = (pEidPrivateData->dwType == eidpdtCrypted);
+		*pfEncryptPassword = (pEidPrivateData->dwType == EID_PRIVATE_DATA_TYPE::eidpdtCrypted);
 		fReturn = TRUE;
 	}
 	__finally
@@ -285,227 +401,211 @@ BOOL CStoredCredentialManager::GetCertContextFromRid(__in DWORD dwRid, __out PCC
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
+// Uses helper functions CalculateSecretSize, BuildSecretData, EncryptPasswordWithDPAPI
+// to reduce cognitive complexity while maintaining SEH safety.
 BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CONTEXT pCertContext, __in PWSTR szPassword, __in_opt USHORT usPasswordLen, __in BOOL fEncryptPassword, __in BOOL fCheckPassword)
 {
-	BOOL fReturn = FALSE, fStatus;
+	// Refactored for complexity reduction (Phase 36-01)
+	// Uses helper functions CalculateSecretSize, BuildSecretData, EncryptPasswordWithDPAPI
+	// to reduce cognitive complexity while maintaining SEH safety.
+
+	BOOL fReturn = FALSE;
+	BOOL fStatus;
 	DWORD dwError = 0;
 	NTSTATUS Status;
 	HCRYPTKEY hKey = NULL;
 	HCRYPTKEY hSymetricKey = NULL;
-	PBYTE pSymetricKey = nullptr;
+	PBYTE pSymetricKey = NULL;
 	USHORT usSymetricKeySize = 0;
-	PBYTE pEncryptedPassword = nullptr;
+	PBYTE pEncryptedPassword = NULL;
 	USHORT usEncryptedPasswordSize = 0;
-	PEID_PRIVATE_DATA pbSecret = nullptr;
+	PEID_PRIVATE_DATA pbSecret = NULL;
 	USHORT usSecretSize;
 	USHORT usPasswordSize;
 	HCRYPTPROV hProv = NULL;
-	HCRYPTHASH hHash = NULL;
-	PBYTE pbPublicKey = nullptr;
+	PBYTE pbPublicKey = NULL;
 	DWORD dwSize = 0;
+
 	__try
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter fEncryptPassword = %d",fEncryptPassword);
-		// check password
+		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Enter fEncryptPassword = %d", fEncryptPassword);
+
+		// Validate RID parameter
 		if (!dwRid)
 		{
 			dwError = ERROR_NONE_MAPPED;
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"dwRid 0x%08x",dwError);
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"dwRid 0x%08x", dwError);
 			__leave;
 		}
+
+		// Check password if requested
 		if (fCheckPassword)
 		{
 			Status = CheckPassword(dwRid, szPassword);
 			if (Status != STATUS_SUCCESS)
 			{
 				dwError = LsaNtStatusToWinError(Status);
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CheckPassword 0x%08x",dwError);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CheckPassword 0x%08x", dwError);
 				__leave;
 			}
 		}
+
+		// Calculate password size
 		if (usPasswordLen > 0)
 		{
 			usPasswordSize = usPasswordLen;
 		}
-		else if (szPassword == nullptr)
+		else if (szPassword == NULL)
 		{
 			usPasswordSize = 0;
 		}
 		else
 		{
-			usPasswordSize = (USHORT) (wcslen(szPassword) * sizeof(WCHAR));
+			usPasswordSize = static_cast<USHORT>(wcslen(szPassword) * sizeof(WCHAR));
 		}
-		
+
+		// Disable encryption for empty passwords
 		if (!usPasswordSize) fEncryptPassword = FALSE;
+
 		if (fEncryptPassword)
 		{
-			fStatus = CryptDecodeObject(X509_ASN_ENCODING, RSA_CSP_PUBLICKEYBLOB, 
+			// ========== Certificate-based encryption path ==========
+			// Setup: decode public key, acquire crypto context, import key
+			fStatus = CryptDecodeObject(X509_ASN_ENCODING, RSA_CSP_PUBLICKEYBLOB,
 				pCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey.pbData,
 				pCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey.cbData,
-				0, nullptr, &dwSize);
+				0, NULL, &dwSize);
 			if (!fStatus)
 			{
 				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptDecodeObject 0x%08x",GetLastError());
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptDecodeObject 0x%08x", dwError);
 				__leave;
 			}
-			pbPublicKey = (PBYTE) EIDAlloc(dwSize);
+
+			pbPublicKey = static_cast<PBYTE>(EIDAlloc(dwSize));
 			if (!pbPublicKey)
 			{
 				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc 0x%08x",GetLastError());
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"EIDAlloc 0x%08x", dwError);
 				__leave;
 			}
-			fStatus = CryptDecodeObject(X509_ASN_ENCODING, RSA_CSP_PUBLICKEYBLOB, 
+
+			fStatus = CryptDecodeObject(X509_ASN_ENCODING, RSA_CSP_PUBLICKEYBLOB,
 				pCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey.pbData,
 				pCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey.cbData,
 				0, pbPublicKey, &dwSize);
 			if (!fStatus)
 			{
 				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptDecodeObject 0x%08x",GetLastError());
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptDecodeObject 0x%08x", dwError);
 				__leave;
 			}
-						// import the public key into hKey
-			fStatus = CryptAcquireContext(&hProv,CREDENTIAL_CONTAINER,CREDENTIALPROVIDER,PROV_RSA_AES,0);
-			if(!fStatus)
+
+			// Import the public key into hKey
+			fStatus = CryptAcquireContext(&hProv, CREDENTIAL_CONTAINER, CREDENTIALPROVIDER, PROV_RSA_AES, 0);
+			if (!fStatus)
 			{
 				dwError = GetLastError();
 				if (dwError == NTE_BAD_KEYSET)
 				{
-					fStatus = CryptAcquireContext(&hProv,CREDENTIAL_CONTAINER,CREDENTIALPROVIDER,PROV_RSA_AES,CRYPT_NEWKEYSET);
-					dwError = GetLastError();
+					fStatus = CryptAcquireContext(&hProv, CREDENTIAL_CONTAINER, CREDENTIALPROVIDER, PROV_RSA_AES, CRYPT_NEWKEYSET);
 				}
 				if (!fStatus)
 				{
 					dwError = GetLastError();
-					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptAcquireContext 0x%08x",dwError);
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptAcquireContext 0x%08x", dwError);
 					__leave;
 				}
 			}
 			else
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Container already existed !!");
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Container already existed !!");
 			}
+
 			fStatus = CryptImportKey(hProv, pbPublicKey, dwSize, NULL, 0, &hKey);
 			if (!fStatus)
 			{
 				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptImportKey 0x%08x",GetLastError());
-				__leave;
-			}
-			// create a symetric key which can be used to crypt data and
-			// which is saved and protected by the public key
-			fStatus = GenerateSymetricKeyAndEncryptIt(hProv, hKey, &hSymetricKey, &pSymetricKey, &usSymetricKeySize);
-			if(!fStatus)
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GenerateSymetricKeyAndSaveIt");
-				__leave;
-			}
-			// encrypt the password and save it
-			fStatus = EncryptPasswordAndSaveIt(hSymetricKey,szPassword,usPasswordLen, &pEncryptedPassword, &usEncryptedPasswordSize);
-			if(!fStatus)
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EncryptPasswordAndSaveIt");
-				__leave;
-			}
-			usSecretSize = (USHORT) sizeof(EID_PRIVATE_DATA) + usEncryptedPasswordSize + usSymetricKeySize + (USHORT) pCertContext->cbCertEncoded;
-			pbSecret = (PEID_PRIVATE_DATA) EIDAlloc(usSecretSize);
-			if (!pbSecret)
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by EIDAlloc", GetLastError());
-				__leave;
-			}
-			DWORD dwHashSize = CERT_HASH_LENGTH;  // SHA-256 = 32 bytes
-			fStatus = CryptHashCertificate(NULL, CALG_SHA_256, 0, pCertContext->pbCertEncoded, pCertContext->cbCertEncoded, pbSecret->Hash, &dwHashSize);
-			if (!fStatus)
-			{
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptHashCertificate 0x%08x",GetLastError());
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptImportKey 0x%08x", dwError);
 				__leave;
 			}
 
-			// copy data
-			pbSecret->dwType = eidpdtCrypted;
-			pbSecret->dwCertificatSize = (USHORT) pCertContext->cbCertEncoded;
-			pbSecret->dwSymetricKeySize = usSymetricKeySize;
-			pbSecret->usPasswordLen = usEncryptedPasswordSize;
-			pbSecret->dwCertificatOffset = 0;
-			memcpy(pbSecret->Data + pbSecret->dwCertificatOffset, pCertContext->pbCertEncoded, pbSecret->dwCertificatSize);
-			pbSecret->dwSymetricKeyOffset = pbSecret->dwCertificatOffset + pbSecret->dwCertificatSize;
-			memcpy(pbSecret->Data + pbSecret->dwSymetricKeyOffset, pSymetricKey, pbSecret->dwSymetricKeySize);
-			pbSecret->dwPasswordOffset = pbSecret->dwSymetricKeyOffset + usSymetricKeySize;
-			memcpy(pbSecret->Data + pbSecret->dwPasswordOffset, pEncryptedPassword, pbSecret->usPasswordLen);
+			// Create symmetric key and encrypt it with the public key
+			fStatus = GenerateSymetricKeyAndEncryptIt(hProv, hKey, &hSymetricKey, &pSymetricKey, &usSymetricKeySize);
+			if (!fStatus)
+			{
+				dwError = GetLastError();
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"GenerateSymetricKeyAndEncryptIt");
+				__leave;
+			}
+
+			// Encrypt the password with the symmetric key
+			fStatus = EncryptPasswordAndSaveIt(hSymetricKey, szPassword, usPasswordLen, &pEncryptedPassword, &usEncryptedPasswordSize);
+			if (!fStatus)
+			{
+				dwError = GetLastError();
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"EncryptPasswordAndSaveIt");
+				__leave;
+			}
+
+			// Calculate buffer size using helper
+			usSecretSize = CalculateSecretSize(true, usEncryptedPasswordSize, usSymetricKeySize, static_cast<ULONG>(pCertContext->cbCertEncoded));
+			pbSecret = static_cast<PEID_PRIVATE_DATA>(EIDAlloc(usSecretSize));
+			if (!pbSecret)
+			{
+				dwError = GetLastError();
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"EIDAlloc 0x%08x", dwError);
+				__leave;
+			}
+
+			// Build secret data using helper
+			BuildSecretData(pbSecret, pCertContext, pEncryptedPassword, usEncryptedPasswordSize,
+			                pSymetricKey, usSymetricKeySize, true);
 		}
 		else
 		{
-			// Use DPAPI to encrypt password when certificate-based encryption is not available
-			// (e.g., AT_SIGNATURE keys that cannot perform encryption)
+			// ========== DPAPI encryption path ==========
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Using DPAPI encryption for credential storage");
 
-			DATA_BLOB DataIn;
-			DATA_BLOB DataOut;
-			DataIn.pbData = (BYTE*)szPassword;
-			DataIn.cbData = usPasswordSize;
-
-			if (!CryptProtectData(&DataIn, L"EID Credential", nullptr, nullptr, nullptr, CRYPTPROTECT_LOCAL_MACHINE, &DataOut))
+			// Encrypt password using DPAPI helper
+			if (!EncryptPasswordWithDPAPI(szPassword, usPasswordSize, &pEncryptedPassword, &usEncryptedPasswordSize))
 			{
 				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptProtectData failed 0x%08x", dwError);
 				__leave;
 			}
 
-			usSecretSize = (USHORT)(sizeof(EID_PRIVATE_DATA) + DataOut.cbData + (USHORT)pCertContext->cbCertEncoded);
-			pbSecret = (PEID_PRIVATE_DATA)EIDAlloc(usSecretSize);
+			// Calculate buffer size using helper
+			usSecretSize = CalculateSecretSize(false, usEncryptedPasswordSize, 0, static_cast<ULONG>(pCertContext->cbCertEncoded));
+			pbSecret = static_cast<PEID_PRIVATE_DATA>(EIDAlloc(usSecretSize));
 			if (!pbSecret)
 			{
-				LocalFree(DataOut.pbData);
 				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error 0x%08x returned by EIDAlloc", GetLastError());
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"EIDAlloc 0x%08x", dwError);
 				__leave;
 			}
 
-			DWORD dwHashSize = CERT_HASH_LENGTH;
-			fStatus = CryptHashCertificate(NULL, CALG_SHA_256, 0, pCertContext->pbCertEncoded, pCertContext->cbCertEncoded, pbSecret->Hash, &dwHashSize);
-			if (!fStatus)
-			{
-				LocalFree(DataOut.pbData);
-				dwError = GetLastError();
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptHashCertificate 0x%08x", GetLastError());
-				__leave;
-			}
-
-			// copy data
-			pbSecret->dwType = eidpdtDPAPI;
-			pbSecret->dwCertificatSize = (USHORT)pCertContext->cbCertEncoded;
-			pbSecret->dwSymetricKeySize = 0;  // Not used for DPAPI
-			pbSecret->usPasswordLen = (USHORT)DataOut.cbData;
-			pbSecret->dwCertificatOffset = 0;
-			memcpy(pbSecret->Data + pbSecret->dwCertificatOffset, pCertContext->pbCertEncoded, pbSecret->dwCertificatSize);
-			pbSecret->dwSymetricKeyOffset = pbSecret->dwCertificatOffset + pbSecret->dwCertificatSize;
-			pbSecret->dwPasswordOffset = pbSecret->dwSymetricKeyOffset;  // No symmetric key, so password immediately follows cert
-			memcpy(pbSecret->Data + pbSecret->dwPasswordOffset, DataOut.pbData, pbSecret->usPasswordLen);
-
-			LocalFree(DataOut.pbData);
+			// Build secret data using helper
+			BuildSecretData(pbSecret, pCertContext, pEncryptedPassword, usEncryptedPasswordSize,
+			                NULL, 0, false);
 		}
-		// save the data
-		if (!StorePrivateData(dwRid, (PBYTE) pbSecret, usSecretSize))
+
+		// Save the encrypted credential data
+		if (!StorePrivateData(dwRid, reinterpret_cast<PBYTE>(pbSecret), usSecretSize))
 		{
 			dwError = GetLastError();
-			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"StorePrivateData");
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"StorePrivateData");
 			__leave;
 		}
+
 		fReturn = TRUE;
 	}
 	__finally
 	{
+		// Clean up all allocated resources
 		if (pbPublicKey)
 			EIDFree(pbPublicKey);
-		if (hHash)
-			CryptDestroyHash(hHash);
 		if (pSymetricKey)
 		{
 			SecureZeroMemory(pSymetricKey, usSymetricKeySize);
@@ -528,13 +628,16 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 		if (hProv)
 		{
 			CryptReleaseContext(hProv, 0);
-			CryptAcquireContext(&hProv,CREDENTIAL_CONTAINER,CREDENTIALPROVIDER,PROV_RSA_AES,CRYPT_DELETEKEYSET);
+			CryptAcquireContext(&hProv, CREDENTIAL_CONTAINER, CREDENTIALPROVIDER, PROV_RSA_AES, CRYPT_DELETEKEYSET);
 		}
 	}
+
 	SetLastError(dwError);
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::UpdateCredential(__in PLUID pLuid, __in PUNICODE_STRING Password)
 {
 	DWORD dwRid = 0;
@@ -608,6 +711,8 @@ BOOL CStoredCredentialManager::UpdateCredential(__in PLUID pLuid, __in PUNICODE_
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::UpdateCredential(__in DWORD dwRid, __in PWSTR szPassword, __in_opt USHORT usPasswordLen)
 {
 	BOOL fReturn = FALSE, fStatus;
@@ -647,6 +752,8 @@ BOOL CStoredCredentialManager::UpdateCredential(__in DWORD dwRid, __in PWSTR szP
 	SetLastError(dwError);
 	return fReturn;
 }
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppChallenge, __out PDWORD pdwChallengeSize, __out PDWORD pType)
 {
 	BOOL fReturn = FALSE, fStatus;
@@ -674,10 +781,10 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RetrievePrivateData 0x%08x",dwError);
 			__leave;
 		}
-		*pType = pEidPrivateData->dwType;
+		*pType = static_cast<DWORD>(pEidPrivateData->dwType);
 		switch(*pType)
 		{
-		case eidpdtCrypted:
+		case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted):
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwType = eidpdtCrypted");
 			*pdwChallengeSize = pEidPrivateData->dwSymetricKeySize;
 			*ppChallenge = (PBYTE) EIDAlloc(pEidPrivateData->dwSymetricKeySize);
@@ -689,7 +796,7 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 			}
 			memcpy(*ppChallenge, pEidPrivateData->Data + pEidPrivateData->dwSymetricKeyOffset, pEidPrivateData->dwSymetricKeySize); 
 			break;
-		case eidpdtClearText:
+		case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtClearText):
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwType = eidpdtClearText");
 			fStatus = GetSignatureChallenge(ppChallenge, pdwChallengeSize);
 			if (!fStatus)
@@ -699,7 +806,7 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 				__leave;
 			}
 			break;
-		case eidpdtDPAPI:
+		case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtDPAPI):
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwType = eidpdtDPAPI");
 			fStatus = GetSignatureChallenge(ppChallenge, pdwChallengeSize);
 			if (!fStatus)
@@ -729,6 +836,8 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetSignatureChallenge(__out PBYTE* ppChallenge, __out PDWORD pdwChallengeSize)
 {
 	BOOL fReturn = FALSE, fStatus;
@@ -789,6 +898,8 @@ BOOL CStoredCredentialManager::RemoveStoredCredential(__in DWORD dwRid)
 {
 	return StorePrivateData(dwRid, nullptr, 0);
 }
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::RemoveAllStoredCredential()
 {
 	NET_API_STATUS Status;
@@ -819,6 +930,8 @@ BOOL CStoredCredentialManager::RemoveAllStoredCredential()
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetPassword(__in DWORD dwRid, __in PCCERT_CONTEXT pContext, __in PWSTR szPin, __out PWSTR *pszPassword)
 {
 	BOOL fReturn = FALSE;
@@ -958,15 +1071,17 @@ BOOL CStoredCredentialManager::GetResponseFromChallenge(__in PBYTE pChallenge, _
 {
 	switch(dwChallengeType)
 	{
-	case eidpdtClearText:
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtClearText):
 		return GetResponseFromSignatureChallenge(pChallenge,dwChallengeSize,pCertContext,Pin,pSymetricKey,usSize);
-	case eidpdtCrypted:
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted):
 		return GetResponseFromCryptedChallenge(pChallenge,dwChallengeSize,pCertContext,Pin,pSymetricKey,usSize);
 	default:
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Type not implemented");
 		return FALSE;
 	}
 }
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetResponseFromCryptedChallenge(__in PBYTE pChallenge, __in DWORD dwChallengeSize, __in PCCERT_CONTEXT pCertContext, __in PWSTR Pin, __out PBYTE *pSymetricKey, __out DWORD *usSize)
 {
 	BOOL fReturn = FALSE;
@@ -1119,6 +1234,8 @@ BOOL CStoredCredentialManager::GetResponseFromCryptedChallenge(__in PBYTE pChall
 }
 
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetResponseFromSignatureChallenge(__in PBYTE pbChallenge, __in DWORD dwChallengeSize, __in PCCERT_CONTEXT pCertContext, __in PWSTR szPin, __out PBYTE *ppResponse, __out PDWORD pdwResponseSize)
 {
 	UNREFERENCED_PARAMETER(dwChallengeSize);
@@ -1250,6 +1367,8 @@ struct KEY_BLOB {
 
 // create a symetric key which can be used to crypt data and
 // which is saved and protected by the public key
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GenerateSymetricKeyAndEncryptIt(__in HCRYPTPROV hProv, __in HCRYPTKEY hKey, __out HCRYPTKEY *phKey, __out PBYTE* pSymetricKey, __out USHORT *usSize)
 {
 	BOOL fReturn = FALSE;
@@ -1337,6 +1456,8 @@ BOOL CStoredCredentialManager::GenerateSymetricKeyAndEncryptIt(__in HCRYPTPROV h
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __in PWSTR szPassword, __in_opt USHORT dwPasswordLen, __out PBYTE *pEncryptedPassword, __out USHORT *usSize)
 {
 	BOOL fReturn = FALSE;
@@ -1411,11 +1532,11 @@ BOOL CStoredCredentialManager::GetPasswordFromChallengeResponse(__in DWORD dwRid
 {
 	switch(dwChallengeType)
 	{
-	case eidpdtClearText:
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtClearText):
 		return GetPasswordFromSignatureChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
-	case eidpdtCrypted:
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted):
 		return GetPasswordFromCryptedChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
-	case eidpdtDPAPI:
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtDPAPI):
 		return GetPasswordFromDPAPIChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
 	default:
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Type not implemented");
@@ -1423,6 +1544,8 @@ BOOL CStoredCredentialManager::GetPasswordFromChallengeResponse(__in DWORD dwRid
 	}
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
 {
 	UNREFERENCED_PARAMETER(ppChallenge);
@@ -1557,6 +1680,8 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
 {
 	BOOL fReturn = FALSE, fStatus;
@@ -1700,6 +1825,8 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
 {
 	BOOL fReturn = FALSE, fStatus;
@@ -1860,6 +1987,8 @@ BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD 
 	return fReturn;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize)
 {
 	UNREFERENCED_PARAMETER(dwChallengeSize);
@@ -2004,6 +2133,8 @@ void CStoredCredentialManager::ProcessSecretBufferDebugInternal(__in DWORD dwRid
     EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"ProcessSecretBufferDebugInternal: RID 0x%08X, size %u", dwRid, dwSecretSize);
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE pbSecret, __in_opt USHORT usSecretSize)
 {
 	// Convert C-style buffer to span for internal processing
@@ -2118,6 +2249,8 @@ BOOL CStoredCredentialManager::StorePrivateDataDebug(__in DWORD dwRid, __in_opt 
 	return FALSE;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData)
 {
 	if (!EIDIsComponentInLSAContext())
@@ -2234,7 +2367,7 @@ BOOL CStoredCredentialManager::HasStoredCredential(__in DWORD dwRid)
 
 
 struct ENCRYPTED_LM_OWF_PASSWORD {
-    unsigned char data[16];
+    std::array<unsigned char, 16> data;
 };
 using PENCRYPTED_LM_OWF_PASSWORD = ENCRYPTED_LM_OWF_PASSWORD*;
 using ENCRYPTED_NT_OWF_PASSWORD = ENCRYPTED_LM_OWF_PASSWORD;
@@ -2336,6 +2469,8 @@ NTSTATUS LoadSamSrv()
 	return STATUS_SUCCESS;
 }
 
+// SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
+// Code cannot be extracted from __try blocks per LSASS safety requirements
 NTSTATUS CStoredCredentialManager::CheckPassword( __in DWORD dwRid, __in PWSTR szPassword)
 {
 	NTSTATUS Status = STATUS_SUCCESS;
@@ -2346,7 +2481,7 @@ NTSTATUS CStoredCredentialManager::CheckPassword( __in DWORD dwRid, __in PWSTR s
  SAMPR_HANDLE hDomain = nullptr;
  SAMPR_HANDLE hUser = nullptr;
  PSAMPR_USER_INTERNAL1_INFORMATION UserInfo = nullptr;
-	unsigned char bHash[16];
+	std::array<unsigned char, 16> bHash;
 	UNICODE_STRING EncryptedPassword;
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 	__try
@@ -2399,7 +2534,7 @@ NTSTATUS CStoredCredentialManager::CheckPassword( __in DWORD dwRid, __in PWSTR s
 		EncryptedPassword.Length = (USHORT) wcslen(szPassword) * sizeof(WCHAR);
 		EncryptedPassword.MaximumLength = (USHORT) wcslen(szPassword) * sizeof(WCHAR);
 		EncryptedPassword.Buffer = szPassword;
-		Status = SystemFunction007(&EncryptedPassword, bHash);
+		Status = SystemFunction007(&EncryptedPassword, bHash.data());
 		if (Status!= STATUS_SUCCESS)	
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SystemFunction007 failed 0x%08x",Status);

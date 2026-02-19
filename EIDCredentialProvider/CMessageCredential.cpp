@@ -44,8 +44,8 @@ CMessageCredential::CMessageCredential():
     ZeroMemory(_rgFieldStatePairs, sizeof(_rgFieldStatePairs));
     ZeroMemory(_rgFieldStrings, sizeof(_rgFieldStrings));
 	_dwSmartCardCount = 0;
-	_dwStatus = Idle;
-	_dwOldStatus = Idle;
+	_dwStatus = CMessageCredentialStatus::Idle;
+	_dwOldStatus = CMessageCredentialStatus::Idle;
 }
 
 CMessageCredential::~CMessageCredential()
@@ -152,7 +152,7 @@ HRESULT CMessageCredential::GetFieldState(
 		*pcpfs = _rgFieldStatePairs[dwFieldID].cpfs;
 		if (dwFieldID == SMFI_CANCELFORCEPOLICY && (_cpus == CPUS_LOGON || _cpus == CPUS_UNLOCK_WORKSTATION))
 		{
-			if (GetPolicyValue(scforceoption))
+			if (GetPolicyValue(GPOPolicy::scforceoption))
 			{
 				*pcpfs = CPFS_DISPLAY_IN_SELECTED_TILE;
 			}
@@ -183,7 +183,7 @@ HRESULT CMessageCredential::GetStringValue(
 			// Make a copy of the string and return that. The caller
 			// is responsible for freeing it.
 			UINT MessageId;
-			if (_dwStatus == Reading)
+			if (_dwStatus == CMessageCredentialStatus::Reading)
 			{
 				MessageId = 38;
 			}
@@ -199,8 +199,8 @@ HRESULT CMessageCredential::GetStringValue(
 			if (Handle)
 			{
 				DWORD dwMessageLen = 256;
-				PWSTR Message = (PWSTR) CoTaskMemAlloc(dwMessageLen*sizeof(WCHAR));
-				if (Message)
+				// C++17 init-statement: Message is only used within this if block
+				if (PWSTR Message = static_cast<PWSTR>(CoTaskMemAlloc(dwMessageLen*sizeof(WCHAR))))
 				{
 					LoadString(Handle, MessageId, Message, dwMessageLen);
 					*ppwsz = Message;

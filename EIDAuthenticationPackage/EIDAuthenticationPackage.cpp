@@ -37,6 +37,9 @@
 
 #include <iphlpapi.h>
 #include <tchar.h>
+#include <lmaccess.h>
+#include <lmerr.h>
+#include <lm.h>
 
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/Tracing.h"
@@ -62,13 +65,13 @@ extern "C"
 	PLSA_STRING LsaInitializeString(PCSTR Source)
 	{
 		size_t Size = strlen(Source);
-		PCHAR Buffer = (PCHAR)EIDAlloc((DWORD) (sizeof(CHAR)*(Size+1)));
+		PCHAR Buffer = static_cast<PCHAR>(EIDAlloc(static_cast<DWORD>(sizeof(CHAR)*(Size+1))));
 		if (Buffer == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Buffer");
 			return NULL;
 		}
 
-		PLSA_STRING Destination = (PLSA_STRING)EIDAlloc(sizeof(LSA_STRING));
+		PLSA_STRING Destination = static_cast<PLSA_STRING>(EIDAlloc(sizeof(LSA_STRING)));
 
 		if (Destination == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Destination");
@@ -78,28 +81,28 @@ extern "C"
 
 		strncpy_s(Buffer,sizeof(CHAR)*(Size+1),
 			Source,sizeof(CHAR)*(Size+1));
-		Destination->Length = (USHORT) ( sizeof(CHAR)*Size);
-		Destination->MaximumLength = (USHORT) (sizeof(CHAR)*(Size+1));
+		Destination->Length = static_cast<USHORT>(sizeof(CHAR)*Size);
+		Destination->MaximumLength = static_cast<USHORT>(sizeof(CHAR)*(Size+1));
 		Destination->Buffer = Buffer;
 		return Destination;
 	}
 
 	PLSA_UNICODE_STRING LsaInitializeUnicodeStringFromWideString(PWSTR Source)
 	{
-		DWORD Size = (DWORD) (wcslen(Source));
+		DWORD Size = static_cast<DWORD>(wcslen(Source));
 		// Validate string length won't overflow USHORT fields in LSA_UNICODE_STRING
 		if (Size > USHRT_MAX / sizeof(WCHAR))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"String too long for UNICODE_STRING (%d chars)", Size);
 			return NULL;
 		}
-		PWSTR Buffer = (PWSTR)EIDAlloc((DWORD) (Size+1) * sizeof(WCHAR));
+		PWSTR Buffer = static_cast<PWSTR>(EIDAlloc(static_cast<DWORD>((Size+1) * sizeof(WCHAR))));
 		if (Buffer == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Buffer");
 			return NULL;
 		}
 
-		PLSA_UNICODE_STRING Destination = (PLSA_UNICODE_STRING)EIDAlloc(sizeof(LSA_UNICODE_STRING));
+		PLSA_UNICODE_STRING Destination = static_cast<PLSA_UNICODE_STRING>(EIDAlloc(sizeof(LSA_UNICODE_STRING)));
 
 		if (Destination == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Destination");
@@ -109,8 +112,8 @@ extern "C"
 
 		wcscpy_s(Buffer,Size+1,
 			Source);
-		Destination->Length = (USHORT) (Size * sizeof(WCHAR));
-		Destination->MaximumLength = (USHORT) ((Size+1) * sizeof(WCHAR));
+		Destination->Length = static_cast<USHORT>(Size * sizeof(WCHAR));
+		Destination->MaximumLength = static_cast<USHORT>((Size+1) * sizeof(WCHAR));
 		Destination->Buffer = Buffer;
 		return Destination;
 	}
@@ -118,12 +121,12 @@ extern "C"
 	PLSA_UNICODE_STRING LsaInitializeUnicodeStringFromUnicodeString(UNICODE_STRING Source)
 	{
 		PLSA_UNICODE_STRING Destination;
-		Destination = (PLSA_UNICODE_STRING)EIDAlloc(sizeof(LSA_UNICODE_STRING));
+		Destination = static_cast<PLSA_UNICODE_STRING>(EIDAlloc(sizeof(LSA_UNICODE_STRING)));
 		if (Destination == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Destination");
 			return NULL;
 		}
-		Destination->Buffer = (WCHAR*)EIDAlloc(Source.Length+sizeof(WCHAR));
+		Destination->Buffer = static_cast<WCHAR*>(EIDAlloc(Source.Length+sizeof(WCHAR)));
 		if (Destination->Buffer == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Destination->Buffer");
 			MyLsaDispatchTable->FreeLsaHeap(Destination);
@@ -257,7 +260,7 @@ extern "C"
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"AuthenticationPackageName = %S",AUTHENTICATIONPACKAGENAME);
 		NTSTATUS Status = STATUS_SUCCESS;
 
-		MyLsaDispatchTable = (PLSA_SECPKG_FUNCTION_TABLE)LsaDispatchTable;
+		MyLsaDispatchTable = reinterpret_cast<PLSA_SECPKG_FUNCTION_TABLE>(LsaDispatchTable);
 
 		*AuthenticationPackageName = LsaInitializeString(AUTHENTICATIONPACKAGENAME);
 
@@ -297,7 +300,7 @@ extern "C"
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 			*ProtocolStatus = STATUS_SUCCESS;
-			PEID_CALLPACKAGE_BUFFER pBuffer = (PEID_CALLPACKAGE_BUFFER) ProtocolSubmitBuffer;
+			PEID_CALLPACKAGE_BUFFER pBuffer = static_cast<PEID_CALLPACKAGE_BUFFER>(ProtocolSubmitBuffer);
 			pBuffer->dwError = 0;
 			
 			switch (pBuffer->MessageType)
@@ -310,8 +313,8 @@ extern "C"
 					break;
 				}
 				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Has Authorization for rid = 0x%x", pBuffer->dwRid);
-				pPointer = (PBYTE) pBuffer->wszPassword - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
-				pBuffer->wszPassword = (PWSTR) pPointer;
+				pPointer = reinterpret_cast<PBYTE>(pBuffer->wszPassword) - reinterpret_cast<ULONG_PTR>(ClientBufferBase) + reinterpret_cast<ULONG_PTR>(pBuffer);
+				pBuffer->wszPassword = reinterpret_cast<PWSTR>(pPointer);
 				pPointer = pBuffer->pbCertificate - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
 				pBuffer->pbCertificate = pPointer;
 				pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, pBuffer->pbCertificate, pBuffer->dwCertificateSize);
@@ -458,7 +461,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(ClientBufferBase);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 		NTSTATUS StatusReturned = STATUS_SUCCESS;
-		PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST pGina = (PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST) ProtocolSubmitBuffer;
+		PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST pGina = static_cast<PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST>(ProtocolSubmitBuffer);
 		PBYTE pbChallenge = NULL;
 		DWORD dwChallengeSize = 0;
 		DWORD dwType = 0;
@@ -502,7 +505,7 @@ extern "C"
 			{
 				if (pbChallenge)
 				{
-					response.pbChallenge = (PUCHAR)*ProtocolReturnBuffer + sizeof(EID_MSGINA_AUTHENTICATION_CHALLENGE_ANSWER);
+					response.pbChallenge = static_cast<PUCHAR>(*ProtocolReturnBuffer) + sizeof(EID_MSGINA_AUTHENTICATION_CHALLENGE_ANSWER);
 				}
 				StatusReturned = MyLsaDispatchTable->CopyToClientBuffer(ClientRequest, sizeof(EID_MSGINA_AUTHENTICATION_CHALLENGE_ANSWER), *ProtocolReturnBuffer, &response);
 				if (StatusReturned == STATUS_SUCCESS && pbChallenge) 
@@ -532,7 +535,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(ClientBufferBase);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 		NTSTATUS StatusReturned = STATUS_SUCCESS;
-		PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST pGina = (PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST) ProtocolSubmitBuffer;
+		PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST pGina = static_cast<PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST>(ProtocolSubmitBuffer);
 		PWSTR szPassword = NULL;
 		EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER response = {0};
 		memset(&response, 0, sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER));
@@ -587,7 +590,7 @@ extern "C"
 				response.dwError = ERROR_INVALID_PARAMETER;
 				__leave;
 			}
-			response.Password.MaximumLength = response.Password.Length = (USHORT)(sizeof(WCHAR) * wcslen(szPassword));
+			response.Password.MaximumLength = response.Password.Length = static_cast<USHORT>(sizeof(WCHAR) * wcslen(szPassword));
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"OK");
 		}
 		__finally
@@ -597,7 +600,7 @@ extern "C"
 			{
 				if (szPassword) 
 				{
-					response.Password.Buffer = (PWSTR)((PUCHAR)*ProtocolReturnBuffer + sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER));
+					response.Password.Buffer = reinterpret_cast<PWSTR>(static_cast<PUCHAR>(*ProtocolReturnBuffer) + sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER));
 				}
 				StatusReturned = MyLsaDispatchTable->CopyToClientBuffer(ClientRequest, sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER), *ProtocolReturnBuffer, &response);
 				if (StatusReturned == STATUS_SUCCESS && szPassword) 
@@ -636,7 +639,7 @@ extern "C"
 			*ProtocolStatus = STATUS_SUCCESS;
 			// we take care here of messages requiring the TCB privilege (winlogon, msgina, ...)
 			// the other message are forwarded to LsaApCallPackageUntrusted
-			PEID_CALLPACKAGE_BUFFER pBuffer = (PEID_CALLPACKAGE_BUFFER) ProtocolSubmitBuffer;
+			PEID_CALLPACKAGE_BUFFER pBuffer = static_cast<PEID_CALLPACKAGE_BUFFER>(ProtocolSubmitBuffer);
 			switch (pBuffer->MessageType)
 			{
 			case EIDCMEIDGinaAuthenticationChallenge:
@@ -722,8 +725,8 @@ extern "C"
 			{
 				__leave;
 			}
-			CredIsProtectedW = (CredIsProtectedWFct) GetProcAddress(hModule,"CredIsProtectedW");
-			CredUnprotectW = (CredUnprotectWFct) GetProcAddress(hModule,"CredUnprotectW");
+			CredIsProtectedW = reinterpret_cast<CredIsProtectedWFct>(GetProcAddress(hModule,"CredIsProtectedW"));
+			CredUnprotectW = reinterpret_cast<CredUnprotectWFct>(GetProcAddress(hModule,"CredUnprotectW"));
 			if (CredIsProtectedW == NULL || CredUnprotectW == NULL)
 			{
 				// get here if on Windows XP
@@ -796,14 +799,14 @@ extern "C"
 			
 			// the buffer come from another address space
 			// so the pointers inside the buffer are invalid
-			PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon = (PEID_INTERACTIVE_UNLOCK_LOGON) AuthenticationInformation;
+			PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon = static_cast<PEID_INTERACTIVE_UNLOCK_LOGON>(AuthenticationInformation);
 			Status = RemapPointer(pUnlockLogon,ClientAuthenticationBase, AuthenticationInformationLength);
 			if (Status != STATUS_SUCCESS)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RemapPointer 0x%08X", Status);
 				return Status;
 			}
-			PEID_SMARTCARD_CSP_INFO pSmartCardCspInfo = (PEID_SMARTCARD_CSP_INFO) pUnlockLogon->Logon.CspData;
+			PEID_SMARTCARD_CSP_INFO pSmartCardCspInfo = reinterpret_cast<PEID_SMARTCARD_CSP_INFO>(pUnlockLogon->Logon.CspData);
 			EIDDebugPrintEIDUnlockLogonStruct(WINEVENT_LEVEL_VERBOSE, pUnlockLogon);
 			
 			CStoredCredentialManager* manager = CStoredCredentialManager::Instance();
@@ -964,7 +967,7 @@ extern "C"
 			PSID pSid = MyTokenInformation->User.User.Sid;
 			Status = CompletePrimaryCredential(*AuthenticatingAuthority,*AccountName,pSid,LogonId,szPassword,PrimaryCredentials);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"CompletePrimaryCredential OK Status = %d",Status);
-			*SupplementalCredentials = (PSECPKG_SUPPLEMENTAL_CRED_ARRAY) EIDAlloc(sizeof(SECPKG_SUPPLEMENTAL_CRED_ARRAY));
+			*SupplementalCredentials = static_cast<PSECPKG_SUPPLEMENTAL_CRED_ARRAY>(EIDAlloc(sizeof(SECPKG_SUPPLEMENTAL_CRED_ARRAY)));
 			if (*SupplementalCredentials)
 			{
 				(*SupplementalCredentials)->CredentialCount = 0;
@@ -998,11 +1001,201 @@ extern "C"
 
 		exportedFunctions->InitializePackage = LsaApInitializePackage;
 		// missing the word NTAPI in NTSecPkg.h
-		exportedFunctions->LogonUserEx2 = (PLSA_AP_LOGON_USER_EX2) LsaApLogonUserEx2;
+		exportedFunctions->LogonUserEx2 = reinterpret_cast<PLSA_AP_LOGON_USER_EX2>(LsaApLogonUserEx2);
 		exportedFunctions->LogonTerminated = LsaApLogonTerminated;
 		exportedFunctions->CallPackage = LsaApCallPackage;
 		exportedFunctions->CallPackagePassthrough = LsaApCallPackagePassthrough;
 		exportedFunctions->CallPackageUntrusted = LsaApCallPackageUntrusted;
+	}
+
+	// CleanupLsaCredentials - Removes EID credential mappings from LSA Private Data
+	// Called by uninstaller to clean up stored credentials for all local users
+	HRESULT WINAPI CleanupLsaCredentials()
+	{
+		HRESULT hr = S_OK;
+		LSA_OBJECT_ATTRIBUTES ObjectAttributes = {0};
+		LSA_HANDLE LsaPolicyHandle = NULL;
+		NTSTATUS Status = STATUS_SUCCESS;
+		DWORD dwUsersProcessed = 0;
+		DWORD dwUsersRemoved = 0;
+
+		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"CleanupLsaCredentials: Starting LSA credential cleanup");
+
+		__try
+		{
+			// Initialize LSA object attributes
+			ObjectAttributes.Length = sizeof(LSA_OBJECT_ATTRIBUTES);
+
+			// Open LSA policy with necessary access
+			Status = LsaOpenPolicy(
+				NULL,
+				&ObjectAttributes,
+				POLICY_CREATE_SECRET | READ_CONTROL | WRITE_OWNER | WRITE_DAC,
+				&LsaPolicyHandle
+			);
+
+			if (Status != STATUS_SUCCESS)
+			{
+				DWORD dwError = LsaNtStatusToWinError(Status);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"CleanupLsaCredentials: LsaOpenPolicy failed (0x%08x)", dwError);
+				return HRESULT_FROM_WIN32(dwError);
+			}
+
+			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"CleanupLsaCredentials: LSA policy opened");
+
+			// Enumerate local users to find their RIDs
+			// We need to clean up LSA private data for each user
+			LPUSER_INFO_0 pUserInfo = NULL;
+			DWORD dwEntriesRead = 0;
+			DWORD dwTotalEntries = 0;
+			DWORD dwResumeHandle = 0;
+
+			// NetUserEnum requires lmaccess.h and netapi32.lib
+			// We'll use a simpler approach: get well-known SIDs and local accounts
+
+			// Instead of enumerating all users, we'll look for LSA keys that match our pattern
+			// LSA private data keys for EID are named: L$_EID_<RID_in_hex>
+
+			// Try to enumerate local users using NetUserEnum
+			// This is more reliable than trying all possible RIDs
+			Status = NetUserEnum(
+				NULL,
+				0,
+				FILTER_NORMAL_ACCOUNT,
+				(LPBYTE*)&pUserInfo,
+				MAX_PREFERRED_LENGTH,
+				&dwEntriesRead,
+				&dwTotalEntries,
+				&dwResumeHandle
+			);
+
+			if (Status == NERR_Success || Status == ERROR_MORE_DATA)
+			{
+				LPUSER_INFO_0 pCurrent = pUserInfo;
+				for (DWORD i = 0; i < dwEntriesRead; i++)
+				{
+					if (pCurrent == NULL || pCurrent->usri0_name == NULL)
+						break;
+
+					// Get the SID for this user
+					PBYTE pSidBuffer = NULL;
+					DWORD dwSidSize = 0;
+					PWSTR pDomain = NULL;
+					DWORD dwDomainSize = 0;
+					SID_NAME_USE sidUse = SidTypeUnknown;
+
+					// First call to get buffer sizes
+					LookupAccountName(NULL, pCurrent->usri0_name, NULL, &dwSidSize, NULL, &dwDomainSize, &sidUse);
+					if (dwSidSize == 0)
+					{
+						pCurrent++;
+						continue;
+					}
+
+					pSidBuffer = (PBYTE)EIDAlloc(dwSidSize);
+					pDomain = (PWSTR)EIDAlloc(dwDomainSize * sizeof(WCHAR));
+
+					if (pSidBuffer && pDomain)
+					{
+						if (LookupAccountName(NULL, pCurrent->usri0_name, pSidBuffer, &dwSidSize, pDomain, &dwDomainSize, &sidUse))
+						{
+							// Extract RID from SID
+							if (IsValidSid((PSID)pSidBuffer))
+							{
+								DWORD dwSubAuthorityCount = *GetSidSubAuthorityCount((PSID)pSidBuffer);
+								DWORD dwRid = *GetSidSubAuthority((PSID)pSidBuffer, dwSubAuthorityCount - 1);
+
+								// Build the LSA key name: L$_EID_<RID>
+								WCHAR szKeyName[64];
+								swprintf_s(szKeyName, _countof(szKeyName), L"L$_EID_%08X", dwRid);
+
+								// Create LSA_UNICODE_STRING for the key name
+								LSA_UNICODE_STRING LsaKeyName;
+								LsaKeyName.Length = (USHORT)(wcslen(szKeyName) * sizeof(WCHAR));
+								LsaKeyName.MaximumLength = LsaKeyName.Length + sizeof(WCHAR);
+								LsaKeyName.Buffer = szKeyName;
+
+								// Check if this key exists by trying to retrieve it
+								PLSA_UNICODE_STRING pPrivateData = NULL;
+								NTSTATUS retrieveStatus = LsaRetrievePrivateData(
+									LsaPolicyHandle,
+									&LsaKeyName,
+									&pPrivateData
+								);
+
+								if (retrieveStatus == STATUS_SUCCESS && pPrivateData != NULL)
+								{
+									// Key exists - delete it by storing NULL
+									NTSTATUS deleteStatus = LsaStorePrivateData(
+										LsaPolicyHandle,
+										&LsaKeyName,
+										NULL
+									);
+
+									if (deleteStatus == STATUS_SUCCESS)
+									{
+										EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"CleanupLsaCredentials: Removed credential mapping for user: %s (RID: 0x%08x)", pCurrent->usri0_name, dwRid);
+										dwUsersRemoved++;
+									}
+									else
+									{
+										DWORD dwError = LsaNtStatusToWinError(deleteStatus);
+										EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CleanupLsaCredentials: Failed to remove mapping for %s (0x%08x)", pCurrent->usri0_name, dwError);
+									}
+
+									// Free the retrieved data
+									if (pPrivateData != NULL)
+									{
+										LsaFreeMemory(pPrivateData);
+									}
+								}
+
+								dwUsersProcessed++;
+							}
+						}
+
+						if (pDomain) EIDFree(pDomain);
+						if (pSidBuffer) EIDFree(pSidBuffer);
+					}
+
+					pCurrent++;
+				}
+
+				// Free the user enumeration buffer
+				if (pUserInfo)
+				{
+					NetApiBufferFree(pUserInfo);
+				}
+			}
+			else
+			{
+				DWORD dwError = LsaNtStatusToWinError(Status);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CleanupLsaCredentials: NetUserEnum failed (0x%08x)", dwError);
+				// Don't fail - we might still succeed partially
+			}
+
+			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"CleanupLsaCredentials: Processed %d users, removed %d credential mappings", dwUsersProcessed, dwUsersRemoved);
+
+			// Close LSA policy handle
+			if (LsaPolicyHandle != NULL)
+			{
+				LsaClose(LsaPolicyHandle);
+			}
+
+			hr = S_OK;
+		}
+		__except(EIDExceptionHandler(GetExceptionInformation()))
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"CleanupLsaCredentials: Exception 0x%08x", GetExceptionCode());
+			EIDLogStackTrace(GetExceptionCode());
+			if (LsaPolicyHandle != NULL)
+			{
+				LsaClose(LsaPolicyHandle);
+			}
+			hr = E_FAIL;
+		}
+
+		return hr;
 	}
 
 }

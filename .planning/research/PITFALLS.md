@@ -1,8 +1,8 @@
 # Pitfalls Research
 
-**Domain:** C++14 to C++23 Standard Upgrade (Windows/MSVC)
-**Researched:** 2026-02-15
-**Confidence:** HIGH
+**Domain:** SonarQube Issue Remediation in Windows LSASS Security-Critical Codebase
+**Researched:** 2026-02-18
+**Confidence:** HIGH (based on codebase analysis, prior milestone experience, and Windows security documentation)
 
 ---
 
@@ -10,366 +10,366 @@
 
 Mistakes that cause rewrites, security vulnerabilities, or major deployment failures.
 
-### Pitfall 1: Windows 7 Support Elimination
+### Pitfall 1: Converting C-Style Stack Arrays to std::string in LSASS Code
 
 **What goes wrong:**
-Visual Studio 2026 (MSVC Build Tools 14.50/v145) has **completely removed** the ability to target Windows 7, Windows 8, Windows Server 2008 R2, and Windows Server 2012. Projects requiring Windows 7 support will fail to build or deploy after upgrading to the latest toolset.
+SonarQube flags 149 instances of "Use std::string instead of C-style char array" and 28 instances of "Use std::array/std::vector instead of C-style array." Blindly converting these to `std::string` or `std::vector` can cause LSASS crashes because:
+- `std::string` uses dynamic heap allocation
+- LSASS has strict memory constraints and custom allocators
+- Dynamic allocation failures in LSASS can crash the entire OS security subsystem
+- The codebase already uses custom `EIDAlloc`/`EIDFree` wrappers for LSASS-safe allocation
 
 **Why it happens:**
-Microsoft's official policy now states that "Build tools support for Windows 7, 8.0 and 8.1 ended in Visual Studio 2026." The minimum supported target operating systems for MSVC Build Tools 14.50 are Windows 10 or Windows Server 2016.
-
-**Consequences:**
-- Complete inability to deploy to Windows 7 systems
-- Potential business continuity failures for organizations still on Windows 7
-- Forced architecture decision: drop Windows 7 or stay on older MSVC
+SonarQube does not understand LSASS context. The rule is designed for general C++ code, not for system processes where stack allocation is intentional for safety and reliability.
 
 **How to avoid:**
-- Evaluate Windows 7 requirement BEFORE starting upgrade
-- If Windows 7 is required: stay on VS 2022 (v143) or VS 2019 (v142) toolset
-- If Windows 7 can be dropped: document this as a breaking change
-- Consider using older toolset versions (14.30-14.43) available in VS 2026 installer for compatibility
+1. **Never convert** C-style arrays in EIDAuthenticationPackage (LSASS-loaded code) to `std::string`
+2. C-style arrays in LSASS code are **intentional** - they guarantee stack allocation
+3. Files like `EIDCardLibrary/StoredCredentialManagement.cpp` contain 84 issues - most are won't-fix
+4. Only consider `std::array` (stack-allocated) as a safe alternative, never `std::vector` or `std::string`
 
 **Warning signs:**
-- Project requirements specify "Windows 7+"
-- Customer base includes Windows 7 systems
-- WINVER macro set to 0x0601 (Windows 7) or lower
+- Change introduces `new` or `malloc` in authentication flow
+- `std::string` appears in EIDAuthenticationPackage code
+- Dynamic allocation in SEH-protected blocks
 
-**Phase to address:** Pre-upgrade assessment (Phase 0)
+**Phase to address:** All phases - this is a constraint, not a fix target
 
-**Sources:**
-- [Microsoft Learn - Overview of Potential Upgrade Issues](https://learn.microsoft.com/en-us/cpp/porting/overview-of-potential-upgrade-issues-visual-cpp?view=msvc-170) - HIGH confidence
-- [GitHub Issue - VS 2026 dropped Windows 7/8 support](https://github.com/zufuliu/notepad4/issues/829) - MEDIUM confidence
+**Rollback strategy:** If a std::string conversion causes issues, immediately revert to original C-style array and document as won't-fix.
 
 ---
 
-### Pitfall 2: std::string_view Dangling References in LSASS Code
+### Pitfall 2: Marking Global Variables as const When They're Runtime-Assigned
 
 **What goes wrong:**
-`std::string_view` (C++17) is a non-owning view that can create dangling references when the underlying string is destroyed or reallocated. In security-critical LSASS code, this can lead to:
-- Use-after-free vulnerabilities
-- Heap-use-after-free bugs
-- Stack-use-after-return bugs
-- Credential data corruption or leakage
+SonarQube flags 71 "Global variables should be const" and 31 "Global pointers should be const at every level" issues. Marking runtime-assigned globals as `const` causes:
+- Compilation failures (cannot assign to const)
+- Broken LSA initialization (function pointers assigned by `SetAlloc`/`SetFree`/`SetImpersonate`)
+- Tracing state corruption (`IsTracingEnabled` changes at runtime)
+- COM registration failures (reference counts, instance handles)
 
 **Why it happens:**
-`std::string_view` does not own its data. Common problematic patterns include:
-- Returning `string_view` from functions that create temporaries
-- Storing `string_view` in classes when the underlying data lifetime is unclear
-- Using `string_view` with ternary expressions that create temporary strings
-- Passing `string_view` across API boundaries where lifetime is unclear
-
-**Consequences:**
-- Silent memory corruption in authentication logic
-- Potential credential exposure
-- LSASS crashes requiring system restart
-- Security vulnerabilities exploitable by attackers
+v1.3 Phase 23 already documented 32 globals as legitimately mutable. The SonarQube rule doesn't understand that some globals are designed to be assigned once at initialization and then read-only during operation.
 
 **How to avoid:**
-- NEVER store `string_view` in class members in LSASS code
-- Use `std::string` for any data that crosses API boundaries
-- Apply lifetime analysis tools before adopting `string_view`
-- Review all `string_view` usage with security-focused code review
-- Prefer `std::string` for credential data handling
+Before marking any global as `const`:
+1. Check if it's assigned by a `Set*()` function (LSA function pointers)
+2. Check if it's modified in `EnableCallback` (tracing state)
+3. Check if it's a Windows API output buffer (CryptoAPI requires non-const)
+4. Check if it's set during DLL initialization (`DllGetClassObject`, `DllRegisterServer`)
+
+**Won't-fix categories from v1.3 Phase 23:**
+| Category | Count | Example |
+|----------|-------|---------|
+| LSA Function Pointers | 3 | `MyAllocateHeap`, `MyFreeHeap`, `MyImpersonate` |
+| Tracing State | 4 | `IsTracingEnabled`, `hPub`, `bFirst` |
+| DLL State | 2 | `g_cRef`, `g_hinst` |
+| UI State | 6 | `szReader`, `szCard`, `szUserName`, `szPassword` |
+| Windows API Buffers | 14 | OID strings for `CERT_ENHKEY_USAGE` |
 
 **Warning signs:**
-- Functions returning `std::string_view` from temporary operations
-- Class members of type `std::string_view`
-- `string_view` used in ternary expressions
-- Passing `string_view` to functions that store or cache it
+- Adding `const` to a pointer declared `extern` without checking definition
+- Global has a `Set*` setter function
+- Global is modified in `EnableCallback`, `DllMain`, or initialization code
 
-**Phase to address:** C++17 feature adoption (Phase 2)
+**Phase to address:** Issue review phases - identify won't-fix upfront
 
-**Sources:**
-- [C++ Core Guidelines Issue #1038](https://github.com/isocpp/CppCoreGuidelines/issues/1038) - HIGH confidence
-- [Medium - 70% of C++ Security Bugs from string_view Misuse](https://medium.com/@dikhyantkrishnadalai/70-of-c-security-bugs-stem-from-std-string-view-misuse-heres-how-to-prevent-them-4aca2ba9bb86) - MEDIUM confidence
+**Rollback strategy:** Remove const qualifier, add comment explaining runtime assignment pattern.
 
 ---
 
-### Pitfall 3: ABI Compatibility Breach at C-Style API Boundaries
+### Pitfall 3: Refactoring SEH-Protected Code Breaks Exception Safety
 
 **What goes wrong:**
-EIDAuthentication uses C-style API boundaries for ABI compatibility with Windows. Mixing C++ standard library types across these boundaries with different MSVC versions or `/std:c++` flags can cause:
-- Link failures (name decoration changes)
-- Runtime crashes (type layout changes)
-- Silent memory corruption (container ABI differences)
+The codebase has 215+ `__try`/`__except`/`__finally` blocks. Extracting code from SEH blocks into helper functions breaks structured exception handling because:
+- SEH only works within a single function scope
+- Extracted code is no longer protected by the `__except` filter
+- Access violations in extracted helpers crash LSASS (BSOD potential)
+- `__finally` cleanup won't run for extracted code
 
 **Why it happens:**
-While MSVC maintains binary compatibility between v140/v141/v142/v143/v145 toolsets, changing the `/std:c++` flag can break ABI for specific standard library types. The C++ ABI is NOT stable across standard versions - only the C ABI is.
-
-**Consequences:**
-- Authentication DLL fails to load in LSASS
-- Credential data corruption across API boundaries
-- Unpredictable behavior that evades testing
+Nesting depth reduction (Phase 24) and cognitive complexity reduction (Phase 25) goals can tempt refactoring of SEH-protected code. The relationship between code location and exception protection is not obvious.
 
 **How to avoid:**
-- Maintain C-style interfaces (`extern "C"`) for all exported functions
-- NEVER pass STL containers (`std::string`, `std::vector`, etc.) across API boundaries
-- Use opaque pointers (`void*`) with C-style accessor functions
-- Ensure all DLL components are rebuilt with identical compiler flags
-- Avoid exceptions crossing DLL boundaries - use error codes
+1. Never extract code from inside `__try` blocks
+2. `__try`/`__except`/`__finally` structures must remain intact
+3. Nesting reduction in SEH code should use early return/guard clauses only
+4. Document SEH-protected functions as won't-fix for nesting/cognitive complexity
+
+**Files with most SEH usage:**
+- `EIDCardLibrary/StoredCredentialManagement.cpp` - 42 SEH blocks
+- `EIDAuthenticationPackage/EIDAuthenticationPackage.cpp` - 14 SEH blocks
+- `EIDCardLibrary/Package.cpp` - 12 SEH blocks
+- `EIDCardLibrary/Registration.cpp` - 10 SEH blocks
 
 **Warning signs:**
-- `std::string` or `std::vector` in function signatures crossing DLL boundaries
-- Different `/std:c++` flags between DLL and consumer
-- Linking against libraries built with different MSVC versions
-- Exceptions being thrown across module boundaries
+- Refactoring touches `__try`, `__except`, `__finally` keywords
+- Helper function created inside SEH block
+- Error handling path split across functions
 
-**Phase to address:** Build system configuration (Phase 1)
+**Phase to address:** All refactoring phases - this is a constraint
 
-**Sources:**
-- [Microsoft Learn - Library and Build Tools Dependencies](https://learn.microsoft.com/en-us/cpp/porting/overview-of-potential-upgrade-issues-visual-cpp?view=msvc-170) - HIGH confidence
-- [Reddit - C++ Types Across DLL Boundaries](https://www.reddit.com/r/cpp/comments/1b1tcjx/how_often_do_people_use_c_types_across_dllso/) - MEDIUM confidence
+**Rollback strategy:** Restore SEH block structure immediately; document as won't-fix with SEH safety justification.
 
 ---
 
-### Pitfall 4: Removed C++17 Features (auto_ptr, register, trigraphs)
+### Pitfall 4: Adding [[fallthrough]] Incorrectly to Switch Statements
 
 **What goes wrong:**
-C++17 removed several deprecated features that may still exist in older codebases:
-- `auto_ptr` (replaced by `unique_ptr` in C++11)
-- `register` keyword (no effect since C++11)
-- Trigraphs (e.g., `??=` for `#`)
-- `++` operator for `bool`
-- `bind1st`, `bind2nd`, `ptr_fun`
+SonarQube's blocker issue (1 instance) flags "Unannotated fall-through between switch labels." Adding `[[fallthrough]]` without understanding the code can:
+- Mask logic bugs where fall-through was unintentional
+- Hide missing break statements that should exist
+- Create security vulnerabilities if authentication cases fall through
 
 **Why it happens:**
-Legacy code from pre-C++11 era may still use these features. The upgrade to C++17+ will cause compilation failures.
-
-**Consequences:**
-- Compilation errors blocking upgrade progress
-- Need to refactor legacy code patterns
-- Potential introduction of bugs during conversion
+The `[[fallthrough]]` attribute (C++17) explicitly indicates intentional fall-through. Without analysis, you might add it to cases where the original code had a bug.
 
 **How to avoid:**
-- Audit codebase for `auto_ptr` usage before upgrade
-- Replace `auto_ptr` with `std::unique_ptr`
-- Remove all `register` keywords (they do nothing)
-- Remove trigraph sequences
-- Replace `bind1st`/`bind2nd` with lambdas
-
-**MSVC-specific workaround:**
-Define `_HAS_AUTO_PTR_ETC=1` as a preprocessor macro to temporarily restore removed features, but this is NOT recommended for production.
+1. Analyze the switch case logic before adding `[[fallthrough]]`
+2. Confirm the fall-through is intentional (related cases grouped together)
+3. If fall-through is a bug, add `break` instead of `[[fallthrough]]`
+4. The blocker issue in `EIDConfigurationWizardPage06.cpp:44` needs careful review
 
 **Warning signs:**
-- Code history shows pre-C++11 origins
-- Usage of `std::auto_ptr` anywhere in codebase
-- Any `register` keyword in variable declarations
-- Trigraph sequences in string literals or comments
+- Switch cases have completely unrelated logic
+- No comment indicating intentional fall-through
+- Different error handling in consecutive cases
 
-**Phase to address:** Pre-upgrade code audit (Phase 0)
+**Phase to address:** First phase (blocker fix)
 
-**Sources:**
-- [Microsoft DevBlogs - C++17 Feature Removals and Deprecations](https://devblogs.microsoft.com/cppblog/c17-feature-removals-and-deprecations/) - HIGH confidence
-- [cppreference - C++17](https://en.cppreference.com/w/cpp/17.html) - HIGH confidence
+**Rollback strategy:** Remove `[[fallthrough]]` and add `break` if analysis shows it was a bug.
 
 ---
 
-### Pitfall 5: Stricter Compiler Conformance Breaking Previously Valid Code
+### Pitfall 5: Breaking Windows API Const-Correctness Requirements
 
 **What goes wrong:**
-MSVC's improved conformance to the C++ standard means code that compiled cleanly with older compiler versions may now fail. The compiler is correctly flagging errors that it previously ignored or explicitly allowed.
+Windows APIs often require non-const pointers even when they don't modify the data. Adding `const` to match SonarQube's const-correctness rules breaks Windows API calls:
+- `LSA_UNICODE_STRING` buffers must be non-const
+- `SecBuffer` descriptors require mutable pointers
+- `CERT_ENHKEY_USAGE.rgpszUsageIdentifier` requires `LPSTR*` (non-const)
+- Many Win32 APIs use `LPTSTR` out-params even for input
 
 **Why it happens:**
-MSVC has been progressively improving standard conformance. Examples include:
-- Non-const arguments to const parameters (now errors)
-- Narrowing conversions (C4838 warnings)
-- Two-phase name lookup for templates
-- Stricter `const` correctness enforcement
-
-**Consequences:**
-- Hundreds of compilation errors in previously working code
-- Extended upgrade timeline due to unexpected fixes needed
-- Risk of introducing bugs while fixing "correct" code
+Windows API design predates modern C++ const-correctness. Many APIs were designed for C compatibility and use non-const for flexibility. SonarQube doesn't understand Windows API contracts.
 
 **How to avoid:**
-- Expect and plan for conformance-related compilation errors
-- Use `/permissive-` flag to catch non-conformant code early
-- Run code analysis (`/analyze`) before upgrade to identify issues
-- Fix issues incrementally - don't disable conformance checks
-- Test thoroughly after fixing conformance errors
+1. Check MSDN documentation before adding const to Windows API parameters
+2. Use `const_cast` sparingly and document why
+3. Don't change function signatures for Windows callbacks
+4. Document Windows API const requirements as won't-fix
+
+**Known won't-fix patterns:**
+- `LsaInitializeString` - `PLSA_STRING` is non-const
+- `CertOpenStore` - provider parameters are non-const
+- `SCardEstablishContext` - context handles are non-const pointers
 
 **Warning signs:**
-- Code that relies on MSVC-specific non-standard behavior
-- Template code with ambiguous name lookup
-- Implicit conversions that "just work" in current version
-- `/Za` (disable extensions) flag causes compilation errors
+- Adding `const` to a pointer passed to Windows API
+- Function is a Windows callback (WNDPROC, etc.)
+- Parameter type is a Windows structure pointer
 
-**Phase to address:** Compiler upgrade (Phase 1)
+**Phase to address:** Const-correctness review phases
 
-**Sources:**
-- [Microsoft Learn - Overview of Potential Upgrade Issues](https://learn.microsoft.com/en-us/cpp/porting/overview-of-potential-upgrade-issues-visual-cpp?view=msvc-170) - HIGH confidence
-- [Microsoft Learn - MSVC Conformance Improvements](https://learn.microsoft.com/en-us/cpp/overview/msvc-conformance-improvements?view=msvc-170) - HIGH confidence
+**Rollback strategy:** Remove const qualifier, add comment referencing Windows API requirement.
 
 ---
 
-### Pitfall 6: /GL (Whole Program Optimization) Incompatibility
+### Pitfall 6: Converting Macros Used in Resource Files to constexpr
 
 **What goes wrong:**
-Object files compiled with `/GL` (Whole Program Optimization) can ONLY be linked using the exact same build tools that produced them. Mixing `/GL` objects from different MSVC versions causes link failures.
+SonarQube flags 111 "Replace macro with const, constexpr or enum" issues. Converting macros used in `.rc` resource files to `constexpr` breaks the resource compiler:
+- `RC.exe` cannot process C++ constexpr
+- Build fails with "undefined identifier" in resource files
+- Version information macros like `EIDAuthenticateVersionText` must be `#define`
 
 **Why it happens:**
-The internal data structures within `/GL` object files are not stable across major versions of the build tools. Newer linkers cannot understand older `/GL` formats.
-
-**Consequences:**
-- Link errors when mixing object files/libraries
-- Forced full rebuild of all dependencies
-- Potential hidden issues if `/GL` objects slip through
+v1.3 Phase 22-03 already discovered this - `EIDAuthenticateVersionText` was converted to constexpr and had to be reverted because the resource compiler only understands preprocessor macros.
 
 **How to avoid:**
-- Rebuild ALL static libraries and object files when upgrading toolset
-- Do NOT mix `/GL` compiled objects across MSVC versions
-- Document `/GL` usage clearly in build documentation
-- Consider disabling `/GL` during upgrade process, re-enable after
+1. Check if macro is used in any `.rc` file before converting
+2. Resource ID macros (~50 in this codebase) must remain as `#define`
+3. Version string macros must remain as `#define`
+4. Only convert macros that are purely C++ code constants
+
+**Won't-fix macro categories from v1.3 Phase 22:**
+| Category | Count | Reason |
+|----------|-------|--------|
+| Windows Header Macros | ~25 | Configure SDK behavior |
+| Function-Like Macros | ~10 | Use `#`, `##`, `__FILE__`, `__LINE__` |
+| Resource ID Macros | ~50 | Required by RC.exe |
+| Version String Macros | 1+ | Required by version resources |
 
 **Warning signs:**
-- Use of `/GL` flag in project settings
-- Static libraries from external sources
-- Link errors referencing "incompatible object format"
+- Macro name starts with `IDC_`, `IDD_`, `IDS_` (resource IDs)
+- Macro contains `__FILE__`, `__LINE__`, `__FUNCTION__`
+- Macro used in `STRINGTABLE`, `VERSIONINFO` resource blocks
 
-**Phase to address:** Build system upgrade (Phase 1)
+**Phase to address:** Macro conversion phases
 
-**Sources:**
-- [Microsoft Learn - Build Tools Compatibility](https://learn.microsoft.com/en-us/cpp/porting/overview-of-potential-upgrade-issues-visual-cpp?view=msvc-170) - HIGH confidence
+**Rollback strategy:** Revert to `#define`, document resource compiler limitation.
 
 ---
 
 ## Moderate Pitfalls
 
-### Pitfall 7: std::span Lifetime Issues (C++20)
+### Pitfall 7: Over-Extracting Helper Functions for Cognitive Complexity
 
 **What goes wrong:**
-`std::span` (C++20) is a non-owning view similar to `string_view`. It provides no bounds checking by default (no `at()` method like `std::vector`) and can dangle if the underlying container is modified or destroyed.
+Extracting too many helper functions for cognitive complexity reduction leads to:
+- Code scattered across many functions, harder to understand as a whole
+- Context loss - helpers need many parameters to access needed state
+- Non-idiomatic Windows code (dialog procedures should be self-contained)
+- Testing complexity increases
 
-**Prevention:**
-- Treat `std::span` as a function parameter type, not a storage type
-- Never store `std::span` in class members
-- Ensure underlying data outlives all spans referencing it
-- Use static analysis to detect lifetime issues
+**Why it happens:**
+SonarQube's cognitive complexity metric doesn't account for:
+- Security-critical explicit flow (validation chains)
+- Windows message handler idioms
+- State machine patterns
 
-**Phase to address:** C++20 feature adoption (Phase 3)
+**How to avoid:**
+1. Only extract when helper has clear single responsibility
+2. Limit helpers to 3-4 parameters maximum
+3. Keep message handlers together in their original function
+4. Document complex validation chains as won't-fix (security-relevant)
+
+**Won't-fix categories from v1.3 Phases 24-25:**
+- SEH-Protected Code - Exception safety
+- Primary Authentication Functions - Security-critical
+- Complex State Machines - Deliberate design
+- Crypto Validation Chains - Explicit security flow
+- Windows Message Handlers - Idiomatic pattern
+
+**Warning signs:**
+- Helper function named "HandleCase1", "DoTheWork", "Helper"
+- Helper needs 5+ parameters
+- Message handler split across 3+ functions
+
+**Phase to address:** Cognitive complexity phases
 
 ---
 
-### Pitfall 8: C++20 Modules Premature Adoption
+### Pitfall 8: Changing Error Return Semantics
 
 **What goes wrong:**
-C++20 modules have significant adoption challenges in existing codebases:
-- IntelliSense issues in Visual Studio
-- Circular import dependencies failing to compile
-- Build system complexity (CMake support still evolving)
-- Incompatible with traditional header-only libraries
+Modifying error handling while refactoring can change:
+- `HRESULT` to `NTSTATUS` conversion behavior
+- Error codes returned to calling code
+- `SetLastError` values that callers depend on
+- LSA dispatch table expectations
 
-**Prevention:**
-- Defer modules adoption until tooling matures
-- Start with header units for standard library headers only
-- Test module adoption in isolation before production use
-- Monitor [Visual Studio Developer Community](https://developercommunity.visualstudio.com/t/Currently-known-issues-with-IntelliSense/10738687) for known issues
+**Why it happens:**
+The codebase uses mixed error types (HRESULT, NTSTATUS, BOOL, DWORD) for different contexts. Refactoring can accidentally change error propagation.
 
-**Phase to address:** Future phase (NOT recommended for initial upgrade)
+**How to avoid:**
+1. Preserve exact return types at function boundaries
+2. Don't change `return FALSE` to `return E_FAIL` without checking callers
+3. Keep LSA entry point return types as `NTSTATUS`
+4. Keep credential provider entry points as `HRESULT`
+5. Use `HRESULT_FROM_NT` / `HRESULT_FROM_WIN32` for conversions
 
-**Sources:**
-- [Visual Studio Developer Community - IntelliSense Issues](https://developercommunity.visualstudio.com/t/Currently-known-issues-with-IntelliSense/10738687) - HIGH confidence
-- [Medium - Are C++ Modules There Yet?](https://medium.com/@nerudaj/are-c-modules-there-yet-77cde050afce) - MEDIUM confidence
+**Warning signs:**
+- Changing function return type
+- Adding new error return paths
+- Converting between HRESULT and NTSTATUS
+
+**Phase to address:** All refactoring phases
 
 ---
 
-### Pitfall 9: Silent Behavior Changes (Annex C)
+### Pitfall 9: Breaking DLL Load Order Dependencies
 
 **What goes wrong:**
-The C++ standard documents breaking changes in **Annex C [diff]**. These can cause silent behavior changes - code compiles but behaves differently:
-- Copy elision changes
-- Move semantics interactions with existing code
-- `auto` type deduction changes
-- Order of evaluation changes
+Modifying global initialization order can break:
+- LSA function pointer assignment (must happen before any allocation)
+- ETW tracing registration (must happen before first trace)
+- Critical section initialization (must happen before first use)
 
-**Prevention:**
-- Review cppreference's C++ standard version change logs
-- Enable high warning levels (`/W4`)
-- Run comprehensive test suite after each standard upgrade
-- Use static analysis to detect potentially affected code
+**Why it happens:**
+Globals are initialized in undefined order across translation units. The current code may rely on specific initialization order that's fragile.
 
-**Phase to address:** Each standard version upgrade
+**How to avoid:**
+1. Don't change where `SetAlloc`/`SetFree`/`SetImpersonate` are called
+2. Keep `DllMain` initialization sequence unchanged
+3. Don't move critical section initialization
+4. Test DLL loading in isolation after any initialization changes
 
-**Sources:**
-- [Stack Overflow - Silent Behavior Changes](https://stackoverflow.com/questions/63290846/have-there-ever-been-silent-behavior-changes-in-c-with-new-standard-versions) - HIGH confidence
-- [cppreference - Compiler Support](https://en.cppreference.com/w/cpp/compiler_support) - HIGH confidence
+**Warning signs:**
+- Moving initialization code to different functions
+- Adding new globals that need initialization
+- Changing `DllMain` entry point
+
+**Phase to address:** Any phase touching initialization code
 
 ---
 
-### Pitfall 10: Library Dependencies Rebuild Required
+### Pitfall 10: Auto Type Deduction Breaking Windows API Types
 
 **What goes wrong:**
-When upgrading MSVC, ALL static libraries must be rebuilt with the new toolset. This includes third-party libraries for which you may not have source code.
+Using `auto` for Windows API types can cause:
+- Wrong type deduction (HANDLE vs. PHANDLE)
+- Pointer level confusion
+- Implicit conversion hiding
+- Compile errors with Windows typedefs
 
-**Prevention:**
-- Inventory all static library dependencies before upgrade
-- Ensure source code access or vendor support for new toolset
-- Check Vcpkg/Conan for updated binary packages
-- Plan for potential vendor negotiations if source unavailable
+**Why it happens:**
+Windows uses many typedef aliases. `auto` deduces the underlying type, which may lose typedef semantics.
 
-**Phase to address:** Pre-upgrade assessment (Phase 0)
+**How to avoid:**
+1. Use `auto` primarily for iterator declarations (v1.3 Phase 21 pattern)
+2. Keep explicit types for Windows handles and pointers
+3. Don't use `auto` for function parameters or return types
+4. Verify deduced type matches expected Windows type
 
----
+**Safe auto usage (from v1.3 Phase 21):**
+```cpp
+// SAFE: Iterator declarations
+auto iter = certificates.begin();
+auto it = m_mapCredentials.find(hash);
 
-### Pitfall 11: /NODEFAULTLIB and CRT Refactoring
+// UNSAFE: Windows handles
+auto hToken = GetCurrentToken(); // Could be HANDLE or PHANDLE
+```
 
-**What goes wrong:**
-Projects using `/NODEFAULTLIB` (Ignore All Default Libraries) will fail because CRT library names changed in Visual Studio 2015+:
-- `libcmt.lib` became `libcmt.lib`, `libucrt.lib`, `libvcruntime.lib`
-- `msvcrt.lib` became `msvcrt.lib`, `ucrt.lib`, `vcruntime.lib`
+**Warning signs:**
+- `auto` used with Windows HANDLE, HWND, HKEY types
+- `auto` for function return types in header files
+- `auto` deducing pointer-to-pointer
 
-**Prevention:**
-- Update Additional Dependencies with new library names
-- Or: remove `/NODEFAULTLIB` and let linker use defaults
-- Add `legacy_stdio_definitions.lib` if linking older static libraries
-
-**Phase to address:** Build system upgrade (Phase 1)
+**Phase to address:** Style modernization phases
 
 ---
 
 ## Minor Pitfalls
 
-### Pitfall 12: Deprecated but Not Removed Features
+### Pitfall 11: Adding Comments to Empty Compound Statements
 
-Features deprecated in newer standards that still compile but generate warnings:
-- `std::iterator` (C++17) - use iterator traits directly
-- `std::raw_storage_iterator` (C++17)
-- `std::get_temporary_buffer` (C++17)
-- Some `<codecvt>` facilities (C++17)
+**What goes wrong:**
+SonarQube flags "Fill compound statement or add nested comment" (17 issues). Adding comments to intentional empty blocks can:
+- Obscure that the block is intentionally empty
+- Add noise without value
+- Miss the real issue (should the block be empty?)
 
-**Prevention:** Address deprecation warnings before they become removal errors.
-
----
-
-### Pitfall 13: Unicode vs MBCS Warnings
-
-Older MFC projects default to MBCS. Upgrading generates warnings to use Unicode.
-
-**Prevention:** Either convert to Unicode or disable warning 4996 project-wide if MBCS is intentional.
+**How to avoid:**
+1. Use `; // intentional` or `; // no action required` for truly empty blocks
+2. Consider if empty block indicates missing error handling
+3. Don't add verbose comments that add no information
 
 ---
 
-### Pitfall 14: 32-bit to 64-bit Reveal Hidden Bugs
+### Pitfall 12: Merging Nested If Statements Blindly
 
-Compiling for 64-bit can reveal bugs hidden by 32-bit builds:
-- Pointer truncation
-- Size_t format specifier mismatches
-- Time_t size differences
+**What goes wrong:**
+SonarQube flags "Merge if statement with enclosing one" (17 issues). Merging can:
+- Lose short-circuit evaluation benefits
+- Change evaluation order (side effects)
+- Make code less readable with complex conditions
 
-**Prevention:** Compile for 64-bit during upgrade testing to catch these early.
-
----
-
-## Security-Specific Pitfalls for LSASS Code
-
-| Pitfall | Risk | Prevention |
-|---------|------|------------|
-| `string_view` storing credential data | Use-after-free credential exposure | Use `std::string` for all credential data |
-| STL types across API boundaries | Memory corruption, credential leakage | C-style interfaces only |
-| Exception crossing DLL boundary | Uncaught exception in LSASS | Error codes only |
-| Narrowing conversions | Silent data corruption | Treat C4838 as errors |
-| Memory allocation mismatch | Heap corruption | Single allocator strategy |
-| `/analyze` warnings ignored | Latent security defects | Fix all analysis warnings |
+**How to avoid:**
+1. Merge only when both conditions are simple
+2. Keep short-circuit evaluation explicit when order matters
+3. Don't merge if debugging needs to distinguish which condition failed
 
 ---
 
@@ -379,24 +379,67 @@ Shortcuts that seem reasonable but create long-term problems.
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Define `_HAS_AUTO_PTR_ETC=1` | Quick compile fix | Blocks future standard adoption | Never |
-| Disable conformance checks | Faster upgrade | Accumulates non-standard code | Never |
-| Skip static library rebuilds | Saves time | Runtime crashes | Never |
-| Use `/std:c++latest` | Access newest features | Unexpected breaking changes | Only with pinned compiler version |
-| Adopt modules early | Modern codebase | Tooling issues, build complexity | After ecosystem matures |
+| Mark all globals const | Reduces SonarQube count | Compilation failures, broken initialization | Never - requires analysis |
+| Convert all C arrays to std::string | Cleaner code | LSASS crashes from dynamic allocation | Never in LSASS-loaded code |
+| Disable SEH for refactoring | Easier extraction | Access violations crash OS | Never |
+| Suppress warnings with #pragma | Quick fix | Hides real issues | Only for external headers |
+| Use // NOSONAR everywhere | Fast cleanup | Hides real issues, audit trail lost | Only with documented justification |
+
+---
+
+## Integration Gotchas
+
+Common mistakes when connecting to external services/APIs.
+
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| LSA Dispatch Table | Assuming functions are available | Check function pointers are non-null before use |
+| ETW Tracing | Registering in DllMain | Defer registration to first use or dedicated init |
+| CryptoAPI | Using const with CERT_ structures | Keep non-const as Windows API requires |
+| Smart Card API | Not checking SCard return values | All SCard functions need explicit error handling |
+| Credential Provider | Throwing exceptions across COM boundary | Use HRESULT error codes only |
+
+---
+
+## Performance Traps
+
+Patterns that work at small scale but fail as usage grows.
+
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| Large stack buffers in recursion | Stack overflow | Keep buffers <1KB in recursive code | Deep call chains |
+| Certificate validation on every auth | Slow login | Consider caching validation results (future) | Many concurrent logins |
+| Tracing every operation | ETW buffer overflow | Use trace levels appropriately | High-frequency operations |
+
+---
+
+## Security Mistakes
+
+Domain-specific security issues for LSASS authentication code.
+
+| Mistake | Risk | Prevention |
+|---------|------|------------|
+| std::string for credential data | Heap-based credential exposure | Use stack buffers, SecureZeroMemory after use |
+| Exception crossing LSASS boundary | LSASS crash (BSOD) | Error codes only, no exceptions |
+| Logging sensitive data | Credential exposure in logs | Never log PINs, passwords, or key material |
+| Not clearing credential buffers | Memory forensics credential theft | SecureZeroMemory all credential buffers |
+| Trusting certificate without validation | Authentication bypass | Full chain validation always |
+| Ignoring smart card removal | Session hijacking | Handle card removal events |
+| Timing attacks on PIN validation | PIN enumeration | Consider constant-time comparison |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-Things that appear complete after upgrade but are missing critical pieces.
+Things that appear complete after SonarQube remediation but are missing critical pieces.
 
-- [ ] **Build succeeds:** But runtime crashes due to ABI mismatch - verify all DLLs load correctly
-- [ ] **Tests pass:** But silent behavior changes affect edge cases - add regression tests
-- [ ] **Compiler upgraded:** But `/std:c++` flag not changed - verify flag in all configurations
-- [ ] **Flag updated:** But static libraries not rebuilt - verify all .lib files are new
-- [ ] **Code compiles:** But IntelliSense broken (modules) - test IDE functionality
-- [ ] **Local works:** But Windows 7 deployment fails - verify target OS support
+- [ ] **Build succeeds:** But LSASS DLL fails to load - verify DLL registration and LSA package loading
+- [ ] **SonarQube shows zero issues:** But won't-fix issues not documented - ensure justifications in analysis
+- [ ] **Tests pass:** But edge cases in authentication changed - manual smoke test required
+- [ ] **Code compiles:** But resource files broken - verify .rc compilation succeeds
+- [ ] **No new warnings:** But behavior changed - test credential provider UI and auth flow
+- [ ] **Local VM works:** But production fails - test on clean Windows install
+- [ ] **Debug build works:** But Release fails - verify Release configuration builds
 
 ---
 
@@ -406,12 +449,28 @@ When pitfalls occur despite prevention, how to recover.
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Windows 7 support lost | HIGH | Revert to older toolset, or drop Windows 7 requirement |
-| ABI compatibility breach | HIGH | Rebuild all components with identical flags |
-| `string_view` dangling bugs | MEDIUM | Replace with `std::string`, lifetime audit |
-| Conformance errors | MEDIUM | Fix incrementally, can use `/permissive` temporarily |
-| Removed features | LOW | Replace with modern equivalents |
-| `/GL` incompatibility | LOW | Rebuild affected libraries |
+| std::string in LSASS | HIGH | Revert all std::string changes, restore C arrays, full test cycle |
+| Broken SEH safety | HIGH | Restore original SEH structure, document as won't-fix |
+| Changed error semantics | MEDIUM | Diff return types against baseline, restore exact types |
+| Macro in .rc file | LOW | Revert to #define, document resource compiler limitation |
+| Global const failure | LOW | Remove const, add runtime-assignment comment |
+| Auto type confusion | LOW | Restore explicit type, document Windows API requirement |
+| [[fallthrough]] bug | LOW | Remove fallthrough, add break statement |
+| Empty block comment | TRIVIAL | Remove or improve comment |
+
+---
+
+## Phase-Specific Warnings
+
+| Phase Topic | Likely Pitfall | Mitigation |
+|-------------|---------------|------------|
+| Blocker fix ([[fallthrough]]) | Adding fallthrough to bug | Analyze case logic before adding |
+| Global const issues | Marking runtime-assigned as const | Check for Set* functions |
+| C-style array issues | Converting to std::string | Keep as C arrays in LSASS code |
+| Nesting reduction | Extracting from SEH blocks | Keep SEH structures intact |
+| Cognitive complexity | Over-extracting helpers | Limit helpers, keep security flow explicit |
+| Macro conversion | Breaking resource compiler | Check .rc files before converting |
+| std::array conversion | Using std::vector instead | Only std::array is stack-safe |
 
 ---
 
@@ -421,42 +480,59 @@ How roadmap phases should address these pitfalls.
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Windows 7 support elimination | Phase 0 (Assessment) | Verify target OS requirements documented |
-| `string_view` dangling references | Phase 2 (C++17) | Code review, static analysis |
-| ABI compatibility breach | Phase 1 (Build System) | ABI diff tools, load tests |
-| Removed C++17 features | Phase 0 (Assessment) | Code audit, grep patterns |
-| Stricter conformance | Phase 1 (Compiler) | `/permissive-` compilation succeeds |
-| `/GL` incompatibility | Phase 1 (Build System) | Clean rebuild with no link errors |
-| `std::span` lifetime | Phase 3 (C++20) | Static analysis, code review |
-| Modules premature adoption | Defer | N/A |
-| Silent behavior changes | All phases | Regression test suite |
-| Library dependencies | Phase 0 (Assessment) | Dependency inventory complete |
-| `/NODEFAULTLIB` issues | Phase 1 (Build System) | Link succeeds without errors |
+| std::string in LSASS | All phases (constraint) | grep for std::string in EIDAuthenticationPackage |
+| Global const issues | Issue triage phase | Check for Set*/EnableCallback patterns |
+| SEH safety | All refactoring phases | grep for __try changes, diff carefully |
+| [[fallthrough]] blocker | First phase | Manual review of switch logic |
+| Windows API const | Const-correctness phases | Check MSDN for API requirements |
+| Macro in .rc files | Macro conversion phases | grep .rc files for macro usage |
+| Over-extraction | Complexity reduction phases | Count helper function parameters |
+| Error semantics | All refactoring phases | Diff function signatures |
+| DLL load order | Initialization changes | Test DLL load in isolation |
+| Auto type confusion | Style modernization phases | Verify deduced type with static_assert |
 
 ---
 
 ## Sources
 
-### Official Documentation (HIGH confidence)
-- [Microsoft Learn - Overview of Potential Upgrade Issues](https://learn.microsoft.com/en-us/cpp/porting/overview-of-potential-upgrade-issues-visual-cpp?view=msvc-170)
-- [Microsoft Learn - C++ Binary Compatibility](https://learn.microsoft.com/en-us/cpp/porting/binary-compat-2015-2017?view=msvc-170)
-- [Microsoft Learn - MSVC Conformance Improvements](https://learn.microsoft.com/en-us/cpp/overview/msvc-conformance-improvements?view=msvc-170)
-- [Microsoft DevBlogs - C++17 Feature Removals and Deprecations](https://devblogs.microsoft.com/cppblog/c17-feature-removals-and-deprecations/)
-- [cppreference - C++17](https://en.cppreference.com/w/cpp/17.html)
-- [cppreference - C++20](https://en.cppreference.com/w/cpp/20.html)
-- [cppreference - C++23](https://en.cppreference.com/w/cpp/23.html)
+### Codebase Documentation (HIGH confidence)
+- `.planning/sonarqube-analysis.md` - Issue categorization and counts
+- `.planning/STATE.md` - Key constraints (LSASS context, Windows 7 support, no exceptions)
+- `.planning/codebase/CONCERNS.md` - Known tech debt and security considerations
+- `.planning/milestones/v1.3-phases/30-final-sonarqube-scan/30-QUALITY-SUMMARY.md` - Prior milestone achievements
 
-### Community and Technical Resources (MEDIUM confidence)
-- [C++ Core Guidelines Issue #1038 - string_view use-after-free](https://github.com/isocpp/CppCoreGuidelines/issues/1038)
-- [Stack Overflow - Silent Behavior Changes](https://stackoverflow.com/questions/63290846/have-there-ever-been-silent-behavior-changes-in-c-with-new-standard-versions)
-- [Stack Overflow - C++ Types Across DLL Boundaries](https://www.reddit.com/r/cpp/comments/1b1tcjx/how_often_do_people_use_c_types_across_dllso/)
-- [GitHub Issue - VS 2026 Windows 7 Support Dropped](https://github.com/zufuliu/notepad4/issues/829)
-- [Visual Studio Developer Community - IntelliSense Issues with Modules](https://developercommunity.visualstudio.com/t/Currently-known-issues-with-IntelliSense/10738687)
+### Prior Research (HIGH confidence)
+- `.planning/research/PITFALLS.md` - C++14 to C++23 upgrade pitfalls
+- `.planning/milestones/v1.3-phases/24-sonarqube-nesting-issues/24-RESEARCH.md` - Nesting reduction patterns
 
-### Security-Specific Resources
-- [Medium - string_view Security Bugs](https://medium.com/@dikhyantkrishnadalai/70-of-c-security-bugs-stem-from-std-string-view-misuse-heres-how-to-prevent-them-4aca2ba9bb86)
-- [PVS-Studio - C++ Undefined Behavior Guide](https://pvs-studio.com/en/blog/posts/cpp/1149/)
+### Windows/LSASS Documentation (MEDIUM confidence)
+- Microsoft Learn - LSA Authentication documentation
+- Microsoft Learn - Structured Exception Handling (SEH)
+- Windows SDK documentation for CryptoAPI, Smart Card API
+
+### Community Knowledge (MEDIUM confidence)
+- C++ Core Guidelines for security-critical code
+- Windows driver development patterns (LSASS shares similar constraints)
 
 ---
-*Pitfalls research for: C++14 to C++23 Standard Upgrade (Windows/MSVC)*
-*Researched: 2026-02-15*
+
+## Appendix: Quick Reference - Won't Fix Categories
+
+Based on v1.3 milestone analysis, these SonarQube issue categories should be documented as won't-fix:
+
+| Issue Type | Count | Category | Justification |
+|------------|-------|----------|---------------|
+| Global variables const | 71 | ~67 won't-fix | Runtime assignment, LSA pointers, tracing state |
+| Global pointers const | 31 | ~28 won't-fix | Windows API requirements, DLL state |
+| C-style char array | 149 | ~140 won't-fix | Stack allocation required in LSASS |
+| C-style array | 28 | ~25 won't-fix | Stack allocation for safety |
+| Macro to constexpr | 111 | ~107 won't-fix | Resource compiler, function-like macros |
+| Nesting depth | 52 | ~33 won't-fix | SEH safety, security-critical flow |
+| Cognitive complexity | varies | ~21-30 won't-fix | SEH, state machines, crypto chains |
+
+**Expected actual fixes in v1.4:** ~730 issues documented, ~50-100 actionable, ~600+ won't-fix with justifications
+
+---
+
+*Pitfalls research for: SonarQube Issue Remediation in Windows LSASS Security-Critical Codebase*
+*Researched: 2026-02-18*
