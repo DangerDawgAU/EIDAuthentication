@@ -8,15 +8,16 @@ A Windows smart card authentication package providing smart card login for local
 
 A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
 
-## Current Milestone: v1.4 SonarQube Zero
+## Current Milestone: v1.5 CI/CD Security Enhancement
 
-**Goal:** Eliminate all fixable SonarQube issues and document remaining won't-fix with justifications
+**Goal:** Automate malware scanning of all build artifacts through VirusTotal integration in GitHub Actions
 
 **Target features:**
-- Fix ~380 fixable SonarQube issues (P2 and P3 priorities)
-- Review ~351 "needs review" issues to determine fixability
-- Document ~280 won't-fix issues in SonarQube with proper justifications
-- Achieve minimal remaining SonarQube debt
+- VirusTotal API integration in GitHub Actions workflow
+- Scan all artifacts: compiled binaries (7 DLLs/EXEs), NSIS installer, source code
+- Comment VT report URLs on commits for visibility
+- Non-blocking warnings on detection (build continues)
+- Retry logic for API rate limits and timeouts
 
 ### Completed Milestones
 
@@ -24,6 +25,7 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 **v1.1 SonarQube Quality Remediation** — Zero security hotspots, zero reliability bugs ✓
 **v1.2 Code Modernization** — ~55 SonarQube issues fixed, ~1,000 documented as Won't Fix ✓
 **v1.3 Deep Modernization** — Style, macros, const, nesting, complexity, diagnostics ✓
+**v1.4 SonarQube Zero** — All fixable issues resolved, won't-fix documented ✓
 
 ## Requirements
 
@@ -37,24 +39,24 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 - ✓ Security Hotspots — 0 open (2 fixed)
 - ✓ Reliability Bugs — 0 open (3 fixed)
 
-### Active (v1.4 Scope)
-- [ ] Global variable const correctness (review ~60 issues)
-- [ ] Cognitive complexity reduction (~30 issues)
-- [ ] Deep nesting reduction (~25 issues)
-- [ ] Macro to constexpr conversion (~35 issues)
-- [ ] Rule of Five/Three violations (~15 issues)
-- [ ] C-style cast review (~8 issues)
-- [ ] Ellipsis notation review (~3 issues)
-- [ ] Replace redundant types with auto (~40 issues)
-- [ ] Use init-statements in if/switch (~80 issues)
-- [ ] Convert to std::array where safe (~30 issues)
-- [ ] Function const correctness (~15 issues)
-- [ ] Initialization list usage (~10 issues)
-- [ ] Remove redundant casts (~10 issues)
-- [ ] Unused parameter handling (~8 issues)
-- [ ] Convert to enum class (~8 issues)
-- [ ] Range-based for loops (~8 issues)
-- [ ] Document won't-fix issues in SonarQube (~280 issues)
+### Active (v1.5 Scope)
+- [ ] VirusTotal API integration in GitHub Actions
+- [ ] Artifact collection workflow (binaries, installer, source)
+- [ ] VT report URL commenting on commits
+- [ ] Non-blocking warning system for detections
+- [ ] API retry logic with exponential backoff
+
+### Validated (v1.4 Shipped)
+- ✓ Global variable const correctness — All runtime-assigned documented as won't-fix
+- ✓ Cognitive complexity reduction — Helpers extracted, SEH blocks documented
+- ✓ Deep nesting reduction — Guard clauses added, SEH documented
+- ✓ Macro to constexpr — Safe macros converted, RC/flow-control documented
+- ✓ Auto conversion — Iterator/new declarations converted, security types kept
+- ✓ Init-statements — ~49 conversions across projects
+- ✓ std::array conversion — Small arrays converted, large buffers documented
+- ✓ Function const correctness — COM interfaces documented as won't-fix
+- ✓ Enum class conversion — Internal enums converted, Windows API kept
+- ✓ Won't-fix documentation — ~280 issues documented with justifications
 
 ### Out of Scope
 
@@ -103,6 +105,8 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 | SonarQube remediation phase-by-phase | Group issues by category, fix iteratively with re-scan verification | ✓ Good |
 | LSASS memory safety | std::string/std::vector avoided in LSASS context | ✓ Good |
 | Windows API const compatibility | Non-const pointers required by many Windows APIs | ✓ Good |
+| VT scan on main push | Scan on merge to catch issues before release | — Pending |
+| VT warn only | Non-blocking to avoid false positives blocking releases | — Pending |
 
 ---
-*Last updated: 2026-02-18 after v1.4 milestone start*
+*Last updated: 2026-02-19 after v1.5 milestone start*
