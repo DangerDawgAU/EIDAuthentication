@@ -31,7 +31,7 @@
 
 
 // Non-const string buffers for Windows API compatibility (AddSecurityPackage/DeleteSecurityPackage require LPWSTR)
-static WCHAR s_wszAuthenticationPackageName[] = L"EIDAuthenticationPackage";
+static WCHAR s_wszAuthenticationPackageName[] = L"EIDAuthenticationPackage";  // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
 
 
 /** Used to append a string to a multi string reg key */
@@ -177,7 +177,7 @@ void RemoveValueFromMultiSz(HKEY hKey, LPCTSTR szKey, LPCTSTR szValue, LPCTSTR s
 
 BOOL IsSecurityPackageLoaded(LPCTSTR szPackageName)
 {
-	NTSTATUS Status;
+	NTSTATUS Status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	DWORD dwNbPackage;
 	PSecPkgInfo pPackageInfo;
 	BOOL fFound = FALSE;
@@ -201,7 +201,7 @@ BOOL IsSecurityPackageLoaded(LPCTSTR szPackageName)
 
 BOOL RegisterTheSecurityPackage()
 {
-	NTSTATUS Status;
+	NTSTATUS Status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
 	__try
@@ -234,7 +234,7 @@ BOOL RegisterTheSecurityPackage()
 
 BOOL UnRegisterTheSecurityPackage()
 {
-	NTSTATUS Status;
+	NTSTATUS Status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
 	__try

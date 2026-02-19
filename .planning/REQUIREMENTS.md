@@ -3,7 +3,41 @@
 **Defined:** 2026-02-15
 **Core Value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
 
-## v1.4 Requirements (CURRENT)
+## v1.5 Requirements (CURRENT)
+
+CI/CD Security Enhancement — Automate malware scanning of all release artifacts through VirusTotal integration.
+
+### API Configuration
+
+- [ ] **API-01**: VT_API_KEY stored as GitHub repository secret
+- [ ] **API-02**: API key never exposed in code or logs (use `${{ secrets.VT_API_KEY }}`)
+
+### Artifact Scanning
+
+- [ ] **SCAN-01**: Scan compiled DLLs after successful build (7 projects)
+- [ ] **SCAN-02**: Scan compiled EXEs after successful build
+- [ ] **SCAN-03**: Scan NSIS installer executable
+- [ ] **SCAN-04**: Scan source code archive (zip)
+
+### Workflow Configuration
+
+- [ ] **WF-01**: Trigger scanning on push to main branch
+- [ ] **WF-02**: Rate limiting set to 4 requests/minute (free API tier compliance)
+- [ ] **WF-03**: Non-blocking execution (`continue-on-error: true`)
+- [ ] **WF-04**: Retry logic with exponential backoff for API errors
+
+### Reporting
+
+- [ ] **RPT-01**: Comment VirusTotal analysis URL on commits
+- [ ] **RPT-02**: Log scan results to workflow output
+- [ ] **RPT-03**: Update release notes with scan links (for releases)
+
+### Warning System
+
+- [ ] **WARN-01**: Log warning when detections found (build continues)
+- [ ] **WARN-02**: Include detection count in commit comment
+
+## v1.4 Requirements (COMPLETE)
 
 SonarQube Zero — Eliminate all fixable SonarQube issues and document remaining won't-fix with justifications.
 
@@ -57,7 +91,7 @@ Deep Modernization — Continue v1.2 work with more aggressive refactoring.
 - [x] **SONAR-01**: Review and resolve style preference issues (~124 "replace with auto")
 - [x] **SONAR-02**: Review and resolve macro issues (~111 "replace with const/constexpr")
 - [x] **SONAR-03**: Review and resolve global variable const issues (~63 remaining)
-- [x] **SONAR-04**: Review and resolve nesting depth issues (~52 deep nesting)
+- [x] **SONAR-04}: Review and resolve nesting depth issues (~52 deep nesting)
 
 ### Code Refactoring
 
@@ -123,7 +157,7 @@ Requirements for C++23 modernization milestone. All phases executed.
 - [x] **VERIFY-01**: Build verification passed — all 7 projects compile
 - [ ] **VERIFY-02**: Runtime verification — smart card login functional (pending test machines)
 - [ ] **VERIFY-03**: Runtime verification — LSA Authentication Package loads (pending test machines)
-- [ ] **VERIFY-04**: Runtime verification — Credential Provider appears on login screen (pending test machines)
+- [ ] **VERIFY-04}: Runtime verification — Credential Provider appears on login screen (pending test machines)
 - [ ] **VERIFY-05**: Runtime verification — Configuration Wizard operational (pending test machines)
 
 ## v1.1 Requirements (COMPLETE)
@@ -165,10 +199,39 @@ Explicitly excluded. Documented to prevent scope creep.
 | New authentication features | Modernization only, no new capabilities |
 | Code signing | Separate concern, out of scope |
 | std::string/std::vector | Heap allocation unsafe in LSASS context |
+| Block on VT detections | False positives expected for security software (LSASS interaction) |
+| Threshold-based VT blocking | Needs baseline data from initial scans first |
+| SARIF integration | Requires custom conversion, not standard VT output |
+| VirusTotal Monitor | Requires Premium subscription |
 
 ## Traceability
 
-### v1.4 Requirements (Current Milestone)
+### v1.5 Requirements (Current Milestone)
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| API-01 | Phase 41 | Pending |
+| API-02 | Phase 41 | Pending |
+| SCAN-01 | Phase 42 | Pending |
+| SCAN-02 | Phase 42 | Pending |
+| SCAN-03 | Phase 42 | Pending |
+| SCAN-04 | Phase 42 | Pending |
+| WF-01 | Phase 42 | Pending |
+| WF-02 | Phase 42 | Pending |
+| WF-03 | Phase 42 | Pending |
+| WF-04 | Phase 42 | Pending |
+| RPT-01 | Phase 44 | Pending |
+| RPT-02 | Phase 42 | Pending |
+| RPT-03 | Phase 43 | Pending |
+| WARN-01 | Phase 42 | Pending |
+| WARN-02 | Phase 44 | Pending |
+
+**Coverage:**
+- v1.5 requirements: 15 total
+- Mapped to phases: 15
+- Unmapped: 0 ✓
+
+### v1.4 Requirements (COMPLETE)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
@@ -179,16 +242,16 @@ Explicitly excluded. Documented to prevent scope creep.
 | AUTO-02 | Phase 32 | Complete |
 | CONST-01 | Phase 34 | Complete |
 | CONST-02 | Phase 34 | Complete |
-| CONST-03 | Phase 35 | Pending |
-| CONST-04 | Phase 35 | Pending |
-| STRUCT-01 | Phase 36 | Pending |
-| STRUCT-02 | Phase 36 | Pending |
+| CONST-03 | Phase 35 | Complete |
+| CONST-04 | Phase 35 | Complete |
+| STRUCT-01 | Phase 36 | Complete |
+| STRUCT-02 | Phase 36 | Complete |
 | STRUCT-03 | Phase 37 | Complete |
 | STRUCT-04 | Phase 37 | Complete |
-| MODERN-01 | Phase 38 | Pending |
+| MODERN-01 | Phase 38 | Complete |
 | MODERN-02 | Phase 33 | Complete |
-| MODERN-03 | Phase 39 | Pending |
-| MODERN-04 | Phase 39 | Pending |
+| MODERN-03 | Phase 39 | Complete |
+| MODERN-04 | Phase 39 | Complete |
 | MODERN-05 | Phase 33 | Complete |
 | MODERN-06 | Phase 33 | Complete |
 | VER-01 | Phase 40 | Complete |
@@ -204,4 +267,4 @@ Explicitly excluded. Documented to prevent scope creep.
 ---
 
 *Requirements defined: 2026-02-15*
-*Last updated: 2026-02-18 after v1.4 milestone start*
+*Last updated: 2026-02-19 after v1.5 roadmap created*

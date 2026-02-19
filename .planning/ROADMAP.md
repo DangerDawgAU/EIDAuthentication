@@ -10,7 +10,8 @@ This roadmap transforms the EIDAuthentication Windows smart card authentication 
 - **v1.1 SonarQube Quality Remediation** - Phases 7-14 (COMPLETE 2026-02-17)
 - **v1.2 Code Modernization** - Phases 15-20 (COMPLETE 2026-02-17)
 - **v1.3 Deep Modernization** - Phases 21-30 (COMPLETE 2026-02-18)
-- **v1.4 SonarQube Zero** - Phases 31-40 (IN PROGRESS)
+- **v1.4 SonarQube Zero** - Phases 31-40 (COMPLETE 2026-02-18)
+- **v1.5 CI/CD Security Enhancement** - Phases 41-44 (IN PROGRESS)
 
 ## Phases
 
@@ -84,9 +85,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 </details>
 
-### v1.4 SonarQube Zero (IN PROGRESS)
+### v1.4 SonarQube Zero (COMPLETE)
 
-**Milestone Goal:** Eliminate all fixable SonarQube issues and document remaining won't-fix with justifications
+<details>
+<summary>v1.4 Phases 31-40 - SHIPPED 2026-02-18</summary>
 
 - [x] **Phase 31: Macro to constexpr** - Convert safe macros to constexpr, document won't-fix for RC/flow-control macros (Complete 2026-02-18)
 - [x] **Phase 32: Auto Conversion** - Convert redundant type declarations to auto where type is obvious (Complete 2026-02-18)
@@ -99,9 +101,74 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 39: Integration Changes** - std::array conversion, LSA safety won't-fix documentation (Complete 2026-02-18)
 - [x] **Phase 40: Final Verification** - Full build verification, SonarQube scan, won't-fix documentation (completed 2026-02-18)
 
+</details>
+
+### v1.5 CI/CD Security Enhancement (IN PROGRESS)
+
+**Milestone Goal:** Automate malware scanning of all build artifacts through VirusTotal integration in GitHub Actions
+
+- [ ] **Phase 41: Prerequisites and Secret Setup** - Configure VirusTotal API key as GitHub repository secret
+- [ ] **Phase 42: Basic VirusTotal Scan Job** - Implement core scanning workflow for all artifacts with rate limiting and warnings
+- [ ] **Phase 43: Release Integration** - Append VirusTotal scan links to release notes automatically
+- [ ] **Phase 44: Commit Comment Integration** - Post scan results with detection counts as commit comments
+
+---
+
+## v1.5 Phase Details
+
+### Phase 41: Prerequisites and Secret Setup
+**Goal**: Secure credential storage for VirusTotal API enables all downstream scanning
+**Depends on**: Nothing (foundation phase)
+**Requirements**: API-01, API-02
+**Success Criteria** (what must be TRUE):
+  1. VT_API_KEY secret exists in GitHub repository settings
+  2. API key is never visible in workflow logs or code (masked via `${{ secrets.VT_API_KEY }}`)
+  3. Secret is accessible to workflows on main branch pushes
+**Plans**: 1 plan
+- [ ] 41-01-PLAN.md — Configure VT_API_KEY secret and verify API access
+
+### Phase 42: Basic VirusTotal Scan Job
+**Goal**: All build artifacts are scanned with VirusTotal on push to main, results visible in workflow logs
+**Depends on**: Phase 41 (API key must exist)
+**Requirements**: SCAN-01, SCAN-02, SCAN-03, SCAN-04, WF-01, WF-02, WF-03, WF-04, RPT-02, WARN-01
+**Success Criteria** (what must be TRUE):
+  1. Workflow triggers on push to main branch after successful build
+  2. All 7 compiled DLLs are uploaded to VirusTotal and scanned
+  3. All compiled EXEs are uploaded to VirusTotal and scanned
+  4. NSIS installer executable is uploaded to VirusTotal and scanned
+  5. Source code archive (zip) is uploaded to VirusTotal and scanned
+  6. Scan results are logged to workflow output with analysis URLs
+  7. Warning is logged when detections found but build continues (non-blocking)
+  8. API rate limiting set to 4 requests/minute (free tier compliance)
+  9. Retry logic handles API errors with exponential backoff
+**Plans**: TBD
+
+### Phase 43: Release Integration
+**Goal**: VirusTotal scan links are automatically appended to GitHub release notes
+**Depends on**: Phase 42 (scan job must produce results)
+**Requirements**: RPT-03
+**Success Criteria** (what must be TRUE):
+  1. Release notes include VirusTotal analysis URLs for all scanned artifacts
+  2. Links are appended automatically when release is created
+  3. Users can verify artifact safety by clicking links in release notes
+**Plans**: TBD
+
+### Phase 44: Commit Comment Integration
+**Goal**: Developers see scan results directly in commit comments with detection counts
+**Depends on**: Phase 42 (scan job must produce results)
+**Requirements**: RPT-01, WARN-02
+**Success Criteria** (what must be TRUE):
+  1. Commit that triggered scan receives a comment with VirusTotal analysis URLs
+  2. Comment includes detection count for each scanned artifact
+  3. Developer can click from commit to full VirusTotal report
+**Plans**: TBD
+
 ---
 
 ## v1.4 Phase Details
+
+<details>
+<summary>v1.4 Phase Details (COMPLETE)</summary>
 
 ### Phase 31: Macro to constexpr
 **Goal**: Simple value macros converted to constexpr, won't-fix documented for resource compiler and flow-control macros
@@ -220,6 +287,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. All won't-fix issues documented with specific justifications
 **Plans**: TBD
 
+</details>
+
 ---
 
 ## Progress
@@ -310,7 +379,10 @@ Phases execute in numeric order: 21 -> 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28 ->
 
 </details>
 
-### v1.4 SonarQube Zero (IN PROGRESS)
+### v1.4 SonarQube Zero (COMPLETE)
+
+<details>
+<summary>v1.4 Progress</summary>
 
 **Execution Order:**
 Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 -> 39 -> 40
@@ -328,69 +400,43 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 39. Integration Changes | 1/1 | Complete    | 2026-02-18 |
 | 40. Final Verification | 1/1 | Complete    | 2026-02-18 |
 
+</details>
+
+### v1.5 CI/CD Security Enhancement (IN PROGRESS)
+
+**Execution Order:**
+Phases execute in numeric order: 41 -> 42 -> 43 -> 44
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 41. Prerequisites and Secret Setup | 0/1 | Planned | - |
+| 42. Basic VirusTotal Scan Job | 0/TBD | Not started | - |
+| 43. Release Integration | 0/TBD | Not started | - |
+| 44. Commit Comment Integration | 0/TBD | Not started | - |
+
 ---
 
 ## Coverage Summary
 
-### v1.0 Requirements (COMPLETE)
+### v1.5 Requirements (CURRENT)
 
 | Category | Requirements | Phase |
 |----------|--------------|-------|
-| Build System | BUILD-01, BUILD-02, BUILD-03, BUILD-04 | Phase 1 |
-| Error Handling | ERROR-01, ERROR-02, ERROR-03 | Phase 2 |
-| Compile-Time | COMPILE-01, COMPILE-02, COMPILE-03, COMPILE-04 | Phase 3 |
-| Code Quality | QUAL-01, QUAL-02, QUAL-03, QUAL-04 | Phase 4 |
-| Documentation | DOC-01, DOC-02 | Phase 5 |
-| Verification | VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04, VERIFY-05 | Phase 6 |
+| API Configuration | API-01, API-02 | Phase 41 |
+| Artifact Scanning | SCAN-01, SCAN-02, SCAN-03, SCAN-04 | Phase 42 |
+| Workflow Configuration | WF-01, WF-02, WF-03, WF-04 | Phase 42 |
+| Reporting (Logs) | RPT-02 | Phase 42 |
+| Warning System | WARN-01 | Phase 42 |
+| Reporting (Release) | RPT-03 | Phase 43 |
+| Reporting (Comments) | RPT-01 | Phase 44 |
+| Warning System (Detailed) | WARN-02 | Phase 44 |
 
-**Total v1.0 Coverage:** 22/22 requirements mapped (100%)
+**Total v1.5 Coverage:** 15/15 requirements mapped (100%)
 
-### v1.1 Requirements (COMPLETE)
+### v1.4 Requirements (COMPLETE)
 
-| Category | Requirements | Phase |
-|----------|--------------|-------|
-| Security & Reliability | SEC-01, SEC-02 | Phase 7 |
-| Const Correctness | CONST-01, CONST-02, CONST-03, CONST-04 | Phase 8 |
-| Modern C++ Types | TYPE-01, TYPE-02, TYPE-03, TYPE-04, TYPE-05 | Phase 9 |
-| Code Simplification | SIMPLE-01, SIMPLE-02, SIMPLE-03, SIMPLE-04, SIMPLE-05 | Phase 10 |
-| Complexity & Memory | COMPLEX-01, COMPLEX-02 | Phase 11 |
-| Modern Diagnostics | DIAG-01, DIAG-02 | Phase 12 |
-| Duplications | DUP-01 | Phase 13 |
-| Final Verification | FINAL-01, FINAL-02, FINAL-03 | Phase 14 |
-
-**Total v1.1 Coverage:** 26/26 requirements mapped (100%)
-
-### v1.2 Requirements (COMPLETE)
-
-| Category | Requirements | Phase |
-|----------|--------------|-------|
-| Critical Fixes | CRIT-01 | Phase 15 |
-| Const Correctness | CONST-01, CONST-02, CONST-03 | Phase 16 |
-| Modern Types | TYPE-01, TYPE-02, TYPE-03 | Phase 17 |
-| Code Quality | QUAL-01, QUAL-02 | Phase 18 |
-| Documentation | DOC-01, DOC-02 | Phase 19 |
-| Verification | VER-01, VER-02 | Phase 20 |
-
-**Total v1.2 Coverage:** 13/13 requirements mapped (100%)
-
-### v1.3 Requirements (COMPLETE)
-
-| Category | Requirements | Phase |
-|----------|--------------|-------|
-| SonarQube Resolution | SONAR-01 | Phase 21 |
-| SonarQube Resolution | SONAR-02 | Phase 22 |
-| SonarQube Resolution | SONAR-03 | Phase 23 |
-| SonarQube Resolution | SONAR-04 | Phase 24 |
-| Code Refactoring | REFACT-01, REFACT-02 | Phase 25 |
-| Code Refactoring | REFACT-03 | Phase 26 |
-| C++23 Advanced Features | CPP23-01, CPP23-02, CPP23-03 | Phase 27 |
-| Diagnostics & Logging | DIAG-01, DIAG-02, DIAG-03 | Phase 28 |
-| Verification | VER-01 | Phase 29 |
-| Verification | VER-02 | Phase 30 |
-
-**Total v1.3 Coverage:** 15/15 requirements mapped (100%)
-
-### v1.4 Requirements (IN PROGRESS)
+<details>
+<summary>v1.4 Coverage</summary>
 
 | Category | Requirements | Phase |
 |----------|--------------|-------|
@@ -407,18 +453,91 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 
 **Total v1.4 Coverage:** 23/23 requirements mapped (100%)
 
+</details>
+
+### v1.3 Requirements (COMPLETE)
+
+<details>
+<summary>v1.3 Coverage</summary>
+
+| Category | Requirements | Phase |
+|----------|--------------|-------|
+| SonarQube Resolution | SONAR-01 | Phase 21 |
+| SonarQube Resolution | SONAR-02 | Phase 22 |
+| SonarQube Resolution | SONAR-03 | Phase 23 |
+| SonarQube Resolution | SONAR-04 | Phase 24 |
+| Code Refactoring | REFACT-01, REFACT-02 | Phase 25 |
+| Code Refactoring | REFACT-03 | Phase 26 |
+| C++23 Advanced Features | CPP23-01, CPP23-02, CPP23-03 | Phase 27 |
+| Diagnostics & Logging | DIAG-01, DIAG-02, DIAG-03 | Phase 28 |
+| Verification | VER-01 | Phase 29 |
+| Verification | VER-02 | Phase 30 |
+
+**Total v1.3 Coverage:** 15/15 requirements mapped (100%)
+
+</details>
+
+### v1.2 Requirements (COMPLETE)
+
+<details>
+<summary>v1.2 Coverage</summary>
+
+| Category | Requirements | Phase |
+|----------|--------------|-------|
+| Critical Fixes | CRIT-01 | Phase 15 |
+| Const Correctness | CONST-01, CONST-02, CONST-03 | Phase 16 |
+| Modern Types | TYPE-01, TYPE-02, TYPE-03 | Phase 17 |
+| Code Quality | QUAL-01, QUAL-02 | Phase 18 |
+| Documentation | DOC-01, DOC-02 | Phase 19 |
+| Verification | VER-01, VER-02 | Phase 20 |
+
+**Total v1.2 Coverage:** 13/13 requirements mapped (100%)
+
+</details>
+
+### v1.1 Requirements (COMPLETE)
+
+<details>
+<summary>v1.1 Coverage</summary>
+
+| Category | Requirements | Phase |
+|----------|--------------|-------|
+| Security & Reliability | SEC-01, SEC-02 | Phase 7 |
+| Const Correctness | CONST-01, CONST-02, CONST-03, CONST-04 | Phase 8 |
+| Modern C++ Types | TYPE-01, TYPE-02, TYPE-03, TYPE-04, TYPE-05 | Phase 9 |
+| Code Simplification | SIMPLE-01, SIMPLE-02, SIMPLE-03, SIMPLE-04, SIMPLE-05 | Phase 10 |
+| Complexity & Memory | COMPLEX-01, COMPLEX-02 | Phase 11 |
+| Modern Diagnostics | DIAG-01, DIAG-02 | Phase 12 |
+| Duplications | DUP-01 | Phase 13 |
+| Final Verification | FINAL-01, FINAL-02, FINAL-03 | Phase 14 |
+
+**Total v1.1 Coverage:** 26/26 requirements mapped (100%)
+
+</details>
+
+### v1.0 Requirements (COMPLETE)
+
+<details>
+<summary>v1.0 Coverage</summary>
+
+| Category | Requirements | Phase |
+|----------|--------------|-------|
+| Build System | BUILD-01, BUILD-02, BUILD-03, BUILD-04 | Phase 1 |
+| Error Handling | ERROR-01, ERROR-02, ERROR-03 | Phase 2 |
+| Compile-Time | COMPILE-01, COMPILE-02, COMPILE-03, COMPILE-04 | Phase 3 |
+| Code Quality | QUAL-01, QUAL-02, QUAL-03, QUAL-04 | Phase 4 |
+| Documentation | DOC-01, DOC-02 | Phase 5 |
+| Verification | VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04, VERIFY-05 | Phase 6 |
+
+**Total v1.0 Coverage:** 22/22 requirements mapped (100%)
+
+</details>
+
 ---
 *Roadmap created: 2026-02-15*
 *v1.0 complete: 2026-02-16*
 *v1.1 complete: 2026-02-17*
 *v1.2 complete: 2026-02-17*
 *v1.3 complete: 2026-02-18*
-*v1.4 roadmap created: 2026-02-18*
-*Phase 34 planned: 2026-02-18*
-*Phase 35 planned: 2026-02-18*
-*Phase 38 planned: 2026-02-18*
-*Phase 31 complete: 2026-02-18*
-*Phase 32 complete: 2026-02-18*
-*Phase 33 complete: 2026-02-18*
-*Phase 34 complete: 2026-02-18*
-*Phase 35 complete: 2026-02-18*
+*v1.4 complete: 2026-02-18*
+*v1.5 roadmap created: 2026-02-19*

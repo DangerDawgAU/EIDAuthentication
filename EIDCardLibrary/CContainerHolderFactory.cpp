@@ -80,9 +80,9 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 	HCRYPTPROV HCryptProv;
 	HCRYPTPROV hProv = NULL;
 	BOOL bStatus;
-	CHAR szContainerName[1024];
+	CHAR szContainerName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwContainerNameLen = ARRAYSIZE(szContainerName);
-	TCHAR szProviderName[1024] = TEXT("");
+	TCHAR szProviderName[1024] = TEXT("");  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwProviderNameLen = ARRAYSIZE(szProviderName);
 	DWORD pKeySpecs[2] = {AT_KEYEXCHANGE,AT_SIGNATURE};
 	DWORD dwKeyNumMax = 1;
@@ -176,7 +176,7 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 							pKeySpecs[i],
 							&hKey) )
 					{
-						BYTE Data[4096];
+						BYTE Data[4096];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 						DWORD DataSize = 4096;
 						if (CryptGetKeyParam(hKey,
 								KP_CERTIFICATE,

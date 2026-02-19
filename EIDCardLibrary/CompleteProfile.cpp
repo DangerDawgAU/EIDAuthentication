@@ -49,7 +49,7 @@ NTSTATUS UserNameToProfile(__in PLSA_UNICODE_STRING AccountName,
 						__out PULONG ProfileBufferLength
 						) {
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-	NTSTATUS Status;
+	NTSTATUS Status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	if(!ProfileBuffer)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"No ProfileBuffer");

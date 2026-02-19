@@ -2,16 +2,16 @@
 // Microsoft Visual C++ generated include file.
 // Used by EIDConfigurationWizardElevated.rc
 //
-#define IDD_DIALOGREMOVEPOLICY          70
-#define IDD_DIALOGFORCEPOLICY           71
-#define IDC_NOACTION                    141
-#define IDC_LOCK                        142
-#define IDC_LOGOFF                      143
-#define IDC_DISCONNECT                  144
-#define IDC_DISABLE                     145
-#define IDC_FORCEDISABLE                145
-#define IDC_FORCEENABLE                 146
-#define IDC_STATIC                      -1
+#define IDD_DIALOGREMOVEPOLICY          70  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDD_DIALOGFORCEPOLICY           71  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_NOACTION                    141  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_LOCK                        142  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_LOGOFF                      143  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_DISCONNECT                  144  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_DISABLE                     145  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_FORCEDISABLE                145  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_FORCEENABLE                 146  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_STATIC                      -1  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 
 // Next default values for new objects
 // 

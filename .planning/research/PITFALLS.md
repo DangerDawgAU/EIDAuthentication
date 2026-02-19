@@ -1,538 +1,552 @@
 # Pitfalls Research
 
-**Domain:** SonarQube Issue Remediation in Windows LSASS Security-Critical Codebase
-**Researched:** 2026-02-18
-**Confidence:** HIGH (based on codebase analysis, prior milestone experience, and Windows security documentation)
+**Domain:** VirusTotal CI/CD Integration for Security Software
+**Project:** EIDAuthentication - Windows Credential Provider with LSASS interaction
+**Researched:** 2026-02-19
+**Confidence:** MEDIUM (based on official VirusTotal documentation, GitHub Action docs, and security software scanning patterns; LOW for specific false positive rates which vary by vendor)
+
+---
+
+## Executive Summary
+
+Adding VirusTotal scanning to the EIDAuthentication CI/CD pipeline requires careful consideration of API rate limits, false positive handling for security-sensitive software, and secure credential management. The project's nature as a Windows credential provider that interacts with LSASS makes it particularly susceptible to heuristic antivirus detections that flag legitimate security software as potentially malicious.
 
 ---
 
 ## Critical Pitfalls
 
-Mistakes that cause rewrites, security vulnerabilities, or major deployment failures.
+Mistakes that cause CI/CD failures, security exposures, or production incidents.
 
-### Pitfall 1: Converting C-Style Stack Arrays to std::string in LSASS Code
+### Pitfall 1: API Rate Limit Exhaustion
 
 **What goes wrong:**
-SonarQube flags 149 instances of "Use std::string instead of C-style char array" and 28 instances of "Use std::array/std::vector instead of C-style array." Blindly converting these to `std::string` or `std::vector` can cause LSASS crashes because:
-- `std::string` uses dynamic heap allocation
-- LSASS has strict memory constraints and custom allocators
-- Dynamic allocation failures in LSASS can crash the entire OS security subsystem
-- The codebase already uses custom `EIDAlloc`/`EIDFree` wrappers for LSASS-safe allocation
+The VirusTotal Public API enforces strict rate limits (4 requests/minute, 500 requests/day). Exceeding these limits causes HTTP 429 (TooManyRequests) errors, which silently fail CI/CD pipelines or cause indefinite hangs when retry logic is not implemented correctly.
 
 **Why it happens:**
-SonarQube does not understand LSASS context. The rule is designed for general C++ code, not for system processes where stack allocation is intentional for safety and reliability.
+- Multiple concurrent CI/CD jobs trigger simultaneous scans
+- Release workflows scan multiple artifacts without rate limiting
+- Retry loops without backoff compound the problem
+- Public API quota is shared across all users of the API key
 
 **How to avoid:**
-1. **Never convert** C-style arrays in EIDAuthenticationPackage (LSASS-loaded code) to `std::string`
-2. C-style arrays in LSASS code are **intentional** - they guarantee stack allocation
-3. Files like `EIDCardLibrary/StoredCredentialManagement.cpp` contain 84 issues - most are won't-fix
-4. Only consider `std::array` (stack-allocated) as a safe alternative, never `std::vector` or `std::string`
+1. Use the `request_rate` parameter in crazy-max/ghaction-virustotal action
+2. Implement the action's built-in rate limiting (it handles 429 responses automatically)
+3. Consider VirusTotal Premium API for higher limits if scanning frequently
+4. Only scan release artifacts, not every commit
+
+```yaml
+- name: VirusTotal Scan
+  uses: crazy-max/ghaction-virustotal@v4
+  with:
+    vt_api_key: ${{ secrets.VT_API_KEY }}
+    files: ./build/EIDCredentialProvider.dll
+    request_rate: 4  # Stay within 4 requests/minute limit
+```
 
 **Warning signs:**
-- Change introduces `new` or `malloc` in authentication flow
-- `std::string` appears in EIDAuthenticationPackage code
-- Dynamic allocation in SEH-protected blocks
+- CI/CD jobs timing out during VirusTotal step
+- HTTP 429 responses in workflow logs
+- "QuotaExceededError" in action output
+- Scans completing sometimes but failing other times
 
-**Phase to address:** All phases - this is a constraint, not a fix target
-
-**Rollback strategy:** If a std::string conversion causes issues, immediately revert to original C-style array and document as won't-fix.
+**Phase to address:** Initial VirusTotal integration phase
 
 ---
 
-### Pitfall 2: Marking Global Variables as const When They're Runtime-Assigned
+### Pitfall 2: False Positive Blocking for Security Software
 
 **What goes wrong:**
-SonarQube flags 71 "Global variables should be const" and 31 "Global pointers should be const at every level" issues. Marking runtime-assigned globals as `const` causes:
-- Compilation failures (cannot assign to const)
-- Broken LSA initialization (function pointers assigned by `SetAlloc`/`SetFree`/`SetImpersonate`)
-- Tracing state corruption (`IsTracingEnabled` changes at runtime)
-- COM registration failures (reference counts, instance handles)
+EIDAuthentication is a credential provider that:
+- Interacts with LSASS (Windows security subsystem)
+- Handles PIN codes and smart card authentication
+- Loads into the Windows logon process
+- Uses cryptographic operations
+
+These behaviors trigger heuristic detections in multiple antivirus engines. A false positive detection can block releases, trigger security alerts, or damage the project's reputation.
 
 **Why it happens:**
-v1.3 Phase 23 already documented 32 globals as legitimately mutable. The SonarQube rule doesn't understand that some globals are designed to be assigned once at initialization and then read-only during operation.
+Antivirus engines use behavioral heuristics that flag:
+- LSASS interaction (often associated with credential theft malware)
+- Smart card access (sometimes associated with card skimming)
+- Memory operations in security contexts
+- Unsigned or newly-seen binaries
 
 **How to avoid:**
-Before marking any global as `const`:
-1. Check if it's assigned by a `Set*()` function (LSA function pointers)
-2. Check if it's modified in `EnableCallback` (tracing state)
-3. Check if it's a Windows API output buffer (CryptoAPI requires non-const)
-4. Check if it's set during DLL initialization (`DllGetClassObject`, `DllRegisterServer`)
+1. **Code signing is essential** - Sign all DLLs with a valid Authenticode certificate
+2. **Do not fail CI on detections** - Use the scan for awareness, not gating
+3. **Monitor trends** - Track which engines flag and look for patterns
+4. **Document expected detections** - Create internal baseline of expected false positives
+5. **Consider VirusTotal Monitor** - For software publishers, this allows pre-allowlisting
 
-**Won't-fix categories from v1.3 Phase 23:**
-| Category | Count | Example |
-|----------|-------|---------|
-| LSA Function Pointers | 3 | `MyAllocateHeap`, `MyFreeHeap`, `MyImpersonate` |
-| Tracing State | 4 | `IsTracingEnabled`, `hPub`, `bFirst` |
-| DLL State | 2 | `g_cRef`, `g_hinst` |
-| UI State | 6 | `szReader`, `szCard`, `szUserName`, `szPassword` |
-| Windows API Buffers | 14 | OID strings for `CERT_ENHKEY_USAGE` |
+```yaml
+- name: VirusTotal Scan
+  id: vt-scan
+  uses: crazy-max/ghaction-virustotal@v4
+  with:
+    vt_api_key: ${{ secrets.VT_API_KEY }}
+    files: ./build/*.dll
+    update_release_body: true  # Adds results to release notes
+  continue-on-error: true  # Don't fail the release on detections
+
+- name: Check scan results
+  if: steps.vt-scan.outcome == 'success'
+  run: |
+    # Parse results and alert if unexpected engines flag
+    echo "Scan completed - review results in release notes"
+```
 
 **Warning signs:**
-- Adding `const` to a pointer declared `extern` without checking definition
-- Global has a `Set*` setter function
-- Global is modified in `EnableCallback`, `DllMain`, or initialization code
+- New engines flagging that didn't before
+- Detection names containing "PUP", "Riskware", "HackTool"
+- Dramatic increase in detection count from previous scan
+- Specific engine consistently flaging
 
-**Phase to address:** Issue review phases - identify won't-fix upfront
-
-**Rollback strategy:** Remove const qualifier, add comment explaining runtime assignment pattern.
+**Phase to address:** Initial integration + ongoing monitoring
 
 ---
 
-### Pitfall 3: Refactoring SEH-Protected Code Breaks Exception Safety
+### Pitfall 3: Exposed API Keys in Repository
 
 **What goes wrong:**
-The codebase has 215+ `__try`/`__except`/`__finally` blocks. Extracting code from SEH blocks into helper functions breaks structured exception handling because:
-- SEH only works within a single function scope
-- Extracted code is no longer protected by the `__except` filter
-- Access violations in extracted helpers crash LSASS (BSOD potential)
-- `__finally` cleanup won't run for extracted code
+Hardcoding VirusTotal API keys or accidentally committing them to the repository exposes the key to abuse. This can lead to:
+- API quota exhaustion by unauthorized users
+- Account suspension by VirusTotal
+- Security audit findings
 
 **Why it happens:**
-Nesting depth reduction (Phase 24) and cognitive complexity reduction (Phase 25) goals can tempt refactoring of SEH-protected code. The relationship between code location and exception protection is not obvious.
+- Testing with hardcoded keys and forgetting to remove
+- Key accidentally included in committed .env file
+- Key visible in workflow logs when not properly masked
+- Fork of repository includes original keys
 
 **How to avoid:**
-1. Never extract code from inside `__try` blocks
-2. `__try`/`__except`/`__finally` structures must remain intact
-3. Nesting reduction in SEH code should use early return/guard clauses only
-4. Document SEH-protected functions as won't-fix for nesting/cognitive complexity
+1. **Always use GitHub Secrets** - Never hardcode API keys
+2. **Use repository or environment secrets** - Not organization-wide if not needed
+3. **Restrict secret access** - Use environment protection rules for production
+4. **Rotate keys periodically** - Especially after any potential exposure
+5. **Audit workflow files** - Ensure no secrets in logs or outputs
 
-**Files with most SEH usage:**
-- `EIDCardLibrary/StoredCredentialManagement.cpp` - 42 SEH blocks
-- `EIDAuthenticationPackage/EIDAuthenticationPackage.cpp` - 14 SEH blocks
-- `EIDCardLibrary/Package.cpp` - 12 SEH blocks
-- `EIDCardLibrary/Registration.cpp` - 10 SEH blocks
+```yaml
+# CORRECT - Using GitHub Secret
+- name: VirusTotal Scan
+  uses: crazy-max/ghaction-virustotal@v4
+  with:
+    vt_api_key: ${{ secrets.VT_API_KEY }}  # From repository secrets
+
+# WRONG - Never do this
+# vt_api_key: "abc123def456..."  # Hardcoded key exposed in repo
+```
 
 **Warning signs:**
-- Refactoring touches `__try`, `__except`, `__finally` keywords
-- Helper function created inside SEH block
-- Error handling path split across functions
+- API key visible in plain text anywhere in repository
+- Unexpected API usage in VirusTotal account dashboard
+- API quota depleted without corresponding CI/CD runs
+- Security scanner flagging exposed credentials
 
-**Phase to address:** All refactoring phases - this is a constraint
-
-**Rollback strategy:** Restore SEH block structure immediately; document as won't-fix with SEH safety justification.
+**Phase to address:** Initial setup phase
 
 ---
 
-### Pitfall 4: Adding [[fallthrough]] Incorrectly to Switch Statements
+### Pitfall 4: Asynchronous Analysis Timeout
 
 **What goes wrong:**
-SonarQube's blocker issue (1 instance) flags "Unannotated fall-through between switch labels." Adding `[[fallthrough]]` without understanding the code can:
-- Mask logic bugs where fall-through was unintentional
-- Hide missing break statements that should exist
-- Create security vulnerabilities if authentication cases fall through
+VirusTotal analysis is asynchronous. The API returns immediately with an analysis ID, but results may take minutes to complete. CI/CD workflows that don't handle this properly will:
+- Report success before analysis completes
+- Timeout waiting for results
+- Return incomplete scan information
 
 **Why it happens:**
-The `[[fallthrough]]` attribute (C++17) explicitly indicates intentional fall-through. Without analysis, you might add it to cases where the original code had a bug.
+- Large files take longer to analyze
+- VirusTotal queue times vary (can be 1-10+ minutes)
+- Default GitHub Actions timeout (6 hours) is usually sufficient, but shorter job timeouts may not be
+- Not using the action's built-in polling mechanism
 
 **How to avoid:**
-1. Analyze the switch case logic before adding `[[fallthrough]]`
-2. Confirm the fall-through is intentional (related cases grouped together)
-3. If fall-through is a bug, add `break` instead of `[[fallthrough]]`
-4. The blocker issue in `EIDConfigurationWizardPage06.cpp:44` needs careful review
+1. Use the crazy-max/ghaction-virustotal action which handles polling automatically
+2. Set appropriate timeout for the job (at least 15-30 minutes for large files)
+3. For manual API usage, implement polling loop with exponential backoff
+4. Consider `vt_monitor` feature for pre-release scanning
+
+```yaml
+jobs:
+  virus-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # Allow time for analysis
+    steps:
+      - name: VirusTotal Scan
+        uses: crazy-max/ghaction-virustotal@v4
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          files: ./build/*.dll
+          # Action handles polling automatically
+```
 
 **Warning signs:**
-- Switch cases have completely unrelated logic
-- No comment indicating intentional fall-through
-- Different error handling in consecutive cases
+- Workflow shows "success" but no scan results in output
+- Analysis ID returned but no verdict
+- Intermittent failures on larger files
+- Logs show "analysis in progress" until timeout
 
-**Phase to address:** First phase (blocker fix)
-
-**Rollback strategy:** Remove `[[fallthrough]]` and add `break` if analysis shows it was a bug.
+**Phase to address:** Initial integration phase
 
 ---
 
-### Pitfall 5: Breaking Windows API Const-Correctness Requirements
+### Pitfall 5: Scan Results Not Integrated with Release Process
 
 **What goes wrong:**
-Windows APIs often require non-const pointers even when they don't modify the data. Adding `const` to match SonarQube's const-correctness rules breaks Windows API calls:
-- `LSA_UNICODE_STRING` buffers must be non-const
-- `SecBuffer` descriptors require mutable pointers
-- `CERT_ENHKEY_USAGE.rgpszUsageIdentifier` requires `LPSTR*` (non-const)
-- Many Win32 APIs use `LPTSTR` out-params even for input
+Running VirusTotal scans but not surfacing results where users/stakeholders can see them means:
+- Security-conscious users don't see the clean scan
+- False positive issues can't be investigated retroactively
+- No audit trail of scan results over time
+- Releases proceed without security review
 
 **Why it happens:**
-Windows API design predates modern C++ const-correctness. Many APIs were designed for C compatibility and use non-const for flexibility. SonarQube doesn't understand Windows API contracts.
+- Scan runs but output is only in workflow logs
+- Results not attached to GitHub Release
+- No notification when detections occur
+- Scans run on non-release builds and get lost
 
 **How to avoid:**
-1. Check MSDN documentation before adding const to Windows API parameters
-2. Use `const_cast` sparingly and document why
-3. Don't change function signatures for Windows callbacks
-4. Document Windows API const requirements as won't-fix
+1. **Use `update_release_body: true`** - Automatically adds scan results to release notes
+2. **Run scans on release events, not every push**
+3. **Store scan URLs as artifacts** for non-release builds
+4. **Add workflow step to comment scan results on PRs** (optional)
 
-**Known won't-fix patterns:**
-- `LsaInitializeString` - `PLSA_STRING` is non-const
-- `CertOpenStore` - provider parameters are non-const
-- `SCardEstablishContext` - context handles are non-const pointers
+```yaml
+# Scan on release
+on:
+  release:
+    types: [published]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: VirusTotal Scan
+        uses: crazy-max/ghaction-virustotal@v4
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          files: ./build/EIDCredentialProvider.dll
+          update_release_body: true  # Adds results to release notes
+```
 
 **Warning signs:**
-- Adding `const` to a pointer passed to Windows API
-- Function is a Windows callback (WNDPROC, etc.)
-- Parameter type is a Windows structure pointer
+- Release notes don't mention VirusTotal
+- Users asking "has this been scanned for viruses?"
+- No record of what scan results were at release time
+- Manual step required to find scan results
 
-**Phase to address:** Const-correctness review phases
-
-**Rollback strategy:** Remove const qualifier, add comment referencing Windows API requirement.
+**Phase to address:** Release integration phase
 
 ---
 
-### Pitfall 6: Converting Macros Used in Resource Files to constexpr
+### Pitfall 6: Scanning Wrong Artifacts
 
 **What goes wrong:**
-SonarQube flags 111 "Replace macro with const, constexpr or enum" issues. Converting macros used in `.rc` resource files to `constexpr` breaks the resource compiler:
-- `RC.exe` cannot process C++ constexpr
-- Build fails with "undefined identifier" in resource files
-- Version information macros like `EIDAuthenticateVersionText` must be `#define`
+Scanning source code, intermediate build files, or wrong configuration results in:
+- False sense of security (scanned source, not binary)
+- Scanning files users never receive
+- Missing the actual deployed artifacts
+- Wasting API quota on irrelevant files
 
 **Why it happens:**
-v1.3 Phase 22-03 already discovered this - `EIDAuthenticateVersionText` was converted to constexpr and had to be reverted because the resource compiler only understands preprocessor macros.
+- Glob pattern matches more than intended
+- Build outputs in unexpected locations
+- Forgetting to build before scanning
+- Scanning test fixtures instead of release binaries
 
 **How to avoid:**
-1. Check if macro is used in any `.rc` file before converting
-2. Resource ID macros (~50 in this codebase) must remain as `#define`
-3. Version string macros must remain as `#define`
-4. Only convert macros that are purely C++ code constants
+1. **Only scan release artifacts** - The actual DLLs users will install
+2. **Run after build step** - Ensure artifacts exist before scanning
+3. **Use explicit file paths** - Not broad glob patterns
+4. **Include in release workflow** - Not general CI
 
-**Won't-fix macro categories from v1.3 Phase 22:**
-| Category | Count | Reason |
-|----------|-------|--------|
-| Windows Header Macros | ~25 | Configure SDK behavior |
-| Function-Like Macros | ~10 | Use `#`, `##`, `__FILE__`, `__LINE__` |
-| Resource ID Macros | ~50 | Required by RC.exe |
-| Version String Macros | 1+ | Required by version resources |
+```yaml
+jobs:
+  build:
+    runs-on: windows-latest
+    outputs:
+      artifact-path: ./build/x64/Release
+    steps:
+      - name: Build
+        run: msbuild EIDCredentialProvider.sln /p:Configuration=Release /p:Platform=x64
+
+  scan:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-binaries
+
+      - name: VirusTotal Scan
+        uses: crazy-max/ghaction-virustotal@v4
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          files: |
+            ./EIDCredentialProvider.dll
+            ./EIDCardLibrary.dll
+          # Explicit paths to release artifacts only
+```
 
 **Warning signs:**
-- Macro name starts with `IDC_`, `IDD_`, `IDS_` (resource IDs)
-- Macro contains `__FILE__`, `__LINE__`, `__FUNCTION__`
-- Macro used in `STRINGTABLE`, `VERSIONINFO` resource blocks
+- Scanning *.dll matches test DLLs
+- Source .cpp files in scan results
+- Scan reports 0 detections because scanned wrong files
+- File sizes in scan don't match release sizes
 
-**Phase to address:** Macro conversion phases
-
-**Rollback strategy:** Revert to `#define`, document resource compiler limitation.
+**Phase to address:** Initial integration phase
 
 ---
 
 ## Moderate Pitfalls
 
-### Pitfall 7: Over-Extracting Helper Functions for Cognitive Complexity
+### Pitfall 7: Not Handling VirusTotal Service Outages
 
 **What goes wrong:**
-Extracting too many helper functions for cognitive complexity reduction leads to:
-- Code scattered across many functions, harder to understand as a whole
-- Context loss - helpers need many parameters to access needed state
-- Non-idiomatic Windows code (dialog procedures should be self-contained)
-- Testing complexity increases
-
-**Why it happens:**
-SonarQube's cognitive complexity metric doesn't account for:
-- Security-critical explicit flow (validation chains)
-- Windows message handler idioms
-- State machine patterns
+VirusTotal occasionally experiences outages or degraded performance. CI/CD pipelines that require VirusTotal to succeed will block releases during outages.
 
 **How to avoid:**
-1. Only extract when helper has clear single responsibility
-2. Limit helpers to 3-4 parameters maximum
-3. Keep message handlers together in their original function
-4. Document complex validation chains as won't-fix (security-relevant)
-
-**Won't-fix categories from v1.3 Phases 24-25:**
-- SEH-Protected Code - Exception safety
-- Primary Authentication Functions - Security-critical
-- Complex State Machines - Deliberate design
-- Crypto Validation Chains - Explicit security flow
-- Windows Message Handlers - Idiomatic pattern
+1. Use `continue-on-error: true` for non-blocking scans
+2. Have a manual bypass process for critical releases
+3. Monitor VirusTotal status page
+4. Consider VirusTotal Premium with SLA guarantees
 
 **Warning signs:**
-- Helper function named "HandleCase1", "DoTheWork", "Helper"
-- Helper needs 5+ parameters
-- Message handler split across 3+ functions
+- Consistent timeouts across multiple runs
+- HTTP 503 errors in logs
+- VirusTotal status page shows incidents
 
-**Phase to address:** Cognitive complexity phases
+**Phase to address:** Production hardening phase
 
 ---
 
-### Pitfall 8: Changing Error Return Semantics
+### Pitfall 8: Using Deprecated API v2 Instead of v3
 
 **What goes wrong:**
-Modifying error handling while refactoring can change:
-- `HRESULT` to `NTSTATUS` conversion behavior
-- Error codes returned to calling code
-- `SetLastError` values that callers depend on
-- LSA dispatch table expectations
-
-**Why it happens:**
-The codebase uses mixed error types (HRESULT, NTSTATUS, BOOL, DWORD) for different contexts. Refactoring can accidentally change error propagation.
+VirusTotal API v2 is deprecated (though not yet removed). Using v2:
+- May stop working without notice
+- Has different rate limits and features
+- Less detailed analysis results
+- No Monitor feature support
 
 **How to avoid:**
-1. Preserve exact return types at function boundaries
-2. Don't change `return FALSE` to `return E_FAIL` without checking callers
-3. Keep LSA entry point return types as `NTSTATUS`
-4. Keep credential provider entry points as `HRESULT`
-5. Use `HRESULT_FROM_NT` / `HRESULT_FROM_WIN32` for conversions
+1. Ensure action version uses API v3 (crazy-max/ghaction-virustotal@v4 uses v3)
+2. If using vt-py directly, specify v3 endpoints
+3. Monitor VirusTotal deprecation announcements
 
-**Warning signs:**
-- Changing function return type
-- Adding new error return paths
-- Converting between HRESULT and NTSTATUS
-
-**Phase to address:** All refactoring phases
+**Phase to address:** Initial integration phase
 
 ---
 
-### Pitfall 9: Breaking DLL Load Order Dependencies
+### Pitfall 9: Not Setting Up VirusTotal Monitor for Publisher
 
 **What goes wrong:**
-Modifying global initialization order can break:
-- LSA function pointer assignment (must happen before any allocation)
-- ETW tracing registration (must happen before first trace)
-- Critical section initialization (must happen before first use)
-
-**Why it happens:**
-Globals are initialized in undefined order across translation units. The current code may rely on specific initialization order that's fragile.
+Without VirusTotal Monitor, every release is a new unknown to antivirus engines. This increases false positive rates and delays releases.
 
 **How to avoid:**
-1. Don't change where `SetAlloc`/`SetFree`/`SetImpersonate` are called
-2. Keep `DllMain` initialization sequence unchanged
-3. Don't move critical section initialization
-4. Test DLL loading in isolation after any initialization changes
+For established publishers with consistent release patterns:
+1. Sign up for VirusTotal Monitor (separate from standard API)
+2. Submit software for allowlisting consideration
+3. Maintain consistent code signing certificate
+4. Build detection history over time
 
-**Warning signs:**
-- Moving initialization code to different functions
-- Adding new globals that need initialization
-- Changing `DllMain` entry point
+**Note:** Monitor requires VirusTotal Premium subscription.
 
-**Phase to address:** Any phase touching initialization code
-
----
-
-### Pitfall 10: Auto Type Deduction Breaking Windows API Types
-
-**What goes wrong:**
-Using `auto` for Windows API types can cause:
-- Wrong type deduction (HANDLE vs. PHANDLE)
-- Pointer level confusion
-- Implicit conversion hiding
-- Compile errors with Windows typedefs
-
-**Why it happens:**
-Windows uses many typedef aliases. `auto` deduces the underlying type, which may lose typedef semantics.
-
-**How to avoid:**
-1. Use `auto` primarily for iterator declarations (v1.3 Phase 21 pattern)
-2. Keep explicit types for Windows handles and pointers
-3. Don't use `auto` for function parameters or return types
-4. Verify deduced type matches expected Windows type
-
-**Safe auto usage (from v1.3 Phase 21):**
-```cpp
-// SAFE: Iterator declarations
-auto iter = certificates.begin();
-auto it = m_mapCredentials.find(hash);
-
-// UNSAFE: Windows handles
-auto hToken = GetCurrentToken(); // Could be HANDLE or PHANDLE
-```
-
-**Warning signs:**
-- `auto` used with Windows HANDLE, HWND, HKEY types
-- `auto` for function return types in header files
-- `auto` deducing pointer-to-pointer
-
-**Phase to address:** Style modernization phases
+**Phase to address:** Post-MVP optimization (if releasing frequently)
 
 ---
 
 ## Minor Pitfalls
 
-### Pitfall 11: Adding Comments to Empty Compound Statements
+### Pitfall 10: Verbose Output in Workflow Logs
 
 **What goes wrong:**
-SonarQube flags "Fill compound statement or add nested comment" (17 issues). Adding comments to intentional empty blocks can:
-- Obscure that the block is intentionally empty
-- Add noise without value
-- Miss the real issue (should the block be empty?)
+Full scan output with all 70+ engine results creates verbose, hard-to-read workflow logs.
 
 **How to avoid:**
-1. Use `; // intentional` or `; // no action required` for truly empty blocks
-2. Consider if empty block indicates missing error handling
-3. Don't add verbose comments that add no information
+- Use the action's summary output instead of full JSON
+- Parse results to show only detections, not clean engines
+- Link to VirusTotal web interface for full details
+
+**Phase to address:** Polish phase
 
 ---
 
-### Pitfall 12: Merging Nested If Statements Blindly
+### Pitfall 11: Not Documenting Expected False Positives
 
 **What goes wrong:**
-SonarQube flags "Merge if statement with enclosing one" (17 issues). Merging can:
-- Lose short-circuit evaluation benefits
-- Change evaluation order (side effects)
-- Make code less readable with complex conditions
+When a new detection appears, there's no baseline to compare against to determine if it's expected or concerning.
 
 **How to avoid:**
-1. Merge only when both conditions are simple
-2. Keep short-circuit evaluation explicit when order matters
-3. Don't merge if debugging needs to distinguish which condition failed
+- Document which engines typically flag security software
+- Track detection trends over time
+- Create baseline documentation after first clean scan
+
+**Phase to address:** First release with scanning
 
 ---
 
 ## Technical Debt Patterns
 
-Shortcuts that seem reasonable but create long-term problems.
-
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Mark all globals const | Reduces SonarQube count | Compilation failures, broken initialization | Never - requires analysis |
-| Convert all C arrays to std::string | Cleaner code | LSASS crashes from dynamic allocation | Never in LSASS-loaded code |
-| Disable SEH for refactoring | Easier extraction | Access violations crash OS | Never |
-| Suppress warnings with #pragma | Quick fix | Hides real issues | Only for external headers |
-| Use // NOSONAR everywhere | Fast cleanup | Hides real issues, audit trail lost | Only with documented justification |
+| Skip scanning for patches | Faster releases | No detection history | Only for critical security patches |
+| Use continue-on-error always | Never blocks releases | Real threats may go unnoticed | Only if scanning is informational |
+| Scan source instead of binary | Faster scan | False sense of security | Never |
+| Share API key across projects | Simpler setup | Quota contention, audit issues | Only for personal/low-volume projects |
+| No code signing | Saves certificate cost | Guaranteed false positives | Never for security software |
 
 ---
 
 ## Integration Gotchas
 
-Common mistakes when connecting to external services/APIs.
-
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| LSA Dispatch Table | Assuming functions are available | Check function pointers are non-null before use |
-| ETW Tracing | Registering in DllMain | Defer registration to first use or dedicated init |
-| CryptoAPI | Using const with CERT_ structures | Keep non-const as Windows API requires |
-| Smart Card API | Not checking SCard return values | All SCard functions need explicit error handling |
-| Credential Provider | Throwing exceptions across COM boundary | Use HRESULT error codes only |
+| GitHub Actions | Hardcoding API key | Use `secrets.VT_API_KEY` |
+| Release workflow | Scanning before build | Build first, then scan |
+| Multiple artifacts | Separate scan jobs | Use single job with file list |
+| Private repo | Public API key scope | Use repo-specific secret |
+| Fork workflow | Copying secrets | Each fork needs own API key |
 
 ---
 
 ## Performance Traps
 
-Patterns that work at small scale but fail as usage grows.
-
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Large stack buffers in recursion | Stack overflow | Keep buffers <1KB in recursive code | Deep call chains |
-| Certificate validation on every auth | Slow login | Consider caching validation results (future) | Many concurrent logins |
-| Tracing every operation | ETW buffer overflow | Use trace levels appropriately | High-frequency operations |
+| Concurrent scans | 429 errors | Use sequential scans or rate limiting | >1 PR merged simultaneously |
+| Large file scan | Timeouts | Increase job timeout, consider file size limits | Files >100MB |
+| Queue backlog | Long wait times | Scan off-peak, use Premium API | VirusTotal heavy usage periods |
+| Daily quota exceeded | All scans fail | Track usage, implement job limits | >500 scans/day (unlikely for releases) |
 
 ---
 
 ## Security Mistakes
 
-Domain-specific security issues for LSASS authentication code.
-
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| std::string for credential data | Heap-based credential exposure | Use stack buffers, SecureZeroMemory after use |
-| Exception crossing LSASS boundary | LSASS crash (BSOD) | Error codes only, no exceptions |
-| Logging sensitive data | Credential exposure in logs | Never log PINs, passwords, or key material |
-| Not clearing credential buffers | Memory forensics credential theft | SecureZeroMemory all credential buffers |
-| Trusting certificate without validation | Authentication bypass | Full chain validation always |
-| Ignoring smart card removal | Session hijacking | Handle card removal events |
-| Timing attacks on PIN validation | PIN enumeration | Consider constant-time comparison |
+| API key in workflow file | Key exposure, quota abuse | Use GitHub Secrets |
+| API key in fork | Unauthorized usage | Document fork setup process |
+| Scan results expose URLs | Public access to private releases | Ensure release visibility matches intent |
+| No key rotation | Long-term exposure risk | Rotate keys quarterly or after exposure |
+| Bypassing scan for "trusted" commits | Supply chain attack vector | Never bypass, always scan |
+
+---
+
+## Security Software Specific Considerations
+
+For EIDAuthentication specifically, expect these behaviors to trigger detections:
+
+| Behavior | Why It Triggers | Expected Detection Type |
+|----------|-----------------|------------------------|
+| LSASS interaction | Credential theft malware pattern | "Riskware", "PUP", behavior-based |
+| Smart card access | Card skimming pattern | "HackTool", "PUP" |
+| PIN handling | Keylogging pattern | Behavior-based |
+| Memory operations in logon context | Process injection pattern | "Trojan", behavior-based |
+| Unsigned binary | No publisher verification | "Unknown", heuristic |
+
+**Mitigation strategies:**
+1. **Code sign everything** - Most important factor in reducing false positives
+2. **Build reputation over time** - Same certificate, consistent releases
+3. **Document expected detections** - Create baseline for comparison
+4. **Engage with antivirus vendors** - Report false positives for allowlisting
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-Things that appear complete after SonarQube remediation but are missing critical pieces.
+Things that appear complete but are missing critical pieces.
 
-- [ ] **Build succeeds:** But LSASS DLL fails to load - verify DLL registration and LSA package loading
-- [ ] **SonarQube shows zero issues:** But won't-fix issues not documented - ensure justifications in analysis
-- [ ] **Tests pass:** But edge cases in authentication changed - manual smoke test required
-- [ ] **Code compiles:** But resource files broken - verify .rc compilation succeeds
-- [ ] **No new warnings:** But behavior changed - test credential provider UI and auth flow
-- [ ] **Local VM works:** But production fails - test on clean Windows install
-- [ ] **Debug build works:** But Release fails - verify Release configuration builds
+- [ ] **Workflow runs:** But no VirusTotal results visible - verify `update_release_body: true`
+- [ ] **Scan succeeds:** But scanned wrong files - check file paths in scan output
+- [ ] **No detections:** But scan was skipped - verify scan step actually ran
+- [ ] **API key configured:** But workflow fails - verify secret name matches exactly
+- [ ] **Results in release notes:** But link is broken - verify release exists and is public
+- [ ] **Scan runs on PR:** But PR from fork fails - forks don't have access to secrets
 
 ---
 
 ## Recovery Strategies
 
-When pitfalls occur despite prevention, how to recover.
-
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| std::string in LSASS | HIGH | Revert all std::string changes, restore C arrays, full test cycle |
-| Broken SEH safety | HIGH | Restore original SEH structure, document as won't-fix |
-| Changed error semantics | MEDIUM | Diff return types against baseline, restore exact types |
-| Macro in .rc file | LOW | Revert to #define, document resource compiler limitation |
-| Global const failure | LOW | Remove const, add runtime-assignment comment |
-| Auto type confusion | LOW | Restore explicit type, document Windows API requirement |
-| [[fallthrough]] bug | LOW | Remove fallthrough, add break statement |
-| Empty block comment | TRIVIAL | Remove or improve comment |
-
----
-
-## Phase-Specific Warnings
-
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Blocker fix ([[fallthrough]]) | Adding fallthrough to bug | Analyze case logic before adding |
-| Global const issues | Marking runtime-assigned as const | Check for Set* functions |
-| C-style array issues | Converting to std::string | Keep as C arrays in LSASS code |
-| Nesting reduction | Extracting from SEH blocks | Keep SEH structures intact |
-| Cognitive complexity | Over-extracting helpers | Limit helpers, keep security flow explicit |
-| Macro conversion | Breaking resource compiler | Check .rc files before converting |
-| std::array conversion | Using std::vector instead | Only std::array is stack-safe |
+| Exposed API key | MEDIUM | Generate new key, update secret, audit usage |
+| False positive blocking release | LOW | `continue-on-error: true`, document detection, proceed |
+| Rate limit exceeded | LOW | Wait 1 minute (per-minute limit) or until next day (daily) |
+| Wrong files scanned | LOW | Fix file paths, re-run workflow |
+| VirusTotal outage | LOW | Wait for service recovery or bypass temporarily |
+| No code signing false positives | HIGH | Obtain certificate, sign, resubmit to VirusTotal |
 
 ---
 
 ## Pitfall-to-Phase Mapping
 
-How roadmap phases should address these pitfalls.
-
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| std::string in LSASS | All phases (constraint) | grep for std::string in EIDAuthenticationPackage |
-| Global const issues | Issue triage phase | Check for Set*/EnableCallback patterns |
-| SEH safety | All refactoring phases | grep for __try changes, diff carefully |
-| [[fallthrough]] blocker | First phase | Manual review of switch logic |
-| Windows API const | Const-correctness phases | Check MSDN for API requirements |
-| Macro in .rc files | Macro conversion phases | grep .rc files for macro usage |
-| Over-extraction | Complexity reduction phases | Count helper function parameters |
-| Error semantics | All refactoring phases | Diff function signatures |
-| DLL load order | Initialization changes | Test DLL load in isolation |
-| Auto type confusion | Style modernization phases | Verify deduced type with static_assert |
+| API rate limit exhaustion | Initial integration | Monitor workflow logs for 429 errors |
+| False positive blocking | Initial integration + ongoing | `continue-on-error: true`, baseline documentation |
+| Exposed API keys | Setup phase | Secret scanning, key rotation |
+| Async analysis timeout | Initial integration | Set job timeout, use action's polling |
+| Results not in release | Release integration | Verify release notes contain scan link |
+| Scanning wrong artifacts | Initial integration | Compare scanned files to release assets |
+| Service outages | Production hardening | `continue-on-error`, bypass process |
+| Deprecated API | Initial integration | Verify action uses v3 |
+| No Monitor setup | Post-MVP (optional) | Monitor subscription if releasing frequently |
 
 ---
 
 ## Sources
 
-### Codebase Documentation (HIGH confidence)
-- `.planning/sonarqube-analysis.md` - Issue categorization and counts
-- `.planning/STATE.md` - Key constraints (LSASS context, Windows 7 support, no exceptions)
-- `.planning/codebase/CONCERNS.md` - Known tech debt and security considerations
-- `.planning/milestones/v1.3-phases/30-final-sonarqube-scan/30-QUALITY-SUMMARY.md` - Prior milestone achievements
+### Official Documentation (HIGH confidence)
+- VirusTotal API v3 Overview: https://docs.virustotal.com/reference/overview
+- VirusTotal Error Codes: https://docs.virustotal.com/reference/errors
+- GitHub Actions Secrets: https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions
 
-### Prior Research (HIGH confidence)
-- `.planning/research/PITFALLS.md` - C++14 to C++23 upgrade pitfalls
-- `.planning/milestones/v1.3-phases/24-sonarqube-nesting-issues/24-RESEARCH.md` - Nesting reduction patterns
-
-### Windows/LSASS Documentation (MEDIUM confidence)
-- Microsoft Learn - LSA Authentication documentation
-- Microsoft Learn - Structured Exception Handling (SEH)
-- Windows SDK documentation for CryptoAPI, Smart Card API
+### GitHub Action Documentation (HIGH confidence)
+- crazy-max/ghaction-virustotal: https://github.com/crazy-max/ghaction-virustotal
+- Action marketplace entry: https://github.com/marketplace/actions/virustotal-github-action
 
 ### Community Knowledge (MEDIUM confidence)
-- C++ Core Guidelines for security-critical code
-- Windows driver development patterns (LSASS shares similar constraints)
+- VirusTotal Public vs Premium API: https://docs.virustotal.com/reference/public-vs-premium
+- vt-py Python library: https://github.com/VirusTotal/vt-py
+
+### Security Software Scanning Patterns (MEDIUM confidence)
+- General knowledge of how antivirus heuristics flag credential providers
+- Common false positive patterns for LSASS-interacting software
+- Code signing impact on detection rates (industry standard knowledge)
 
 ---
 
-## Appendix: Quick Reference - Won't Fix Categories
+## Appendix: Quick Reference - Action Configuration
 
-Based on v1.3 milestone analysis, these SonarQube issue categories should be documented as won't-fix:
+```yaml
+# Recommended configuration for EIDAuthentication
+- name: VirusTotal Scan
+  uses: crazy-max/ghaction-virustotal@v4
+  with:
+    vt_api_key: ${{ secrets.VT_API_KEY }}
+    files: |
+      ./build/EIDCredentialProvider.dll
+      ./build/EIDCardLibrary.dll
+    request_rate: 4           # Public API limit
+    update_release_body: true # Add to release notes
+  continue-on-error: true     # Don't block releases on detections
+```
 
-| Issue Type | Count | Category | Justification |
-|------------|-------|----------|---------------|
-| Global variables const | 71 | ~67 won't-fix | Runtime assignment, LSA pointers, tracing state |
-| Global pointers const | 31 | ~28 won't-fix | Windows API requirements, DLL state |
-| C-style char array | 149 | ~140 won't-fix | Stack allocation required in LSASS |
-| C-style array | 28 | ~25 won't-fix | Stack allocation for safety |
-| Macro to constexpr | 111 | ~107 won't-fix | Resource compiler, function-like macros |
-| Nesting depth | 52 | ~33 won't-fix | SEH safety, security-critical flow |
-| Cognitive complexity | varies | ~21-30 won't-fix | SEH, state machines, crypto chains |
+### Key Parameters
 
-**Expected actual fixes in v1.4:** ~730 issues documented, ~50-100 actionable, ~600+ won't-fix with justifications
+| Parameter | Value | Reason |
+|-----------|-------|--------|
+| `vt_api_key` | From secrets | Never hardcode |
+| `files` | Explicit paths | Avoid scanning wrong artifacts |
+| `request_rate` | 4 | Stay within public API limit |
+| `update_release_body` | true | Surface results to users |
+| `continue-on-error` | true | Don't block on false positives |
 
 ---
 
-*Pitfalls research for: SonarQube Issue Remediation in Windows LSASS Security-Critical Codebase*
-*Researched: 2026-02-18*
+*Pitfalls research for: VirusTotal CI/CD Integration for Security Software*
+*Project: EIDAuthentication - Windows Credential Provider*
+*Researched: 2026-02-19*

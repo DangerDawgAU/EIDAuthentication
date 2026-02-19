@@ -2,25 +2,25 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-18)
+See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
-**Current focus:** v1.4 SonarQube Zero - MILESTONE COMPLETE
+**Current focus:** v1.5 CI/CD Security Enhancement - VirusTotal integration
 
 ## Current Position
 
-Phase: 40 - Final Verification
-Current Plan: 1/1
-Status: COMPLETE
-Last activity: 2026-02-18 — Phase 40 Plan 01 complete - v1.4 MILESTONE COMPLETE
+Phase: 41 of 44 (Prerequisites and Secret Setup)
+Current Plan: Not started
+Status: Ready to plan
+Last activity: 2026-02-19 — Roadmap created for v1.5
 
-Progress: [====================] 100% (10/10 phases)
+Progress: [####################################] 0% (0/4 phases in v1.5)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 40+ (v1.0-v1.3)
-- v1.3 duration: ~2 days (10 phases, 21-30)
+- Total plans completed: 50+ (v1.0-v1.4)
+- v1.4 duration: ~1 day (10 phases, 31-40)
 - Trend: Stable
 
 **Recent Milestones:**
@@ -29,85 +29,44 @@ Progress: [====================] 100% (10/10 phases)
 - v1.2: Code Modernization (COMPLETE 2026-02-17)
 - v1.3: Deep Modernization (COMPLETE 2026-02-18)
 - v1.4: SonarQube Zero (COMPLETE 2026-02-18)
+- v1.5: CI/CD Security Enhancement (IN PROGRESS)
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions logged in PROJECT.md Key Decisions table.
-Recent decisions for v1.4:
+Recent decisions for v1.5:
 
-- Phase numbering starts at 31 (v1.3 ended at Phase 30)
-- Phase structure derived from v1.4 requirements (10 phases for 23 requirements)
-- Phase 31 (Macro to constexpr) is foundation - macros must be constexpr before globals can be const
-- Phase 34 depends on Phase 31 - macro conversion enables global const correctness
-- Phase 37 depends on Phase 36 - complexity helpers reduce nesting depth
-- Phase 37 nesting reduction: SEH-protected functions documented as won't-fix, guard clauses added to non-SEH functions
-- Depth setting: Quick (10 phases matches depth guidance)
-- CLSCTX_INPROC_SERVER renamed to CLSCTX_INPROC_SERVER_LOCAL to avoid confusion with Windows SDK definition
-- CERT_HASH_LENGTH documented as won't-fix because Windows SDK defines it as a macro
-- Windows API enum types (SAMPLE_FIELD_ID, EID_INTERACTIVE_LOGON_SUBMIT_TYPE, etc.) kept as unscoped for API compatibility
-- All runtime-assigned globals documented as won't-fix with 6 categories: LSA pointers, tracing state, DLL state, SAM function pointers, UI state, file handles
-- No const additions possible for globals - all eligible globals already marked const/constexpr
-- CContainerHolderFactory::HasContainerHolder() and ContainerHolderCount() marked const with const_cast for Lock/Unlock pattern
-- CMessageCredential::GetStatus() marked const (simple getter)
-- COM interface methods documented as won't-fix per CONST-04 - cannot change Windows API contracts
-- Complexity helpers placed in anonymous namespace for internal linkage
-- SEH blocks cannot be refactored - complexity inside __try documented as won't-fix
-- [Phase 37]: Guard clauses and early return patterns for nesting reduction; SEH-protected functions documented as won't-fix
-- [Phase 38]: C++17 if-init patterns for scoped variable declarations; iterator condition logic inverted for find patterns; variables needing outer scope or pass-by-address documented as won't-convert
-- [Phase 39]: std::array conversions for small fixed buffers with .data() for Windows API calls; Credential Provider/Wizard arrays left as C-style (Windows API compatibility); large buffers (>1KB) documented as won't-fix for stack safety
-- [Phase 40]: v1.4 milestone verification complete; 8 won't-fix categories documented covering ~280 issues; build verification, warning baseline, and SonarQube results templates created
+- v1.5 focus: VirusTotal integration in GitHub Actions
+- Scan targets: All artifacts (binaries, installer, source code)
+- Trigger: On push to main branch
+- On detection: Warn only (build continues)
+- Reporting: Comment VT report URL on commit
+- API handling: Retry logic with exponential backoff
 
-### Won't-Fix Categories (v1.4)
+### v1.5 Phase Structure
 
-| Category | Justification |
-|----------|---------------|
-| Resource compiler macros | RC.exe cannot process C++ constexpr |
-| Flow-control macros | SEH/context requirements |
-| Runtime-assigned globals | LSA pointers, DLL state, tracing state |
-| COM/interface method signatures | Cannot change API contracts |
-| SEH-protected code extraction | __try blocks must remain intact |
-| std::string/std::vector in LSASS | Heap allocation unsafe in LSASS context |
-| Windows API enum types | Must match Windows definitions |
-| Security-critical explicit types | HRESULT, NTSTATUS, handles need clarity |
-
-### v1.4 Phase Metrics
-
-| Phase | Duration | Tasks | Files |
-|-------|----------|-------|-------|
-| Phase 31 P01 | 20min | 4 tasks | 8 files |
-| Phase 32 P01 | 15min | 4 tasks | 5 files |
-| Phase 33 P01 | 25min | 4 tasks | 10 files |
-| Phase 34 P01 | 20min | 3 tasks | 4 files |
-| Phase 35 P01 | 30min | 4 tasks | 8 files |
-| Phase 36 P01 | 45min | 5 tasks | 12 files |
-| Phase 37 P01 | 15min | 4 tasks | 3 files |
-| Phase 38 P01 | 25min | 4 tasks | 6 files |
-| Phase 39 P01 | 35min | 5 tasks | 6 files |
-| Phase 40 P01 | 20min | 6 tasks | 4 files |
+| Phase | Goal | Requirements |
+|-------|------|--------------|
+| 41 | Prerequisites and Secret Setup | API-01, API-02 |
+| 42 | Basic VirusTotal Scan Job | SCAN-01-04, WF-01-04, RPT-02, WARN-01 |
+| 43 | Release Integration | RPT-03 |
+| 44 | Commit Comment Integration | RPT-01, WARN-02 |
 
 ### Pending Todos
 
-None. v1.4 Milestone COMPLETE - ready for next milestone planning.
+None.
 
 ### Blockers/Concerns
 
-Pre-existing build errors from previous phases (documented in multiple SUMMARY.md files):
-- GPOPolicy enum scoping issues in multiple files (scforceoption, scremoveoption, AllowTimeInvalidCertificates, Reading, EndReading)
-- EIDAuthenticationPackage.cpp cast errors
-
-**Fixed in Phase 36:**
-- CertificateValidation.cpp(601): EnforceCSPWhitelist scoping - FIXED
-- StoredCredentialManagement.cpp(767): EID_PRIVATE_DATA_TYPE to DWORD cast - FIXED
-
-Remaining errors are out of scope for Phase 36 and should be addressed in a future phase.
+None.
 
 ## Session Continuity
 
-Last session: 2026-02-18
-Stopped at: Phase 40 Plan 01 complete - v1.4 MILESTONE COMPLETE
-Resume file: Ready for v1.5 planning or next milestone
+Last session: 2026-02-19
+Stopped at: Roadmap created for v1.5
+Resume file: None - ready for Phase 41 planning
 
 ## Key Constraints (Always Remember)
 
@@ -120,6 +79,6 @@ Resume file: Ready for v1.5 planning or next milestone
 
 ---
 
-*Last updated: 2026-02-18*
-*Current milestone: v1.4 SonarQube Zero - COMPLETE*
-*Next: Begin v1.5 planning or next milestone*
+*Last updated: 2026-02-19*
+*Current milestone: v1.5 CI/CD Security Enhancement*
+*Next: Plan Phase 41 - Prerequisites and Secret Setup*

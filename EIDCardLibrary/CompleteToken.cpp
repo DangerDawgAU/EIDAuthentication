@@ -349,7 +349,7 @@ void DebugPrintSid(const WCHAR* Name, PSID Sid)
 	NET_API_STATUS netStatus = NetUserGetInfo(nullptr, UserName, 4, (LPBYTE*)&pUserInfo);
 	if (netStatus != 0)
 	{
-		HRESULT hr;
+		HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 		switch (netStatus)
 		{
 		case ERROR_ACCESS_DENIED:

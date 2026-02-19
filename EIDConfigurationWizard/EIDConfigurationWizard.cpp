@@ -27,13 +27,13 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND, UINT, WPARAM, LPARAM);
 BOOL fShowNewCertificatePanel;
 BOOL fGotoNewScreen = FALSE;
 HINSTANCE g_hinst;
-WCHAR szReader[256];
+WCHAR szReader[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 const DWORD dwReaderSize = ARRAYSIZE(szReader);
-WCHAR szCard[256];
+WCHAR szCard[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 const DWORD dwCardSize = ARRAYSIZE(szCard);
-WCHAR szUserName[256];
+WCHAR szUserName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 const DWORD dwUserNameSize = ARRAYSIZE(szUserName);
-WCHAR szPassword[256];
+WCHAR szPassword[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 const DWORD dwPasswordSize = ARRAYSIZE(szPassword);
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,

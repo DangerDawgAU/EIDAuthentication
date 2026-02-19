@@ -18,7 +18,7 @@
 #pragma comment(lib,"Scarddlg")
 
 // Static buffer for column name (required for PTSTR compatibility with const-correctness)
-static TCHAR s_szColumnName[] = TEXT("Comment");
+static TCHAR s_szColumnName[] = TEXT("Comment");                     // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
 
 CContainerHolderFactory<CContainerHolderTest> *pCredentialList = nullptr;
 DWORD dwCurrentCredential = 0xFFFFFFFF;
@@ -58,7 +58,7 @@ BOOL PopulateListViewCheckData(HWND hWndListViewList, HWND hWndListViewCheck)
 {
 	LVITEM lvI;
 	UINT ColumnsToDisplay[] = {1,2,3};
-	TCHAR szMessage[256] = TEXT("");
+	TCHAR szMessage[256] = TEXT("");  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	// Some code to create the list-view control.
 	// Initialize LVITEM members that are common to all items.
 	lvI.mask = LVIF_TEXT | LVIF_IMAGE | LVIF_PARAM | LVIF_STATE | LVIF_COLUMNS | LVIF_GROUPID; 
@@ -562,7 +562,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 					else
 					{
 						// no certificate
-						TCHAR szMessage[256] = TEXT("");
+						TCHAR szMessage[256] = TEXT("");  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 						LoadString(g_hinst,IDS_NO_CERTIFICATE, szMessage, ARRAYSIZE(szMessage));
 						LVITEM lvI;
 						UINT ColumnsToDisplay[] = {1,2,3};

@@ -8,6 +8,338 @@
 
 This research addresses how to organize remediation of ~730 remaining SonarQube issues in the EIDAuthentication Windows smart card authentication package. The existing codebase is already on C++23 with MSVC v143, all 7 projects compile successfully, and security issues are resolved. The focus is purely on maintainability improvements while preserving LSASS safety constraints.
 
+---
+
+# SUBSEQUENT MILESTONE: VirusTotal CI/CD Integration
+
+**Domain:** VirusTotal Scanning for Release Artifacts
+**Researched:** 2026-02-19
+**Confidence:** HIGH
+
+## VirusTotal Integration Architecture
+
+### System Overview
+
+```
++------------------------------------------------------------------+
+|                    GitHub Actions Workflow                        |
++------------------------------------------------------------------+
+|                                                                   |
+|  +-------------+    +----------------+    +-------------------+  |
+|  |   Build     |    |    Package     |    |   VirusTotal      |  |
+|  |   Job       |--->|    (NSIS)      |--->|   Scan Job        |  |
+|  |             |    |                |    |                   |  |
+|  | - Checkout  |    | - Installer    |    | - Upload artifact |  |
+|  | - Setup     |    |   creation     |    | - Poll analysis   |  |
+|  | - Build     |    | - Artifact     |    | - Report results  |  |
+|  |             |    |   generation   |    | - Update release  |  |
+|  +-------------+    +----------------+    +-------------------+  |
+|                                                                   |
++------------------------------------------------------------------+
+|                         External Services                         |
++------------------------------------------------------------------+
+|  +------------------+         +------------------+                |
+|  |   VirusTotal     |         |   GitHub         |                |
+|  |   API v3         |<------->|   Release API    |                |
+|  |                  |         |                  |                |
+|  | - File upload    |         | - Update body    |                |
+|  | - Analysis       |         | - Attach links   |                |
+|  | - Reports        |         |                  |                |
+|  +------------------+         +------------------+                |
++------------------------------------------------------------------+
+```
+
+### Component Responsibilities
+
+| Component | Responsibility | Typical Implementation |
+|-----------|----------------|------------------------|
+| Build Job | Compile Windows credential provider DLL | MSBuild on windows-latest runner |
+| Package Step | Create NSIS installer executable | joncloud/makensis-action |
+| VirusTotal Scan Job | Upload and scan artifacts with VT | crazy-max/ghaction-virustotal@v4 |
+| Release Update | Append scan results to GitHub release | Built-in action output handling |
+| Secrets Management | Store VT API key securely | GitHub repository secrets |
+
+### Recommended Project Structure
+
+```
+.github/
++-- workflows/
+|   +-- windows-build.yaml      # EXISTING: Build and release workflow
+|                                  (MODIFY: Add VT scan job)
++-- scripts/                    # Optional: Helper scripts for scan logic
+|   +-- check-vt-results.ps1    # Parse VT results, fail on detections
+```
+
+### Structure Rationale
+
+- **Integrate into existing workflow:** For EIDAuthentication, integrating into the existing `windows-build.yaml` is recommended because the scan should only run on releases, and the artifact is already available
+- **No new source files required:** The VirusTotal integration is purely CI/CD configuration
+
+## Architectural Patterns
+
+### Pattern 1: Post-Build Scan (Recommended for Release Workflow)
+
+**What:** Add VirusTotal scan as a separate job that runs after successful artifact generation
+**When to use:** Release workflows where you want to scan final artifacts before/during publication
+**Trade-offs:**
+- Pros: Does not block builds, scans final packaged artifact, can update release notes
+- Cons: Requires artifact passing between jobs, adds time to release process
+
+**Example:**
+
+```yaml
+name: Build on windows.
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    # EXISTING BUILD JOB - no changes needed
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+
+      - name: Build app for release
+        run: msbuild EIDCredentialProvider.sln -t:rebuild -property:Configuration=Release /p:Platform=x64
+
+      - name: Create nsis installer
+        uses: joncloud/makensis-action@v1
+        with:
+          script-file: Installer/Installerx64.nsi
+          arguments: "/V3"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: Installer/EIDInstallx64.exe
+
+      - name: upload binaries to release
+        uses: softprops/action-gh-release@v2
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        with:
+          files: Installer/EIDInstallx64.exe
+
+  virustotal:
+    name: VirusTotal Scan
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: installer
+          path: ./artifacts
+
+      - name: VirusTotal Scan
+        uses: crazy-max/ghaction-virustotal@v4
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          github_token: ${{ github.token }}
+          update_release_body: true
+          request_rate: 4
+          files: |
+            ./artifacts/EIDInstallx64.exe
+```
+
+### Pattern 2: Standalone Scan Workflow
+
+**What:** Separate workflow triggered by release events or manually
+**When to use:** When you want to scan without modifying the main build workflow, or for on-demand scanning
+**Trade-offs:**
+- Pros: Decoupled from build, can be triggered independently
+- Cons: Requires download of release assets, more complex file handling
+
+**Example:**
+
+```yaml
+name: VirusTotal Scan
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  virustotal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: VirusTotal Scan
+        uses: crazy-max/ghaction-virustotal@v4
+        with:
+          vt_api_key: ${{ secrets.VT_API_KEY }}
+          github_token: ${{ github.token }}
+          update_release_body: true
+          request_rate: 4
+          files: |
+            .exe$
+```
+
+### Pattern 3: Fail-on-Detection Pattern
+
+**What:** Parse scan results and fail workflow if detections exceed threshold
+**When to use:** When you want to block releases with significant AV detections
+**Trade-offs:**
+- Pros: Prevents publishing potentially flagged software
+- Cons: False positives can block legitimate releases
+
+**Example:**
+
+```yaml
+- name: VirusTotal Scan
+  id: vt-scan
+  uses: crazy-max/ghaction-virustotal@v4
+  with:
+    vt_api_key: ${{ secrets.VT_API_KEY }}
+    files: ./artifacts/EIDInstallx64.exe
+
+- name: Check for detections
+  run: |
+    ANALYSIS="${{ steps.vt-scan.outputs.analysis }}"
+    # Parse analysis URL and fetch results
+    # Implement threshold logic (e.g., fail if > 5 detections)
+    echo "Analysis results: $ANALYSIS"
+```
+
+## Data Flow
+
+### Release Scan Flow
+
+```
+[Release Published]
+        |
+        v
+[Build Job] --> [Compile DLL] --> [Create NSIS Installer] --> [Upload to Release]
+        |                                                        |
+        +--> [Upload Artifact] <---------------------------------+
+                                        |
+                                        v
+                              [VT Scan Job downloads artifact]
+                                        |
+                                        v
+                              [Upload to VirusTotal API]
+                                        |
+                                        v
+                              [Poll for analysis completion]
+                                        |
+                                        v
+                              [Update release body with VT link]
+```
+
+### Key Data Flows
+
+1. **Artifact Flow:** Build job creates `EIDInstallx64.exe` -> upload-artifact -> VT scan job downloads
+2. **API Communication:** VT action uploads file -> VirusTotal queues analysis -> action polls for completion -> returns analysis URL
+3. **Release Update:** Analysis URL written to release body via GitHub API using `update_release_body: true`
+
+## Integration Points
+
+### External Services
+
+| Service | Integration Pattern | Notes |
+|---------|---------------------|-------|
+| VirusTotal API v3 | REST API via ghaction-virustotal | Public API has 4 req/min rate limit; set `request_rate: 4` |
+| GitHub Releases API | Built into action with `github_token` | Requires `contents: write` permission |
+
+### Integration with Existing EIDAuthentication Workflow
+
+| Existing Component | Integration Point | Modification Required |
+|-------------------|-------------------|----------------------|
+| `windows-build.yaml` | Add `needs: build` job dependency | Add new `virustotal` job |
+| `softprops/action-gh-release` | Artifact already uploaded | No change - artifact reused |
+| Build permissions | Add `contents: write` to VT job | New permission declaration |
+| Secrets | Add `VT_API_KEY` repository secret | One-time setup |
+
+### New vs Modified Components
+
+| Component | Type | Description |
+|-----------|------|-------------|
+| `VT_API_KEY` secret | NEW | Repository secret containing VirusTotal API key |
+| `virustotal` job | NEW | Job definition in windows-build.yaml |
+| `actions/download-artifact@v4` | NEW | Step to download build artifact |
+| `crazy-max/ghaction-virustotal@v4` | NEW | VT scan action |
+| `needs: build` | NEW | Job dependency declaration |
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Scanning Source Code Instead of Artifacts
+
+**What people do:** Point VT scanner at source directories or build intermediates
+**Why it's wrong:** AV engines detect compiled binaries differently; source code may have different signatures
+**Do this instead:** Always scan the final packaged artifact (the NSIS installer in this case)
+
+### Anti-Pattern 2: Blocking Build on Scan Results
+
+**What people do:** Fail the entire workflow if any VT detection is found
+**Why it's wrong:** Credential providers often trigger false positives due to legitimate security-sensitive operations
+**Do this instead:** Report results informatively, allow manual review before taking action
+
+### Anti-Pattern 3: Not Setting Rate Limits
+
+**What people do:** Use default `request_rate: 0` with free API key
+**Why it's wrong:** Exceeds free tier quota (4 requests/minute), causes 429 errors
+**Do this instead:** Always set `request_rate: 4` when using public VirusTotal API
+
+### Anti-Pattern 4: Exposing API Key
+
+**What people do:** Hardcode VT API key in workflow file
+**Why it's wrong:** API key visible in git history, can be abused
+**Do this instead:** Use `${{ secrets.VT_API_KEY }}` with repository secret
+
+## API Rate Limits
+
+| API Tier | Rate Limit | Daily Quota | Commercial Use |
+|----------|------------|-------------|----------------|
+| Public (Free) | 4 req/min | 5,760 req/day | No |
+| Premium | Higher (varies) | Higher | Yes |
+
+**For EIDAuthentication:** Public API is sufficient. Single file scan per release (infrequent) will not exceed limits.
+
+## Recommended Build Order
+
+1. **Prerequisite:** Add `VT_API_KEY` to repository secrets
+   - Navigate to Settings > Secrets and variables > Actions
+   - Add new repository secret named `VT_API_KEY`
+   - Value: API key from VirusTotal account
+
+2. **Modify `windows-build.yaml`:**
+   - Add artifact upload step to build job (after NSIS creation)
+   - Add new `virustotal` job with `needs: build`
+   - Set appropriate permissions
+
+3. **Test:** Create a test release or use `workflow_dispatch` for manual testing
+
+4. **Optional:** Add detection threshold logic if automated blocking desired
+
+## Sources
+
+- [crazy-max/ghaction-virustotal GitHub Action](https://github.com/crazy-max/ghaction-virustotal) - HIGH confidence - Official action documentation
+- [VirusTotal API v3 Overview](https://developers.virustotal.com/reference/overview) - HIGH confidence - Official API documentation
+- [VirusTotal Public vs Premium API](https://developers.virustotal.com/reference/public-vs-premium-api) - HIGH confidence - Rate limit information
+- Existing `windows-build.yaml` workflow analysis - HIGH confidence - Project-specific context
+
+---
+
+# ORIGINAL CONTENT: SonarQube Issue Remediation Architecture
+
+*The following sections remain from the original SonarQube remediation research.*
+
+---
+
 ## Issue Remediation Architecture
 
 ### System Overview
@@ -543,3 +875,5 @@ All phases must verify:
 
 *Architecture research for: SonarQube Issue Remediation in C++23 Windows LSASS Codebase*
 *Researched: 2026-02-18*
+
+*VirusTotal CI/CD Integration added: 2026-02-19*

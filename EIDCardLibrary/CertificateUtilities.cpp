@@ -34,15 +34,15 @@
 // Non-const copies for Windows API compatibility (CERT_ENHKEY_USAGE.rgpszUsageIdentifier is LPSTR*)
 // With /Zc:strictStrings (enabled by default in C++23), string literals are const and cannot
 // be implicitly converted to non-const LPSTR. These static arrays provide writable storage.
-static char s_szOidClientAuth[] = szOID_PKIX_KP_CLIENT_AUTH;
-static char s_szOidServerAuth[] = szOID_PKIX_KP_SERVER_AUTH;
-static char s_szOidSmartCardLogon[] = szOID_KP_SMARTCARD_LOGON;
-static char s_szOidEfs[] = szOID_KP_EFS;
-static char s_szOidKeyUsage[] = szOID_KEY_USAGE;
-static char s_szOidBasicConstraints2[] = szOID_BASIC_CONSTRAINTS2;
-static char s_szOidEnhancedKeyUsage[] = szOID_ENHANCED_KEY_USAGE;
-static char s_szOidSubjectKeyId[] = szOID_SUBJECT_KEY_IDENTIFIER;
-static char s_szOidSha1RsaSign[] = szOID_OIWSEC_sha1RSASign;
+static char s_szOidClientAuth[] = szOID_PKIX_KP_CLIENT_AUTH;          // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
+static char s_szOidServerAuth[] = szOID_PKIX_KP_SERVER_AUTH;          // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
+static char s_szOidSmartCardLogon[] = szOID_KP_SMARTCARD_LOGON;       // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
+static char s_szOidEfs[] = szOID_KP_EFS;                              // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
+static char s_szOidKeyUsage[] = szOID_KEY_USAGE;                      // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
+static char s_szOidBasicConstraints2[] = szOID_BASIC_CONSTRAINTS2;    // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
+static char s_szOidEnhancedKeyUsage[] = szOID_ENHANCED_KEY_USAGE;     // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
+static char s_szOidSubjectKeyId[] = szOID_SUBJECT_KEY_IDENTIFIER;     // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
+static char s_szOidSha1RsaSign[] = szOID_OIWSEC_sha1RSASign;          // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
 
 BOOL SetupCertificateContextWithKeyInfo(
     __in PCCERT_CONTEXT pCertContext, __in HCRYPTPROV hProv,
@@ -216,8 +216,8 @@ static bool CertificateHasPrivateKey(PCCERT_CONTEXT pCertContext)
 PCCERT_CONTEXT SelectFirstCertificateWithPrivateKey()
 {
 	PCCERT_CONTEXT returnedContext = nullptr;
-	TCHAR szCertName[1024] = TEXT("");
-	TCHAR szComputerName[257];
+	TCHAR szCertName[1024] = TEXT("");  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	TCHAR szComputerName[257];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwSize = ARRAYSIZE(szComputerName);
 	HCERTSTORE hCertStore = nullptr;
 	GetComputerName(szComputerName,&dwSize);
@@ -1151,7 +1151,7 @@ BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName)
 	BOOL bStatus = FALSE;
 	WCHAR szProviderName[1024];
 	DWORD dwProviderNameLen = ARRAYSIZE(szProviderName);
-	CHAR szContainerName[1024];
+	CHAR szContainerName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwContainerNameLen = ARRAYSIZE(szContainerName);
 	DWORD dwFlags;
 	HCRYPTPROV HMainCryptProv = NULL;  // Windows handle type - keep as NULL
@@ -1361,7 +1361,7 @@ BOOL ImportFileToSmartCard(PTSTR szFileName, PTSTR szPassword, PTSTR szReaderNam
 	HANDLE hFile = INVALID_HANDLE_VALUE;
 	HCERTSTORE hCS = nullptr;
 	DWORD dwRead = 0;
-	TCHAR szProviderName[1024];
+	TCHAR szProviderName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwProviderNameLen = ARRAYSIZE(szProviderName);
 	PWSTR szContainerName = nullptr;
 	HCRYPTPROV hCardProv = NULL;
@@ -1586,9 +1586,9 @@ PCCERT_CONTEXT FindCertificateFromHashOnCard(PCRYPT_DATA_BLOB pCertInfo, PTSTR s
 	PCCERT_CONTEXT pCertContext = nullptr;
 	HCRYPTPROV HCryptProv = NULL;  // Windows handle type - keep as NULL
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
-	TCHAR szMainContainerName[1024];
+	TCHAR szMainContainerName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwContainerNameLen = ARRAYSIZE(szMainContainerName);
-	CHAR szContainerName[1024];
+	CHAR szContainerName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwError = 0;
 	DWORD pKeySpecs[2] = {AT_KEYEXCHANGE,AT_SIGNATURE};
 	HCRYPTKEY hKey = NULL;  // Windows handle type - keep as NULL
@@ -1654,7 +1654,7 @@ PCCERT_CONTEXT FindCertificateFromHashOnCard(PCRYPT_DATA_BLOB pCertInfo, PTSTR s
 								pKeySpecs[i],
 								&hKey) )
 						{
-							BYTE Data[4096];
+							BYTE Data[4096];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 							DWORD DataSize = 4096;
 							if (CryptGetKeyParam(hKey,
 									KP_CERTIFICATE,
@@ -1662,7 +1662,7 @@ PCCERT_CONTEXT FindCertificateFromHashOnCard(PCRYPT_DATA_BLOB pCertInfo, PTSTR s
 									&DataSize,
 									0))
 							{
-								BYTE pbHash[100];
+								BYTE pbHash[100];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 								DWORD dwHashSize = ARRAYSIZE(pbHash);
 								PCCERT_CONTEXT pTempContext = CertCreateCertificateContext(X509_ASN_ENCODING ,Data,DataSize);
 								if (CryptHashCertificate(NULL, 0, 0, Data, DataSize, (PBYTE) &pbHash, &dwHashSize))

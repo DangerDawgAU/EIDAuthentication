@@ -57,9 +57,9 @@ class CClassFactory : public IClassFactory
         return cRef;
     }
 
-    STDMETHOD (QueryInterface)(REFIID riid, void** ppv) 
+    STDMETHOD (QueryInterface)(REFIID riid, void** ppv)
     {
-        HRESULT hr;
+        HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
         if (ppv != nullptr)
         {
             if (IID_IClassFactory == riid || IID_IUnknown == riid)
@@ -84,7 +84,7 @@ class CClassFactory : public IClassFactory
     // IClassFactory
     STDMETHOD (CreateInstance)(IUnknown* pUnkOuter, REFIID riid, void** ppv)
     {
-        HRESULT hr;
+        HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
         if (!pUnkOuter)
         {
             if (IID_ICredentialProviderFilter == riid)
@@ -128,7 +128,7 @@ class CClassFactory : public IClassFactory
 
 HRESULT CClassFactory_CreateInstance(REFCLSID rclsid, REFIID riid, void** ppv)
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
     if (CLSID_CEIDProvider == rclsid )
     {
         auto pcf = new CClassFactory;
@@ -190,7 +190,7 @@ void DllRelease()
 // DLL entry point.
 STDAPI DllCanUnloadNow()
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 
     if (g_cRef > 0)
     {

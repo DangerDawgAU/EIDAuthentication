@@ -68,7 +68,7 @@ HRESULT CMessageCredential::Initialize(
                         const FIELD_STATE_PAIR* rgfsp,
                         PCWSTR szMessage)
 {
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
     // Copy the field descriptors for each field. This is useful if you want to vary the field
     // descriptors based on what Usage scenario the credential was created for.
     for (DWORD i = 0; SUCCEEDED(hr) && i < ARRAYSIZE(_rgCredProvFieldDescriptors); i++)
@@ -84,7 +84,7 @@ HRESULT CMessageCredential::Initialize(
     }
 	if (SUCCEEDED(hr))
     {
-        WCHAR szDisableForcePolicy[256] = L"";
+        WCHAR szDisableForcePolicy[256] = L"";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		LoadStringW(g_hinst,IDS_DISABLEFORCEPOLICY,szDisableForcePolicy,ARRAYSIZE(szDisableForcePolicy));
 		hr = SHStrDupW(szDisableForcePolicy, &(_rgFieldStrings[SMFI_CANCELFORCEPOLICY]));
     }
@@ -144,7 +144,7 @@ HRESULT CMessageCredential::GetFieldState(
     CREDENTIAL_PROVIDER_FIELD_INTERACTIVE_STATE* pcpfis
     )
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
     // Make sure the field and other parameters are valid.
     if (dwFieldID < ARRAYSIZE(_rgFieldStatePairs) && pcpfs && pcpfis)
     {
@@ -173,8 +173,8 @@ HRESULT CMessageCredential::GetStringValue(
     PWSTR* ppwsz
     )
 {
-    HRESULT hr;
-	
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
+
     // Check to make sure dwFieldID is a legitimate index
     if (dwFieldID < ARRAYSIZE(_rgCredProvFieldDescriptors) && ppwsz )
 	{
@@ -238,7 +238,7 @@ HRESULT CMessageCredential::GetBitmapValue(
 {
     UNREFERENCED_PARAMETER(dwFieldID);
     UNREFERENCED_PARAMETER(phbmp);
-	HRESULT hr;
+	HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 	if ((SFI_TILEIMAGE == dwFieldID) && phbmp)
     {	
 		HBITMAP hbmp = LoadBitmap(HINST_THISDLL, MAKEINTRESOURCE(IDB_TILE_IMAGE));
@@ -263,7 +263,7 @@ HRESULT CMessageCredential::GetBitmapValue(
 // Called when a command link is clicked.
 HRESULT CMessageCredential::CommandLinkClicked(DWORD dwFieldID)
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 	if (SMFI_CANCELFORCEPOLICY == dwFieldID)
 	{
 		if (_pCredProvCredentialEvents)

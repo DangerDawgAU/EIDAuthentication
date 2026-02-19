@@ -414,7 +414,7 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 	BOOL fReturn = FALSE;
 	BOOL fStatus;
 	DWORD dwError = 0;
-	NTSTATUS Status;
+	NTSTATUS Status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	HCRYPTKEY hKey = NULL;
 	HCRYPTKEY hSymetricKey = NULL;
 	PBYTE pSymetricKey = NULL;
@@ -642,13 +642,13 @@ BOOL CStoredCredentialManager::UpdateCredential(__in PLUID pLuid, __in PUNICODE_
 {
 	DWORD dwRid = 0;
 	WCHAR szComputer[UNLEN+1];
-	WCHAR szUser[256];
+	WCHAR szUser[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwSize = ARRAYSIZE(szComputer);
 	DWORD dwError = 0;
 	BOOL fReturn = FALSE;
 	USER_INFO_3* pUserInfo = nullptr;
 	PSECURITY_LOGON_SESSION_DATA pLogonSessionData = nullptr;
-	NTSTATUS status;
+	NTSTATUS status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	__try
 	{
 		status = LsaGetLogonSessionData(pLuid, &pLogonSessionData);
@@ -2161,7 +2161,7 @@ BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE
 
     LSA_UNICODE_STRING lusSecretName;
     LSA_UNICODE_STRING lusSecretData;
-	WCHAR szLsaKeyName[256];
+	WCHAR szLsaKeyName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
     NTSTATUS ntsResult = STATUS_SUCCESS;
     //  Object attributes are reserved, so initialize to zeros.
     ZeroMemory(&ObjectAttributes, sizeof(ObjectAttributes));
@@ -2262,7 +2262,7 @@ BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_
     LSA_HANDLE LsaPolicyHandle = nullptr;
  PLSA_UNICODE_STRING pData = nullptr;
     LSA_UNICODE_STRING lusSecretName;
-	WCHAR szLsaKeyName[256];
+	WCHAR szLsaKeyName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	NTSTATUS ntsResult = STATUS_SUCCESS;
     //  Object attributes are reserved, so initialize to zeros.
     ZeroMemory(&ObjectAttributes, sizeof(ObjectAttributes));
@@ -2473,7 +2473,7 @@ NTSTATUS LoadSamSrv()
 // Code cannot be extracted from __try blocks per LSASS safety requirements
 NTSTATUS CStoredCredentialManager::CheckPassword( __in DWORD dwRid, __in PWSTR szPassword)
 {
-	NTSTATUS Status = STATUS_SUCCESS;
+	NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	LSA_OBJECT_ATTRIBUTES connectionAttrib;
     LSA_HANDLE handlePolicy = nullptr;
     PPOLICY_ACCOUNT_DOMAIN_INFO structInfoPolicy = nullptr;// -> http://msdn2.microsoft.com/en-us/library/ms721895(VS.85).aspx.

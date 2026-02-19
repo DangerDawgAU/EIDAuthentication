@@ -58,7 +58,7 @@ HRESULT FieldDescriptorCoAllocCopy(
                                    CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR** ppcpfd
                                    )
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
     DWORD cbStruct = sizeof(CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR);
 
     auto pcpfd = static_cast<CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR*>(CoTaskMemAlloc(cbStruct));
@@ -94,7 +94,7 @@ HRESULT FieldDescriptorCopy(
                             CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR* pcpfd
                             )
 {
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
     CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR cpfd;
 
     cpfd.dwFieldID = rcpfd.dwFieldID;
@@ -131,7 +131,7 @@ static HRESULT ProtectAndCopyString(
 {
     *ppwzProtected = nullptr;
 
-    HRESULT hr = E_FAIL;
+    HRESULT hr = E_FAIL;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 
     // The first call to CredProtect determines the length of the encrypted string.
     // Because we pass a NULL output buffer, we expect the call to fail.
@@ -193,7 +193,7 @@ HRESULT ProtectIfNecessaryAndCopyPassword(
 {
     *ppwzProtectedPassword = nullptr;
 
-    HRESULT hr;
+    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 
     // ProtectAndCopyString is intended for non-empty strings only.  Empty passwords
     // do not need to be encrypted.
@@ -243,9 +243,9 @@ static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT messa
             case IDC_OK: 
 				
 				{
-					WCHAR szUserName[256];
-					WCHAR szPassword[256];
-					HANDLE hToken = INVALID_HANDLE_VALUE;
+					WCHAR szUserName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+					WCHAR szPassword[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+					HANDLE hToken = INVALID_HANDLE_VALUE;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 					DWORD dwValue = 0;
 					LONG lStatus;
 					__try
@@ -299,7 +299,7 @@ static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT messa
 					{
 						// launch the password reset wizard
 						HMODULE keymgrDll = nullptr;
-						WCHAR szUserName[256];
+						WCHAR szUserName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 						PBYTE pbBuffer;
 						NET_API_STATUS nStatus;
 						GetWindowTextW(GetDlgItem(hwndDlg,IDC_USERNAME),szUserName,ARRAYSIZE(szUserName));

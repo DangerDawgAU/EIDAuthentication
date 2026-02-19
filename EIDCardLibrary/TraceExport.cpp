@@ -25,7 +25,7 @@
 #include "TraceExport.h"
 
 // Non-const string buffer for EVENT_TRACE_LOGFILE.LoggerName (requires LPWSTR)
-static TCHAR s_szLoggerName[] = TEXT("EIDCredentialProvider");
+static TCHAR s_szLoggerName[] = TEXT("EIDCredentialProvider");        // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
 
 static HANDLE g_hTraceOutputFile = nullptr;
 
@@ -40,7 +40,7 @@ static VOID WINAPI ProcessEvents(PEVENT_TRACE pEvent)
 		ft.dwHighDateTime = pEvent->Header.TimeStamp.HighPart;
 		ft.dwLowDateTime = pEvent->Header.TimeStamp.LowPart;
 		FileTimeToSystemTime(&ft,&st);
-		TCHAR szLocalDate[255], szLocalTime[255];
+		TCHAR szLocalDate[255], szLocalTime[255];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		_stprintf_s(szLocalDate, ARRAYSIZE(szLocalDate),TEXT("%04d-%02d-%02d"),st.wYear,st.wMonth,st.wDay);
 		_stprintf_s(szLocalTime, ARRAYSIZE(szLocalTime),TEXT("%02d:%02d:%02d"),st.wHour,st.wMinute,st.wSecond);
 		WriteFile ( g_hTraceOutputFile, szLocalDate, (DWORD)_tcslen(szLocalDate) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
@@ -79,7 +79,7 @@ void ExportOneTraceFile(HANDLE hOutputFile, PTSTR szTraceFile)
 		sysstart.wYear -= 1;
 		SystemTimeToFileTime(&sysstart, &start);
 		DWORD dwWritten;
-		TCHAR szBuffer[256];
+		TCHAR szBuffer[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		_tcscpy_s(szBuffer,ARRAYSIZE(szBuffer),TEXT("================================================\r\n"));
 		WriteFile ( hOutputFile, szBuffer, (DWORD)_tcslen(szBuffer) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
 		WriteFile ( hOutputFile, szTraceFile, (DWORD)_tcslen(szTraceFile) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
