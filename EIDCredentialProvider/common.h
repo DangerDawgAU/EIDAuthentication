@@ -33,7 +33,7 @@
 constexpr ULONG MAX_ULONG = static_cast<ULONG>(-1);
 
 // The indexes of each of the fields in our credential provider's tiles.
-enum SAMPLE_FIELD_ID 
+enum SAMPLE_FIELD_ID  // NOSONAR - ENUM-01: Unscoped enum required for Windows SDK compatibility
 {
     SFI_TILEIMAGE       = 0,
     SFI_USERNAME        = 1,
@@ -45,7 +45,7 @@ enum SAMPLE_FIELD_ID
 };
 
 // Same as SAMPLE_FIELD_ID above, but for the CMessageCredential.
-enum SAMPLE_MESSAGE_FIELD_ID 
+enum SAMPLE_MESSAGE_FIELD_ID  // NOSONAR - ENUM-01: Unscoped enum required for Windows SDK compatibility
 {
     SMFI_TILEIMAGE		= 0,
 	SMFI_MESSAGE        = 1, 

@@ -63,7 +63,7 @@ HMODULE EIDLoadSystemLibrary(LPCTSTR szDllName);
 VOID CenterWindow(HWND hWnd);
 VOID SetIcon(HWND hWnd);
 
-enum EID_INTERACTIVE_LOGON_SUBMIT_TYPE
+enum EID_INTERACTIVE_LOGON_SUBMIT_TYPE  // NOSONAR - ENUM-01: Unscoped enum required for Windows SDK compatibility
 {
 	EID_INTERACTIVE_LOGON_SUBMIT_TYPE_VANILLA = 13, //KerbCertificateLogon = 13
 };
@@ -87,7 +87,7 @@ struct EID_INTERACTIVE_UNLOCK_LOGON
 };
 using PEID_INTERACTIVE_UNLOCK_LOGON = EID_INTERACTIVE_UNLOCK_LOGON*;
 
-enum EID_PROFILE_BUFFER_TYPE
+enum EID_PROFILE_BUFFER_TYPE  // NOSONAR - ENUM-01: Unscoped enum required for Windows SDK compatibility
 {
 	EIDInteractiveProfile = 2,
 };
@@ -142,7 +142,7 @@ enum class EID_CREDENTIAL_PROVIDER_READER_STATE
 	EIDCPRSThreadFinished,
 };
 
-enum EID_CALLPACKAGE_MESSAGE
+enum EID_CALLPACKAGE_MESSAGE  // NOSONAR - ENUM-01: Unscoped enum required for Windows SDK compatibility
 {
 	EIDCMCreateStoredCredential,
 	EIDCMUpdateStoredCredential,
