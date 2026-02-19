@@ -91,7 +91,7 @@ Deep Modernization — Continue v1.2 work with more aggressive refactoring.
 - [x] **SONAR-01**: Review and resolve style preference issues (~124 "replace with auto")
 - [x] **SONAR-02**: Review and resolve macro issues (~111 "replace with const/constexpr")
 - [x] **SONAR-03**: Review and resolve global variable const issues (~63 remaining)
-- [x] **SONAR-04**: Review and resolve nesting depth issues (~52 deep nesting)
+- [x] **SONAR-04}: Review and resolve nesting depth issues (~52 deep nesting)
 
 ### Code Refactoring
 
@@ -157,7 +157,7 @@ Requirements for C++23 modernization milestone. All phases executed.
 - [x] **VERIFY-01**: Build verification passed — all 7 projects compile
 - [ ] **VERIFY-02**: Runtime verification — smart card login functional (pending test machines)
 - [ ] **VERIFY-03**: Runtime verification — LSA Authentication Package loads (pending test machines)
-- [ ] **VERIFY-04**: Runtime verification — Credential Provider appears on login screen (pending test machines)
+- [ ] **VERIFY-04}: Runtime verification — Credential Provider appears on login screen (pending test machines)
 - [ ] **VERIFY-05**: Runtime verification — Configuration Wizard operational (pending test machines)
 
 ## v1.1 Requirements (COMPLETE)
@@ -267,4 +267,4 @@ Explicitly excluded. Documented to prevent scope creep.
 ---
 
 *Requirements defined: 2026-02-15*
-*Last updated: 2026-02-19 after v1.5 milestone start*
+*Last updated: 2026-02-19 after v1.5 roadmap created*
