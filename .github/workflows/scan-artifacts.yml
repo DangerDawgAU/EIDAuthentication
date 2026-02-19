@@ -16,7 +16,7 @@
 # - RPT-01: Commit comment with scan results (Phase 44)
 # - RPT-02: Scan results logged to workflow output
 # - WARN-01: Warning annotations on detections
-# - WARN-02: Detection count in commit comments
+# - WARN-02: Detection count in commit comments with engine details
 #
 # Part of Phase 42: Basic VirusTotal Scan Job
 # Part of Phase 44: Commit Comment Integration
@@ -136,6 +136,7 @@ jobs:
     outputs:
       analysis: ${{ steps.virustotal-scan.outputs.analysis }}
       scan_outcome: ${{ steps.virustotal-scan.outcome }}
+      detection_details: ${{ steps.get-detections.outputs.detections }}
 
     steps:
       - name: Download packaged artifacts
@@ -169,6 +170,72 @@ jobs:
         env:
           VT_API_KEY: ${{ secrets.VT_API_KEY }}
 
+      - name: Get detailed detection results
+        id: get-detections
+        if: always()
+        env:
+          VT_API_KEY: ${{ secrets.VT_API_KEY }}
+        run: |
+          # Extract file hashes from analysis URLs and fetch detailed reports
+          ANALYSIS_URLS="${{ steps.virustotal-scan.outputs.analysis }}"
+
+          # Create a JSON object to store all detection details
+          DETECTIONS="{"
+          FIRST=true
+
+          while IFS= read -r url; do
+            if [ -z "$url" ]; then continue; fi
+
+            # Extract file hash from URL (format: /file/{hash}/)
+            HASH=$(echo "$url" | sed 's|.*/file/\([^/]*\)/.*|\1|')
+
+            if [ -n "$HASH" ] && [ "$HASH" != "$url" ]; then
+              echo "Fetching report for hash: $HASH"
+
+              # Fetch detailed analysis from VT API
+              RESPONSE=$(curl -s -H "x-apikey: $VT_API_KEY" \
+                "https://www.virustotal.com/api/v3/files/$HASH")
+
+              # Extract filename and detection stats
+              FILENAME=$(echo "$RESPONSE" | jq -r '.data.attributes.meaningful_name // "unknown"')
+              MALICIOUS=$(echo "$RESPONSE" | jq -r '.data.attributes.last_analysis_stats.malicious // 0')
+              SUSPICIOUS=$(echo "$RESPONSE" | jq -r '.data.attributes.last_analysis_stats.suspicious // 0')
+
+              # Get list of engines that detected it as malicious
+              if [ "$MALICIOUS" -gt 0 ] || [ "$SUSPICIOUS" -gt 0 ]; then
+                ENGINES=$(echo "$RESPONSE" | jq -r '
+                  .data.attributes.last_analysis_results |
+                  to_entries[] |
+                  select(.value.category == "malicious" or .value.category == "suspicious") |
+                  "\(.key): \(.value.result)"' | head -20)
+              else
+                ENGINES=""
+              fi
+
+              # Add to detections JSON
+              if [ "$FIRST" = true ]; then
+                FIRST=false
+              else
+                DETECTIONS+=","
+              fi
+
+              # Escape special characters and create entry
+              ENGINES_ESCAPED=$(echo "$ENGINES" | jq -Rs .)
+              DETECTIONS+="\"$FILENAME\":{\"malicious\":$MALICIOUS,\"suspicious\":$SUSPICIOUS,\"url\":\"$url\",\"engines\":$ENGINES_ESCAPED}"
+
+              echo "  $FILENAME: $MALICIOUS malicious, $SUSPICIOUS suspicious"
+            fi
+          done <<< "$ANALYSIS_URLS"
+
+          DETECTIONS+="}"
+
+          # Save to output and file for next step
+          echo "detections<<EOF" >> $GITHUB_OUTPUT
+          echo "$DETECTIONS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "Detection details saved"
+
       - name: Report scan results
         if: always()
         run: |
@@ -187,7 +254,6 @@ jobs:
           # Check scan outcome and log appropriately
           if [ "${{ steps.virustotal-scan.outcome }}" == "failure" ]; then
             echo "### Scan Status" >> $GITHUB_STEP_SUMMARY
-            # WARN-01: Warning annotation (must be standalone echo, not to GITHUB_STEP_SUMMARY)
             echo "::warning::VirusTotal scan detected potential issues. Check the analysis URLs above for details."
             echo "Some artifacts may have been flagged. Review the analysis URLs above." >> $GITHUB_STEP_SUMMARY
           else
@@ -199,7 +265,7 @@ jobs:
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "_Note: This scan is informational. Detections may be false positives for security software._" >> $GITHUB_STEP_SUMMARY
 
-  # Phase 44: Commit Comment Integration
+  # Phase 44: Commit Comment Integration with Engine Details
   comment:
     name: Post Scan Results Comment
     runs-on: ubuntu-latest
@@ -207,22 +273,54 @@ jobs:
     if: always()
 
     steps:
-      - name: Create commit comment
+      - name: Create commit comment with detection details
         uses: actions/github-script@v7
         with:
           script: |
             const analysis = `${{ needs.scan.outputs.analysis }}`;
             const scanOutcome = `${{ needs.scan.outputs.scan_outcome }}`;
+            let detections;
+
+            try {
+              detections = JSON.parse(`${{ needs.scan.outputs.detection_details }}`);
+            } catch (e) {
+              detections = {};
+            }
 
             // Build comment body
             let body = `## 🔍 VirusTotal Scan Results\n\n`;
             body += `**Scan Status:** ${scanOutcome === 'success' ? '✅ Clean' : '⚠️ Detections Found'}\n\n`;
 
-            if (analysis) {
+            // Add detailed results per artifact
+            if (Object.keys(detections).length > 0) {
+              body += `### Artifact Results\n\n`;
+
+              for (const [filename, info] of Object.entries(detections)) {
+                const status = (info.malicious > 0 || info.suspicious > 0) ? '⚠️' : '✅';
+                body += `**${status} ${filename}**\n`;
+                body += `  - Malicious: ${info.malicious} | Suspicious: ${info.suspicious}\n`;
+                body += `  - [View Report](${info.url})\n`;
+
+                // Show which engines detected it
+                if ((info.malicious > 0 || info.suspicious > 0) && info.engines && info.engines.trim()) {
+                  body += `  - **Detections:**\n`;
+                  const engineLines = info.engines.trim().split('\n').slice(0, 10);
+                  for (const line of engineLines) {
+                    if (line.trim()) {
+                      body += `    - ${line.trim()}\n`;
+                    }
+                  }
+                  if (info.engines.trim().split('\n').length > 10) {
+                    body += `    - _... and more (see full report)_\n`;
+                  }
+                }
+                body += `\n`;
+              }
+            } else if (analysis) {
+              // Fallback to simple URL list if no detection details
               body += `### Analysis URLs\n`;
               body += analysis.split('\n').map(url => {
                 if (url.trim()) {
-                  // Extract filename from URL if possible, otherwise use full URL
                   const match = url.match(/\/file\/([^/]+)\//);
                   const name = match ? match[1] : url;
                   return `- [${name}](${url})`;
@@ -231,7 +329,7 @@ jobs:
               }).join('\n');
             }
 
-            body += `\n\n---\n`;
+            body += `\n---\n`;
             body += `_Scanned 9 artifacts: 5 DLLs, 2 EXEs, 1 installer, 1 source archive_\n`;
             body += `_Note: Detections may be false positives for security software (LSASS interaction)._`;
 
