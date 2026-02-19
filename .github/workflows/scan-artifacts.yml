@@ -63,13 +63,8 @@ jobs:
         with:
           name: build-artifacts
           path: |
-            EIDCredentialProvider/x64/Release/EIDCredentialProvider.dll
-            EIDCardLibrary/x64/Release/EIDCardLibrary.dll
-            EIDLogManager/x64/Release/EIDLogManager.dll
-            EIDPasswordChangeNotification/x64/Release/EIDPasswordChangeNotification.dll
-            EIDAuthenticationPackage/x64/Release/EIDAuthenticationPackage.dll
-            EIDConfigurationWizard/x64/Release/EIDConfigurationWizard.exe
-            EIDConfigurationWizardElevated/x64/Release/EIDConfigurationWizardElevated.exe
+            x64/Release/*.dll
+            x64/Release/*.exe
           retention-days: 1
 
   package:
