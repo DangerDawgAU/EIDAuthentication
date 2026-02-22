@@ -8,16 +8,15 @@ A Windows smart card authentication package providing smart card login for local
 
 A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
 
-## Current Milestone: v1.5 CI/CD Security Enhancement
+## Current Milestone: v1.6 SonarQube Final Remediation
 
-**Goal:** Automate malware scanning of all build artifacts through VirusTotal integration in GitHub Actions
+**Goal:** Achieve zero SonarQube issues through aggressive remediation, fixing everything possible and suppressing only what truly cannot be fixed
 
 **Target features:**
-- VirusTotal API integration in GitHub Actions workflow
-- Scan all artifacts: compiled binaries (7 DLLs/EXEs), NSIS installer, source code
-- Comment VT report URLs on commits for visibility
-- Non-blocking warnings on detection (build continues)
-- Retry logic for API rate limits and timeouts
+- Fix all remaining SonarQube issues where safe to do so
+- Mark unavoidable issues with `//nosonar` comments with justification
+- Zero registered issues in SonarQube dashboard
+- Document all suppression rationales
 
 ### Completed Milestones
 
@@ -26,6 +25,7 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 **v1.2 Code Modernization** — ~55 SonarQube issues fixed, ~1,000 documented as Won't Fix ✓
 **v1.3 Deep Modernization** — Style, macros, const, nesting, complexity, diagnostics ✓
 **v1.4 SonarQube Zero** — All fixable issues resolved, won't-fix documented ✓
+**v1.5 CI/CD Security Enhancement** — VirusTotal integration, artifact scanning ✓
 
 ## Requirements
 
@@ -39,12 +39,11 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 - ✓ Security Hotspots — 0 open (2 fixed)
 - ✓ Reliability Bugs — 0 open (3 fixed)
 
-### Active (v1.5 Scope)
-- [ ] VirusTotal API integration in GitHub Actions
-- [ ] Artifact collection workflow (binaries, installer, source)
-- [ ] VT report URL commenting on commits
-- [ ] Non-blocking warning system for detections
-- [ ] API retry logic with exponential backoff
+### Active (v1.6 Scope)
+- [ ] Fix all remaining SonarQube issues where safe
+- [ ] Mark unavoidable issues with `//nosonar` comments
+- [ ] Document all suppression rationales
+- [ ] Achieve zero registered issues in SonarQube
 
 ### Validated (v1.4 Shipped)
 - ✓ Global variable const correctness — All runtime-assigned documented as won't-fix
@@ -109,4 +108,4 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 | VT warn only | Non-blocking to avoid false positives blocking releases | — Pending |
 
 ---
-*Last updated: 2026-02-19 after v1.5 milestone start*
+*Last updated: 2026-02-23 after v1.6 milestone start*
