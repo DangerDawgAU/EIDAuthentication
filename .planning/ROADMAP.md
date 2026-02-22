@@ -87,14 +87,14 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 17: Modern Types** - Convert ~197 legacy type usages (Complete) 2026-02-17
 - [x] **Phase 18: Code Quality** - Build verification after all code changes (Complete) 2026-02-17
 - [x] **Phase 19: Documentation** - Mark ~550 issues as "Won't Fix" with justification (Complete) 2026-02-17
-- [x] **Phase 20: Final Verification** - SonarQube confirmation all fixable issues resolved (Complete) 2026-02-17
+- [x] **Phase 20: Final Verification** - SonarQube confirmation all fixable issues resolved (Complete) 2026-02-17)
 
 </details>
 
 <details>
 <summary>v1.1 SonarQube Quality Remediation - Phases 7-14 - SHIPPED 2026-02-17</summary>
 
-- [x] **Phase 7: Security & Reliability** - Resolve 5 critical issues (2 security hotspots, 3 reliability bugs) (Complete) 2026-02-17
+- [x] **Phase 7: Security & Reliability** - Resolve 5 critical issues (2 security hotspots, 3 reliability bugs) (Complete 2026-02-17)
 - [x] **Phase 8: Const Correctness** - Fix ~116 const-correctness issues (Deferred to v1.2) 2026-02-17
 - [x] **Phase 9: Modern C++ Types** - Convert ~216 legacy type usages (Deferred to v1.2) 2026-02-17
 - [x] **Phase 10: Code Simplification** - Simplify ~321 code patterns (Won't Fix) 2026-02-17
@@ -131,7 +131,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. Fall-through annotation in switch statement is present and correct (verify CRIT-01 from v1.2)
   2. All 7 projects compile with zero errors
   3. No new compiler warnings introduced
-**Plans**: TBD
+**Plans**: 1 plan
+- [ ] 45-01-PLAN.md - Verify fall-through annotation and clean build (CRIT-01, CRIT-02)
 
 ### Phase 46: Const Correctness
 **Goal**: All const-eligible global variables are marked const, exceptions documented with rationale
@@ -525,3 +526,4 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 *v1.4 complete: 2026-02-18*
 *v1.5 complete: 2026-02-19*
 *v1.6 roadmap created: 2026-02-23*
+*v1.6 Phase 45 planned: 2026-02-23*
