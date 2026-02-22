@@ -3,14 +3,59 @@
 **Defined:** 2026-02-15
 **Core Value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
 
-## v1.5 Requirements (CURRENT)
+## v1.6 Requirements (CURRENT)
+
+SonarQube Final Remediation — Achieve zero registered SonarQube issues through aggressive remediation and suppression.
+
+### Critical Fixes
+
+- [ ] **CRIT-01**: Fix blocker fall-through annotation (already fixed in v1.2, verify)
+- [ ] **CRIT-02**: Verify all fixes compile and pass tests
+
+### Const Correctness
+
+- [ ] **CONST-01**: Make all const-eligible global variables const
+- [ ] **CONST-02**: Make all const-eligible global pointers const at every level
+- [ ] **CONST-03**: Document any globals that cannot be made const with rationale
+
+### Control Flow
+
+- [ ] **FLOW-01**: Reduce nesting depth > 3 where safe (guard clauses, early returns)
+- [ ] **FLOW-02**: Merge redundant if statements with enclosing ones
+- [ ] **FLOW-03**: Document SEH/COM blocks that cannot be restructured
+
+### Code Style
+
+- [ ] **STYLE-01**: Replace redundant type declarations with auto where clearer
+- [ ] **STYLE-02**: Define each identifier in dedicated statement
+- [ ] **STYLE-03**: Fill empty compound statements with comments or remove
+
+### Macro Modernization
+
+- [ ] **MACRO-01**: Replace safe macros with constexpr/const/enum
+- [ ] **MACRO-02**: Document macros that must remain (RC flow control, tracing)
+
+### Suppression
+
+- [ ] **SUPPR-01**: Mark all Windows API compatibility issues with //nosonar
+- [ ] **SUPPR-02**: Mark all LSASS-safety issues (std::string, dynamic allocation) with //nosonar
+- [ ] **SUPPR-03**: Mark all COM/SEH constraints with //nosonar
+- [ ] **SUPPR-04**: Add rationale comments to all suppressions
+
+### Verification
+
+- [ ] **VERIF-01**: Run SonarQube scan and verify zero registered issues
+- [ ] **VERIF-02**: Build and test all projects after remediation
+- [ ] **VERIF-03**: Document final suppression count and categories
+
+## v1.5 Requirements (COMPLETE)
 
 CI/CD Security Enhancement — Automate malware scanning of all release artifacts through VirusTotal integration.
 
 ### API Configuration
 
-- [ ] **API-01**: VT_API_KEY stored as GitHub repository secret
-- [ ] **API-02**: API key never exposed in code or logs (use `${{ secrets.VT_API_KEY }}`)
+- [x] **API-01**: VT_API_KEY stored as GitHub repository secret
+- [x] **API-02**: API key never exposed in code or logs (use `${{ secrets.VT_API_KEY }}`)
 
 ### Artifact Scanning
 
@@ -28,14 +73,14 @@ CI/CD Security Enhancement — Automate malware scanning of all release artifact
 
 ### Reporting
 
-- [ ] **RPT-01**: Comment VirusTotal analysis URL on commits
+- [x] **RPT-01**: Comment VirusTotal analysis URL on commits
 - [x] **RPT-02**: Log scan results to workflow output
-- [ ] **RPT-03**: Update release notes with scan links (for releases)
+- [x] **RPT-03**: Update release notes with scan links (for releases)
 
 ### Warning System
 
 - [x] **WARN-01**: Log warning when detections found (build continues)
-- [ ] **WARN-02**: Include detection count in commit comment
+- [x] **WARN-02**: Include detection count in commit comment
 
 ## v1.4 Requirements (COMPLETE)
 
@@ -206,7 +251,37 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ## Traceability
 
-### v1.5 Requirements (Current Milestone)
+### v1.6 Requirements (Current Milestone)
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| CRIT-01 | Phase 45 | Pending |
+| CRIT-02 | Phase 50 | Pending |
+| CONST-01 | Phase 46 | Pending |
+| CONST-02 | Phase 46 | Pending |
+| CONST-03 | Phase 46 | Pending |
+| FLOW-01 | Phase 47 | Pending |
+| FLOW-02 | Phase 47 | Pending |
+| FLOW-03 | Phase 47 | Pending |
+| STYLE-01 | Phase 48 | Pending |
+| STYLE-02 | Phase 48 | Pending |
+| STYLE-03 | Phase 48 | Pending |
+| MACRO-01 | Phase 48 | Pending |
+| MACRO-02 | Phase 48 | Pending |
+| SUPPR-01 | Phase 49 | Pending |
+| SUPPR-02 | Phase 49 | Pending |
+| SUPPR-03 | Phase 49 | Pending |
+| SUPPR-04 | Phase 49 | Pending |
+| VERIF-01 | Phase 50 | Pending |
+| VERIF-02 | Phase 50 | Pending |
+| VERIF-03 | Phase 50 | Pending |
+
+**Coverage:**
+- v1.6 requirements: 20 total
+- Mapped to phases: 20
+- Unmapped: 0 ✓
+
+### v1.5 Requirements (COMPLETE)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
@@ -220,11 +295,11 @@ Explicitly excluded. Documented to prevent scope creep.
 | WF-02 | Phase 42 | Complete |
 | WF-03 | Phase 42 | Complete |
 | WF-04 | Phase 42 | Complete |
-| RPT-01 | Phase 44 | Pending |
+| RPT-01 | Phase 44 | Complete |
 | RPT-02 | Phase 42 | Complete |
-| RPT-03 | Phase 43 | Pending |
+| RPT-03 | Phase 43 | Complete |
 | WARN-01 | Phase 42 | Complete |
-| WARN-02 | Phase 44 | Pending |
+| WARN-02 | Phase 44 | Complete |
 
 **Coverage:**
 - v1.5 requirements: 15 total
@@ -267,4 +342,4 @@ Explicitly excluded. Documented to prevent scope creep.
 ---
 
 *Requirements defined: 2026-02-15*
-*Last updated: 2026-02-19 after v1.5 roadmap created*
+*Last updated: 2026-02-23 after v1.6 requirements defined*
