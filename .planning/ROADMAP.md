@@ -12,6 +12,7 @@ This roadmap transforms the EIDAuthentication Windows smart card authentication 
 - **v1.3 Deep Modernization** - Phases 21-30 (COMPLETE 2026-02-18)
 - **v1.4 SonarQube Zero** - Phases 31-40 (COMPLETE 2026-02-18)
 - **v1.5 CI/CD Security Enhancement** - Phases 41-44 (COMPLETE 2026-02-19)
+- **v1.6 SonarQube Final Remediation** - Phases 45-50 (IN PROGRESS)
 
 ## Phases
 
@@ -21,74 +22,33 @@ This roadmap transforms the EIDAuthentication Windows smart card authentication 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-### v1.0 C++23 Modernization (COMPLETE)
+### v1.6 SonarQube Final Remediation (IN PROGRESS)
+
+**Milestone Goal:** Achieve zero SonarQube issues through aggressive remediation, fixing everything possible and suppressing only what truly cannot be fixed.
+
+- [ ] **Phase 45: Critical Fixes** - Verify blocker fix and build stability
+- [ ] **Phase 46: Const Correctness** - Make all const-eligible globals const, document exceptions
+- [ ] **Phase 47: Control Flow** - Reduce nesting, merge redundant conditionals, document SEH/COM
+- [ ] **Phase 48: Code Style & Macros** - Modernize style patterns and convert safe macros
+- [ ] **Phase 49: Suppression** - Mark all unavoidable issues with //nosonar and rationale
+- [ ] **Phase 50: Verification** - Confirm zero registered issues and document final state
+
+### v1.5 CI/CD Security Enhancement (COMPLETE)
 
 <details>
-<summary>v1.0 Phases 1-6 - SHIPPED 2026-02-16</summary>
+<summary>v1.5 Phases 41-44 - SHIPPED 2026-02-19</summary>
 
-- [x] **Phase 1: Build System** - Enable C++23 compilation across all 7 projects (Complete) 2026-02-15
-- [x] **Phase 2: Error Handling** - Adopt `std::expected` for internal error handling (Complete) 2026-02-16
-- [x] **Phase 2.1: C++23 Conformance** - Fix conformance errors (INSERTED) (Complete) 2026-02-15
-- [x] **Phase 2.2: Const-Correctness** - Fix const errors in dependent projects (INSERTED) (Complete) 2026-02-15
-- [x] **Phase 3: Compile-Time Enhancements** - Leverage `consteval`, `constexpr`, and related features (Complete) 2026-02-15
-- [x] **Phase 4: Code Quality** - Modernize with `std::format`, `std::span`, and string utilities (Complete) 2026-02-15
-- [x] **Phase 5: Documentation** - Update README and build instructions (Complete) 2026-02-15
-- [x] **Phase 6: Verification** - Comprehensive testing across all Windows versions (Complete*) 2026-02-15
+- [x] **Phase 41: Prerequisites and Secret Setup** - Configure VirusTotal API key as GitHub repository secret (COMPLETE 2026-02-19)
+- [x] **Phase 42: Basic VirusTotal Scan Job** - Implement core scanning workflow for all artifacts with rate limiting and warnings (COMPLETE 2026-02-19)
+- [x] **Phase 43: Release Integration** - Append VirusTotal scan links to release notes automatically (COMPLETE 2026-02-19)
+- [x] **Phase 44: Commit Comment Integration** - Post scan results with detection counts as commit comments (COMPLETE 2026-02-19)
 
 </details>
 
-### v1.1 SonarQube Quality Remediation (COMPLETE)
+### v1.0-v1.4 Milestones (COMPLETE)
 
 <details>
-<summary>v1.1 Phases 7-14 - SHIPPED 2026-02-17</summary>
-
-- [x] **Phase 7: Security & Reliability** - Resolve 5 critical issues (2 security hotspots, 3 reliability bugs) (Complete) 2026-02-17
-- [x] **Phase 8: Const Correctness** - Fix ~116 const-correctness issues (Deferred to v1.2) 2026-02-17
-- [x] **Phase 9: Modern C++ Types** - Convert ~216 legacy type usages (Deferred to v1.2) 2026-02-17
-- [x] **Phase 10: Code Simplification** - Simplify ~321 code patterns (Won't Fix) 2026-02-17
-- [x] **Phase 11: Complexity & Memory** - Reduce ~78 complexity/memory issues (Won't Fix) 2026-02-17
-- [x] **Phase 12: Modern Diagnostics** - Modernize ~25 diagnostic statements (Won't Fix) 2026-02-17
-- [x] **Phase 13: Duplications** - Resolve 17 code duplication blocks (Complete 1.9%) 2026-02-17
-- [x] **Phase 14: Final Verification** - Confirm zero open issues (Deferred to v1.2) 2026-02-17
-
-</details>
-
-### v1.2 Code Modernization (COMPLETE)
-
-<details>
-<summary>v1.2 Phases 15-20 - SHIPPED 2026-02-17</summary>
-
-- [x] **Phase 15: Critical Fix** - Fix 1 blocker issue (unannotated fall-through) (Complete) 2026-02-17
-- [x] **Phase 16: Const Correctness** - Fix 102+ const-correctness issues (Complete) 2026-02-17
-- [x] **Phase 17: Modern Types** - Convert ~197 legacy type usages (Complete) 2026-02-17
-- [x] **Phase 18: Code Quality** - Build verification after all code changes (Complete) 2026-02-17
-- [x] **Phase 19: Documentation** - Mark ~550 issues as "Won't Fix" with justification (Complete) 2026-02-17
-- [x] **Phase 20: Final Verification** - SonarQube confirmation all fixable issues resolved (Complete) 2026-02-17
-
-</details>
-
-### v1.3 Deep Modernization (COMPLETE)
-
-<details>
-<summary>v1.3 Phases 21-30 - SHIPPED 2026-02-18</summary>
-
-- [x] **Phase 21: SonarQube Style Issues** - Replace explicit types with auto where clearer (completed 2026-02-17)
-- [x] **Phase 22: SonarQube Macro Issues** - Convert macros to const/constexpr where safe (completed 2026-02-17)
-- [x] **Phase 23: SonarQube Const Issues** - Mark remaining global variables const (completed 2026-02-17)
-- [x] **Phase 24: SonarQube Nesting Issues** - Reduce deep nesting in key functions (completed 2026-02-17)
-- [x] **Phase 25: Code Refactoring - Complexity** - Reduce cognitive complexity and extract helpers (completed 2026-02-17)
-- [x] **Phase 26: Code Refactoring - Duplicates** - Consolidate duplicate code patterns (completed 2026-02-17)
-- [x] **Phase 27: C++23 Advanced Features** - Evaluate modules, flat containers, stacktrace (completed 2026-02-17)
-- [x] **Phase 28: Diagnostics & Logging** - Enhance error messages and tracing (completed 2026-02-17)
-- [x] **Phase 29: Build Verification** - Verify all changes compile and work (completed 2026-02-17)
-- [x] **Phase 30: Final SonarQube Scan** - Confirm improvement in code quality metrics (completed 2026-02-17)
-
-</details>
-
-### v1.4 SonarQube Zero (COMPLETE)
-
-<details>
-<summary>v1.4 Phases 31-40 - SHIPPED 2026-02-18</summary>
+<summary>v1.4 SonarQube Zero - Phases 31-40 - SHIPPED 2026-02-18</summary>
 
 - [x] **Phase 31: Macro to constexpr** - Convert safe macros to constexpr, document won't-fix for RC/flow-control macros (Complete 2026-02-18)
 - [x] **Phase 32: Auto Conversion** - Convert redundant type declarations to auto where type is obvious (Complete 2026-02-18)
@@ -103,18 +63,138 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 </details>
 
-### v1.5 CI/CD Security Enhancement (COMPLETE)
+<details>
+<summary>v1.3 Deep Modernization - Phases 21-30 - SHIPPED 2026-02-18</summary>
 
-**Milestone Goal:** Automate malware scanning of all build artifacts through VirusTotal integration in GitHub Actions
+- [x] **Phase 21: SonarQube Style Issues** - Replace explicit types with auto where clearer (completed 2026-02-17)
+- [x] **Phase 22: SonarQube Macro Issues** - Convert macros to const/constexpr where safe (completed 2026-02-17)
+- [x] **Phase 23: SonarQube Const Issues** - Mark remaining global variables const (completed 2026-02-17)
+- [x] **Phase 24: SonarQube Nesting Issues** - Reduce deep nesting in key functions (completed 2026-02-17)
+- [x] **Phase 25: Code Refactoring - Complexity** - Reduce cognitive complexity and extract helpers (completed 2026-02-17)
+- [x] **Phase 26: Code Refactoring - Duplicates** - Consolidate duplicate code patterns (completed 2026-02-17)
+- [x] **Phase 27: C++23 Advanced Features** - Evaluate modules, flat containers, stacktrace (completed 2026-02-17)
+- [x] **Phase 28: Diagnostics & Logging** - Enhance error messages and tracing (completed 2026-02-17)
+- [x] **Phase 29: Build Verification** - Verify all changes compile and work (completed 2026-02-17)
+- [x] **Phase 30: Final SonarQube Scan** - Confirm improvement in code quality metrics (completed 2026-02-17)
 
-- [x] **Phase 41: Prerequisites and Secret Setup** - Configure VirusTotal API key as GitHub repository secret (COMPLETE 2026-02-19)
-- [x] **Phase 42: Basic VirusTotal Scan Job** - Implement core scanning workflow for all artifacts with rate limiting and warnings (COMPLETE 2026-02-19)
-- [x] **Phase 43: Release Integration** - Append VirusTotal scan links to release notes automatically (COMPLETE 2026-02-19)
-- [x] **Phase 44: Commit Comment Integration** - Post scan results with detection counts as commit comments (COMPLETE 2026-02-19)
+</details>
+
+<details>
+<summary>v1.2 Code Modernization - Phases 15-20 - SHIPPED 2026-02-17</summary>
+
+- [x] **Phase 15: Critical Fix** - Fix 1 blocker issue (unannotated fall-through) (Complete) 2026-02-17
+- [x] **Phase 16: Const Correctness** - Fix 102+ const-correctness issues (Complete) 2026-02-17
+- [x] **Phase 17: Modern Types** - Convert ~197 legacy type usages (Complete) 2026-02-17
+- [x] **Phase 18: Code Quality** - Build verification after all code changes (Complete) 2026-02-17
+- [x] **Phase 19: Documentation** - Mark ~550 issues as "Won't Fix" with justification (Complete) 2026-02-17
+- [x] **Phase 20: Final Verification** - SonarQube confirmation all fixable issues resolved (Complete) 2026-02-17
+
+</details>
+
+<details>
+<summary>v1.1 SonarQube Quality Remediation - Phases 7-14 - SHIPPED 2026-02-17</summary>
+
+- [x] **Phase 7: Security & Reliability** - Resolve 5 critical issues (2 security hotspots, 3 reliability bugs) (Complete) 2026-02-17
+- [x] **Phase 8: Const Correctness** - Fix ~116 const-correctness issues (Deferred to v1.2) 2026-02-17
+- [x] **Phase 9: Modern C++ Types** - Convert ~216 legacy type usages (Deferred to v1.2) 2026-02-17
+- [x] **Phase 10: Code Simplification** - Simplify ~321 code patterns (Won't Fix) 2026-02-17
+- [x] **Phase 11: Complexity & Memory** - Reduce ~78 complexity/memory issues (Won't Fix) 2026-02-17
+- [x] **Phase 12: Modern Diagnostics** - Modernize ~25 diagnostic statements (Won't Fix) 2026-02-17
+- [x] **Phase 13: Duplications** - Resolve 17 code duplication blocks (Complete 1.9%) 2026-02-17
+- [x] **Phase 14: Final Verification** - Confirm zero open issues (Deferred to v1.2) 2026-02-17
+
+</details>
+
+<details>
+<summary>v1.0 C++23 Modernization - Phases 1-6 - SHIPPED 2026-02-16</summary>
+
+- [x] **Phase 1: Build System** - Enable C++23 compilation across all 7 projects (Complete) 2026-02-15
+- [x] **Phase 2: Error Handling** - Adopt `std::expected` for internal error handling (Complete) 2026-02-16
+- [x] **Phase 2.1: C++23 Conformance** - Fix conformance errors (INSERTED) (Complete) 2026-02-15
+- [x] **Phase 2.2: Const-Correctness** - Fix const errors in dependent projects (INSERTED) (Complete) 2026-02-15
+- [x] **Phase 3: Compile-Time Enhancements** - Leverage `consteval`, `constexpr`, and related features (Complete) 2026-02-15
+- [x] **Phase 4: Code Quality** - Modernize with `std::format`, `std::span`, and string utilities (Complete) 2026-02-15
+- [x] **Phase 5: Documentation** - Update README and build instructions (Complete) 2026-02-15
+- [x] **Phase 6: Verification** - Comprehensive testing across all Windows versions (Complete*) 2026-02-15
+
+</details>
+
+---
+
+## v1.6 Phase Details
+
+### Phase 45: Critical Fixes
+**Goal**: Verify blocker fix from v1.2 is in place and all projects build cleanly
+**Depends on**: Nothing (foundation phase for v1.6)
+**Requirements**: CRIT-01, CRIT-02
+**Success Criteria** (what must be TRUE):
+  1. Fall-through annotation in switch statement is present and correct (verify CRIT-01 from v1.2)
+  2. All 7 projects compile with zero errors
+  3. No new compiler warnings introduced
+**Plans**: TBD
+
+### Phase 46: Const Correctness
+**Goal**: All const-eligible global variables are marked const, exceptions documented with rationale
+**Depends on**: Phase 45 (stable build required)
+**Requirements**: CONST-01, CONST-02, CONST-03
+**Success Criteria** (what must be TRUE):
+  1. All compile-time constant global variables are marked const
+  2. All const-eligible global pointers are const at every level (const-correctness)
+  3. Runtime-assigned globals documented with cannot-be-const rationale (LSA pointers, DLL state)
+  4. Build passes with zero errors after const additions
+**Plans**: TBD
+
+### Phase 47: Control Flow
+**Goal**: Code has reduced nesting depth and merged redundant conditionals where safe
+**Depends on**: Phase 46 (const work complete)
+**Requirements**: FLOW-01, FLOW-02, FLOW-03
+**Success Criteria** (what must be TRUE):
+  1. Nesting depth reduced to <= 3 levels where safe via guard clauses and early returns
+  2. Redundant if statements merged with enclosing conditionals
+  3. SEH/COM blocks that cannot be restructured are documented with rationale
+  4. Build passes with zero errors after control flow changes
+**Plans**: TBD
+
+### Phase 48: Code Style & Macros
+**Goal**: Modern code style with safe macros converted to constexpr/const
+**Depends on**: Phase 47 (control flow clean)
+**Requirements**: STYLE-01, STYLE-02, STYLE-03, MACRO-01, MACRO-02
+**Success Criteria** (what must be TRUE):
+  1. Redundant type declarations replaced with auto where clearer (iterators, new expressions)
+  2. Each identifier defined in its own dedicated statement (no multi-declarations)
+  3. Empty compound statements filled with comments or removed
+  4. Safe macros converted to constexpr/const/enum where possible
+  5. Macros that must remain (RC flow control, tracing) documented with rationale
+  6. Build passes with zero errors after style changes
+**Plans**: TBD
+
+### Phase 49: Suppression
+**Goal**: All unavoidable SonarQube issues marked with //nosonar and documented rationale
+**Depends on**: Phases 45-48 (all fixable issues resolved)
+**Requirements**: SUPPR-01, SUPPR-02, SUPPR-03, SUPPR-04
+**Success Criteria** (what must be TRUE):
+  1. All Windows API compatibility issues marked with //nosonar and rationale
+  2. All LSASS-safety issues (std::string, dynamic allocation) marked with //nosonar and rationale
+  3. All COM/SEH constraint issues marked with //nosonar and rationale
+  4. Every //nosonar has an inline comment explaining why the issue cannot be fixed
+**Plans**: TBD
+
+### Phase 50: Verification
+**Goal**: Zero registered SonarQube issues confirmed, final state documented
+**Depends on**: Phase 49 (suppression complete)
+**Requirements**: VERIF-01, VERIF-02, VERIF-03
+**Success Criteria** (what must be TRUE):
+  1. SonarQube scan shows zero registered issues (all fixed or suppressed)
+  2. All 7 projects build and pass tests after remediation
+  3. Final suppression count and categories documented in VERIFICATION.md
+**Plans**: TBD
 
 ---
 
 ## v1.5 Phase Details
+
+<details>
+<summary>v1.5 Phase Details (COMPLETE)</summary>
 
 ### Phase 41: Prerequisites and Secret Setup
 **Goal**: Secure credential storage for VirusTotal API enables all downstream scanning
@@ -125,7 +205,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. API key is never visible in workflow logs or code (masked via `${{ secrets.VT_API_KEY }}`)
   3. Secret is accessible to workflows on main branch pushes
 **Plans**: 1 plan
-- [x] 41-01-PLAN.md — Configure VT_API_KEY secret and verify API access (COMPLETE)
+- [x] 41-01-PLAN.md - Configure VT_API_KEY secret and verify API access (COMPLETE)
 
 ### Phase 42: Basic VirusTotal Scan Job
 **Goal**: All build artifacts are scanned with VirusTotal on push to main, results visible in workflow logs
@@ -142,7 +222,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   8. API rate limiting set to 4 requests/minute (free tier compliance)
   9. Retry logic handles API errors with exponential backoff
 **Plans**: 1 plan
-- [x] 42-01-PLAN.md — Create VirusTotal scan workflow for all artifacts (COMPLETE)
+- [x] 42-01-PLAN.md - Create VirusTotal scan workflow for all artifacts (COMPLETE)
 
 ### Phase 43: Release Integration
 **Goal**: VirusTotal scan links are automatically appended to GitHub release notes
@@ -153,7 +233,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Links are appended automatically when release is created
   3. Users can verify artifact safety by clicking links in release notes
 **Plans**: 1 plan
-- [x] 43-01-SUMMARY.md — Release scan workflow created (COMPLETE 2026-02-19)
+- [x] 43-01-SUMMARY.md - Release scan workflow created (COMPLETE 2026-02-19)
 
 ### Phase 44: Commit Comment Integration
 **Goal**: Developers see scan results directly in commit comments with detection counts
@@ -164,131 +244,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Comment includes detection count for each scanned artifact
   3. Developer can click from commit to full VirusTotal report
 **Plans**: 1 plan
-- [x] 44-01-SUMMARY.md — Commit comment integration added (COMPLETE 2026-02-19)
-
----
-
-## v1.4 Phase Details
-
-<details>
-<summary>v1.4 Phase Details (COMPLETE)</summary>
-
-### Phase 31: Macro to constexpr
-**Goal**: Simple value macros converted to constexpr, won't-fix documented for resource compiler and flow-control macros
-**Depends on**: Nothing (foundation phase)
-**Requirements**: MACRO-01, MACRO-02, MACRO-03
-**Success Criteria** (what must be TRUE):
-  1. All simple value macros that can be constexpr are converted
-  2. Resource compiler macros (used in .rc files) documented as won't-fix with justification
-  3. Flow-control macros documented as won't-fix with SEH/context justification
-  4. Build passes with zero errors after macro conversions
-**Plans**:
-- [x] 31-01-PLAN.md - Convert MAX_ULONG, CLSCTX_INPROC_SERVER to constexpr; document CERT_HASH_LENGTH as won't-fix (MACRO-02)
-
-### Phase 32: Auto Conversion
-**Goal**: Redundant type declarations converted to auto where type is obvious from initializer
-**Depends on**: Nothing (independent phase)
-**Requirements**: AUTO-01, AUTO-02
-**Success Criteria** (what must be TRUE):
-  1. Iterator declarations converted to auto (e.g., `auto it = map.begin()`)
-  2. New object declarations converted to auto (e.g., `auto ptr = new Type()`)
-  3. Security-critical types (HRESULT, NTSTATUS, handles) kept explicit - documented as won't-fix
-  4. Build passes with zero errors after auto conversions
-**Plans**:
-- [x] 32-01-PLAN.md - Convert new object declarations, iterator declarations, and static_cast results to auto
-
-### Phase 33: Independent Style Issues
-**Goal**: Independent style improvements: C-style casts, enum class, Windows API enum won't-fix
-**Depends on**: Nothing (independent phase)
-**Requirements**: MODERN-02, MODERN-05, MODERN-06
-**Success Criteria** (what must be TRUE):
-  1. C-style casts replaced with named casts (static_cast, reinterpret_cast, const_cast)
-  2. Internal enum types converted to enum class where safe
-  3. Windows API enum types documented as won't-fix with API compatibility justification
-  4. Build passes with zero errors after style changes
-**Plans**:
-- [x] 33-01-PLAN.md - Convert internal enum types to enum class, replace C-style casts with named casts in EIDAuthenticationPackage, document Windows API enum types as won't-fix (MODERN-02, MODERN-05, MODERN-06)
-
-### Phase 34: Const Correctness - Globals
-**Goal**: Global variables marked const where truly immutable, runtime-assigned documented as won't-fix
-**Depends on**: Phase 31 (macros must be constexpr before globals can be const)
-**Requirements**: CONST-01, CONST-02
-**Success Criteria** (what must be TRUE):
-  1. Compile-time constant globals marked const
-  2. Runtime-assigned globals (LSA pointers, DLL state, tracing state) documented as won't-fix
-  3. Set*() pattern and DllMain initialization checked before marking const
-  4. Build passes with zero errors after const additions
-**Plans**:
-- [x] 34-01-PLAN.md - Analyze all global variables, document runtime-assigned globals as won't-fix (LSA pointers, DLL state, tracing state, UI state, file handles, SAM function pointers) (Complete 2026-02-18)
-
-### Phase 35: Const Correctness - Functions
-**Goal**: Member functions marked const where state is not modified, COM/interface methods documented as won't-fix
-**Depends on**: Nothing (independent of macro work)
-**Requirements**: CONST-03, CONST-04
-**Success Criteria** (what must be TRUE):
-  1. Member functions that don't modify state marked const
-  2. COM interface methods documented as won't-fix (cannot change signatures)
-  3. Windows callback methods documented as won't-fix (API compatibility)
-  4. Build passes with zero errors after const additions
-**Plans**:
-- [x] 35-01-PLAN.md - Mark CContainerHolderFactory::HasContainerHolder() and ContainerHolderCount() const, mark CMessageCredential::GetStatus() const, document COM interface methods as won't-fix (Complete 2026-02-18)
-
-### Phase 36: Complexity Reduction
-**Goal**: Cognitive complexity reduced via helper function extraction, SEH-protected code documented as won't-fix
-**Depends on**: Nothing (foundation for Phase 37)
-**Requirements**: STRUCT-01, STRUCT-02
-**Success Criteria** (what must be TRUE):
-  1. High cognitive complexity functions have helper functions extracted
-  2. SEH-protected code documented as won't-fix (cannot extract from __try blocks)
-  3. Helper functions maintain SEH safety (no heap allocation in LSASS context)
-  4. Build passes with zero errors after complexity reduction
-**Plans**:
-- [x] 36-01-PLAN.md - Extract encryption helpers from CreateCredential, extract validation helpers from certificate functions, create SEH won't-fix documentation (STRUCT-01, STRUCT-02) (Complete 2026-02-18)
-
-### Phase 37: Nesting Reduction
-**Goal**: Deep nesting reduced via early return and guard clauses, SEH blocks kept intact
-**Depends on**: Phase 36 (complexity helpers reduce nesting)
-**Requirements**: STRUCT-03, STRUCT-04
-**Success Criteria** (what must be TRUE):
-  1. Guard clauses added at function entry for early return
-  2. Deep nesting reduced using helper functions from Phase 36
-  3. SEH blocks documented as won't-fix (no extraction from __try)
-  4. Build passes with zero errors after nesting reduction
-**Plans**: TBD
-
-### Phase 38: Init-statements
-**Goal**: Init-statements used in if/switch where scope benefits code clarity
-**Depends on**: Nothing (independent, but Phase 37 helps with cleaner code)
-**Requirements**: MODERN-01
-**Success Criteria** (what must be TRUE):
-  1. Variable declarations scoped to if/switch blocks using init-statements
-  2. Iterator scope limited using if-init pattern
-  3. Build passes with zero errors after init-statement additions
-**Plans**:
-- [x] 38-01-PLAN.md - Convert ~49 init-statement opportunities across EIDCredentialProvider, EIDCardLibrary, and EIDConfigurationWizard projects (Complete 2026-02-18)
-
-### Phase 39: Integration Changes
-**Goal**: std::array conversion where stack size permits, LSA safety patterns documented as won't-fix
-**Depends on**: Phases 31-38 (all other changes complete)
-**Requirements**: MODERN-03, MODERN-04
-**Success Criteria** (what must be TRUE):
-  1. C-style arrays converted to std::array where stack size permits
-  2. Large stack buffers kept as C-style arrays (stack safety)
-  3. std::string/std::vector documented as won't-fix with LSASS heap safety justification
-  4. Build passes with zero errors after integration changes
-**Plans**:
-- [x] 39-01-PLAN.md - Convert small C-style arrays to std::array, document won't-fix categories for LSASS safety (Complete 2026-02-18)
-
-### Phase 40: Final Verification
-**Goal**: Confirm all remediation is complete, stable, and documented
-**Depends on**: Phases 31-39 (all phases complete)
-**Requirements**: VER-01, VER-02, VER-03, VER-04
-**Success Criteria** (what must be TRUE):
-  1. All 7 projects build with zero errors
-  2. No new warnings introduced compared to baseline
-  3. SonarQube scan shows improvement from v1.4 baseline
-  4. All won't-fix issues documented with specific justifications
-**Plans**: TBD
+- [x] 44-01-SUMMARY.md - Commit comment integration added (COMPLETE 2026-02-19)
 
 </details>
 
@@ -296,89 +252,34 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ## Progress
 
-### v1.0 C++23 Modernization (COMPLETE)
-
-<details>
-<summary>v1.0 Progress</summary>
+### v1.6 SonarQube Final Remediation (IN PROGRESS)
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
+Phases execute in numeric order: 45 -> 46 -> 47 -> 48 -> 49 -> 50
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Build System | 3/3 | Complete | 2026-02-15 |
-| 2. Error Handling | 4/4 | Complete | 2026-02-16 |
-| 2.1. Fix C++23 Conformance | 1/1 | Complete | 2026-02-15 |
-| 2.2. Fix const-correctness | 3/3 | Complete | 2026-02-15 |
-| 3. Compile-Time Enhancements | 4/4 | Complete | 2026-02-15 |
-| 4. Code Quality | 5/5 | Complete | 2026-02-15 |
-| 5. Documentation | 1/1 | Complete | 2026-02-15 |
-| 6. Verification | 5/5 | Complete* | 2026-02-15 |
+| 45. Critical Fixes | 0/1 | Not started | - |
+| 46. Const Correctness | 0/1 | Not started | - |
+| 47. Control Flow | 0/1 | Not started | - |
+| 48. Code Style & Macros | 0/1 | Not started | - |
+| 49. Suppression | 0/1 | Not started | - |
+| 50. Verification | 0/1 | Not started | - |
 
-*Build verification complete. Runtime verification pending Windows test machine access.
-
-</details>
-
-### v1.1 SonarQube Quality Remediation (COMPLETE)
+### v1.5 CI/CD Security Enhancement (COMPLETE)
 
 <details>
-<summary>v1.1 Progress</summary>
+<summary>v1.5 Progress</summary>
 
 **Execution Order:**
-Phases execute in numeric order: 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14
+Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Security & Reliability | 2/2 | Complete | 2026-02-17 |
-| 8. Const Correctness | - | Deferred to v1.2 | 2026-02-17 |
-| 9. Modern C++ Types | - | Deferred to v1.2 | 2026-02-17 |
-| 10. Code Simplification | - | Won't Fix | 2026-02-17 |
-| 11. Complexity & Memory | - | Won't Fix | 2026-02-17 |
-| 12. Modern Diagnostics | - | Won't Fix | 2026-02-17 |
-| 13. Duplications | 1/1 | Complete (1.9%) | 2026-02-17 |
-| 14. Final Verification | - | Deferred to v1.2 | 2026-02-17 |
-
-</details>
-
-### v1.2 Code Modernization (COMPLETE)
-
-<details>
-<summary>v1.2 Progress</summary>
-
-**Execution Order:**
-Phases execute in numeric order: 15 -> 16 -> 17 -> 18 -> 19 -> 20
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 15. Critical Fix | 1/1 | Complete | 2026-02-17 |
-| 16. Const Correctness | 2/3 | Complete | 2026-02-17 |
-| 17. Modern Types | 1/3 | Complete | 2026-02-17 |
-| 18. Code Quality | 2/2 | Complete | 2026-02-17 |
-| 19. Documentation | 2/2 | Complete | 2026-02-17 |
-| 20. Final Verification | 0/2 | Complete | 2026-02-17 |
-
-</details>
-
-### v1.3 Deep Modernization (COMPLETE)
-
-<details>
-<summary>v1.3 Progress</summary>
-
-**Execution Order:**
-Phases execute in numeric order: 21 -> 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29 -> 30
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 21. SonarQube Style | 0/3 | Complete | 2026-02-17 |
-| 22. SonarQube Macros | 0/TBD | Complete | 2026-02-17 |
-| 23. SonarQube Const | 0/TBD | Complete | 2026-02-17 |
-| 24. SonarQube Nesting | 0/TBD | Complete | 2026-02-17 |
-| 25. Code Complexity | 0/TBD | Complete | 2026-02-17 |
-| 26. Code Duplicates | 0/1 | Complete | 2026-02-17 |
-| 27. C++23 Features | 0/TBD | Complete | 2026-02-17 |
-| 28. Diagnostics | 0/TBD | Complete | 2026-02-17 |
-| 29. Build Verification | 0/TBD | Complete | 2026-02-17 |
-| 30. Final Scan | 0/TBD | Complete | 2026-02-17 |
+| 41. Prerequisites and Secret Setup | 1/1 | Complete | 2026-02-19 |
+| 42. Basic VirusTotal Scan Job | 1/1 | Complete | 2026-02-19 |
+| 43. Release Integration | 1/1 | Complete | 2026-02-19 |
+| 44. Commit Comment Integration | 1/1 | Complete | 2026-02-19 |
 
 </details>
 
@@ -405,23 +306,108 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 
 </details>
 
-### v1.5 CI/CD Security Enhancement (COMPLETE)
+### v1.0-v1.3 Progress (COMPLETE)
+
+<details>
+<summary>v1.3 Deep Modernization Progress</summary>
 
 **Execution Order:**
-Phases execute in numeric order: 41 -> 42 -> 43 -> 44
+Phases execute in numeric order: 21 -> 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29 -> 30
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 41. Prerequisites and Secret Setup | 1/1 | Complete | 2026-02-19 |
-| 42. Basic VirusTotal Scan Job | 1/1 | Complete | 2026-02-19 |
-| 43. Release Integration | 1/1 | Complete | 2026-02-19 |
-| 44. Commit Comment Integration | 1/1 | Complete | 2026-02-19 |
+| 21. SonarQube Style | 0/3 | Complete | 2026-02-17 |
+| 22. SonarQube Macros | 0/TBD | Complete | 2026-02-17 |
+| 23. SonarQube Const | 0/TBD | Complete | 2026-02-17 |
+| 24. SonarQube Nesting | 0/TBD | Complete | 2026-02-17 |
+| 25. Code Complexity | 0/TBD | Complete | 2026-02-17 |
+| 26. Code Duplicates | 0/1 | Complete | 2026-02-17 |
+| 27. C++23 Features | 0/TBD | Complete | 2026-02-17 |
+| 28. Diagnostics | 0/TBD | Complete | 2026-02-17 |
+| 29. Build Verification | 0/TBD | Complete | 2026-02-17 |
+| 30. Final Scan | 0/TBD | Complete | 2026-02-17 |
+
+</details>
+
+<details>
+<summary>v1.2 Code Modernization Progress</summary>
+
+**Execution Order:**
+Phases execute in numeric order: 15 -> 16 -> 17 -> 18 -> 19 -> 20
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 15. Critical Fix | 1/1 | Complete | 2026-02-17 |
+| 16. Const Correctness | 2/3 | Complete | 2026-02-17 |
+| 17. Modern Types | 1/3 | Complete | 2026-02-17 |
+| 18. Code Quality | 2/2 | Complete | 2026-02-17 |
+| 19. Documentation | 2/2 | Complete | 2026-02-17 |
+| 20. Final Verification | 0/2 | Complete | 2026-02-17 |
+
+</details>
+
+<details>
+<summary>v1.1 SonarQube Quality Remediation Progress</summary>
+
+**Execution Order:**
+Phases execute in numeric order: 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 7. Security & Reliability | 2/2 | Complete | 2026-02-17 |
+| 8. Const Correctness | - | Deferred to v1.2 | 2026-02-17 |
+| 9. Modern C++ Types | - | Deferred to v1.2 | 2026-02-17 |
+| 10. Code Simplification | - | Won't Fix | 2026-02-17 |
+| 11. Complexity & Memory | - | Won't Fix | 2026-02-17 |
+| 12. Modern Diagnostics | - | Won't Fix | 2026-02-17 |
+| 13. Duplications | 1/1 | Complete (1.9%) | 2026-02-17 |
+| 14. Final Verification | - | Deferred to v1.2 | 2026-02-17 |
+
+</details>
+
+<details>
+<summary>v1.0 C++23 Modernization Progress</summary>
+
+**Execution Order:**
+Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Build System | 3/3 | Complete | 2026-02-15 |
+| 2. Error Handling | 4/4 | Complete | 2026-02-16 |
+| 2.1. Fix C++23 Conformance | 1/1 | Complete | 2026-02-15 |
+| 2.2. Fix const-correctness | 3/3 | Complete | 2026-02-15 |
+| 3. Compile-Time Enhancements | 4/4 | Complete | 2026-02-15 |
+| 4. Code Quality | 5/5 | Complete | 2026-02-15 |
+| 5. Documentation | 1/1 | Complete | 2026-02-15 |
+| 6. Verification | 5/5 | Complete* | 2026-02-15 |
+
+*Build verification complete. Runtime verification pending Windows test machine access.
+
+</details>
 
 ---
 
 ## Coverage Summary
 
+### v1.6 Requirements (IN PROGRESS)
+
+| Category | Requirements | Phase |
+|----------|--------------|-------|
+| Critical Fixes | CRIT-01, CRIT-02 | Phase 45 |
+| Const Correctness | CONST-01, CONST-02, CONST-03 | Phase 46 |
+| Control Flow | FLOW-01, FLOW-02, FLOW-03 | Phase 47 |
+| Code Style | STYLE-01, STYLE-02, STYLE-03 | Phase 48 |
+| Macro Modernization | MACRO-01, MACRO-02 | Phase 48 |
+| Suppression | SUPPR-01, SUPPR-02, SUPPR-03, SUPPR-04 | Phase 49 |
+| Verification | VERIF-01, VERIF-02, VERIF-03 | Phase 50 |
+
+**Total v1.6 Coverage:** 20/20 requirements mapped (100%)
+
 ### v1.5 Requirements (COMPLETE)
+
+<details>
+<summary>v1.5 Coverage</summary>
 
 | Category | Requirements | Phase |
 |----------|--------------|-------|
@@ -436,7 +422,9 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 
 **Total v1.5 Coverage:** 15/15 requirements mapped (100%)
 
-### v1.4 Requirements (COMPLETE)
+</details>
+
+### v1.0-v1.4 Coverage (COMPLETE)
 
 <details>
 <summary>v1.4 Coverage</summary>
@@ -458,8 +446,6 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 
 </details>
 
-### v1.3 Requirements (COMPLETE)
-
 <details>
 <summary>v1.3 Coverage</summary>
 
@@ -480,8 +466,6 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 
 </details>
 
-### v1.2 Requirements (COMPLETE)
-
 <details>
 <summary>v1.2 Coverage</summary>
 
@@ -497,8 +481,6 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 **Total v1.2 Coverage:** 13/13 requirements mapped (100%)
 
 </details>
-
-### v1.1 Requirements (COMPLETE)
 
 <details>
 <summary>v1.1 Coverage</summary>
@@ -517,8 +499,6 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 **Total v1.1 Coverage:** 26/26 requirements mapped (100%)
 
 </details>
-
-### v1.0 Requirements (COMPLETE)
 
 <details>
 <summary>v1.0 Coverage</summary>
@@ -543,4 +523,5 @@ Phases execute in numeric order: 41 -> 42 -> 43 -> 44
 *v1.2 complete: 2026-02-17*
 *v1.3 complete: 2026-02-18*
 *v1.4 complete: 2026-02-18*
-*v1.5 roadmap created: 2026-02-19*
+*v1.5 complete: 2026-02-19*
+*v1.6 roadmap created: 2026-02-23*

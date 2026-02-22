@@ -5,7 +5,7 @@
 
 ## v1.6 Requirements (CURRENT)
 
-SonarQube Final Remediation — Achieve zero registered SonarQube issues through aggressive remediation and suppression.
+SonarQube Final Remediation - Achieve zero registered SonarQube issues through aggressive remediation and suppression.
 
 ### Critical Fixes
 
@@ -50,7 +50,7 @@ SonarQube Final Remediation — Achieve zero registered SonarQube issues through
 
 ## v1.5 Requirements (COMPLETE)
 
-CI/CD Security Enhancement — Automate malware scanning of all release artifacts through VirusTotal integration.
+CI/CD Security Enhancement - Automate malware scanning of all release artifacts through VirusTotal integration.
 
 ### API Configuration
 
@@ -84,7 +84,7 @@ CI/CD Security Enhancement — Automate malware scanning of all release artifact
 
 ## v1.4 Requirements (COMPLETE)
 
-SonarQube Zero — Eliminate all fixable SonarQube issues and document remaining won't-fix with justifications.
+SonarQube Zero - Eliminate all fixable SonarQube issues and document remaining won't-fix with justifications.
 
 ### Macro Modernization
 
@@ -129,7 +129,7 @@ SonarQube Zero — Eliminate all fixable SonarQube issues and document remaining
 
 ## v1.3 Requirements (COMPLETE)
 
-Deep Modernization — Continue v1.2 work with more aggressive refactoring.
+Deep Modernization - Continue v1.2 work with more aggressive refactoring.
 
 ### SonarQube Resolution
 
@@ -146,9 +146,9 @@ Deep Modernization — Continue v1.2 work with more aggressive refactoring.
 
 ### C++23 Advanced Features
 
-- [x] **CPP23-01**: Evaluate `import std;` modules feasibility — Deferred
-- [x] **CPP23-02**: Apply `std::flat_map` / `std::flat_set` where applicable — Deferred
-- [x] **CPP23-03**: Modernize with `std::stacktrace` (if MSVC bugs fixed) — Won't Fix
+- [x] **CPP23-01**: Evaluate `import std;` modules feasibility - Deferred
+- [x] **CPP23-02**: Apply `std::flat_map` / `std::flat_set` where applicable - Deferred
+- [x] **CPP23-03**: Modernize with `std::stacktrace` (if MSVC bugs fixed) - Won't Fix
 
 ### Diagnostics & Logging
 
@@ -180,15 +180,15 @@ Requirements for C++23 modernization milestone. All phases executed.
 
 ### Compile-Time Enhancements
 
-- [x] **COMPILE-01**: `if consteval` evaluated — NOT APPLICABLE (no dual-path functions)
+- [x] **COMPILE-01**: `if consteval` evaluated - NOT APPLICABLE (no dual-path functions)
 - [x] **COMPILE-02**: `constexpr` extended where beneficial for compile-time validation
 - [x] **COMPILE-03**: `std::to_underlying` enabled via `<utility>` headers
-- [x] **COMPILE-04**: `std::unreachable()` evaluated — NOT APPLICABLE (defensive coding required)
+- [x] **COMPILE-04**: `std::unreachable()` evaluated - NOT APPLICABLE (defensive coding required)
 
 ### Code Quality
 
 - [x] **QUAL-01**: `std::format` replaces `swprintf_s` in non-LSASS code (EIDConfigurationWizard)
-- [x] **QUAL-02**: NOT APPLICABLE — No CRTP patterns in codebase
+- [x] **QUAL-02**: NOT APPLICABLE - No CRTP patterns in codebase
 - [x] **QUAL-03**: `std::span` used for buffer handling at internal boundaries
 - [x] **QUAL-04**: Const-correctness improved across codebase
 
@@ -199,24 +199,24 @@ Requirements for C++23 modernization milestone. All phases executed.
 
 ### Verification
 
-- [x] **VERIFY-01**: Build verification passed — all 7 projects compile
-- [ ] **VERIFY-02**: Runtime verification — smart card login functional (pending test machines)
-- [ ] **VERIFY-03**: Runtime verification — LSA Authentication Package loads (pending test machines)
-- [ ] **VERIFY-04}: Runtime verification — Credential Provider appears on login screen (pending test machines)
-- [ ] **VERIFY-05**: Runtime verification — Configuration Wizard operational (pending test machines)
+- [x] **VERIFY-01**: Build verification passed - all 7 projects compile
+- [ ] **VERIFY-02**: Runtime verification - smart card login functional (pending test machines)
+- [ ] **VERIFY-03**: Runtime verification - LSA Authentication Package loads (pending test machines)
+- [ ] **VERIFY-04}: Runtime verification - Credential Provider appears on login screen (pending test machines)
+- [ ] **VERIFY-05**: Runtime verification - Configuration Wizard operational (pending test machines)
 
 ## v1.1 Requirements (COMPLETE)
 
-SonarQube Quality Remediation — Security hotspots and reliability bugs resolved.
+SonarQube Quality Remediation - Security hotspots and reliability bugs resolved.
 
-### Security & Reliability (Critical) — COMPLETE
+### Security & Reliability (Critical) - COMPLETE
 
-- [x] **SEC-01**: Resolve 2 security hotspots (strlen safety) — Fixed
-- [x] **SEC-02**: Fix 3 reliability bugs (type punning, dead code) — Fixed
+- [x] **SEC-01**: Resolve 2 security hotspots (strlen safety) - Fixed
+- [x] **SEC-02**: Fix 3 reliability bugs (type punning, dead code) - Fixed
 
 ## v1.2 Requirements (COMPLETE)
 
-Code Modernization — ~55 SonarQube issues fixed, ~1,000 documented as Won't Fix.
+Code Modernization - ~55 SonarQube issues fixed, ~1,000 documented as Won't Fix.
 
 - [x] **CRIT-01**: Fix unannotated fall-through in switch statement
 - [x] **CONST-01**: Global variables marked const (partial)
@@ -256,7 +256,7 @@ Explicitly excluded. Documented to prevent scope creep.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | CRIT-01 | Phase 45 | Pending |
-| CRIT-02 | Phase 50 | Pending |
+| CRIT-02 | Phase 45 | Pending |
 | CONST-01 | Phase 46 | Pending |
 | CONST-02 | Phase 46 | Pending |
 | CONST-03 | Phase 46 | Pending |
@@ -279,7 +279,7 @@ Explicitly excluded. Documented to prevent scope creep.
 **Coverage:**
 - v1.6 requirements: 20 total
 - Mapped to phases: 20
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ### v1.5 Requirements (COMPLETE)
 
@@ -304,7 +304,7 @@ Explicitly excluded. Documented to prevent scope creep.
 **Coverage:**
 - v1.5 requirements: 15 total
 - Mapped to phases: 15
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ### v1.4 Requirements (COMPLETE)
 
@@ -337,9 +337,9 @@ Explicitly excluded. Documented to prevent scope creep.
 **Coverage:**
 - v1.4 requirements: 23 total
 - Mapped to phases: 23
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 
 *Requirements defined: 2026-02-15*
-*Last updated: 2026-02-23 after v1.6 requirements defined*
+*Last updated: 2026-02-23 after v1.6 roadmap created*
