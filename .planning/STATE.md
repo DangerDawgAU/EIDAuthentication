@@ -2,26 +2,26 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-19)
+See: .planning/PROJECT.md (updated 2026-02-23)
 
 **Core value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
 **Current focus:** v1.6 SonarQube Final Remediation - Zero registered issues
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Current Plan: —
-Status: Defining requirements
-Last activity: 2026-02-23 — Milestone v1.6 started
+Phase: Not started (roadmap defined)
+Current Plan: -
+Status: Ready to begin Phase 45
+Last activity: 2026-02-23 - v1.6 roadmap created
 
-Progress: [                                    ] 0% (0 phases in v1.6)
+Progress: [                                    ] 0% (0/6 phases in v1.6)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 50+ (v1.0-v1.4)
+- Total plans completed: 50+ (v1.0-v1.5)
 - v1.4 duration: ~1 day (10 phases, 31-40)
-- v1.5 duration: 1 day so far (Phases 41-42 complete)
+- v1.5 duration: 1 day (4 phases, 41-44)
 - Trend: Stable
 
 **Recent Milestones:**
@@ -38,22 +38,23 @@ Progress: [                                    ] 0% (0 phases in v1.6)
 ### Decisions
 
 Decisions logged in PROJECT.md Key Decisions table.
-Recent decisions for v1.5:
+Recent decisions for v1.6:
 
-- v1.5 focus: VirusTotal integration in GitHub Actions
-- Scan targets: All artifacts (binaries, installer, source code)
-- Trigger: On push to main branch
-- On detection: Warn only (build continues)
-- Reporting: Comment VT report URL on commit
-- API handling: Retry logic with exponential backoff
-- **Phase 41:** Use free VirusTotal API tier (4 requests/minute sufficient)
-- **Phase 42:** 3-job workflow architecture (build, package, scan); non-blocking scan with warnings
+- v1.6 focus: Achieve zero registered SonarQube issues through aggressive remediation
+- Strategy: Fix everything possible, suppress only what truly cannot be fixed
+- Suppression format: //nosonar with inline rationale comment
+- Phase structure: 6 phases (45-50) covering critical fixes through final verification
 
 ### v1.6 Phase Structure
 
 | Phase | Goal | Requirements | Status |
 |-------|------|--------------|--------|
-| — | Not yet defined | — | — |
+| 45 | Critical Fixes | CRIT-01, CRIT-02 | Not started |
+| 46 | Const Correctness | CONST-01, CONST-02, CONST-03 | Not started |
+| 47 | Control Flow | FLOW-01, FLOW-02, FLOW-03 | Not started |
+| 48 | Code Style & Macros | STYLE-01-03, MACRO-01-02 | Not started |
+| 49 | Suppression | SUPPR-01, SUPPR-02, SUPPR-03, SUPPR-04 | Not started |
+| 50 | Verification | VERIF-01, VERIF-02, VERIF-03 | Not started |
 
 ### Completed: v1.5 Phase Structure
 
@@ -75,7 +76,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: v1.6 requirements being defined
+Stopped at: v1.6 roadmap created
 Resume file: None
 
 ## Key Constraints (Always Remember)
@@ -91,4 +92,4 @@ Resume file: None
 
 *Last updated: 2026-02-23*
 *Current milestone: v1.6 IN PROGRESS*
-*Next: Define requirements and roadmap*
+*Next: /gsd:plan-phase 45*
