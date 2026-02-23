@@ -39,7 +39,7 @@
 #include <strsafe.h>
 #pragma warning(pop)
 // Static buffer for PWSTR* assignment (C++23 /Zc:strictStrings compatibility)
-static wchar_t s_wszUnknownError[] = L"Unknow Error";
+static wchar_t s_wszUnknownError[] = L"Unknow Error";  // NOSONAR - GLOBAL-01: Non-const for Windows API PWSTR compatibility
 
 // CEIDCredential ////////////////////////////////////////////////////////
 

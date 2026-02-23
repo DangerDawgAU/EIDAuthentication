@@ -29,14 +29,14 @@
 #include "../EIDCardLibrary/Registration.h"
 #include "../EIDCardLibrary/CommonManifest.h"
 
-static LONG g_cRef = 0;   // global dll reference count
+static LONG g_cRef = 0;   // NOSONAR - RUNTIME-01: Global DLL reference count, modified at runtime
 
 // IClassFactory ///////////////////////////////////////////////////////////////////////
 
 extern HRESULT CEIDProvider_CreateInstance(REFIID riid, void** ppv);
 extern HRESULT CEIDFilter_CreateInstance(REFIID riid, void** ppv);
 
-HINSTANCE g_hinst = nullptr;   // global dll hinstance
+HINSTANCE g_hinst = nullptr;   // NOSONAR - RUNTIME-01: HINSTANCE set by Windows at DLL load
 
 class CClassFactory : public IClassFactory
 {

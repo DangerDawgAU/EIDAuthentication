@@ -1,16 +1,16 @@
 
-extern HINSTANCE g_hinst;
+extern HINSTANCE g_hinst;  // NOSONAR - RUNTIME-01: HINSTANCE set by Windows
 
-extern BOOL fShowNewCertificatePanel;
-extern BOOL fGotoNewScreen;
+extern BOOL fShowNewCertificatePanel;  // NOSONAR - RUNTIME-01: UI state flag
+extern BOOL fGotoNewScreen;  // NOSONAR - RUNTIME-01: UI navigation flag
 
-extern WCHAR szReader[];
+extern WCHAR szReader[];  // NOSONAR - RUNTIME-01: Buffer filled at runtime
 extern const DWORD dwReaderSize;
-extern WCHAR szCard[];
+extern WCHAR szCard[];  // NOSONAR - RUNTIME-01: Buffer filled at runtime
 extern const DWORD dwCardSize;
-extern WCHAR szUserName[];
+extern WCHAR szUserName[];  // NOSONAR - RUNTIME-01: Buffer filled at runtime
 extern const DWORD dwUserNameSize;
-extern WCHAR szPassword[];
+extern WCHAR szPassword[];  // NOSONAR - RUNTIME-01: Buffer filled at runtime
 extern const DWORD dwPasswordSize;
 
 

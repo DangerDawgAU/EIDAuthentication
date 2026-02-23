@@ -30,14 +30,14 @@
 
 constexpr const char* AUTHENTICATIONPACKAGENAME = "EIDAuthenticationPackage";
 constexpr const wchar_t* AUTHENTICATIONPACKAGENAMEW = L"EIDAuthenticationPackage";
-#define AUTHENTICATIONPACKAGENAMET TEXT("EIDAuthenticationPackage")
+#define AUTHENTICATIONPACKAGENAMET TEXT("EIDAuthenticationPackage")  // NOSONAR - MACRO-02: TEXT() requires macro context
 
 // The Windows SDK (WinCred.h) defines CERT_HASH_LENGTH as 20 (SHA-1), but we use SHA-256 (32)
 // Undefine first to ensure our definition takes precedence without warnings
-// WON'T-FIX (MACRO-02): Cannot convert to constexpr because Windows SDK defines this as a macro.
+// NOSONAR - MACRO-02: Cannot convert to constexpr because Windows SDK defines this as a macro.
 // The preprocessor #undef/#define pattern is required to override the SDK value.
 #undef CERT_HASH_LENGTH
-#define CERT_HASH_LENGTH 32  // SHA-256 hashes are used for cert hashes (security upgrade from SHA-1)
+#define CERT_HASH_LENGTH 32  // NOSONAR - MACRO-02: SHA-256 hash length overriding Windows SDK SHA-1 default
 
 #pragma warning(pop)
 
@@ -46,8 +46,8 @@ constexpr const wchar_t* AUTHENTICATIONPACKAGENAMEW = L"EIDAuthenticationPackage
 
 #include "ErrorHandling.h"
 
-#define EIDAlloc(value) EIDAllocEx(__FILE__,__LINE__,__FUNCTION__,value)
-#define EIDFree(value) EIDFreeEx(__FILE__,__LINE__,__FUNCTION__,value)
+#define EIDAlloc(value) EIDAllocEx(__FILE__,__LINE__,__FUNCTION__,value)  // NOSONAR - MACRO-02: Debug macros require preprocessor
+#define EIDFree(value) EIDFreeEx(__FILE__,__LINE__,__FUNCTION__,value)  // NOSONAR - MACRO-02: Debug macros require preprocessor
 
 PVOID EIDAllocEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction,DWORD);
 VOID EIDFreeEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction,PVOID);

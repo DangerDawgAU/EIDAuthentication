@@ -28,7 +28,7 @@ BOOL fHasDeselected = TRUE;  // NOSONAR - RUNTIME-01: UI state flag, modified at
 BOOL PopulateListViewCheckData(HWND hWndListViewList, HWND hWndListViewCheck);
 
 PTSTR Columns[] = { s_szColumnName };  // NOSONAR - RUNTIME-01: Array of non-const pointers for ListView API
-#define COLUMN_NUM ARRAYSIZE(Columns)
+#define COLUMN_NUM ARRAYSIZE(Columns)  // NOSONAR - MACRO-02: ARRAYSIZE requires preprocessor
 
 BOOL InitListViewColumns(HWND hWndListView) 
 { 
