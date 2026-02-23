@@ -145,7 +145,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. User cannot see P12 import controls in the Configure Smart Card wizard
   2. User cannot trigger P12 import functionality through any UI element
   3. Build compiles without errors after P12 removal
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
 - [ ] 51-01: Remove P12 import UI controls and handlers
@@ -159,7 +159,7 @@ Plans:
   2. User can see the certificate Serial Number in the info box
   3. User can see the certificate Key Size in the info box
   4. User can see the certificate Fingerprint (thumbprint) in the info box
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
 - [ ] 52-01: Expand UpdateCertificatePanel() with additional certificate fields
@@ -173,10 +173,10 @@ Plans:
   2. Progress dialog displays animated marquee progress indicator during operation
   3. Progress dialog automatically closes when card flashing completes
   4. User cannot interact with the wizard while operation is in progress
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 53-01: Add modal progress popup for card flashing operation
+- [ ] 53-01-PLAN.md - Add modal progress popup for card flashing operation (UIUX-02)
 
 ---
 
