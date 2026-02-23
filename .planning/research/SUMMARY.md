@@ -1,133 +1,165 @@
 # Project Research Summary
 
-**Project:** EIDAuthentication - SonarQube Remediation + VirusTotal CI/CD Integration
-**Domain:** C++23 Windows LSASS authentication codebase - code quality + release security scanning
-**Researched:** 2026-02-18 (SonarQube), 2026-02-19 (VirusTotal)
+**Project:** EIDAuthentication - Windows Smart Card Authentication Package
+**Domain:** Windows Credential Provider with LSASS Integration
+**Researched:** 2026-02-18 (SonarQube), 2026-02-19 (VirusTotal), 2026-02-24 (v1.7 UI/UX)
 **Confidence:** HIGH
 
 ## Executive Summary
 
-This research covers two milestones for the EIDAuthentication Windows smart card authentication package:
+EIDAuthentication is a mature Windows smart card authentication package with active development across multiple milestones. This research synthesis covers three distinct improvement areas:
 
-**1. SonarQube Issue Remediation (v1.4):** Approximately 730 remaining CODE_SMELL issues to address using clang-tidy (via Visual Studio 2022 native integration) for automated fix suggestions, complemented by MSVC Code Analysis and manual refactoring. The critical constraint is that LSASS-loaded code cannot use dynamic memory allocation - stack-allocated patterns must be preserved.
+**1. v1.7 UI/UX Enhancement (Current):** Three specific improvements to the Configuration Wizard: removing P12 import functionality (legacy cleanup), adding modal progress feedback during card operations (fixes UI freeze), and expanding certificate information display (adds Issuer, Serial, Key Size, Fingerprint). All changes use existing Win32 and CryptoAPI patterns - no new dependencies required.
 
-**2. VirusTotal CI/CD Integration (v1.5):** Automated malware scanning for release artifacts using `crazy-max/ghaction-virustotal@v4` integrated into the existing `windows-build.yaml` workflow. The integration scans compiled binaries and NSIS installer on releases, posts results to release notes, and operates non-blocking with `continue-on-error: true`.
+**2. SonarQube Issue Remediation (v1.4):** Approximately 730 remaining CODE_SMELL issues using clang-tidy (Visual Studio 2022 native integration). Critical constraint: LSASS-loaded code cannot use dynamic memory allocation - stack-allocated patterns must be preserved.
 
-Key risks include: breaking SEH-protected code during refactoring, converting C-style arrays to heap-allocating containers (LSASS safety), API rate limit exhaustion (4 req/min for free VT tier), and false positives from security-sensitive LSASS interactions (mitigated with code signing and non-blocking execution).
+**3. VirusTotal CI/CD Integration (v1.5):** Automated malware scanning for release artifacts using `crazy-max/ghaction-virustotal@v4`. Operates non-blocking with `continue-on-error: true` to prevent false positives from blocking releases.
+
+**Key risks:** (1) False positive antivirus detections for security software - code signing is essential; (2) UI thread blocking during card operations - requires modal progress popup; (3) API rate limits for VirusTotal - use `request_rate: 4`; (4) LSASS memory safety - no dynamic allocation in LSASS-loaded code.
 
 ## Key Findings
 
 ### Recommended Stack
 
+**v1.7 UI/UX Enhancement (no new dependencies):**
+- **Win32 Property Sheet API (PSH_AEROWIZARD)** - Wizard-style dialog navigation - already used in EIDConfigurationWizard
+- **Windows CryptoAPI (Crypt32.dll)** - Certificate operations (CertGetNameString, CertGetCertificateContextProperty, CryptBinaryToString)
+- **Win32 Dialog API** - Modal dialogs, progress controls (PBS_MARQUEE style)
+- **Common Controls (ComCtl32) v6.0+** - ListView, progress bars
+
 **SonarQube Remediation (existing tools):**
-- **Visual Studio 2022 (17.13+):** IDE with native clang-tidy integration, MSVC debugger, refactoring tools
-- **Clang-tidy 18.x (bundled):** Static analysis with auto-fix capability, direct mapping to SonarQube rules
-- **MSVC Code Analysis (`/analyze`):** PREfast + C++ Core Guidelines checker (already enabled)
-- **SonarLint VS Extension:** Real-time SonarQube feedback before CI scan
+- **Visual Studio 2022 (17.13+)** with native clang-tidy integration
+- **Clang-tidy 18.x (bundled)** - Static analysis with auto-fix capability
+- **MSVC Code Analysis (`/analyze`)** - PREfast + C++ Core Guidelines (already enabled)
+- **SonarLint VS Extension** - Real-time SonarQube feedback
 
 **VirusTotal Integration (new additions):**
-- `crazy-max/ghaction-virustotal@v4` - VirusTotal API integration - most maintained action with built-in rate limiting, release body updates, and API v3 support
-- `actions/github-script@v7` - Commit comment posting - required for adding VT scan URLs to commit comments (not built into VT action)
-- `VirusTotal API v3 (Free/Public tier)` - Malware scanning backend - 70+ AV engines, 4 req/min rate limit
-- `GitHub Secrets (VT_API_KEY)` - Secure credential storage - keeps API key out of repository history
+- `crazy-max/ghaction-virustotal@v4` - VirusTotal API integration with built-in rate limiting
+- `VirusTotal API v3 (Free/Public tier)` - 70+ AV engines, 4 req/min rate limit
+- `GitHub Secrets (VT_API_KEY)` - Secure credential storage
 
-**Safe patterns for LSASS:**
-- `constexpr` constants - compile-time, no runtime cost
+**Safe patterns for LSASS (all milestones):**
+- `constexpr` / `const` - compile-time or read-only
 - `std::array` - stack-allocated, bounds-checked
-- `enum class` - scoped enumerators, no runtime impact
-- Early return/guard clauses - control flow, no allocation
+- `enum class` - scoped enumerators
+- Early return/guard clauses - control flow
 
 ### Expected Features
 
+**v1.7 UI/UX Enhancement:**
+
+*Must have (table stakes):*
+- **Progress indication during card operations** - Operations take 2-30+ seconds; users expect visual feedback
+- **Clear certificate information display** - Security software must show Subject, Issuer, Validity, Serial, Thumbprint
+- **Responsive UI during operations** - Modern Windows applications do not freeze the UI thread
+
+*Should have (competitive):*
+- **Enhanced certificate info panel** - Shows Issuer, Serial Number, Key Size, Fingerprint directly in wizard
+- **Modal progress popup** - Non-blocking progress indicator with animated marquee
+
+*Defer (v2+):*
+- **Cancel button on progress popup** - Requires thread cancellation signaling
+- **Progress stages text** - Requires refactoring card operations into discrete steps
+
 **SonarQube Remediation (v1.4):**
 
-*Must fix (table stakes):*
-- `[[fallthrough]]` annotation - 1 blocker, C++17 standard
-- Global const correctness - 102 issues, enables compiler optimizations
-- C-style cast removal - ~50 issues, type safety
-- Empty block comments - 17 issues, trivial fix
+*Must fix:* `[[fallthrough]]` annotation (1 blocker), global const correctness (102 issues), C-style cast removal (~50 issues)
 
-*Should fix (with caution):*
-- Macro to constexpr - 111 issues, must preserve resource compiler macros
-- Deep nesting reduction - 52 issues, must preserve SEH-protected code
-- Cognitive complexity reduction - ~30 issues, extract helpers judiciously
+*Should fix (with caution):* Macro to constexpr (111 issues), deep nesting reduction (52 issues), cognitive complexity reduction (~30 issues)
 
-*Defer (Won't Fix):*
-- C-style char array to std::string - 149 issues - heap allocation unsafe in LSASS
-- Auto for security types - ~60 issues - type clarity needed for HRESULT/NTSTATUS
+*Defer (Won't Fix):* C-style char array to std::string (149 issues - heap unsafe in LSASS)
 
 **VirusTotal Integration (v1.5):**
 
-*Must have (table stakes):*
-- API Key Secret - Store `VT_API_KEY` in repository secrets
-- Binary Artifact Scanning - Scan compiled DLLs/EXEs after build
-- Installer Scanning - Scan NSIS installer executable
-- Non-Blocking Execution - Use `continue-on-error: true`
-- Rate Limiting - Set `request_rate: 4` for free API compliance
+*Must have:* API Key Secret, Binary/Installer Scanning, Non-Blocking Execution, Rate Limiting
 
-*Should have (competitive):*
-- Commit Comment Integration - Post scan results as commit comment (requires actions/github-script)
-- Release Body Updates - Append scan links to release notes (built-in with `update_release_body: true`)
+*Should have:* Release Body Updates, Commit Comment Integration
 
-*Defer (v2+):*
-- Threshold-Based Blocking - needs baseline data first
-- SARIF Integration - requires custom conversion
-- VirusTotal Monitor - requires Premium subscription
+*Defer:* Threshold-Based Blocking, VirusTotal Monitor (requires Premium)
 
 ### Architecture Approach
 
-**SonarQube Remediation:** The codebase has 7 projects with EIDCardLibrary as the static library dependency. Issue remediation follows a dependency layer structure:
+**v1.7 UI/UX Enhancement:** Changes are isolated to EIDConfigurationWizard project. Key modification points:
+- `EIDConfigurationWizardPage03.cpp` - Remove P12 import handling (UIUX-01), expand UpdateCertificatePanel() (UIUX-03)
+- `EIDConfigurationWizardPage04.cpp` - Wrap ConnectNotification() with progress dialog (UIUX-02)
+- `EIDConfigurationWizard.rc` - Remove P12 controls, add IDD_PROGRESS dialog
+- `ProgressDialog.cpp` (NEW) - Progress dialog handler
 
-1. **Layer 1 - Independent:** auto conversion, enum class, C-style cast review (no dependencies)
-2. **Layer 2 - Foundation:** macro to constexpr (enables const correctness)
-3. **Layer 3 - Dependent:** const correctness globals (requires macro conversion), complexity reduction (enables nesting reduction)
-4. **Layer 4 - Integration:** std::array conversion, initialization lists, Rule of Five/Three
+**SonarQube Remediation:** 7-project solution with EIDCardLibrary as static library dependency. Issue remediation follows dependency layers:
+1. Layer 1 (Independent): auto conversion, enum class, C-style cast review
+2. Layer 2 (Foundation): macro to constexpr - enables const correctness
+3. Layer 3 (Dependent): const correctness globals, complexity reduction
+4. Layer 4 (Integration): std::array conversion, initialization lists
 
-**VirusTotal Integration:** Post-build scan pattern where VT job runs after successful artifact generation:
-
+**VirusTotal Integration:** Post-build scan pattern in GitHub Actions:
 ```
 [Build Job] --> [Upload Artifact] --> [VT Scan Job] --> [Update release body]
-                                      |
-                                      +--> [Commit comment via github-script]
 ```
 
-**Major components:**
-1. Build Job (existing) - Compiles DLLs and creates NSIS installer
-2. VirusTotal Scan Job (new) - Downloads artifacts, uploads to VT API, polls for completion
-3. Commit Comment Step (new) - Posts scan URLs using `actions/github-script@v7`
-4. Release Update (built-in) - Appends VT links to release notes
+**Major components (all milestones):**
+1. **EIDCardLibrary** - Core smart card/certificate operations (CContainer, CertificateUtilities)
+2. **EIDConfigurationWizard** - User configuration UI (Property Sheet pages)
+3. **EIDCredentialProvider** - Windows LogonUI integration (ICredentialProvider COM)
+4. **GitHub Actions Workflow** - CI/CD with VirusTotal scanning
 
 ### Critical Pitfalls
 
+**v1.7 UI/UX Enhancement:**
+
+1. **Blocking UI thread without feedback** - Card enumeration takes 2-5 seconds causing apparent freeze. Show modal progress dialog before enumeration.
+
+2. **Certificate context lifecycle mismanagement** - Storing `PCCERT_CONTEXT` without reference counting. Use `CertDuplicateCertificateContext()` / `CertFreeCertificateContext()`.
+
 **SonarQube Remediation:**
 
-1. **Converting C-style arrays to std::string in LSASS code** - Use `std::array` (stack-allocated) or keep C-style arrays. Never `std::string` or `std::vector` in LSASS-loaded code.
+3. **Converting C-style arrays to std::string in LSASS code** - Use `std::array` or keep C-style arrays. Never `std::string`/`std::vector` in LSASS.
 
-2. **Marking runtime-assigned globals as const** - Check for `Set*()` functions, `EnableCallback`, DllMain initialization before marking const.
-
-3. **Refactoring SEH-protected code** - Never extract code from `__try` blocks. SEH only works within single function scope.
-
-4. **Breaking Windows API const requirements** - Many Windows APIs require non-const pointers. Don't change Windows callback signatures.
+4. **Refactoring SEH-protected code** - Never extract code from `__try` blocks. SEH only works within single function scope.
 
 5. **Converting macros used in resource files** - `RC.exe` cannot process C++ constexpr. Resource IDs must remain as `#define`.
 
 **VirusTotal Integration:**
 
-1. **API Rate Limit Exhaustion** - Free API enforces 4 requests/minute. Always set `request_rate: 4` and scan only release artifacts.
+6. **API Rate Limit Exhaustion** - Free API: 4 requests/minute. Set `request_rate: 4`, scan only releases.
 
-2. **False Positive Blocking** - Credential providers interacting with LSASS trigger heuristic detections. Use `continue-on-error: true` and document expected false positives.
+7. **False Positive Blocking** - Credential providers trigger heuristic detections. Use `continue-on-error: true`, document expected false positives.
 
-3. **Exposed API Keys** - Hardcoded keys lead to quota abuse. Always use `${{ secrets.VT_API_KEY }}`.
-
-4. **Asynchronous Analysis Timeout** - VT analysis can take minutes. Use action's built-in polling and set job timeout to 15-30 minutes.
-
-5. **Scanning Wrong Artifacts** - Only scan final release artifacts (NSIS installer, DLLs), not source or intermediate files.
+8. **Exposed API Keys** - Always use `${{ secrets.VT_API_KEY }}`, never hardcode.
 
 ## Implications for Roadmap
 
-### SonarQube Remediation Phases (31-40)
+### v1.7 UI/UX Enhancement Phases
 
-Based on dependency analysis, 10 phases continuing from prior milestone:
+| Phase | Focus | Complexity | Risk |
+|-------|-------|------------|------|
+| **1** | Remove P12 Import Option (UIUX-01) | LOW | LOW |
+| **2** | Expand Certificate Info Panel (UIUX-03) | MEDIUM | LOW |
+| **3** | Add Modal Progress Popup (UIUX-02) | MEDIUM | MEDIUM |
+| **4** | VirusTotal CI/CD Integration | LOW | LOW |
+
+#### Phase 1: Remove P12 Import Option (UIUX-01)
+**Rationale:** Lowest complexity, no dependencies. Pure removal that simplifies UI.
+**Delivers:** Cleaner wizard UI without legacy P12 import controls
+**Files:** EIDConfigurationWizard.rc (remove controls), EIDConfigurationWizardPage03.cpp (remove handler)
+
+#### Phase 2: Expand Certificate Info Panel (UIUX-03)
+**Rationale:** Medium complexity, uses existing CryptoAPI patterns. Independent of progress work.
+**Delivers:** Enhanced certificate display (Issuer, Serial, Key Size, Fingerprint)
+**Files:** EIDConfigurationWizardPage03.cpp (expand UpdateCertificatePanel())
+**Uses:** CertGetNameString with CERT_NAME_ISSUER_FLAG, CryptBinaryToString, CertGetCertificateContextProperty
+
+#### Phase 3: Add Modal Progress Popup (UIUX-02)
+**Rationale:** Highest complexity. Benefits from cleaner codebase after Phase 1-2.
+**Delivers:** Progress feedback during 2-30 second card operations
+**Files:** EIDConfigurationWizard.rc (add IDD_PROGRESS), ProgressDialog.cpp (NEW), EIDConfigurationWizardPage04.cpp
+**Avoids:** Blocking UI thread without feedback
+
+#### Phase 4: VirusTotal CI/CD Integration
+**Rationale:** Independent of UI/UX work. Can run in parallel.
+**Delivers:** Automated malware scanning on releases with results in release notes
+**Uses:** crazy-max/ghaction-virustotal@v4
+
+### SonarQube Remediation Phases (31-40)
 
 | Phase | Focus | Dependencies | Risk |
 |-------|-------|--------------|------|
@@ -138,7 +170,7 @@ Based on dependency analysis, 10 phases continuing from prior milestone:
 | **35** | Const Correctness - Functions | None | LOW |
 | **36** | Complexity Reduction | None | MEDIUM |
 | **37** | Nesting Reduction | Phase 36 | MEDIUM |
-| **38** | Init-statements | None (Phase 37 helps) | LOW |
+| **38** | Init-statements | None | LOW |
 | **39** | Integration Changes | Varies | MEDIUM-HIGH |
 | **40** | Final Verification | All | N/A |
 
@@ -151,105 +183,86 @@ Based on dependency analysis, 10 phases continuing from prior milestone:
 | **43** | Release Integration | Phase 42 | LOW |
 | **44** | Commit Comment Integration | Phase 42 | LOW |
 
-### Phase Details - VirusTotal Integration
-
-#### Phase 41: Prerequisites and Secret Setup
-**Rationale:** API key must exist before any scanning can occur
-**Delivers:** Secure credential storage for VirusTotal API
-**Addresses:** API Key Secret (table stakes)
-**Avoids:** Pitfall 3 (Exposed API Keys)
-
-#### Phase 42: Basic VirusTotal Scan Job
-**Rationale:** Core functionality - get scanning working with minimal complexity
-**Delivers:** Working VirusTotal scan on release artifacts with results in workflow logs
-**Uses:** crazy-max/ghaction-virustotal@v4, actions/download-artifact@v4
-**Addresses:** Binary Artifact Scanning, Installer Scanning, Rate Limiting, Non-Blocking Execution
-**Avoids:** Pitfall 1 (Rate Limit), Pitfall 2 (False Positive Blocking), Pitfall 4 (Timeout), Pitfall 5 (Wrong Artifacts)
-
-#### Phase 43: Release Integration
-**Rationale:** Surface results to users where they expect to see them
-**Delivers:** VirusTotal links automatically appended to GitHub release notes
-**Uses:** `update_release_body: true`, `github_token` permission
-**Addresses:** Release Body Updates (differentiator)
-
-#### Phase 44: Commit Comment Integration
-**Rationale:** Developer experience improvement - see scan results directly in commit
-**Delivers:** Automated commit comments with VirusTotal scan URLs
-**Uses:** actions/github-script@v7
-**Addresses:** Commit Comment Integration (differentiator)
-
 ### Phase Ordering Rationale
 
+**v1.7 UI/UX:**
+- Phase 1-3 ordered by complexity: Remove (simplest) before Expand (medium) before Add New (most complex)
+- Phase 4 independent: Can run in parallel with UI/UX work
+
 **SonarQube:**
-- Foundation first: Phase 31 unblocks Phase 34; Phase 36 creates helpers for Phase 37
+- Foundation first: Phase 31 unblocks Phase 34; Phase 36 enables Phase 37
 - Independent parallelization: Phases 32, 33, 35, 38 can run in any order
-- Risk mitigation: High-risk changes (Phase 39) isolated to end with verification gate
+- Risk mitigation: High-risk changes (Phase 39) isolated to end
 
 **VirusTotal:**
-- Phase 41 first: API key is hard dependency
-- Phase 42 second: Core functionality validates integration works
-- Phase 43 third: Release integration is lower complexity (built-in feature)
-- Phase 44 last: Commit commenting requires additional action
+- API key first (Phase 41) - hard dependency
+- Core functionality second (Phase 42) - validates integration
+- Polish last (Phase 43-44) - release and commit integration
 
 ### Research Flags
 
-**SonarQube phases needing deeper research:**
-- **Phase 36 (Complexity Reduction):** Complex refactoring, needs per-function analysis for SEH boundaries
-- **Phase 39 (Integration Changes):** std::array conversion needs stack size analysis
+**Phases needing deeper research:**
+- **v1.7 Phase 3 (Progress Popup):** Worker thread pattern may need research - ARCHITECTURE.md notes simpler alternative using timer-based modal dialog
+- **SQ Phase 36 (Complexity Reduction):** Per-function SEH boundary analysis needed
+- **SQ Phase 39 (Integration Changes):** std::array conversion needs stack size analysis
 
-**VirusTotal phases (all standard patterns):**
-- All phases have well-documented patterns from official action documentation
-- No additional research needed during planning
+**Phases with standard patterns (skip research):**
+- **v1.7 Phase 1:** Pure UI resource removal
+- **v1.7 Phase 2:** CryptoAPI patterns already in codebase
+- **v1.7 Phase 4:** Documented GitHub Action
+- **VT Phases 41-44:** All have documented patterns
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack (SonarQube) | HIGH | clang-tidy configuration verified against LLVM docs, MSVC documentation |
-| Stack (VirusTotal) | HIGH | Official action documentation, GitHub Marketplace listing, active maintenance |
-| Features (SonarQube) | HIGH | Issue categorization from SonarQube analysis, patterns from C++ Core Guidelines |
-| Features (VirusTotal) | MEDIUM | Based on official action docs; web search was rate-limited during research |
-| Architecture | HIGH | Dependency analysis verified against codebase structure, existing workflow analysis |
-| Pitfalls (SonarQube) | HIGH | Based on v1.3 milestone experience, Windows security documentation |
-| Pitfalls (VirusTotal) | MEDIUM | Based on official docs plus general security software scanning knowledge |
+| Stack (v1.7 UI/UX) | HIGH | All required APIs already in codebase |
+| Stack (SonarQube) | HIGH | clang-tidy config verified against LLVM docs |
+| Stack (VirusTotal) | HIGH | Official action documentation, active maintenance |
+| Features (v1.7) | HIGH | Microsoft documentation, Windows conventions |
+| Features (SonarQube) | HIGH | Issue categorization from SonarQube analysis |
+| Features (VirusTotal) | MEDIUM | Based on official action docs |
+| Architecture | HIGH | Direct codebase analysis of 7-project solution |
+| Pitfalls | HIGH | Microsoft Learn, VirusTotal docs, LSASS constraints |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
+**v1.7 UI/UX:**
+- **Worker thread pattern:** Phase 3 may need research on timer-based modal dialog vs. true worker thread approach
+- **Certificate panel sizing:** May need ListBox height adjustment for additional fields
+
 **SonarQube:**
-- Won't-fix categorization accuracy: ~600+ issues estimated as won't-fix. Exact categorization emerges during execution.
-- SEH boundary identification: Not all SEH-protected code easily identified. Handle with careful diff review.
-- Stack size impact of std::array: Evaluate each conversion individually.
+- Won't-fix categorization accuracy: ~600+ issues estimated as won't-fix
+- SEH boundary identification: Handle with careful diff review
 
 **VirusTotal:**
-- False Positive Baseline: First scan establishes baseline for this credential provider. Document which engines flag and track trends.
-- Code Signing Status: Research assumes binaries may be unsigned. If Authenticode signing is in place, false positive rates will be lower.
-- Commit Comment Scope: Research covers commenting on push to main. Fork PRs don't have access to secrets.
+- False Positive Baseline: First scan establishes baseline for this credential provider
+- Code Signing Status: If Authenticode signing in place, false positive rates will be lower
 
 ## Sources
 
 ### Primary (HIGH confidence)
+- **Codebase Analysis** - Direct examination of EIDConfigurationWizard, EIDCardLibrary code
+- **Microsoft Learn - Credential Providers** - Windows LogonUI integration patterns
+- **Microsoft Learn - CryptoAPI** - Certificate property extraction APIs
 - **Clang-Tidy Checks List:** https://clang.llvm.org/extra/clang-tidy/checks/list.html
-- **C++ Core Guidelines:** https://isocpp.github.io/CppCoreGuidelines/
-- **SonarQube C++ Rules:** https://rules.sonarsource.com/cpp/
 - **crazy-max/ghaction-virustotal:** https://github.com/crazy-max/ghaction-virustotal
 - **VirusTotal API v3 Documentation:** https://developers.virustotal.com/reference/overview
-- **GitHub Marketplace - VirusTotal Action:** https://github.com/marketplace/actions/virustotal-github-action
 
-### Secondary (HIGH confidence - project-specific)
+### Secondary (MEDIUM-HIGH confidence)
 - **Project SonarQube Analysis:** `.planning/sonarqube-analysis.md`
 - **v1.3 Milestone Documentation:** `.planning/milestones/v1.3-phases/`
-- **Project STATE.md:** `.planning/STATE.md`
 - **Existing windows-build.yaml:** `.github/workflows/windows-build.yaml`
+- **C++ Core Guidelines:** https://isocpp.github.io/CppCoreGuidelines/
+- **Windows Smart Card CSP Documentation** - Smart card timing characteristics
 
 ### Tertiary (MEDIUM confidence)
-- **Microsoft Learn - LSA Authentication:** LSA integration requirements
-- **Microsoft Learn - MSVC C++ Conformance:** C++23 feature availability
-- **actions/github-script:** https://github.com/actions/github-script
-- **Security software false positive patterns:** General knowledge of AV heuristics for credential providers
+- **Microsoft Support KB** - 30 second smart card unlock wait issue
+- **Security software false positive patterns** - General AV heuristic knowledge
 
 ---
 
-*Research completed: 2026-02-18 (SonarQube), 2026-02-19 (VirusTotal)*
+*Research completed: 2026-02-18 (SonarQube), 2026-02-19 (VirusTotal), 2026-02-24 (v1.7 UI/UX)*
 *Ready for roadmap: yes*
