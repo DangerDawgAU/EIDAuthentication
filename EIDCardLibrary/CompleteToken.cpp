@@ -19,7 +19,7 @@
 
 
 #include <ntstatus.h>
-#define WIN32_NO_STATUS
+#define WIN32_NO_STATUS  // NOSONAR - MACRO-02: Windows SDK configuration, prevents ntstatus.h conflicts
 #include <Windows.h>
 
 #define SECURITY_WIN32

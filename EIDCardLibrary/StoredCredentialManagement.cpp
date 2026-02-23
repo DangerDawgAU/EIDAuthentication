@@ -19,7 +19,7 @@
 
 
 #include <ntstatus.h>
-#define WIN32_NO_STATUS
+#define WIN32_NO_STATUS  // NOSONAR - MACRO-02: Windows SDK configuration, prevents ntstatus.h conflicts
 #include <Windows.h>
 #include <tchar.h>
 #define SECURITY_WIN32
@@ -343,7 +343,8 @@ BOOL CStoredCredentialManager::GetCertContextFromHash(__in PBYTE pbHash, __out P
 // Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetCertContextFromRid(__in DWORD dwRid, __out PCCERT_CONTEXT* ppContext, __out PBOOL pfEncryptPassword)
 {
-	BOOL fReturn = FALSE, fStatus;
+	BOOL fReturn = FALSE;
+	BOOL fStatus;
 	PEID_PRIVATE_DATA pEidPrivateData = nullptr;
 	DWORD dwError = 0;
 	__try
@@ -715,7 +716,8 @@ BOOL CStoredCredentialManager::UpdateCredential(__in PLUID pLuid, __in PUNICODE_
 // Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::UpdateCredential(__in DWORD dwRid, __in PWSTR szPassword, __in_opt USHORT usPasswordLen)
 {
-	BOOL fReturn = FALSE, fStatus;
+	BOOL fReturn = FALSE;
+	BOOL fStatus;
 	DWORD dwError = 0;
 	PCCERT_CONTEXT pCertContext = nullptr;
 	BOOL fEncrypt;
@@ -756,7 +758,8 @@ BOOL CStoredCredentialManager::UpdateCredential(__in DWORD dwRid, __in PWSTR szP
 // Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppChallenge, __out PDWORD pdwChallengeSize, __out PDWORD pType)
 {
-	BOOL fReturn = FALSE, fStatus;
+	BOOL fReturn = FALSE;
+	BOOL fStatus;
 	DWORD dwError = 0;
 	PEID_PRIVATE_DATA pEidPrivateData = nullptr;
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
@@ -840,7 +843,8 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 // Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetSignatureChallenge(__out PBYTE* ppChallenge, __out PDWORD pdwChallengeSize)
 {
-	BOOL fReturn = FALSE, fStatus;
+	BOOL fReturn = FALSE;
+	BOOL fStatus;
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
 	DWORD dwError = 0;
 	__try
@@ -1547,7 +1551,8 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 {
 	UNREFERENCED_PARAMETER(ppChallenge);
 	UNREFERENCED_PARAMETER(dwChallengeSize);
-	BOOL fReturn = FALSE, fStatus;
+	BOOL fReturn = FALSE;
+	BOOL fStatus;
 	DWORD dwSize;
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
 	HCRYPTKEY hKey = NULL;  // Windows handle type - keep as NULL
@@ -1681,7 +1686,8 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 // Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
 {
-	BOOL fReturn = FALSE, fStatus;
+	BOOL fReturn = FALSE;
+	BOOL fStatus;
 	DWORD dwError = 0;
 	PEID_PRIVATE_DATA pEidPrivateData = nullptr;
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
@@ -1820,7 +1826,8 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 // Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
 {
-	BOOL fReturn = FALSE, fStatus;
+	BOOL fReturn = FALSE;
+	BOOL fStatus;
 	DWORD dwError = 0;
 	PEID_PRIVATE_DATA pEidPrivateData = nullptr;
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
@@ -1977,7 +1984,8 @@ BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD 
 BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize)
 {
 	UNREFERENCED_PARAMETER(dwChallengeSize);
-	BOOL fReturn = FALSE, fStatus;
+	BOOL fReturn = FALSE;
+	BOOL fStatus;
 	DWORD dwError = 0;
 	PEID_PRIVATE_DATA pEidPrivateData = nullptr;
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
