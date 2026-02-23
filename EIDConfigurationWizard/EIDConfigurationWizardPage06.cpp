@@ -33,7 +33,7 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, [[maybe_unused]
 	// WM_COMMAND handler removed - internet reporting button (IDC_06UPDATEDATABASE) disabled
 	case WM_NOTIFY :
 		{
-			LPNMHDR pnmh = (LPNMHDR)lParam;
+			auto pnmh = (LPNMHDR)lParam;  // NOSONAR - Cast required for Windows message handling
 			switch(pnmh->code)
 			{
 			case NM_CLICK:
