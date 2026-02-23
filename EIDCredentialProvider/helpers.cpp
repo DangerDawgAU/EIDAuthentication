@@ -23,7 +23,7 @@
 
 
 #include "helpers.h"
-#include "dll.h"
+#include "Dll.h"
 #include "EIDCredentialProvider.h"
 #include <intsafe.h>
 #include <wincred.h>
@@ -293,7 +293,7 @@ static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT messa
 			case NM_CLICK:
 			case NM_RETURN:
 				{
-					PNMLINK pNMLink = (PNMLINK)lParam;
+					PNMLINK pNMLink = (PNMLINK)lParam;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 					// C++17 init-statement: item is only used within this if block
 					if (LITEM item = pNMLink->item; wcscmp(item.szID, L"idinfo") == 0)
 					{
@@ -314,7 +314,7 @@ static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT messa
 								{
 									__leave;
 								}
-								PRShowRestoreFromMsginaW MyPRShowRestoreFromMsginaW = (PRShowRestoreFromMsginaW) GetProcAddress(keymgrDll,"PRShowRestoreFromMsginaW");
+								PRShowRestoreFromMsginaW MyPRShowRestoreFromMsginaW = (PRShowRestoreFromMsginaW) GetProcAddress(keymgrDll,"PRShowRestoreFromMsginaW");  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 								if (!MyPRShowRestoreFromMsginaW)
 								{
 									__leave;

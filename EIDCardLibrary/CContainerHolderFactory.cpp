@@ -152,7 +152,7 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 		// convert the container name to unicode
 #ifdef UNICODE
 		int wLen = MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, nullptr, 0);
-		LPTSTR szWideContainerName = (LPTSTR) EIDAlloc(sizeof(TCHAR)*wLen);
+		LPTSTR szWideContainerName = (LPTSTR) EIDAlloc(sizeof(TCHAR)*wLen);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		if (szWideContainerName)
 		{
 			MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, szWideContainerName, wLen);
@@ -374,17 +374,17 @@ BOOL CContainerHolderFactory<T>::DisconnectNotification(LPCTSTR szReaderName)
 	auto l_iter = _CredentialList.begin();
 	while(l_iter!=_CredentialList.end())
 	{
-		T* item = (T *)*l_iter;
+		T* item = (T *)*l_iter;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		CContainer* container = item->GetContainer();
 
 #ifndef UNICODE
 		int wLen = MultiByteToWideChar(CP_ACP, 0, szReaderName, -1, nullptr, 0);
-		LPWSTR szWideReaderName = (LPWSTR) EIDAlloc(sizeof(WCHAR)*wLen);
+		LPWSTR szWideReaderName = (LPWSTR) EIDAlloc(sizeof(WCHAR)*wLen);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		if (szWideReaderName)
 		{
 			MultiByteToWideChar(CP_ACP, 0, szReaderName, -1, szWideReaderName, wLen);
 #else
-		LPWSTR szWideReaderName = (LPWSTR) EIDAlloc((DWORD)(sizeof(WCHAR)*(_tcslen(szReaderName)+1)));
+		LPWSTR szWideReaderName = (LPWSTR) EIDAlloc((DWORD)(sizeof(WCHAR)*(_tcslen(szReaderName)+1)));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		if (szWideReaderName)
 			{
 			_tcscpy_s(szWideReaderName,_tcslen(szReaderName)+1,szReaderName);
@@ -413,7 +413,7 @@ BOOL CContainerHolderFactory<T>::CleanList()
 	auto l_iter = _CredentialList.begin();
 	while(l_iter!=_CredentialList.end())
 	{
-		T* item = (T *)*l_iter;
+		T* item = (T *)*l_iter;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		l_iter = _CredentialList.erase(l_iter);
 		item->Release();
 	}
@@ -435,7 +435,7 @@ template <typename T>
 DWORD CContainerHolderFactory<T>::ContainerHolderCount() const
 {
 	const_cast<CContainerHolderFactory<T>*>(this)->Lock();  // NOSONAR - COM-01: Thread-safe locking pattern requires const_cast
-	DWORD count = (DWORD) _CredentialList.size();
+	DWORD count = (DWORD) _CredentialList.size();  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	const_cast<CContainerHolderFactory<T>*>(this)->Unlock();  // NOSONAR - COM-01: Thread-safe locking pattern requires const_cast
 	return count;
 }

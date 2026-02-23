@@ -74,7 +74,7 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 	DWORD type=REG_SZ;
 	wchar_t szValue[2] = L"0";
 	DWORD size2 = sizeof(szValue);
-	const int policyIndex = static_cast<int>(Policy);
+	const int policyIndex = static_cast<int>(Policy);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,MyGPOInfo[policyIndex].Key,0, KEY_READ, &key)==ERROR_SUCCESS){
 		// scremoveoption: DWORD value stored as PTSTR
 		if (Policy == GPOPolicy::scremoveoption && RegQueryValueEx(key,MyGPOInfo[policyIndex].Value,nullptr, &type,(LPBYTE) &szValue, &size2)==ERROR_SUCCESS)
@@ -123,7 +123,7 @@ BOOL SetRemovePolicyValue(DWORD dwActivate)
 	swprintf_s(szValue, ARRAYSIZE(szValue), L"%d", dwActivate);
 	__try
 	{
-		constexpr int scremoveoptionIndex = static_cast<int>(GPOPolicy::scremoveoption);
+		constexpr int scremoveoptionIndex = static_cast<int>(GPOPolicy::scremoveoption);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		lReturn = RegSetKeyValue(HKEY_LOCAL_MACHINE,
 			MyGPOInfo[scremoveoptionIndex].Key,
 			MyGPOInfo[scremoveoptionIndex].Value, REG_SZ, szValue, sizeof(wchar_t)*ARRAYSIZE(szValue));
@@ -206,7 +206,7 @@ BOOL SetPolicyValue(GPOPolicy Policy, DWORD dwValue)
 		return FALSE;
 	}
 	BOOL fReturn = FALSE;
-	const int policyIndex = static_cast<int>(Policy);
+	const int policyIndex = static_cast<int>(Policy);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (Policy == GPOPolicy::scremoveoption)
 	{
 		// special case because a service has to be configured and the value is stored as string instead of DWORD

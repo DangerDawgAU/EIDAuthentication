@@ -25,14 +25,14 @@
 #define SECURITY_WIN32
 #include <sspi.h>
 
-#include <shlobj.h>
+#include <ShlObj.h>
 #include <NTSecAPI.h>
 #include <LM.h>
 
 #include <NTSecPKG.h>
 #include <strsafe.h>
 
-#include "EidCardLibrary.h"
+#include "EIDCardLibrary.h"
 #include "Tracing.h"
 #include "CertificateValidation.h"
 #include "StringConversion.h"
@@ -2105,7 +2105,7 @@ void CStoredCredentialManager::ProcessSecretBufferInternal(__in DWORD dwRid, std
     }
 
     // Access size without separate parameter: secret.size()
-    DWORD dwSecretSize = static_cast<DWORD>(secret.size());
+    DWORD dwSecretSize = static_cast<DWORD>(secret.size());  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
     EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"ProcessSecretBufferInternal: RID 0x%08X, size %u", dwRid, dwSecretSize);
 }
 
@@ -2122,7 +2122,7 @@ void CStoredCredentialManager::ProcessSecretBufferDebugInternal(__in DWORD dwRid
         UNREFERENCED_PARAMETER(byte);
     }
 
-    DWORD dwSecretSize = static_cast<DWORD>(secret.size());
+    DWORD dwSecretSize = static_cast<DWORD>(secret.size());  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
     EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"ProcessSecretBufferDebugInternal: RID 0x%08X, size %u", dwRid, dwSecretSize);
 }
 
@@ -2155,7 +2155,7 @@ BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE
     LSA_UNICODE_STRING lusSecretName;
     LSA_UNICODE_STRING lusSecretData;
 	WCHAR szLsaKeyName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
-    NTSTATUS ntsResult = STATUS_SUCCESS;
+    NTSTATUS ntsResult = STATUS_SUCCESS;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
     //  Object attributes are reserved, so initialize to zeros.
     ZeroMemory(&ObjectAttributes, sizeof(ObjectAttributes));
 	DWORD dwError = 0;
@@ -2256,7 +2256,7 @@ BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_
  PLSA_UNICODE_STRING pData = nullptr;
     LSA_UNICODE_STRING lusSecretName;
 	WCHAR szLsaKeyName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
-	NTSTATUS ntsResult = STATUS_SUCCESS;
+	NTSTATUS ntsResult = STATUS_SUCCESS;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
     //  Object attributes are reserved, so initialize to zeros.
     ZeroMemory(&ObjectAttributes, sizeof(ObjectAttributes));
 	DWORD dwError = 0;

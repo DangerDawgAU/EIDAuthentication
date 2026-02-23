@@ -443,7 +443,7 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 	PCCERT_CHAIN_CONTEXT pChainContext = nullptr;
 	ChainValidationParams params;
 	LPSTR szOid;
-	HCERTCHAINENGINE hChainEngine = HCCE_LOCAL_MACHINE;
+	HCERTCHAINENGINE hChainEngine = HCCE_LOCAL_MACHINE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	DWORD dwError = 0;
 
 	// Initialize data structures for chain building
@@ -552,7 +552,7 @@ BOOL MakeTrustedCertifcate(PCCERT_CONTEXT pCertContext)
 	// because machine cert are trusted by user,
 	// build the chain in user context (if used certifcates are trusted only by the user
 	// - think about program running in user space)
-	HCERTCHAINENGINE		hChainEngine		= HCCE_CURRENT_USER;
+	HCERTCHAINENGINE		hChainEngine		= HCCE_CURRENT_USER;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	DWORD dwError = 0;
 
 	//---------------------------------------------------------

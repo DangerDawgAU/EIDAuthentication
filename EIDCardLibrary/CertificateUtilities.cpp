@@ -20,7 +20,7 @@
 
 #include <Windows.h>
 #include <tchar.h>
-#include <CryptUIApi.h>
+#include <cryptuiapi.h>
 #include <AccCtrl.h>
 #include <AclAPI.h>
 #include "EIDCardLibrary.h"
@@ -83,7 +83,7 @@ LPTSTR BuildContainerNameFromReader(LPCTSTR szReaderName)
 	}
 
 	size_t ulNameLen = _tcslen(szReaderName);
-	LPTSTR szContainerName = (LPTSTR) EIDAlloc((DWORD)(sizeof(TCHAR) * (ulNameLen + 6)));
+	LPTSTR szContainerName = (LPTSTR) EIDAlloc((DWORD)(sizeof(TCHAR) * (ulNameLen + 6)));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (!szContainerName)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"EIDAlloc failed in BuildContainerNameFromReader");
@@ -1361,7 +1361,7 @@ BOOL ImportFileToSmartCard(PTSTR szFileName, PTSTR szPassword, PTSTR szReaderNam
 {
 	BOOL fReturn = FALSE;
 	CRYPT_DATA_BLOB DataBlob = {0};
-	HANDLE hFile = INVALID_HANDLE_VALUE;
+	HANDLE hFile = INVALID_HANDLE_VALUE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	HCERTSTORE hCS = nullptr;
 	DWORD dwRead = 0;
 	TCHAR szProviderName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
@@ -1633,7 +1633,7 @@ PCCERT_CONTEXT FindCertificateFromHashOnCard(PCRYPT_DATA_BLOB pCertInfo, PTSTR s
 			// convert the container name to unicode
 	#ifdef UNICODE
 			int wLen = MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, nullptr, 0);
-			LPTSTR szWideContainerName = (LPTSTR) EIDAlloc(sizeof(TCHAR)*wLen);
+			LPTSTR szWideContainerName = (LPTSTR) EIDAlloc(sizeof(TCHAR)*wLen);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			if (szWideContainerName)
 			{
 				MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, szWideContainerName, wLen);
@@ -1727,13 +1727,13 @@ PCCERT_CONTEXT FindCertificateFromHashInReader(PCRYPT_DATA_BLOB pCertInfo, SCARD
 	DWORD dwProto;
 	DWORD dwState;
 	LPTSTR szReaders = nullptr;
-	DWORD dwSize = SCARD_AUTOALLOCATE;
+	DWORD dwSize = SCARD_AUTOALLOCATE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	PBYTE pbAtr = nullptr;
-	DWORD dwAtrSize = SCARD_AUTOALLOCATE;
+	DWORD dwAtrSize = SCARD_AUTOALLOCATE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	LPTSTR szCards = nullptr;
-	DWORD dwCardSize = SCARD_AUTOALLOCATE;
+	DWORD dwCardSize = SCARD_AUTOALLOCATE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	LPTSTR szProvider = nullptr;
-	DWORD dwProviderSize = SCARD_AUTOALLOCATE;
+	DWORD dwProviderSize = SCARD_AUTOALLOCATE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	__try
 	{
 		Status = SCardConnect(hSCardContext, szReader, SCARD_SHARE_SHARED, SCARD_PROTOCOL_Tx, &hCard, &dwProto);

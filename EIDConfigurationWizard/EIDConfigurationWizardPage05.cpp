@@ -123,7 +123,7 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPAR
 
 	case WM_NOTIFY :
 		{
-			LPNMHDR pnmh = (LPNMHDR)lParam;
+			LPNMHDR pnmh = (LPNMHDR)lParam;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			switch(pnmh->code)
 			{
 			case PSN_SETACTIVE :

@@ -37,9 +37,9 @@
 
 #include <iphlpapi.h>
 #include <tchar.h>
-#include <lmaccess.h>
+#include <LMaccess.h>
 #include <lmerr.h>
-#include <lm.h>
+#include <LM.h>
 
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/Tracing.h"
@@ -65,13 +65,13 @@ extern "C"
 	PLSA_STRING LsaInitializeString(PCSTR Source)
 	{
 		size_t Size = strlen(Source);
-		PCHAR Buffer = static_cast<PCHAR>(EIDAlloc(static_cast<DWORD>(sizeof(CHAR)*(Size+1))));
+		PCHAR Buffer = static_cast<PCHAR>(EIDAlloc(static_cast<DWORD>(sizeof(CHAR)*(Size+1))));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		if (Buffer == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Buffer");
 			return NULL;
 		}
 
-		PLSA_STRING Destination = static_cast<PLSA_STRING>(EIDAlloc(sizeof(LSA_STRING)));
+		PLSA_STRING Destination = static_cast<PLSA_STRING>(EIDAlloc(sizeof(LSA_STRING)));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 
 		if (Destination == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Destination");
@@ -94,7 +94,7 @@ extern "C"
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Source string is NULL");
 			return NULL;
 		}
-		DWORD Size = static_cast<DWORD>(wcslen(Source));
+		DWORD Size = static_cast<DWORD>(wcslen(Source));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		// Validate string length won't overflow USHORT fields in LSA_UNICODE_STRING
 		if (Size > USHRT_MAX / sizeof(WCHAR))
 		{
@@ -107,7 +107,7 @@ extern "C"
 			return NULL;
 		}
 
-		PLSA_UNICODE_STRING Destination = static_cast<PLSA_UNICODE_STRING>(EIDAlloc(sizeof(LSA_UNICODE_STRING)));
+		PLSA_UNICODE_STRING Destination = static_cast<PLSA_UNICODE_STRING>(EIDAlloc(sizeof(LSA_UNICODE_STRING)));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 
 		if (Destination == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Destination");
@@ -305,7 +305,7 @@ extern "C"
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 			*ProtocolStatus = STATUS_SUCCESS;
-			PEID_CALLPACKAGE_BUFFER pBuffer = static_cast<PEID_CALLPACKAGE_BUFFER>(ProtocolSubmitBuffer);
+			PEID_CALLPACKAGE_BUFFER pBuffer = static_cast<PEID_CALLPACKAGE_BUFFER>(ProtocolSubmitBuffer);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			pBuffer->dwError = 0;
 			
 			switch (pBuffer->MessageType)
@@ -465,7 +465,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(ProtocolStatus);
 		UNREFERENCED_PARAMETER(ClientBufferBase);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-		NTSTATUS StatusReturned = STATUS_SUCCESS;
+		NTSTATUS StatusReturned = STATUS_SUCCESS;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST pGina = static_cast<PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST>(ProtocolSubmitBuffer);
 		PBYTE pbChallenge = NULL;
 		DWORD dwChallengeSize = 0;
@@ -539,7 +539,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(ProtocolStatus);
 		UNREFERENCED_PARAMETER(ClientBufferBase);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
-		NTSTATUS StatusReturned = STATUS_SUCCESS;
+		NTSTATUS StatusReturned = STATUS_SUCCESS;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST pGina = static_cast<PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST>(ProtocolSubmitBuffer);
 		PWSTR szPassword = NULL;
 		EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER response = {0};
@@ -599,7 +599,7 @@ extern "C"
 				__leave;
 			}
 			// Store size to avoid calling wcslen twice
-			DWORD PasswordSize = static_cast<DWORD>(wcslen(szPassword));
+			DWORD PasswordSize = static_cast<DWORD>(wcslen(szPassword));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			response.Password.MaximumLength = response.Password.Length = static_cast<USHORT>(sizeof(WCHAR) * PasswordSize);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"OK");
 		}
@@ -649,7 +649,7 @@ extern "C"
 			*ProtocolStatus = STATUS_SUCCESS;
 			// we take care here of messages requiring the TCB privilege (winlogon, msgina, ...)
 			// the other message are forwarded to LsaApCallPackageUntrusted
-			PEID_CALLPACKAGE_BUFFER pBuffer = static_cast<PEID_CALLPACKAGE_BUFFER>(ProtocolSubmitBuffer);
+			PEID_CALLPACKAGE_BUFFER pBuffer = static_cast<PEID_CALLPACKAGE_BUFFER>(ProtocolSubmitBuffer);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			switch (pBuffer->MessageType)
 			{
 			case EIDCMEIDGinaAuthenticationChallenge:
@@ -809,14 +809,14 @@ extern "C"
 			
 			// the buffer come from another address space
 			// so the pointers inside the buffer are invalid
-			PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon = static_cast<PEID_INTERACTIVE_UNLOCK_LOGON>(AuthenticationInformation);
+			PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon = static_cast<PEID_INTERACTIVE_UNLOCK_LOGON>(AuthenticationInformation);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			Status = RemapPointer(pUnlockLogon,ClientAuthenticationBase, AuthenticationInformationLength);
 			if (Status != STATUS_SUCCESS)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RemapPointer 0x%08X", Status);
 				return Status;
 			}
-			PEID_SMARTCARD_CSP_INFO pSmartCardCspInfo = reinterpret_cast<PEID_SMARTCARD_CSP_INFO>(pUnlockLogon->Logon.CspData);
+			PEID_SMARTCARD_CSP_INFO pSmartCardCspInfo = reinterpret_cast<PEID_SMARTCARD_CSP_INFO>(pUnlockLogon->Logon.CspData);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			EIDDebugPrintEIDUnlockLogonStruct(WINEVENT_LEVEL_VERBOSE, pUnlockLogon);
 			
 			CStoredCredentialManager* manager = CStoredCredentialManager::Instance();
