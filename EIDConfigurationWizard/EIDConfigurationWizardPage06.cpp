@@ -10,7 +10,7 @@
 // OnlineDatabase.h removed - internet reporting functionality disabled
 // from previous step
 // credentials
-extern CContainerHolderFactory<CContainerHolderTest> *pCredentialList;
+extern CContainerHolderFactory<CContainerHolderTest> *pCredentialList;  // NOSONAR - RUNTIME-01: Extern pointer to credential list
 
 
 INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, [[maybe_unused]] WPARAM wParam, [[maybe_unused]] LPARAM lParam)

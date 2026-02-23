@@ -23,7 +23,7 @@
 #pragma once
 
 // global dll hinstance
-extern HINSTANCE g_hinst;
+extern HINSTANCE g_hinst;  // NOSONAR - RUNTIME-01: HINSTANCE set by Windows at DLL load
 #define HINST_THISDLL g_hinst
 
 void DllAddRef();
