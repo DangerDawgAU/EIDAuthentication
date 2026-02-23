@@ -66,6 +66,7 @@ void ExportOneTraceFile(HANDLE hOutputFile, PTSTR szTraceFile)
 	handle = OpenTrace(&trace);
 	if ((TRACEHANDLE)INVALID_HANDLE_VALUE == handle)
 	{
+		// NOSONAR - EMPTY-01: Intentionally empty - trace open failure is non-fatal, caller continues without trace data
 	}
 	else
 	{
