@@ -334,6 +334,367 @@ jobs:
 
 ---
 
+# SUBSEQUENT MILESTONE: v1.7 UI/UX Enhancement
+
+**Domain:** UI/UX Improvements for Smart Card Configuration Wizard
+**Researched:** 2026-02-24
+**Confidence:** HIGH
+
+## UI/UX Enhancement Architecture
+
+### System Overview
+
+```
++------------------------------------------------------------------+
+|                    Configuration Wizard (EXE)                      |
+|                    EIDConfigurationWizard                          |
++------------------------------------------------------------------+
+|  +-------------+  +-------------+  +-------------+  +----------+  |
+|  | Page02      |  | Page03      |  | Page04      |  | Page05   |  |
+|  | (Enable)    |->| (New Cert)  |->| (Checks)    |->| (Password)|  |
+|  +-------------+  +-------------+  +-------------+  +----------+  |
+|         |                |                |                |       |
+|         v                v                v                v       |
++------------------------------------------------------------------+
+|                    EIDCardLibrary (DLL)                           |
++------------------------------------------------------------------+
+|  +-----------------------+  +----------------------+              |
+|  | CertificateUtilities  |  | CContainerHolder     |              |
+|  | - AskForCard()        |  | Factory              |              |
+|  | - CreateCertificate() |  | - ConnectNotification| <-- CARD     |
+|  | - ImportFileToSmartC..|  | - CreateContainer    |     FLASH    |
+|  +-----------------------+  +----------------------+     HERE     |
+|  +-----------------------+  +----------------------+              |
+|  | CContainer            |  | CertificateValidation|              |
+|  | - GetUserName()       |  | - IsTrustedCertificate             |
+|  | - GetCertificate()    |  +----------------------+              |
+|  | - ViewCertificate()   |                                        |
+|  +-----------------------+                                        |
++------------------------------------------------------------------+
+                                |
+                                v
++------------------------------------------------------------------+
+|                    Credential Provider (DLL)                       |
+|                    EIDCredentialProvider                           |
++------------------------------------------------------------------+
+|  +-----------------+  +-----------------+  +-------------------+  |
+|  | CEIDProvider    |  | CEIDCredential  |  | CMessageCredential|  |
+|  | - EnumerateCreds|  | - GetSerializa..|  | - Status Messages |  |
+|  | - Card Monitor  |  | - SetStringValue|  +-------------------+  |
+|  +-----------------+  +-----------------+                         |
++------------------------------------------------------------------+
+```
+
+### Component Responsibilities
+
+| Component | Responsibility | Implementation |
+|-----------|----------------|----------------|
+| EIDConfigurationWizard | User configuration UI (wizard-based) | Win32 PropertySheet pages |
+| EIDCardLibrary | Core smart card/certificate operations | DLL with C++ classes |
+| EIDCredentialProvider | Windows LogonUI integration | COM DLL implementing ICredentialProvider |
+| CContainer | Smart card certificate wrapper | C++ class in EIDCardLibrary |
+| CContainerHolderFactory | Certificate enumeration from card | Template class in EIDCardLibrary |
+
+## Integration Points for v1.7 UI/UX Features
+
+### UIUX-01: Remove P12 Import Option
+
+**Location:** `EIDConfigurationWizard\EIDConfigurationWizardPage03.cpp`
+
+**Current Implementation:**
+- Dialog defined in `EIDConfigurationWizard.rc` (IDD_03NEW)
+- Radio button `IDC_03IMPORT` controls P12 import visibility
+- File selection via `IDC_03SELECTFILE` button
+- Password field `IDC_03IMPORTPASSWORD`
+- Handler function: `HandleImportOption()` at lines 271-283
+
+**Modification Required:**
+```
+EIDConfigurationWizardPage03.cpp:
+  - Remove IDC_03IMPORT radio button handling
+  - Remove SelectFile() function call
+  - Remove HandleImportOption() function (or make it no-op)
+
+EIDConfigurationWizard.rc:
+  - Remove or hide IDC_03IMPORT control
+  - Remove or hide IDC_03SELECTFILE button
+  - Remove or hide IDC_03FILENAME text field
+  - Remove or hide IDC_03IMPORTPASSWORD field
+
+CertificateUtilities.cpp:
+  - No changes required (ImportFileToSmartCard() remains for other uses)
+```
+
+### UIUX-02: Modal Progress Popup During Card Flashing
+
+**Location of "Card Flashing" Operation:**
+
+The card enumeration ("flashing") occurs in `ConnectNotificationGeneric()`:
+
+```
+File: EIDCardLibrary\CContainerHolderFactory.cpp
+Function: ConnectNotificationGeneric() (lines 78-235)
+
+This function:
+1. Establishes cryptographic context with smart card
+2. Enumerates all containers on the card
+3. For each container, retrieves key specs (AT_KEYEXCHANGE, AT_SIGNATURE)
+4. For each key, extracts certificate data via CryptGetKeyParam(KP_CERTIFICATE)
+5. Creates CContainer objects for valid certificates
+```
+
+**Current UI Feedback (Configuration Wizard):**
+```
+File: EIDConfigurationWizard\EIDConfigurationWizardPage04.cpp
+Lines: 538-545
+
+#pragma warning(push)
+#pragma warning(disable: 4302)
+SetCursor(LoadCursorW(nullptr,MAKEINTRESOURCEW(IDC_WAIT)));
+#pragma warning(pop)
+pCredentialList->ConnectNotification(szReader,szCard,0);
+#pragma warning(push)
+#pragma warning(disable: 4302)
+SetCursor(LoadCursorW(nullptr,MAKEINTRESOURCEW(IDC_ARROW)));
+#pragma warning(pop)
+```
+
+**Current UI Feedback (Credential Provider):**
+```
+File: EIDCredentialProvider\CEIDProvider.cpp
+Lines: 97-108
+
+// Shows "reading card" message via CMessageCredential
+if (_pMessageCredential) _pMessageCredential->SetStatus(CMessageCredentialStatus::Reading);
+// ... card enumeration happens ...
+if (_pMessageCredential) _pMessageCredential->SetStatus(CMessageCredentialStatus::EndReading);
+```
+
+**New Components Required:**
+
+1. **Progress Dialog Resource** (NEW)
+   - File: `EIDConfigurationWizard\EIDConfigurationWizard.rc`
+   - Define IDD_PROGRESS dialog with:
+     - Progress bar control (PBS_MARQUEE style)
+     - Static text for status message
+     - No buttons (modal, non-cancellable)
+
+2. **Progress Dialog Handler** (NEW)
+   - File: `EIDConfigurationWizard\ProgressDialog.cpp` (new file)
+   - Functions:
+     - `ShowProgressDialog(HWND hParent)` - Creates and shows modal dialog
+     - `UpdateProgressText(LPWSTR szMessage)` - Updates status text
+     - `CloseProgressDialog()` - Closes the dialog
+   - Use `CreateDialog()` + message pump pattern for async updates
+
+3. **Modified Enumeration Flow**
+   - File: `EIDConfigurationWizard\EIDConfigurationWizardPage04.cpp`
+   - Wrap `ConnectNotification()` call with progress dialog:
+   ```cpp
+   ShowProgressDialog(hWnd);
+   pCredentialList->ConnectNotification(szReader, szCard, 0);
+   CloseProgressDialog();
+   ```
+
+**Alternative Approach (Simpler):**
+Since the enumeration is synchronous, use `DialogBoxParam` with a timer:
+- Dialog shows progress animation immediately
+- On `WM_TIMER`, close dialog and return
+- This gives visual feedback without complex async logic
+
+### UIUX-03: Expand Selected Authority Info Box
+
+**Current Implementation:**
+```
+File: EIDConfigurationWizard\EIDConfigurationWizardPage03.cpp
+Function: UpdateCertificatePanel() (lines 160-194)
+
+Currently displays in IDC_03CERTIFICATEPANEL (ListBox):
+1. Object: Subject CN from CertGetNameString()
+2. Delivered: NotBefore date formatted to locale
+3. Expires: NotAfter date formatted to locale
+```
+
+**Certificate Properties Available (via pRootCertificate context):**
+
+From `CertificateUtilities.cpp` and Windows CryptoAPI:
+```cpp
+// Already used:
+CertGetNameString(pCertContext, CERT_NAME_SIMPLE_DISPLAY_TYPE, ...) // Subject CN
+pCertContext->pCertInfo->NotBefore  // Valid from
+pCertContext->pCertInfo->NotAfter   // Valid to
+
+// Additional fields available:
+CertGetNameString(pCertContext, CERT_NAME_FRIENDLY_DISPLAY_TYPE, ...) // Friendly name
+CertGetNameString(pCertContext, CERT_NAME_DNS_TYPE, ...)              // DNS name
+CertGetNameString(pCertContext, CERT_NAME_RDN_TYPE, ...)              // Full RDN
+CertGetNameString(pCertContext, CERT_NAME_ATTR_TYPE, ..., szOID_COMMON_NAME) // CN
+CertGetNameString(pCertContext, CERT_NAME_ATTR_TYPE, ..., szOID_ORGANIZATION_NAME) // O
+CertGetNameString(pCertContext, CERT_NAME_ATTR_TYPE, ..., szOID_ORGANIZATIONAL_UNIT_NAME) // OU
+CertGetNameString(pCertContext, CERT_NAME_ATTR_TYPE, ..., szOID_LOCALITY_NAME) // L
+CertGetNameString(pCertContext, CERT_NAME_ATTR_TYPE, ..., szOID_STATE_OR_PROVINCE_NAME) // S
+CertGetNameString(pCertContext, CERT_NAME_ATTR_TYPE, ..., szOID_COUNTRY_NAME) // C
+
+// Enhanced Key Usage (EKU) OIDs:
+szOID_PKIX_KP_CLIENT_AUTH      // Client Authentication
+szOID_PKIX_KP_SERVER_AUTH      // Server Authentication
+szOID_KP_SMARTCARD_LOGON       // Smart Card Logon
+szOID_KP_EFS                   // EFS
+
+// Public Key Info:
+pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.pszObjId  // Key algorithm
+pCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey           // Public key bits
+
+// Serial Number:
+pCertContext->pCertInfo->SerialNumber
+
+// Thumbprint (SHA1 hash):
+CryptHashCertificate(NULL, CALG_SHA1, 0, pCertContext->pbCertEncoded, ...)
+```
+
+**Modification Required:**
+```
+EIDConfigurationWizardPage03.cpp:
+  - Expand UpdateCertificatePanel() function
+  - Add new fields to ListBox entries
+  - Format additional certificate properties
+
+Example expansion:
+  Current: "Object: COMPUTERNAME"
+  New:     "Subject: CN=COMPUTERNAME"
+           "Issuer: CN=ROOT-CA-NAME"
+           "Organization: Example Corp"
+           "Key Usage: Key Encipherment, Digital Signature"
+           "Enhanced Key Usage: Smart Card Logon (1.3.6.1.4.1.311.20.2.2)"
+           "Public Key: RSA 2048-bit"
+           "Serial: 00 01 02 03 ..."
+           "Thumbprint: A1 B2 C3 ..."
+```
+
+**UI Control Sizing:**
+- `IDC_03CERTIFICATEPANEL` ListBox may need height adjustment in `.rc` file
+- Consider using `LB_SETHORIZONTALEXTENT` for horizontal scrolling
+
+## Data Flow: Certificate Store to UI Display
+
+```
++-----------------+       +---------------------+       +-----------------+
+| Smart Card      |       | CContainerHolder    |       | UI Dialog       |
+| (Hardware)      |       | Factory             |       |                 |
++-----------------+       +---------------------+       +-----------------+
+        |                          |                           |
+        | ConnectNotification()    |                           |
+        |------------------------->|                           |
+        |                          |                           |
+        | CryptGetKeyParam()       |                           |
+        |<------------------------>|                           |
+        |                          |                           |
+        | Certificate Blob         |                           |
+        |------------------------->|                           |
+        |                          |                           |
+        |                          | CertCreateCertificateContext()
+        |                          |                           |
+        |                          | CContainer(pCertContext)  |
+        |                          |-------------------------->|
+        |                          |                           |
+        |                          |                           | GetUserName()
+        |                          |<--------------------------|
+        |                          | CertGetNameString()       |
+        |                          |-------------------------->|
+        |                          |                           |
+        |                          |                           | GetCertificate()
+        |                          |<--------------------------|
+        |                          | pCertContext              |
+        |                          |-------------------------->|
+        |                          |                           |
+        |                          |                           | UpdateCertificatePanel()
+        |                          |                           | CertGetNameString()
+        |                          |                           | FileTimeToSystemTime()
+        |                          |                           | SendDlgItemMessage()
+        |                          |                           |
+```
+
+## Build Order Considering Dependencies
+
+```
+1. EIDCardLibrary (No dependencies on other projects)
+   - CertificateUtilities.cpp (certificate handling)
+   - CContainer.cpp (certificate wrapper)
+   - CContainerHolderFactory.cpp (enumeration)
+   - CertificateValidation.cpp (trust checks)
+
+2. EIDConfigurationWizard (Depends on EIDCardLibrary)
+   - EIDConfigurationWizardPage03.cpp (MODIFY - UIUX-01, UIUX-03)
+   - EIDConfigurationWizardPage04.cpp (MODIFY - UIUX-02)
+   - ProgressDialog.cpp (NEW - UIUX-02)
+   - EIDConfigurationWizard.rc (MODIFY - UIUX-01, UIUX-02, UIUX-03)
+
+3. EIDCredentialProvider (Depends on EIDCardLibrary)
+   - No changes required for v1.7 UI/UX features
+```
+
+## Component Modification Summary
+
+| Feature | Component | File | Action | Complexity |
+|---------|-----------|------|--------|------------|
+| UIUX-01 | Wizard UI | EIDConfigurationWizard.rc | Remove controls | Low |
+| UIUX-01 | Page03 | EIDConfigurationWizardPage03.cpp | Remove handler code | Low |
+| UIUX-02 | Wizard UI | EIDConfigurationWizard.rc | Add dialog resource | Medium |
+| UIUX-02 | Progress | ProgressDialog.cpp | NEW file | Medium |
+| UIUX-02 | Page04 | EIDConfigurationWizardPage04.cpp | Add progress calls | Low |
+| UIUX-03 | Page03 | EIDConfigurationWizardPage03.cpp | Expand UpdateCertificatePanel | Medium |
+
+## Anti-Patterns to Avoid
+
+### Blocking the UI Thread Without Feedback
+
+**What people do:** Call `ConnectNotification()` without progress feedback, causing UI freeze.
+**Why it's wrong:** User thinks application has crashed during card enumeration (can take 2-5 seconds).
+**Do this instead:** Show modal progress dialog before enumeration, close after completion.
+
+### Certificate Context Lifecycle Mismanagement
+
+**What people do:** Store `PCCERT_CONTEXT` pointers without understanding reference counting.
+**Why it's wrong:** Use-after-free or memory leaks when context is freed unexpectedly.
+**Do this instead:** Use `CertDuplicateCertificateContext()` when storing, `CertFreeCertificateContext()` when done. Follow the pattern in `CContainer` class.
+
+### Hardcoded UI Control IDs
+
+**What people do:** Add new controls without checking for ID conflicts.
+**Why it's wrong:** Resource ID collisions cause unpredictable behavior.
+**Do this instead:** Use `_APS_NEXT_CONTROL_VALUE` from `resource.h` and increment after adding controls.
+
+### Direct Windows API in Business Logic
+
+**What people do:** Put `MessageBox()` calls inside EIDCardLibrary functions.
+**Why it's wrong:** Library code should not have UI dependencies; breaks reusability.
+**Do this instead:** Return error codes via `SetLastError()`, let UI layer handle display. Follow existing pattern in `CertificateUtilities.cpp`.
+
+## Security Considerations
+
+### Certificate Display
+
+When expanding certificate information display:
+- **DO NOT** display private key information (even existence)
+- **DO NOT** display PIN or authentication secrets
+- **OK** to display public certificate fields (subject, issuer, validity, public key info)
+- **OK** to display thumbprint (hash of public certificate data)
+
+### Progress Dialog
+
+- Progress dialog should be modal (non-cancellable during card operations)
+- Do not expose internal state or error details to user
+- Close dialog immediately after enumeration completes to minimize information leakage
+
+## Sources
+
+- Windows Credential Provider documentation (Microsoft Learn)
+- CryptoAPI documentation (Microsoft Learn)
+- Code analysis of EIDAuthentication codebase (HIGH confidence - direct inspection)
+- Windows Smart Card CSP interface documentation (Microsoft Learn)
+
+---
+
 # ORIGINAL CONTENT: SonarQube Issue Remediation Architecture
 
 *The following sections remain from the original SonarQube remediation research.*
@@ -877,3 +1238,5 @@ All phases must verify:
 *Researched: 2026-02-18*
 
 *VirusTotal CI/CD Integration added: 2026-02-19*
+
+*v1.7 UI/UX Enhancement architecture added: 2026-02-24*
