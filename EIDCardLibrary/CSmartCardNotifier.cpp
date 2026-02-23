@@ -376,6 +376,7 @@ LONG CSmartCardConnectionNotifier::GetReaderStates(SCARD_READERSTATE rgscState[M
 	// else : At least one reader is available !
 	else
 	{
+		// NOSONAR - CONTROL-01: Empty else for comment/documentation clarity
 	}
 	
 
