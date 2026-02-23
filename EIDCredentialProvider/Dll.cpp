@@ -33,8 +33,8 @@ static LONG g_cRef = 0;   // NOSONAR - RUNTIME-01: Global DLL reference count, m
 
 // IClassFactory ///////////////////////////////////////////////////////////////////////
 
-extern HRESULT CEIDProvider_CreateInstance(REFIID riid, void** ppv);
-extern HRESULT CEIDFilter_CreateInstance(REFIID riid, void** ppv);
+extern HRESULT CEIDProvider_CreateInstance(REFIID riid, void** ppv);  // NOSONAR - CAST-01: COM requires void**
+extern HRESULT CEIDFilter_CreateInstance(REFIID riid, void** ppv);  // NOSONAR - CAST-01: COM requires void**
 
 HINSTANCE g_hinst = nullptr;   // NOSONAR - RUNTIME-01: HINSTANCE set by Windows at DLL load
 
@@ -57,7 +57,7 @@ class CClassFactory : public IClassFactory
         return cRef;
     }
 
-    STDMETHOD (QueryInterface)(REFIID riid, void** ppv)
+    STDMETHOD (QueryInterface)(REFIID riid, void** ppv)  // NOSONAR - CAST-01: COM QueryInterface requires void**
     {
         HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
         if (ppv != nullptr)
@@ -82,7 +82,7 @@ class CClassFactory : public IClassFactory
     }
 
     // IClassFactory
-    STDMETHOD (CreateInstance)(IUnknown* pUnkOuter, REFIID riid, void** ppv)
+    STDMETHOD (CreateInstance)(IUnknown* pUnkOuter, REFIID riid, void** ppv)  // NOSONAR - CAST-01: COM CreateInstance requires void**
     {
         HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
         if (!pUnkOuter)
@@ -123,15 +123,15 @@ class CClassFactory : public IClassFactory
   private:
     LONG _cRef;
 
-    friend HRESULT CClassFactory_CreateInstance(REFCLSID rclsid, REFIID riid, void** ppv);
+    friend HRESULT CClassFactory_CreateInstance(REFCLSID rclsid, REFIID riid, void** ppv);  // NOSONAR - CAST-01: COM requires void**
 };
 
-HRESULT CClassFactory_CreateInstance(REFCLSID rclsid, REFIID riid, void** ppv)
+HRESULT CClassFactory_CreateInstance(REFCLSID rclsid, REFIID riid, void** ppv)  // NOSONAR - CAST-01: COM requires void**
 {
     HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
     if (CLSID_CEIDProvider == rclsid )
     {
-        auto pcf = new CClassFactory;
+        auto pcf = new CClassFactory;  // NOSONAR - COM-01: COM class factory requires heap allocation
         if (pcf)
         {
             hr = pcf->QueryInterface(riid, ppv);
@@ -205,7 +205,7 @@ STDAPI DllCanUnloadNow()
 }
 
 // DLL entry point.
-STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, void** ppv)
+STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, void** ppv)  // NOSONAR - CAST-01: COM DLL entry point requires void**
 {
     return CClassFactory_CreateInstance(rclsid, riid, ppv);
 }

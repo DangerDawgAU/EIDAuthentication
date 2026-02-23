@@ -40,7 +40,7 @@ namespace EID {
         return ::SetWindowTextW(hWnd, text.c_str());
     }
 
-    std::wstring Format(const wchar_t* format, ...)
+    std::wstring Format(const wchar_t* format, ...)  // NOSONAR - VARIADIC-01: Format function requires variadic arguments
     {
         if (!format) {
             return std::wstring();
