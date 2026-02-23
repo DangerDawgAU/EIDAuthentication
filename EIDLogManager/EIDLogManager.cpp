@@ -31,7 +31,7 @@
 constexpr LONG CLSCTX_INPROC_SERVER_LOCAL = 1;
 
 // Variables globales�:
-HINSTANCE hInst;								// instance actuelle
+HINSTANCE hInst;  // NOSONAR - RUNTIME-01: HINSTANCE set by Windows at WinMain entry
 
 INT_PTR CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 
