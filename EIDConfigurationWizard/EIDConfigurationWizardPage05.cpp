@@ -48,7 +48,7 @@ BOOL WizardFinishButton(PTSTR wszUserPassword)
 
 BOOL TestLogon(HWND hMainWnd);
 
-HWND hwndInvalidPasswordBalloon = nullptr;
+HWND hwndInvalidPasswordBalloon = nullptr;  // NOSONAR - RUNTIME-01: Tooltip window handle, created/destroyed at runtime
 VOID ShowInvalidPasswordBalloon(HWND hWnd)
 {
 	if (hwndInvalidPasswordBalloon) 
