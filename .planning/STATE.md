@@ -2,19 +2,19 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-23)
+See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
-**Current focus:** v1.6 COMPLETE - Ready for next milestone
+**Current focus:** v1.7 UI/UX Enhancement - Smart card configuration improvements
 
 ## Current Position
 
-Phase: 50-verification
-Current Plan: 01
-Status: v1.6 COMPLETE - All phases finished
-Last activity: 2026-02-23 - Phase 50 complete
+Phase: Not started (defining requirements)
+Current Plan: —
+Status: Defining requirements for v1.7
+Last activity: 2026-02-24 - Milestone v1.7 started
 
-Progress: [======================================] 100% (6/6 phases in v1.6)
+Progress: [░░░░░░░░░░░░░░░░░░░░░] 0% (0/3 requirements in v1.7)
 
 ## Performance Metrics
 
@@ -31,19 +31,20 @@ Progress: [======================================] 100% (6/6 phases in v1.6)
 - v1.3: Deep Modernization (COMPLETE 2026-02-18)
 - v1.4: SonarQube Zero (COMPLETE 2026-02-18)
 - v1.5: CI/CD Security Enhancement (COMPLETE 2026-02-19)
-- v1.6: SonarQube Final Remediation (IN PROGRESS)
+- v1.6: SonarQube Final Remediation (COMPLETE 2026-02-23)
+- v1.7: UI/UX Enhancement (IN PROGRESS)
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions logged in PROJECT.md Key Decisions table.
-Recent decisions for v1.6:
+Recent decisions for v1.7:
 
-- v1.6 focus: Achieve zero registered SonarQube issues through aggressive remediation
-- Strategy: Fix everything possible, suppress only what truly cannot be fixed
-- Suppression format: //nosonar with inline rationale comment
-- Phase structure: 6 phases (45-50) covering critical fixes through final verification
+- v1.7 focus: Smart card configuration UI/UX improvements
+- UIUX-01: Remove P12 import option from Configure Smart Card window
+- UIUX-02: Add modal progress popup during card flashing (after PIN entry)
+- UIUX-03: Expand Selected Authority info box with 6 additional certificate fields
 
 ### v1.6 Phase Structure
 
@@ -75,9 +76,9 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-23
-Stopped at: v1.6 COMPLETE
-Resume file: .planning/phases/50-verification/50-VERIFICATION.md
+Last session: 2026-02-24
+Stopped at: Milestone v1.7 initialized
+Resume file: None (new milestone)
 
 ## Key Constraints (Always Remember)
 
@@ -90,6 +91,6 @@ Resume file: .planning/phases/50-verification/50-VERIFICATION.md
 
 ---
 
-*Last updated: 2026-02-23*
-*Current milestone: v1.6 COMPLETE*
-*Next: /gsd:new-milestone*
+*Last updated: 2026-02-24*
+*Current milestone: v1.7 UI/UX Enhancement*
+*Next: Define requirements and create roadmap*
