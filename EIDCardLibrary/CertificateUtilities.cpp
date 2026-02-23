@@ -930,6 +930,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			}
 			if (CertAddCertificateContextToStore(hCertStore,pNewCertificateContext,CERT_STORE_ADD_ALWAYS,nullptr))
 			{
+				// NOSONAR - EMPTY-01: Intentionally empty - success means continue without action
 			}
 			else
 			{
@@ -1031,6 +1032,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			}
 			if (CertAddCertificateContextToStore(hCertStore,pNewCertificateContext,CERT_STORE_ADD_ALWAYS,nullptr))
 			{
+				// NOSONAR - EMPTY-01: Intentionally empty - success means continue without action
 			}
 			else
 			{
@@ -1038,7 +1040,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 				EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"CertAddCertificateContextToStore 0x%08X", dwError);
 				__leave;
 			}
-			break;		
+			break;
 		case UI_CERTIFICATE_INFO_SAVEON_SYSTEMSTORE_MY:
 			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"UI_CERTIFICATE_INFO_SAVEON_SYSTEMSTORE_MY");
 			hCertStore = CertOpenStore(CERT_STORE_PROV_SYSTEM,0,NULL,CERT_SYSTEM_STORE_LOCAL_MACHINE,_T("My"));
@@ -1050,6 +1052,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			}
 			if (CertAddCertificateContextToStore(hCertStore,pNewCertificateContext,CERT_STORE_ADD_ALWAYS,nullptr))
 			{
+				// NOSONAR - EMPTY-01: Intentionally empty - success means continue without action
 			}
 			else
 			{
