@@ -165,9 +165,12 @@ Function un.RemoveEIDCertificates
   ; Get list of certificates matching our patterns and delete them
   ; We'll use a batch approach via cmd.exe
 
-  ; Create a temporary batch file to do the certificate cleanup
+  ; Create a temporary batch file with .bat extension to avoid "how to open" popup
   GetTempFileName $0 "$TEMP"
-  FileOpen $1 $0 "w"
+  ; Replace .tmp with .bat extension
+  StrCpy $1 "$0.bat"
+  Delete "$0"
+  FileOpen $1 $1 "w"
   FileWrite $1 "@echo off$\r$\n"
   FileWrite $1 "setlocal enabledelayedexpansion$\r$\n"
   FileWrite $1 "echo Removing EID Authentication certificates...$\r$\n"
@@ -204,12 +207,11 @@ Function un.RemoveEIDCertificates
   FileWrite $1 "endlocal$\r$\n"
   FileClose $1
 
-  ; Execute the batch file
-  nsExec::ExecToLog 'cmd.exe /c "$0"'
-  Pop $2
+  ; Execute the batch file - use ExecWait for synchronous execution
+  ExecWait '"cmd.exe" /c "$1"' $2
 
   ; Delete the temporary file
-  Delete $0
+  Delete $1
 
 FunctionEnd
 
