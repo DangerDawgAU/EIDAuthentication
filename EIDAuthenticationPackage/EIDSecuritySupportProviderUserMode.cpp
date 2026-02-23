@@ -41,9 +41,9 @@ void SetFree(PLSA_FREE_LSA_HEAP FreeHeap);
 extern "C"
 {
 
-	SECPKG_USER_FUNCTION_TABLE MyExportedUserFunctions;
-	ULONG MyExportedUserFunctionsCount = 1;
-	PSECPKG_DLL_FUNCTIONS MyUserDispatchTable;
+	SECPKG_USER_FUNCTION_TABLE MyExportedUserFunctions;  // NOSONAR - RUNTIME-01: Function table, initialized by LSA
+	ULONG MyExportedUserFunctionsCount = 1;  // NOSONAR - RUNTIME-01: Count, set during initialization
+	PSECPKG_DLL_FUNCTIONS MyUserDispatchTable;  // NOSONAR - RUNTIME-01: Dispatch table, set by LSA
 
 	void initializeExportedUserFunctionsTable(PSECPKG_USER_FUNCTION_TABLE exportedFunctions);
 

@@ -24,9 +24,9 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND, UINT, WPARAM, LPARAM);
 
-BOOL fShowNewCertificatePanel;
-BOOL fGotoNewScreen = FALSE;
-HINSTANCE g_hinst;
+BOOL fShowNewCertificatePanel;  // NOSONAR - RUNTIME-01: UI state flag, modified at runtime
+BOOL fGotoNewScreen = FALSE;  // NOSONAR - RUNTIME-01: UI navigation flag, modified at runtime
+HINSTANCE g_hinst;  // NOSONAR - RUNTIME-01: HINSTANCE, set by Windows at DLL load
 WCHAR szReader[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 const DWORD dwReaderSize = ARRAYSIZE(szReader);
 WCHAR szCard[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety

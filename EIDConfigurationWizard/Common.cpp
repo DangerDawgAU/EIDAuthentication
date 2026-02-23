@@ -7,7 +7,7 @@
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "EIDConfigurationWizard.h"
 
-extern HINSTANCE g_hinst;
+extern HINSTANCE g_hinst;  // NOSONAR - RUNTIME-01: HINSTANCE, set by Windows at DLL load
 
 BOOL IsElevated()
 {

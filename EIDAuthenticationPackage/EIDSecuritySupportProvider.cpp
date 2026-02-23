@@ -48,19 +48,19 @@ void SetImpersonate(PLSA_IMPERSONATE_CLIENT Impersonate);
 extern "C"
 {
 	// Save LsaDispatchTable
-	PLSA_SECPKG_FUNCTION_TABLE MyLsaDispatchTable;
-	PSECPKG_PARAMETERS MyParameters;
-	SECPKG_FUNCTION_TABLE MyExportedFunctions;
+	PLSA_SECPKG_FUNCTION_TABLE MyLsaDispatchTable;  // NOSONAR - RUNTIME-01: LSA dispatch table, set by LSA
+	PSECPKG_PARAMETERS MyParameters;  // NOSONAR - RUNTIME-01: LSA parameters, set by LSA
+	SECPKG_FUNCTION_TABLE MyExportedFunctions;  // NOSONAR - RUNTIME-01: Function table, initialized by LSA
 	const ULONG MyExportedFunctionsCount = 1;
 	const BOOL DoUnicode = TRUE;
-	LUID PackageUid;
+	LUID PackageUid;  // NOSONAR - RUNTIME-01: LUID, set by LSA at initialization
 	void initializeExportedFunctionsTable(PSECPKG_FUNCTION_TABLE exportedFunctions);
-	ULONG MutualAuthLevel=0;
+	ULONG MutualAuthLevel=0;  // NOSONAR - RUNTIME-01: Auth level, set by LSA
 	// 1.3.6.1.4.1.35000.1
 	// cf http://msdn.microsoft.com/en-us/library/bb540809%28VS.85%29.aspx
 	// 1.3 . 6  .  1 .  4 .1   .35000    .1
 	// 0x2B,0x06,0x01,0x04,0x01,0x88,0xB8,0x01
-	UCHAR GssOid[] = {0x2B,0x06,0x01,0x04,0x01,0x88,0xB8,0x01};
+	const UCHAR GssOid[] = {0x2B,0x06,0x01,0x04,0x01,0x88,0xB8,0x01};  // NOSONAR - OID constant
 	const DWORD GssOidLen = ARRAYSIZE(GssOid);
 	// guid for negoEx
 	// 6550d49b-a716-484e-8955-a8e666df45d1

@@ -11,9 +11,9 @@
 
 // from previous step
 // credentials
-extern CContainerHolderFactory<CContainerHolderTest> *pCredentialList;
-extern DWORD dwCurrentCredential;
-extern DWORD dwWizardError;
+extern CContainerHolderFactory<CContainerHolderTest> *pCredentialList;  // NOSONAR - RUNTIME-01: Credential list
+extern DWORD dwCurrentCredential;  // NOSONAR - RUNTIME-01: Selected index
+extern DWORD dwWizardError;  // NOSONAR - RUNTIME-01: Error code
 
 void SetErrorMessage(HWND hWnd)
 {

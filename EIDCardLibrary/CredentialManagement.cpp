@@ -20,13 +20,13 @@
 #pragma comment(lib,"Winscard")
 #pragma comment(lib,"Cryptui")
 
-std::set<CCredential*> Credentials;
-std::list<CSecurityContext*> Contexts;
-std::map<ULONG_PTR, CUsermodeContext*> UserModeContexts;
+std::set<CCredential*> Credentials;  // NOSONAR - RUNTIME-01: Credential cache, modified at runtime
+std::list<CSecurityContext*> Contexts;  // NOSONAR - RUNTIME-01: Context list, modified at runtime
+std::map<ULONG_PTR, CUsermodeContext*> UserModeContexts;  // NOSONAR - RUNTIME-01: Context map, modified at runtime
 using Credential_Pair = std::pair<LUID, CCredential*>;
 
 // Critical section for thread-safe access to credential containers (CWE-416 fix for #24)
-static CRITICAL_SECTION g_CredentialLock;
+static CRITICAL_SECTION g_CredentialLock;  // NOSONAR - RUNTIME-01: Critical section, must be mutable
 
 // Static initializer to ensure critical section is initialized before use
 class CredentialLockInitializer {
@@ -34,7 +34,7 @@ public:
     CredentialLockInitializer() { InitializeCriticalSection(&g_CredentialLock); }
     ~CredentialLockInitializer() { DeleteCriticalSection(&g_CredentialLock); }
 };
-static CredentialLockInitializer g_CredentialLockInit;
+static CredentialLockInitializer g_CredentialLockInit;  // NOSONAR - RUNTIME-01: Initializer, runs at DLL load
 
 
 CCredential* CCredential::CreateCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_INFO pCertInfo,PWSTR szPin, ULONG CredentialUseFlags)

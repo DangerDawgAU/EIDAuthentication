@@ -40,14 +40,14 @@
 
 #pragma comment(lib,"Dbghelp")
 
-REGHANDLE hPub;
-BOOL bFirst = TRUE;
-WCHAR Section[100];
+REGHANDLE hPub;  // NOSONAR - RUNTIME-01: ETW registration handle, set by EventRegister()
+BOOL bFirst = TRUE;  // NOSONAR - RUNTIME-01: One-time initialization flag
+WCHAR Section[100];  // NOSONAR - RUNTIME-01: Trace section buffer, filled at runtime
 
 // SECURITY FIX #37: Add synchronization for trace globals (CWE-362)
 // ETW EnableCallback can be called from any thread; protect shared state
-static CRITICAL_SECTION g_csTrace;
-static BOOL g_csTraceInitialized = FALSE;
+static CRITICAL_SECTION g_csTrace;  // NOSONAR - RUNTIME-01: Critical section, must be mutable
+static BOOL g_csTraceInitialized = FALSE;  // NOSONAR - RUNTIME-01: Initialization flag
 
 // to enable tracing in kernel debugger, issue the following command in windbg : ed nt!Kd_DEFAULT_MASK  0xFFFFFFFF
 // OR

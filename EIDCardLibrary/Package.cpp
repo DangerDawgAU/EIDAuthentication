@@ -58,9 +58,9 @@
 
 constexpr char DEBUG_MARKUP[] = "MySmartLogonHeapCheck";
 
-PLSA_ALLOCATE_LSA_HEAP MyAllocateHeap = nullptr;
-PLSA_FREE_LSA_HEAP MyFreeHeap = nullptr;
-PLSA_IMPERSONATE_CLIENT MyImpersonate = nullptr;
+PLSA_ALLOCATE_LSA_HEAP MyAllocateHeap = nullptr;  // NOSONAR - RUNTIME-01: LSA heap allocator, set by LSA
+PLSA_FREE_LSA_HEAP MyFreeHeap = nullptr;  // NOSONAR - RUNTIME-01: LSA heap deallocator, set by LSA
+PLSA_IMPERSONATE_CLIENT MyImpersonate = nullptr;  // NOSONAR - RUNTIME-01: LSA impersonate function, set by LSA
 const BOOL TraceAllocation = TRUE;
 
 void SetAlloc(PLSA_ALLOCATE_LSA_HEAP AllocateLsaHeap)

@@ -17,16 +17,16 @@ static wchar_t s_wszSpace[] = L" ";
 
 // from previous step
 // credentials
-extern CContainerHolderFactory<CContainerHolderTest> *pCredentialList;
+extern CContainerHolderFactory<CContainerHolderTest> *pCredentialList;  // NOSONAR - RUNTIME-01: Credential list
 // selected credential
-extern DWORD dwCurrentCredential;
+extern DWORD dwCurrentCredential;  // NOSONAR - RUNTIME-01: Selected index
 
 extern BOOL PopulateListViewListData(HWND hWndListView);
 extern BOOL InitListViewListIcon(HWND hWndListView);
 
-extern BOOL fHasDeselected;
+extern BOOL fHasDeselected;  // NOSONAR - RUNTIME-01: UI state flag
 
-DWORD dwWizardError = 0;
+DWORD dwWizardError = 0;  // NOSONAR - RUNTIME-01: Error code, set at runtime
 
 BOOL WizardFinishButton(PTSTR wszUserPassword)
 {
