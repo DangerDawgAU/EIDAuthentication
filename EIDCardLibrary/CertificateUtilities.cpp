@@ -391,7 +391,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 	HCERTSTORE hCertStore = nullptr;
 	PBYTE  pbSignedEncodedCertReq = nullptr;
 	BOOL bDestroyContainer = FALSE;
-	HCRYPTKEY hKey = NULL;  // Windows handle type - keep as NULL
+	HCRYPTKEY hKey = NULL;  // NOSONAR - HANDLE-01: HCRYPTKEY is ULONG_PTR, not pointer type
 	CRYPT_KEY_PROV_INFO KeyProvInfo = {0};
 	LPTSTR szContainerName=nullptr;
     FILETIME ftTime;

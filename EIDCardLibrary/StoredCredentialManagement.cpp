@@ -147,7 +147,7 @@ BOOL EncryptPasswordWithDPAPI(__in PWSTR szPassword, __in USHORT usPasswordSize,
     DataIn.pbData = reinterpret_cast<BYTE*>(szPassword);
     DataIn.cbData = usPasswordSize;
 
-    if (!CryptProtectData(&DataIn, L"EID Credential", NULL, NULL, NULL,
+    if (!CryptProtectData(&DataIn, L"EID Credential", nullptr, nullptr, nullptr,
                           CRYPTPROTECT_LOCAL_MACHINE, &DataOut))
     {
         EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CryptProtectData failed 0x%08x", GetLastError());
@@ -415,17 +415,17 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 	BOOL fStatus;
 	DWORD dwError = 0;
 	NTSTATUS Status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
-	HCRYPTKEY hKey = NULL;
-	HCRYPTKEY hSymetricKey = NULL;
-	PBYTE pSymetricKey = NULL;
+	HCRYPTKEY hKey = NULL;  // NOSONAR - HANDLE-01: HCRYPTKEY is ULONG_PTR, not pointer type
+	HCRYPTKEY hSymetricKey = NULL;  // NOSONAR - HANDLE-01: HCRYPTKEY is ULONG_PTR, not pointer type
+	PBYTE pSymetricKey = nullptr;
 	USHORT usSymetricKeySize = 0;
-	PBYTE pEncryptedPassword = NULL;
+	PBYTE pEncryptedPassword = nullptr;
 	USHORT usEncryptedPasswordSize = 0;
-	PEID_PRIVATE_DATA pbSecret = NULL;
+	PEID_PRIVATE_DATA pbSecret = nullptr;
 	USHORT usSecretSize;
 	USHORT usPasswordSize;
-	HCRYPTPROV hProv = NULL;
-	PBYTE pbPublicKey = NULL;
+	HCRYPTPROV hProv = NULL;  // NOSONAR - HANDLE-01: HCRYPTPROV is ULONG_PTR, not pointer type
+	PBYTE pbPublicKey = nullptr;
 	DWORD dwSize = 0;
 
 	__try
@@ -457,7 +457,7 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 		{
 			usPasswordSize = usPasswordLen;
 		}
-		else if (szPassword == NULL)
+		else if (szPassword == nullptr)
 		{
 			usPasswordSize = 0;
 		}
@@ -476,7 +476,7 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 			fStatus = CryptDecodeObject(X509_ASN_ENCODING, RSA_CSP_PUBLICKEYBLOB,
 				pCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey.pbData,
 				pCertContext->pCertInfo->SubjectPublicKeyInfo.PublicKey.cbData,
-				0, NULL, &dwSize);
+				0, nullptr, &dwSize);
 			if (!fStatus)
 			{
 				dwError = GetLastError();
@@ -588,7 +588,7 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 
 			// Build secret data using helper
 			BuildSecretData(pbSecret, pCertContext, pEncryptedPassword, usEncryptedPasswordSize,
-			                NULL, 0, false);
+			                nullptr, 0, false);
 		}
 
 		// Save the encrypted credential data
