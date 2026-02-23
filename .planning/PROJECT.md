@@ -17,6 +17,7 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 **v1.4 SonarQube Zero** — All fixable issues resolved, won't-fix documented ✓
 **v1.5 CI/CD Security Enhancement** — VirusTotal integration, artifact scanning ✓
 **v1.6 SonarQube Final Remediation** — Zero registered issues, 463 suppressions documented ✓
+**v1.7 UI/UX Enhancement** — Smart card configuration UI improvements (IN PROGRESS)
 
 ## Requirements
 
@@ -30,9 +31,13 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 - ✓ Security Hotspots — 0 open (2 fixed)
 - ✓ Reliability Bugs — 0 open (3 fixed)
 
-### Active (Planning Next Milestone)
+### Active (v1.7 - Current Milestone)
 
-*No active requirements. Run `/gsd:new-milestone` to define next milestone.*
+**Goal:** Improve smart card configuration user experience with clearer certificate information and better progress feedback.
+
+- [ ] **UIUX-01**: Remove P12 import option from Configure Smart Card window
+- [ ] **UIUX-02**: Add modal progress popup during card flashing operation
+- [ ] **UIUX-03**: Expand Selected Authority info box with additional certificate fields
 
 ### Validated (v1.6 Shipped)
 - ✓ Zero registered SonarQube issues — All 858 baseline issues fixed or suppressed
@@ -59,8 +64,8 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 - Windows Vista support — minimum is now Windows 7+
 - x86 (32-bit) builds — x64 only
 - Domain-joined computer support — local accounts only
-- New features beyond C++23 modernization
 - Code signing (separate concern)
+- Non-smart-card authentication methods (password-only login not in scope)
 
 ## Context
 
@@ -105,4 +110,4 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 | VT warn only | Non-blocking to avoid false positives blocking releases | — Pending |
 
 ---
-*Last updated: 2026-02-23 after v1.6 milestone completion*
+*Last updated: 2026-02-24 after v1.7 milestone initialization*
