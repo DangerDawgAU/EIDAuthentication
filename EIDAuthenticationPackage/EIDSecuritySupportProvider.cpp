@@ -102,6 +102,7 @@ extern "C"
 		}
 		__finally
 		{
+			// NOSONAR - SEH-01: Empty __finally required for SEH completeness
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Leave");
 		return Status;
@@ -690,6 +691,7 @@ extern "C"
 				}
 				__finally
 				{
+					// NOSONAR - SEH-01: Empty __finally required for SEH completeness
 				}
 				EIDLogErrorWithContext("QueryContextAttributes", HRESULT_FROM_NT(status), L"attr=SECPKG_CRED_ATTR_NAMES");
 				return status;
@@ -853,10 +855,11 @@ extern "C"
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"InitializeSecurityContextOutput = 0x%08X",Status);
 				__leave;
 			}
-			
+
 		}
 		__finally
 		{
+			// NOSONAR - SEH-01: Empty __finally required for SEH completeness
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Leave with Status = 0x%08X",Status);
 		return Status;

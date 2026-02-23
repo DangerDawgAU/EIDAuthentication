@@ -506,16 +506,13 @@ HRESULT EIDUnlockLogonInit(
             {
                 // Set a MessageType based on the usage scenario.
                 pkil->MessageType = EID_INTERACTIVE_LOGON_SUBMIT_TYPE_VANILLA;
-    pkil->CspDataLength = 0;
-    pkil->CspData = nullptr;
-    pkil->Flags = 0;
+                pkil->CspDataLength = 0;
+                pkil->CspData = nullptr;
+                pkil->Flags = 0;
 
-                if (SUCCEEDED(hr))
-                {
-                    // EID_INTERACTIVE_UNLOCK_LOGON is just a series of structures.  A
-                    // flat copy will properly initialize the output parameter.
-                    CopyMemory(pkiul, &kiul, sizeof(*pkiul));
-                }
+                // EID_INTERACTIVE_UNLOCK_LOGON is just a series of structures.  A
+                // flat copy will properly initialize the output parameter.
+                CopyMemory(pkiul, &kiul, sizeof(*pkiul));
             }
         }
     }

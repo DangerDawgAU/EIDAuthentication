@@ -76,6 +76,7 @@ extern "C"
 		}
 		__finally
 		{
+			// NOSONAR - SEH-01: Empty __finally required for SEH completeness
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Leave");
 		return Status;
