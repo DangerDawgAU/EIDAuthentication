@@ -87,7 +87,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 17: Modern Types** - Convert ~197 legacy type usages (Complete) 2026-02-17
 - [x] **Phase 18: Code Quality** - Build verification after all code changes (Complete) 2026-02-17
 - [x] **Phase 19: Documentation** - Mark ~550 issues as "Won't Fix" with justification (Complete) 2026-02-17
-- [x] **Phase 20: Final Verification** - SonarQube confirmation all fixable issues resolved (Complete) 2026-02-17
+- [x] **Phase 20: Final Verification** - SonarQube confirmation all fixable issues resolved (Complete) 2026-02-17)
 
 </details>
 
@@ -108,13 +108,13 @@ Decimal phases appear between their surrounding integers in numeric order.
 <details>
 <summary>v1.0 C++23 Modernization - Phases 1-6 - SHIPPED 2026-02-16</summary>
 
-- [x] **Phase 1: Build System** - Enable C++23 compilation across all 7 projects (Complete) 2026-02-15
-- [x] **Phase 2: Error Handling** - Adopt `std::expected` for internal error handling (Complete) 2026-02-16
-- [x] **Phase 2.1: C++23 Conformance** - Fix conformance errors (INSERTED) (Complete) 2026-02-15
-- [x] **Phase 2.2: Const-Correctness** - Fix const errors in dependent projects (INSERTED) (Complete) 2026-02-15
-- [x] **Phase 3: Compile-Time Enhancements** - Leverage `consteval`, `constexpr`, and related features (Complete) 2026-02-15)
-- [x] **Phase 4: Code Quality** - Modernize with `std::format`, `std::span`, and string utilities (Complete) 2026-02-15
-- [x] **Phase 5: Documentation** - Update README and build instructions (Complete) 2026-02-15
+- [x] **Phase 1: Build System** - Enable C++23 compilation across all 7 projects (Complete 2026-02-15)
+- [x] **Phase 2: Error Handling** - Adopt `std::expected` for internal error handling (Complete 2026-02-16)
+- [x] **Phase 2.1: C++23 Conformance** - Fix conformance errors (INSERTED) (Complete 2026-02-15)
+- [x] **Phase 2.2: Const-Correctness** - Fix const errors in dependent projects (INSERTED) (Complete 2026-02-15)
+- [x] **Phase 3: Compile-Time Enhancements** - Leverage `consteval`, `constexpr`, and related features (Complete 2026-02-15)
+- [x] **Phase 4: Code Quality** - Modernize with `std::format`, `std::span`, and string utilities (Complete 2026-02-15)
+- [x] **Phase 5: Documentation** - Update README and build instructions (Complete 2026-02-15)
 - [x] **Phase 6: Verification** - Comprehensive testing across all Windows versions (Complete*) 2026-02-15
 
 </details>
@@ -179,7 +179,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. All LSASS-safety issues (std::string, dynamic allocation) marked with //nosonar and rationale
   3. All COM/SEH constraint issues marked with //nosonar and rationale
   4. Every //nosonar has an inline comment explaining why the issue cannot be fixed
-**Plans**: TBD
+**Plans**: 1 plan
+- [ ] 49-01-PLAN.md - Add NOSONAR suppressions with rationale to all remaining issues (SUPPR-01, SUPPR-02, SUPPR-03, SUPPR-04)
 
 ### Phase 50: Verification
 **Goal**: Zero registered SonarQube issues confirmed, final state documented
@@ -266,8 +267,8 @@ Phases execute in numeric order: 45 -> 46 -> 47 -> 48 -> 49 -> 50
 | 46. Const Correctness | 0/1 | Planned | - |
 | 47. Control Flow | 0/1 | Not started | - |
 | 48. Code Style & Macros | 0/1 | Not started | - |
-| 49. Suppression | 0/1 | Not started | - |
-| 50. Verification | 1/1 | Planned | - |
+| 49. Suppression | 0/1 | Planned | - |
+| 50. Verification | 0/1 | Planned | - |
 
 ### v1.5 CI/CD Security Enhancement (COMPLETE)
 
@@ -530,4 +531,5 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 *v1.6 roadmap created: 2026-02-23*
 *v1.6 Phase 45 planned: 2026-02-23*
 *v1.6 Phase 46 planned: 2026-02-23*
+*v1.6 Phase 49 planned: 2026-02-23*
 *v1.6 Phase 50 planned: 2026-02-23*
