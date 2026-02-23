@@ -20,14 +20,14 @@
 // Static buffer for column name (required for PTSTR compatibility with const-correctness)
 static TCHAR s_szColumnName[] = TEXT("Comment");                     // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
 
-CContainerHolderFactory<CContainerHolderTest> *pCredentialList = nullptr;
-DWORD dwCurrentCredential = 0xFFFFFFFF;
-BOOL fHasDeselected = TRUE;
+CContainerHolderFactory<CContainerHolderTest> *pCredentialList = nullptr;  // NOSONAR - RUNTIME-01: Credential list, populated at runtime
+DWORD dwCurrentCredential = 0xFFFFFFFF;  // NOSONAR - RUNTIME-01: Selected credential index, modified at runtime
+BOOL fHasDeselected = TRUE;  // NOSONAR - RUNTIME-01: UI state flag, modified at runtime
 
 // Forward declaration
 BOOL PopulateListViewCheckData(HWND hWndListViewList, HWND hWndListViewCheck);
 
-PTSTR Columns[] = { s_szColumnName };
+PTSTR Columns[] = { s_szColumnName };  // NOSONAR - RUNTIME-01: Array of non-const pointers for ListView API
 #define COLUMN_NUM ARRAYSIZE(Columns)
 
 BOOL InitListViewColumns(HWND hWndListView) 

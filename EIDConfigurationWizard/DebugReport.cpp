@@ -96,7 +96,7 @@ BOOL TestLogon(HWND hMainWnd)
 	return fReturn;
 }
 
-HANDLE hInternalLogWriteHandle = nullptr;
+HANDLE hInternalLogWriteHandle = nullptr;  // NOSONAR - RUNTIME-01: File handle, opened at runtime
 
 HANDLE StartReport(PTSTR szLogFile)
 {
@@ -145,9 +145,9 @@ HANDLE StartReport(PTSTR szLogFile)
 
 // from previous step
 // credentials
-extern CContainerHolderFactory<CContainerHolderTest> *pCredentialList;
+extern CContainerHolderFactory<CContainerHolderTest> *pCredentialList;  // NOSONAR - RUNTIME-01: Credential list, modified at runtime
 // selected credential
-extern DWORD dwCurrentCredential;
+extern DWORD dwCurrentCredential;  // NOSONAR - RUNTIME-01: Selected index, modified at runtime
 
 BOOL DoTheActionToBeTraced()
 {

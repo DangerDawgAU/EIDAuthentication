@@ -2435,13 +2435,13 @@ using SamIFree_SAMPR_USER_INFO_BUFFER = NTSTATUS (NTAPI*)(
 	__in USER_INFORMATION_CLASS UserInformationClass
 	);
 
-HMODULE samsrvDll = nullptr;
-SamrConnect MySamrConnect;
-SamrCloseHandle MySamrCloseHandle;
-SamrOpenDomain MySamrOpenDomain;
-SamrOpenUser MySamrOpenUser;
-SamrQueryInformationUser MySamrQueryInformationUser;
-SamIFree_SAMPR_USER_INFO_BUFFER MySamIFree;
+HMODULE samsrvDll = nullptr;  // NOSONAR - RUNTIME-01: DLL handle, loaded at runtime
+SamrConnect MySamrConnect;  // NOSONAR - RUNTIME-01: Function pointer, resolved via GetProcAddress
+SamrCloseHandle MySamrCloseHandle;  // NOSONAR - RUNTIME-01: Function pointer, resolved via GetProcAddress
+SamrOpenDomain MySamrOpenDomain;  // NOSONAR - RUNTIME-01: Function pointer, resolved via GetProcAddress
+SamrOpenUser MySamrOpenUser;  // NOSONAR - RUNTIME-01: Function pointer, resolved via GetProcAddress
+SamrQueryInformationUser MySamrQueryInformationUser;  // NOSONAR - RUNTIME-01: Function pointer, resolved via GetProcAddress
+SamIFree_SAMPR_USER_INFO_BUFFER MySamIFree;  // NOSONAR - RUNTIME-01: Function pointer, resolved via GetProcAddress
 
 
 NTSTATUS LoadSamSrv()

@@ -41,7 +41,7 @@ struct GPOInfo
 	LPCWSTR Value;
 };
 
-GPOInfo MyGPOInfo[] =
+const GPOInfo MyGPOInfo[] =  // NOSONAR - Const lookup table for GPO settings
 {
   {szMainGPOKey, L"AllowSignatureOnlyKeys" },
   {szMainGPOKey, L"AllowCertificatesWithNoEKU" },

@@ -27,7 +27,7 @@
 // Non-const string buffer for EVENT_TRACE_LOGFILE.LoggerName (requires LPWSTR)
 static TCHAR s_szLoggerName[] = TEXT("EIDCredentialProvider");        // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
 
-static HANDLE g_hTraceOutputFile = nullptr;
+static HANDLE g_hTraceOutputFile = nullptr;  // NOSONAR - RUNTIME-01: File handle, opened at runtime
 
 static VOID WINAPI ProcessEvents(PEVENT_TRACE pEvent)
 {
