@@ -155,7 +155,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Redundant if statements merged with enclosing conditionals
   3. SEH/COM blocks that cannot be restructured are documented with rationale
   4. Build passes with zero errors after control flow changes
-**Plans**: TBD
+**Plans**: 1 plan
+- [ ] 47-01-PLAN.md - Document empty compound statements, verify SEH documentation (FLOW-01, FLOW-02, FLOW-03)
 
 ### Phase 48: Code Style & Macros
 **Goal**: Modern code style with safe macros converted to constexpr/const
@@ -168,7 +169,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Safe macros converted to constexpr/const/enum where possible
   5. Macros that must remain (RC flow control, tracing) documented with rationale
   6. Build passes with zero errors after style changes
-**Plans**: TBD
+**Plans**: 1 plan
+- [ ] 47-01-PLAN.md - Document empty compound statements, verify SEH documentation (FLOW-01, FLOW-02, FLOW-03)
 
 ### Phase 49: Suppression
 **Goal**: All unavoidable SonarQube issues marked with //nosonar and documented rationale
@@ -265,8 +267,8 @@ Phases execute in numeric order: 45 -> 46 -> 47 -> 48 -> 49 -> 50
 |-------|----------------|--------|-----------|
 | 45. Critical Fixes | 1/1 | Complete    | 2026-02-23 |
 | 46. Const Correctness | 0/1 | Planned | - |
-| 47. Control Flow | 0/1 | Not started | - |
-| 48. Code Style & Macros | 0/1 | Not started | - |
+| 47. Control Flow | 0/1 | Planned | - |
+| 48. Code Style & Macros | 1/1 | Planned | - |
 | 49. Suppression | 0/1 | Planned | - |
 | 50. Verification | 0/1 | Planned | - |
 
@@ -532,4 +534,5 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 *v1.6 Phase 45 planned: 2026-02-23*
 *v1.6 Phase 46 planned: 2026-02-23*
 *v1.6 Phase 49 planned: 2026-02-23*
+*v1.6 Phase 47 planned: 2026-02-23*
 *v1.6 Phase 50 planned: 2026-02-23*
