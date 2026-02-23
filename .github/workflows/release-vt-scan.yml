@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380aec29  # v4
+        uses: actions/checkout@v4
 
       - name: Download release assets
         env:
@@ -36,7 +36,7 @@ jobs:
       - name: Scan release assets with VirusTotal
         id: virustotal-scan
         continue-on-error: true
-        uses: crazy-max/ghaction-virustotal@616e4d4f2ff24db0d3f91711f0f3e52d3546f25d  # v4
+        uses: crazy-max/ghaction-virustotal@v4
         with:
           vt_api_key: ${{ secrets.VT_API_KEY }}
           files: ./release-assets/*
