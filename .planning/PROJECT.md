@@ -8,16 +8,6 @@ A Windows smart card authentication package providing smart card login for local
 
 A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
 
-## Current Milestone: v1.6 SonarQube Final Remediation
-
-**Goal:** Achieve zero SonarQube issues through aggressive remediation, fixing everything possible and suppressing only what truly cannot be fixed
-
-**Target features:**
-- Fix all remaining SonarQube issues where safe to do so
-- Mark unavoidable issues with `//nosonar` comments with justification
-- Zero registered issues in SonarQube dashboard
-- Document all suppression rationales
-
 ### Completed Milestones
 
 **v1.0 C++23 Modernization** — Build system, error handling, compile-time features ✓
@@ -26,6 +16,7 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 **v1.3 Deep Modernization** — Style, macros, const, nesting, complexity, diagnostics ✓
 **v1.4 SonarQube Zero** — All fixable issues resolved, won't-fix documented ✓
 **v1.5 CI/CD Security Enhancement** — VirusTotal integration, artifact scanning ✓
+**v1.6 SonarQube Final Remediation** — Zero registered issues, 463 suppressions documented ✓
 
 ## Requirements
 
@@ -39,11 +30,17 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 - ✓ Security Hotspots — 0 open (2 fixed)
 - ✓ Reliability Bugs — 0 open (3 fixed)
 
-### Active (v1.6 Scope)
-- [ ] Fix all remaining SonarQube issues where safe
-- [ ] Mark unavoidable issues with `//nosonar` comments
-- [ ] Document all suppression rationales
-- [ ] Achieve zero registered issues in SonarQube
+### Active (Planning Next Milestone)
+
+*No active requirements. Run `/gsd:new-milestone` to define next milestone.*
+
+### Validated (v1.6 Shipped)
+- ✓ Zero registered SonarQube issues — All 858 baseline issues fixed or suppressed
+- ✓ 463 NOSONAR suppressions with rationale — Windows API, LSASS, COM/SEH documented
+- ✓ Const-correctness — Global field descriptor arrays marked const
+- ✓ Control flow documentation — Empty blocks and SEH functions documented
+- ✓ Code style improvements — Multi-declarations split, macros documented
+- ✓ Build verification — All 7 projects compile with 0 errors
 
 ### Validated (v1.4 Shipped)
 - ✓ Global variable const correctness — All runtime-assigned documented as won't-fix
@@ -108,4 +105,4 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 | VT warn only | Non-blocking to avoid false positives blocking releases | — Pending |
 
 ---
-*Last updated: 2026-02-23 after v1.6 milestone start*
+*Last updated: 2026-02-23 after v1.6 milestone completion*
