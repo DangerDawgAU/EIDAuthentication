@@ -152,7 +152,7 @@ HRESULT CEIDProvider::Initialize()
     // For the locked case, a more advanced credprov might only enumerate tiles for the
     // user whose owns the locked session, since those are the only creds that will work
 
-    _pMessageCredential = new CMessageCredential();
+    _pMessageCredential = new CMessageCredential();  // NOSONAR - COM-01: Credential Provider requires heap allocation
     if (!_pMessageCredential)
     {
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"E_OUTOFMEMORY");
@@ -164,7 +164,7 @@ HRESULT CEIDProvider::Initialize()
 	_CredentialList.SetUsageScenario(_cpus,_dwFlags);
 	_CredentialList.Unlock();
 	_pMessageCredential->SetUsageScenario(_cpus,_dwFlags);
-	_pSmartCardConnectionNotifier = new CSmartCardConnectionNotifier(this);
+	_pSmartCardConnectionNotifier = new CSmartCardConnectionNotifier(this);  // NOSONAR - COM-01: Event notifier requires heap allocation
 	return hr;
 }
 
@@ -458,7 +458,7 @@ HRESULT CEIDProvider::GetCredentialAt(
 			CEIDCredential* EIDCredential = _CredentialList.GetContainerHolderAt(dwIndex);
 			if (EIDCredential != nullptr)
 			{
-				hr = EIDCredential->QueryInterface(IID_ICredentialProviderCredential, reinterpret_cast<void**>(ppcpc));
+				hr = EIDCredential->QueryInterface(IID_ICredentialProviderCredential, reinterpret_cast<void**>(ppcpc));  // NOSONAR - CAST-01: COM QueryInterface requires void**
 			}
 			else
 			{
@@ -469,7 +469,7 @@ HRESULT CEIDProvider::GetCredentialAt(
         }
         else
         {
-            hr = _pMessageCredential->QueryInterface(IID_ICredentialProviderCredential, reinterpret_cast<void**>(ppcpc));
+            hr = _pMessageCredential->QueryInterface(IID_ICredentialProviderCredential, reinterpret_cast<void**>(ppcpc));  // NOSONAR - CAST-01: COM QueryInterface requires void**
         }
 		_CredentialList.Unlock();
     }
@@ -486,12 +486,12 @@ HRESULT CEIDProvider::GetCredentialAt(
 }
 
 // Boilerplate method to create an instance of our provider.
-HRESULT CEIDProvider_CreateInstance(REFIID riid, void** ppv)
+HRESULT CEIDProvider_CreateInstance(REFIID riid, void** ppv)  // NOSONAR - CAST-01: COM requires void**
 {
     HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 	if (riid != IID_ICredentialProvider) return E_NOINTERFACE;
     // C++17 init-statement: pProvider is only used within this if block
-    if (CEIDProvider* pProvider = new CEIDProvider())
+    if (CEIDProvider* pProvider = new CEIDProvider())  // NOSONAR - COM-01: Credential Provider requires heap allocation
     {
         hr = pProvider->QueryInterface(riid, ppv);
         pProvider->Release();

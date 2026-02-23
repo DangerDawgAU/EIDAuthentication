@@ -132,7 +132,7 @@ void EIDCardLibraryTracingUnRegister() {
 // see http://www.codeproject.com/Articles/16598/Get-Your-DLL-s-Path-Name for the "__ImageBase"
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;  // NOSONAR - RUNTIME-01: Linker-defined symbol
 
-void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR dwLevel, PCWSTR szFormat,...) {
+void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR dwLevel, PCWSTR szFormat,...) {  // NOSONAR - VARIADIC-01: ETW tracing requires variadic format function
 	_ASSERTE( _CrtCheckMemory( ) );
 #ifndef _DEBUG
 	UNREFERENCED_PARAMETER(dwLine);
@@ -409,7 +409,7 @@ BOOL StopLogging()
 
 // Security audit logging - provides visibility into security-relevant events
 // Logs to ETW with security-specific formatting for SIEM/security monitoring tools
-void EIDSecurityAuditEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR dwAuditType, PCWSTR szFormat,...)
+void EIDSecurityAuditEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR dwAuditType, PCWSTR szFormat,...)  // NOSONAR - VARIADIC-01: ETW audit logging requires variadic format function
 {
 	UNREFERENCED_PARAMETER(szFile);
 	WCHAR Buffer[512];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
@@ -461,7 +461,7 @@ void EIDSecurityAuditEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR dw
 
 // Enhanced error logging with structured context
 // Format: [ERROR_CONTEXT] Function:line - Operation 'name' failed: hr=0x%08X, additional_context
-void EIDLogErrorWithContextEx(
+void EIDLogErrorWithContextEx(  // NOSONAR - VARIADIC-01: Error logging requires variadic format function
 	PCSTR szFile,
 	DWORD dwLine,
 	PCSTR szFunction,

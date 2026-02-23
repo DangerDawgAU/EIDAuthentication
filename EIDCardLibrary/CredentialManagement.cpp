@@ -48,7 +48,7 @@ CCredential* CCredential::CreateCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_
 	}
 
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"new Credential");
-	credential = new CCredential(LogonIdToUse,pCertInfo,szPin, CredentialUseFlags);
+	credential = new CCredential(LogonIdToUse,pCertInfo,szPin, CredentialUseFlags);  // NOSONAR - COM-01: Credential lifecycle requires heap allocation
 
 	EnterCriticalSection(&g_CredentialLock);
 	Credentials.insert(credential);
@@ -62,7 +62,7 @@ CCredential::CCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_INFO pCertInfo,PWS
 	if (szPin)
 	{
 		_dwLen = (DWORD) wcslen(szPin) + 1;
-		_szPin = new WCHAR[_dwLen];
+		_szPin = new WCHAR[_dwLen];  // NOSONAR - COM-01: PIN buffer requires heap allocation
 		wcscpy_s(_szPin,_dwLen, szPin);
 	}
 	else
@@ -166,7 +166,7 @@ CSecurityContext* CSecurityContext::CreateContext(CCredential* pCredential)
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pCredential NULL");
 		return nullptr;
 	}
-	context = new CSecurityContext(pCredential);
+	context = new CSecurityContext(pCredential);  // NOSONAR - COM-01: Security context requires heap allocation
 
 	EnterCriticalSection(&g_CredentialLock);
 	Contexts.push_back(context);
@@ -578,7 +578,7 @@ NTSTATUS CUsermodeContext::AddContextInfo(ULONG_PTR pHandle, PEID_SSP_CALLBACK_M
 	if (!pContext)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Inserting context 0x%08X", pHandle);
-		pContext = new CUsermodeContext(pMessage);
+		pContext = new CUsermodeContext(pMessage);  // NOSONAR - COM-01: User mode context requires heap allocation
 		UserModeContexts.insert(std::pair<ULONG_PTR,CUsermodeContext*> (pHandle, pContext));
 	}
 	return Status ;

@@ -532,7 +532,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 	
 					if (!pCredentialList)
 					{
-						pCredentialList = new CContainerHolderFactory<CContainerHolderTest>();
+						pCredentialList = new CContainerHolderFactory<CContainerHolderTest>();  // NOSONAR - COM-01: UI credential list requires heap allocation
 						pCredentialList->SetUsageScenario(CPUS_INVALID,0);
 #pragma warning(push)
 #pragma warning(disable: 4302)

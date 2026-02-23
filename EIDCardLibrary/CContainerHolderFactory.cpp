@@ -240,9 +240,9 @@ BOOL CContainerHolderFactory<T>::CreateContainer(__in LPCTSTR szReaderName,__in 
 															   __in DWORD KeySpec, __in USHORT ActivityCount, __in PCCERT_CONTEXT pCertContext)
 {
 	CContainer* pContainer = nullptr;
-	pContainer = new CContainer(szReaderName,szCardName,szProviderName,szWideContainerName, KeySpec, ActivityCount, pCertContext);
+	pContainer = new CContainer(szReaderName,szCardName,szProviderName,szWideContainerName, KeySpec, ActivityCount, pCertContext);  // NOSONAR - COM-01: Container requires heap allocation
 	this->Lock();
-	T* ContainerHolder = new T(pContainer);
+	T* ContainerHolder = new T(pContainer);  // NOSONAR - COM-01: Container holder requires heap allocation
 	ContainerHolder->SetUsageScenario(_cpus, _dwFlags);
 	_CredentialList.push_back(ContainerHolder);
 	this->Unlock();
@@ -424,9 +424,9 @@ BOOL CContainerHolderFactory<T>::CleanList()
 template <typename T>
 BOOL CContainerHolderFactory<T>::HasContainerHolder() const
 {
-	const_cast<CContainerHolderFactory<T>*>(this)->Lock();
+	const_cast<CContainerHolderFactory<T>*>(this)->Lock();  // NOSONAR - COM-01: Thread-safe locking pattern requires const_cast
 	BOOL result = _CredentialList.size() > 0;
-	const_cast<CContainerHolderFactory<T>*>(this)->Unlock();
+	const_cast<CContainerHolderFactory<T>*>(this)->Unlock();  // NOSONAR - COM-01: Thread-safe locking pattern requires const_cast
 	return result;
 }
 
@@ -434,9 +434,9 @@ BOOL CContainerHolderFactory<T>::HasContainerHolder() const
 template <typename T>
 DWORD CContainerHolderFactory<T>::ContainerHolderCount() const
 {
-	const_cast<CContainerHolderFactory<T>*>(this)->Lock();
+	const_cast<CContainerHolderFactory<T>*>(this)->Lock();  // NOSONAR - COM-01: Thread-safe locking pattern requires const_cast
 	DWORD count = (DWORD) _CredentialList.size();
-	const_cast<CContainerHolderFactory<T>*>(this)->Unlock();
+	const_cast<CContainerHolderFactory<T>*>(this)->Unlock();  // NOSONAR - COM-01: Thread-safe locking pattern requires const_cast
 	return count;
 }
 
