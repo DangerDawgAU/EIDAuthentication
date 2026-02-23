@@ -1207,13 +1207,10 @@ BOOL CStoredCredentialManager::GetResponseFromCryptedChallenge(__in PBYTE pChall
 	}
 	__finally
 	{
-		if (!fReturn)
+		if (!fReturn && *pSymetricKey)
 		{
-			if (*pSymetricKey)
-			{
-				EIDFree(*pSymetricKey );
-				*pSymetricKey = nullptr;
-			}
+			EIDFree(*pSymetricKey );
+			*pSymetricKey = nullptr;
 		}
 		if (pbPin)
 		{
@@ -1790,17 +1787,11 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 	}
 	__finally
 	{
-		if (!fReturn)
+		if (!fReturn && pszPassword && *pszPassword)
 		{
-			if (pszPassword)
-			{
-				if (*pszPassword)
-				{
-					SecureZeroMemory(*pszPassword, wcslen(*pszPassword) * sizeof(WCHAR));
-					EIDFree(*pszPassword);
-					*pszPassword = nullptr;
-				}
-			}
+			SecureZeroMemory(*pszPassword, wcslen(*pszPassword) * sizeof(WCHAR));
+			EIDFree(*pszPassword);
+			*pszPassword = nullptr;
 		}
 		if (pEidPrivateData)
 		{
@@ -1948,17 +1939,11 @@ BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD 
 	}
 	__finally
 	{
-		if (!fReturn)
+		if (!fReturn && pszPassword && *pszPassword)
 		{
-			if (pszPassword)
-			{
-				if (*pszPassword)
-				{
-					SecureZeroMemory(*pszPassword, wcslen(*pszPassword) * sizeof(WCHAR));
-					EIDFree(*pszPassword);
-					*pszPassword = nullptr;
-				}
-			}
+			SecureZeroMemory(*pszPassword, wcslen(*pszPassword) * sizeof(WCHAR));
+			EIDFree(*pszPassword);
+			*pszPassword = nullptr;
 		}
 		if (DataOut.pbData)
 		{

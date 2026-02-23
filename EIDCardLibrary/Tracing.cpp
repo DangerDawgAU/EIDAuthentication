@@ -367,6 +367,7 @@ BOOL StartLogging()
 	}
 	__finally
 	{
+		// NOSONAR - SEH-01: Empty finally block required for SEH completeness
 	}
 	return fReturn;
 }
@@ -400,6 +401,7 @@ BOOL StopLogging()
 	}
 	__finally
 	{
+		// NOSONAR - SEH-01: Empty finally block required for SEH completeness
 	}
 	SetLastError(err);
 	return fReturn;
