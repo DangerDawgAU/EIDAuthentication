@@ -26,7 +26,7 @@
 #include <Windows.h>
 
 #include "helpers.h"
-#include "dll.h"
+#include "Dll.h"
 #include "EIDCredentialProvider.h"
 #include <utility>
 

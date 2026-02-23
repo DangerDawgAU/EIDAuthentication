@@ -234,7 +234,7 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 				!(SCARD_STATE_PRESENT & rgscState[dwI].dwCurrentState))
 			{
 				LPTSTR pmszCards = nullptr;
-				DWORD cch = SCARD_AUTOALLOCATE;
+				DWORD cch = SCARD_AUTOALLOCATE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 				for (DWORD dwJ = 0; dwJ < 4; dwJ++)
 				{
 					EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"ATR :%02X %02X %02X %02X %02X %02X %02X %02X",

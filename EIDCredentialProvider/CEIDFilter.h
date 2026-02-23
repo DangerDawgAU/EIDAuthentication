@@ -69,7 +69,7 @@ HRESULT CEIDFilter_CreateInstance(REFIID riid, void** ppv)
     HRESULT hr;
 	if (riid != IID_ICredentialProviderFilter) return E_NOINTERFACE;
     // C++17 init-statement: pFilter is only used within this if block
-    if (CEIDFilter* pFilter = new CEIDFilter())
+    if (CEIDFilter* pFilter = new CEIDFilter())  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
     {
         hr = pFilter->QueryInterface(riid, ppv);
         pFilter->Release();

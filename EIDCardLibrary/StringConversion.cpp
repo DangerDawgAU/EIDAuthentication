@@ -134,7 +134,7 @@ namespace EID {
             return;
         }
 
-        wchar_t* bufPtr = (wchar_t*)buffer;
+        wchar_t* bufPtr = (wchar_t*)buffer;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
         errno_t err = wcscpy_s(bufPtr, bufferSize / sizeof(wchar_t), src.c_str());
         if (err == 0) {
             dst->Buffer = bufPtr;

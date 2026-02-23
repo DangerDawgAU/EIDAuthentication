@@ -868,7 +868,7 @@ extern "C"
 	NTSTATUS NTAPI SpCreateToken(DWORD dwRid, PHANDLE phToken)
 	{
 		NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
-		NTSTATUS SubStatus = STATUS_SUCCESS;
+		NTSTATUS SubStatus = STATUS_SUCCESS;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		LUID LogonId;
 		TOKEN_SOURCE tokenSource = { "EIDAuth", PackageUid};
 		UNICODE_STRING AccountName;
@@ -1096,7 +1096,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(CredentialAttribute);
 		UNREFERENCED_PARAMETER(Buffer);
 		UNREFERENCED_PARAMETER(BufferSize);
-		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;
+		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Status = 0x%08X",Status);
 		return Status;
 	}
@@ -1116,7 +1116,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(pNewPassword);
 		UNREFERENCED_PARAMETER(Impersonating);
 		UNREFERENCED_PARAMETER(pOutput);
-		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;
+		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Status = 0x%08X",Status);
 		return Status;
 	}
@@ -1136,7 +1136,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(MetaDataLength);
 		UNREFERENCED_PARAMETER(MetaData);
 		UNREFERENCED_PARAMETER(ContextHandle);
-		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;
+		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Status = 0x%08X",Status);
 		return Status;
 	}
@@ -1156,7 +1156,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(MetaDataLength);
 		UNREFERENCED_PARAMETER(MetaData);
 		UNREFERENCED_PARAMETER(ContextHandle);
-		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;
+		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Status = 0x%08X",Status);
 		return Status;
 	}
@@ -1172,7 +1172,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(CredType);
 		UNREFERENCED_PARAMETER(FlatCredUIContextLength);
 		UNREFERENCED_PARAMETER(FlatCredUIContext);
-		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;
+		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Status = 0x%08X",Status);
 		return Status;
 	  }
@@ -1188,7 +1188,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(CredType);
 		UNREFERENCED_PARAMETER(FlatCredUIContextLength);
 		UNREFERENCED_PARAMETER(FlatCredUIContext);
-		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;
+		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Status = 0x%08X",Status);
 		return Status;
 	}
@@ -1206,7 +1206,7 @@ extern "C"
 		UNREFERENCED_PARAMETER(ClientBufferBase);
 		UNREFERENCED_PARAMETER(SubmitBufferLength);
 		UNREFERENCED_PARAMETER(TargetInfo);
-		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;
+		NTSTATUS Status = STATUS_NOT_IMPLEMENTED;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Status = 0x%08X",Status);
 		return Status;
 	}

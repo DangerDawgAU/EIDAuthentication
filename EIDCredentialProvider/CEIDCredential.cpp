@@ -655,7 +655,7 @@ HRESULT CEIDCredential::ReportResult(
 		_pContainer->TriggerRemovePolicy();
 	}
 
-    DWORD dwStatusInfo = (DWORD)-1;
+    DWORD dwStatusInfo = (DWORD)-1;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 
     // Look for a match on status and substatus.
     for (DWORD i = 0; i < ARRAYSIZE(s_rgLogonStatusInfo); i++)

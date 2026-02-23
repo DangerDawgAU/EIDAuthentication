@@ -15,7 +15,7 @@
 #include "../EIDCardLibrary/Tracing.h"
 #include "../EIDCardLibrary/StoredCredentialManagement.h"
 #include "../EIDCardLibrary/CertificateUtilities.h"
-#include "credentialManagement.h"
+#include "CredentialManagement.h"
 
 #pragma comment(lib,"Winscard")
 #pragma comment(lib,"Cryptui")
@@ -105,7 +105,7 @@ CCredential::~CCredential()
 
 BOOL CCredential::Delete(ULONG_PTR phCredential)
 {
-	CCredential* testedCredential = (CCredential*) phCredential;
+	CCredential* testedCredential = (CCredential*) phCredential;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	CCredential* toDelete = nullptr;
 
 	EnterCriticalSection(&g_CredentialLock);
@@ -131,7 +131,7 @@ BOOL CCredential::Delete(ULONG_PTR phCredential)
 
 CCredential* CCredential::GetCredentialFromHandle(ULONG_PTR CredentialHandle)
 {
-	CCredential* pCredential = (CCredential*) CredentialHandle;
+	CCredential* pCredential = (CCredential*) CredentialHandle;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	CCredential* result = nullptr;
 
 	EnterCriticalSection(&g_CredentialLock);
@@ -198,7 +198,7 @@ CSecurityContext::CSecurityContext(CCredential* pCredential)
 
 BOOL CSecurityContext::Delete(ULONG_PTR phContext)
 {
-	CSecurityContext* testedContext = (CSecurityContext*) phContext;
+	CSecurityContext* testedContext = (CSecurityContext*) phContext;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	CSecurityContext* toDelete = nullptr;
 
 	EnterCriticalSection(&g_CredentialLock);
@@ -224,7 +224,7 @@ BOOL CSecurityContext::Delete(ULONG_PTR phContext)
 
 CSecurityContext* CSecurityContext::GetContextFromHandle(ULONG_PTR context)
 {
-	CSecurityContext* testedContext = (CSecurityContext*) context;
+	CSecurityContext* testedContext = (CSecurityContext*) context;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	CSecurityContext* result = nullptr;
 
 	EnterCriticalSection(&g_CredentialLock);
@@ -297,7 +297,7 @@ NTSTATUS CSecurityContext::AcceptSecurityContextInput(PSecBufferDesc Buffer)
 }
 NTSTATUS CSecurityContext::AcceptSecurityContextOutput(PSecBufferDesc Buffer)
 {
-	NTSTATUS Status = STATUS_INVALID_SIGNATURE;
+	NTSTATUS Status = STATUS_INVALID_SIGNATURE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	switch (_State)
 	{
 		case EID_MESSAGE_STATE::EIDMSNegociate:
@@ -343,7 +343,7 @@ NTSTATUS CSecurityContext::ReceiveNegociateMessage(PSecBufferDesc Buffer)
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INSUFFICIENT_MEMORY");
 		return SEC_E_INSUFFICIENT_MEMORY;
 	}
-	PEID_NEGOCIATE_MESSAGE message = (PEID_NEGOCIATE_MESSAGE) Buffer->pBuffers[0].pvBuffer;
+	PEID_NEGOCIATE_MESSAGE message = (PEID_NEGOCIATE_MESSAGE) Buffer->pBuffers[0].pvBuffer;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (message->MessageType != static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTNegociate))
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Incorrect messageType");
@@ -402,7 +402,7 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 		{
 			if ( pInfo[dwI].usri3_user_id == dwRid)
 			{
-				DWORD dwLen= (DWORD)(wcslen(pInfo[dwI].usri3_name)+1);
+				DWORD dwLen= (DWORD)(wcslen(pInfo[dwI].usri3_name)+1);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 				szUserName = (PWSTR) EIDAlloc(dwLen*sizeof(WCHAR));
 				if (!szUserName)
 				{
@@ -442,7 +442,7 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 
 NTSTATUS CSecurityContext::ReceiveChallengeMessage(PSecBufferDesc Buffer)
 {
-	PEID_CHALLENGE_MESSAGE message = (PEID_CHALLENGE_MESSAGE) Buffer->pBuffers[0].pvBuffer;
+	PEID_CHALLENGE_MESSAGE message = (PEID_CHALLENGE_MESSAGE) Buffer->pBuffers[0].pvBuffer;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (message->MessageType != static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTChallenge))
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Incorrect messageType");
@@ -473,7 +473,7 @@ NTSTATUS CSecurityContext::BuildResponseMessage(PSecBufferDesc Buffer)
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INSUFFICIENT_MEMORY");
 		return SEC_E_INSUFFICIENT_MEMORY;
 	}
-	PEID_RESPONSE_MESSAGE message = (PEID_RESPONSE_MESSAGE) Buffer->pBuffers[0].pvBuffer;
+	PEID_RESPONSE_MESSAGE message = (PEID_RESPONSE_MESSAGE) Buffer->pBuffers[0].pvBuffer;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	memset(message, 0, sizeof(EID_RESPONSE_MESSAGE));
 	static_assert(sizeof(message->Signature) == sizeof(EID_MESSAGE_SIGNATURE), "Signature buffer sizes must match");
 	memcpy_s(message->Signature.data(), message->Signature.size(), EID_MESSAGE_SIGNATURE, sizeof(EID_MESSAGE_SIGNATURE));
@@ -494,7 +494,7 @@ NTSTATUS CSecurityContext::BuildResponseMessage(PSecBufferDesc Buffer)
 
 NTSTATUS CSecurityContext::ReceiveResponseMessage(PSecBufferDesc Buffer)
 {
-	PEID_RESPONSE_MESSAGE message = (PEID_RESPONSE_MESSAGE) Buffer->pBuffers[0].pvBuffer;
+	PEID_RESPONSE_MESSAGE message = (PEID_RESPONSE_MESSAGE) Buffer->pBuffers[0].pvBuffer;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (message->MessageType != static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTResponse))
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Incorrect messageType");
@@ -537,7 +537,7 @@ PWSTR CSecurityContext::GetUserName()
 	if (!szUserName)
 		return nullptr;
 	DWORD dwLen = (DWORD) wcslen(szUserName) + 1;
-	PWSTR szString = (PWSTR) EIDAlloc(dwLen * sizeof(WCHAR));
+	PWSTR szString = (PWSTR) EIDAlloc(dwLen * sizeof(WCHAR));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (!szString) return nullptr;
 	wcscpy_s(szString,dwLen,szUserName);
 	return szString;

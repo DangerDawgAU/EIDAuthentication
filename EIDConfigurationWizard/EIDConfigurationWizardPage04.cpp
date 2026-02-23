@@ -520,7 +520,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 		break;
 	case WM_NOTIFY :
 		{
-			LPNMHDR pnmh = (LPNMHDR)lParam;
+			LPNMHDR pnmh = (LPNMHDR)lParam;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			switch(pnmh->code)
 			{
 			case PSN_SETACTIVE :
@@ -642,7 +642,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			case NM_CLICK:
 			case NM_RETURN:
 				{
-					PNMLINK pNMLink = (PNMLINK)lParam;
+					PNMLINK pNMLink = (PNMLINK)lParam;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 					LITEM item = pNMLink->item;
 					if (wcscmp(item.szID, L"idrefresh") == 0)
 					{

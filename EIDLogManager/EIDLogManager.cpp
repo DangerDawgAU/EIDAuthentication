@@ -5,7 +5,7 @@
 #include "EIDLogManager.h"
 #include <tchar.h>
 #include <ShObjIdl.h>
-#include <shlobj.h>
+#include <ShlObj.h>
 #include "../EIDCardLibrary/Registration.h"
 #include "../EIDCardLibrary/Tracing.h"
 #include "../EIDCardLibrary/TraceExport.h"

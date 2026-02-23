@@ -31,7 +31,7 @@ void CheckIfCardHasADriver(HWND hWnd)
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Failed SCardReleaseContext 0x%08X",lReturn);
 			__leave;
 		}
-		DWORD dwReaderCount = SCARD_AUTOALLOCATE;
+		DWORD dwReaderCount = SCARD_AUTOALLOCATE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		lReturn = SCardListReaders(hSC, nullptr,  (LPTSTR)&szReaders, &dwReaderCount);
 		if ( SCARD_S_SUCCESS != lReturn )
 		{
@@ -45,11 +45,11 @@ void CheckIfCardHasADriver(HWND hWnd)
 			SCARDHANDLE hCard = NULL;
 			DWORD dwProtocol;
 			LPTSTR szTempReader = nullptr;
-			DWORD dwTempReaderSize = SCARD_AUTOALLOCATE;
+			DWORD dwTempReaderSize = SCARD_AUTOALLOCATE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			PBYTE pbAtr = nullptr;
-			DWORD dwAtrSize = SCARD_AUTOALLOCATE;
+			DWORD dwAtrSize = SCARD_AUTOALLOCATE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			LPTSTR szCards = nullptr;
-			DWORD dwzCardsSize = SCARD_AUTOALLOCATE;
+			DWORD dwzCardsSize = SCARD_AUTOALLOCATE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			__try
 			{
 				lReturn = SCardConnect(hSC, szCurrentReader, SCARD_SHARE_SHARED, SCARD_PROTOCOL_Tx, &hCard, &dwProtocol);
@@ -229,7 +229,7 @@ INT_PTR CALLBACK	WndProc_02ENABLE(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 		break;
 	case WM_NOTIFY :
 		{
-			LPNMHDR pnmh = (LPNMHDR)lParam;
+			LPNMHDR pnmh = (LPNMHDR)lParam;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			switch(pnmh->code)
 			{
 				case PSN_SETACTIVE :

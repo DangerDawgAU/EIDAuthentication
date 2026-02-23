@@ -1,6 +1,6 @@
 #include <Windows.h>
 #include <tchar.h>
-#include <CryptUIApi.h>
+#include <cryptuiapi.h>
 #include <ShObjIdl.h>
 #include "global.h"
 #include "EIDConfigurationWizard.h"
@@ -40,7 +40,7 @@ WORD GetRootCAExpiryYear(PCCERT_CONTEXT pRootCert)
 // Validate certificate validity against root CA and update warning
 VOID ValidateCertificateValidity(HWND hWnd, PCCERT_CONTEXT pRootCert)
 {
-	WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);
+	WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	SYSTEMTIME stNow;
 	GetSystemTime(&stNow);
 	WORD wCertExpiryYear = stNow.wYear + wValidityYears;
@@ -217,7 +217,7 @@ static BOOL HandleCreateOption(HWND hWnd, PCCERT_CONTEXT pRootCert)
 {
 	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"IDC_03_CREATE");
 	// Get validity years from UI
-	WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);
+	WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (wValidityYears < MIN_CERT_VALIDITY_YEARS) wValidityYears = MIN_CERT_VALIDITY_YEARS;
 	if (wValidityYears > MAX_CERT_VALIDITY_YEARS) wValidityYears = MAX_CERT_VALIDITY_YEARS;
 	// create self signed certificate as root
@@ -254,7 +254,7 @@ static BOOL HandleUseThisOption(HWND hWnd, PCCERT_CONTEXT pRootCert)
 		return TRUE;
 	}
 	// Get validity years from UI
-	WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);
+	WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (wValidityYears < MIN_CERT_VALIDITY_YEARS) wValidityYears = MIN_CERT_VALIDITY_YEARS;
 	if (wValidityYears > MAX_CERT_VALIDITY_YEARS) wValidityYears = MAX_CERT_VALIDITY_YEARS;
 	if (!CreateSmartCardCertificate(pRootCert, szReader, szCard, wValidityYears))

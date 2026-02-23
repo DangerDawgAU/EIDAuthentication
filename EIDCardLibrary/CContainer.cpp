@@ -20,14 +20,14 @@
 
 #include <Windows.h>
 #include <tchar.h>
-#include <CryptUIApi.h>
+#include <cryptuiapi.h>
 
 #include "EIDCardLibrary.h"
 #include "Tracing.h"
 #include "CContainer.h"
 #include "CertificateValidation.h"
 #include "GPO.h"
-#include "package.h"
+#include "Package.h"
 
 #pragma comment(lib, "Cryptui.lib")
 
@@ -49,7 +49,7 @@ LPTSTR CContainer::ValidateAndCopyString(LPCTSTR szSource, DWORD maxLength, LPCW
 	size_t len = _tcsnlen(szSource, maxLength + 1);
 	if (len <= maxLength)
 	{
-		LPTSTR szResult = (LPTSTR) EIDAlloc((DWORD)(sizeof(TCHAR) * (len + 1)));
+		LPTSTR szResult = (LPTSTR) EIDAlloc((DWORD)(sizeof(TCHAR) * (len + 1)));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		if (szResult)
 		{
 			_tcscpy_s(szResult, len + 1, szSource);
@@ -207,8 +207,8 @@ PEID_SMARTCARD_CSP_INFO CContainer::GetCSPInfo() const
 	DWORD dwProviderLen = (DWORD) _tcslen(_szProviderName)+1;
 	DWORD dwContainerLen = (DWORD) _tcslen(_szContainerName)+1;
 	DWORD dwBufferSize = dwReaderLen + dwCardLen + dwProviderLen + dwContainerLen;
-	
-	PEID_SMARTCARD_CSP_INFO pCspInfo = (PEID_SMARTCARD_CSP_INFO) EIDAlloc(sizeof(EID_SMARTCARD_CSP_INFO)+dwBufferSize*sizeof(TCHAR));
+
+	PEID_SMARTCARD_CSP_INFO pCspInfo = (PEID_SMARTCARD_CSP_INFO) EIDAlloc(sizeof(EID_SMARTCARD_CSP_INFO)+dwBufferSize*sizeof(TCHAR));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (!pCspInfo) return nullptr;
 	//ZeroMemory(pCspInfo);
 	memset(pCspInfo,0,sizeof(EID_SMARTCARD_CSP_INFO));
@@ -411,7 +411,7 @@ PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSi
 			__leave;
 		}
 
-		DWORD dwCspBufferLength = (DWORD) (wcslen(_szCardName)+1
+		DWORD dwCspBufferLength = (DWORD) (wcslen(_szCardName)+1  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 						+ wcslen(_szContainerName)+1
 						+ wcslen(_szProviderName)+1
 						+ wcslen(_szReaderName)+1);
@@ -456,7 +456,7 @@ PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSi
 		_ASSERTE( _CrtCheckMemory( ) );
 		pRequest->CspDataLength = dwCspDataLength;
 		pRequest->CspData = (PUCHAR) pPointer;
-		PEID_SMARTCARD_CSP_INFO pCspInfo = (PEID_SMARTCARD_CSP_INFO) pPointer;
+		PEID_SMARTCARD_CSP_INFO pCspInfo = (PEID_SMARTCARD_CSP_INFO) pPointer;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		pCspInfo->dwCspInfoLen = pRequest->CspDataLength;
 		// CSPInfo + content
 		_ASSERTE( _CrtCheckMemory( ) );

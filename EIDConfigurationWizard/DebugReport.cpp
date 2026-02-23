@@ -308,8 +308,8 @@ VOID CreateReport(PTSTR szNamedPipeName)
 {
 	// read the file from the command line
 	TCHAR szFile [256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
-	HANDLE hReport = INVALID_HANDLE_VALUE;
-	HANDLE hPipe = INVALID_HANDLE_VALUE;
+	HANDLE hReport = INVALID_HANDLE_VALUE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
+	HANDLE hPipe = INVALID_HANDLE_VALUE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	DWORD dwRead;
 	__try
 	{

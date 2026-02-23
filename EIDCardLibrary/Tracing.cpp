@@ -244,7 +244,7 @@ void EIDCardLibraryDumpMemoryEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, 
 	std::array<UCHAR, 10> buffer;
 	WCHAR szFormat[] = L"%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d";
 	WCHAR szFormat2[] = L"%c%c%c%c%c%c%c%c%c%c";
-	PUCHAR memory = (PUCHAR) memoryParam;
+	PUCHAR memory = (PUCHAR) memoryParam;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	for (i = 0; i < memorysize; i++)
 	{
 		buffer[i%10] = memory[i];

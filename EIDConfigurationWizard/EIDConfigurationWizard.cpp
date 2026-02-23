@@ -99,7 +99,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			}
 			DWORD dwCertSize = 0;
 			CryptStringToBinary(pszCommandLine[1],0,CRYPT_STRING_BASE64,nullptr,&dwCertSize,nullptr,nullptr);
-			PBYTE pbCertificate = (PBYTE) EIDAlloc(dwCertSize);
+			PBYTE pbCertificate = (PBYTE) EIDAlloc(dwCertSize);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			CryptStringToBinary(pszCommandLine[1],0,CRYPT_STRING_BASE64,pbCertificate,&dwCertSize,nullptr,nullptr);
 			PCCERT_CONTEXT pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING,pbCertificate, dwCertSize);
 			if (pCertContext)

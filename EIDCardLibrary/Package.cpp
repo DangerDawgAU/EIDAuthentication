@@ -341,7 +341,7 @@ HRESULT EIDUnlockLogonPack(
 		pCspInfo->dwCspInfoLen;
 
 
-    EID_INTERACTIVE_UNLOCK_LOGON* pkiulOut = (EID_INTERACTIVE_UNLOCK_LOGON*)CoTaskMemAlloc(cb);
+    EID_INTERACTIVE_UNLOCK_LOGON* pkiulOut = (EID_INTERACTIVE_UNLOCK_LOGON*)CoTaskMemAlloc(cb);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 
     if (pkiulOut)
     {
@@ -545,7 +545,7 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 	}
 	if ((pUnlockLogon->Logon.UserName.Buffer) != nullptr)
 	{
-		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.UserName.Buffer);
+		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.UserName.Buffer);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		if (SafeCheckBufferOverflow(offset, pUnlockLogon->Logon.UserName.MaximumLength, AuthenticationInformationLength))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"UserName Overflow1");
@@ -562,7 +562,7 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 	}
 	if ((pUnlockLogon->Logon.LogonDomainName.Buffer) != nullptr)
 	{
-		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.LogonDomainName.Buffer);
+		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.LogonDomainName.Buffer);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		if (SafeCheckBufferOverflow(offset, pUnlockLogon->Logon.LogonDomainName.MaximumLength, AuthenticationInformationLength))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"LogonDomainName Overflow1");
@@ -579,7 +579,7 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 	}
 	if ((pUnlockLogon->Logon.Pin.Buffer) != nullptr)
 	{
-		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.Pin.Buffer);
+		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.Pin.Buffer);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		if (SafeCheckBufferOverflow(offset, pUnlockLogon->Logon.Pin.MaximumLength, AuthenticationInformationLength))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Pin Overflow1");
@@ -596,7 +596,7 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 	}
 	if ((pUnlockLogon->Logon.CspData) != nullptr)
 	{
-		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.CspData);
+		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.CspData);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		if (SafeCheckBufferOverflow(offset, pUnlockLogon->Logon.CspDataLength, AuthenticationInformationLength))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CspData Overflow");
@@ -650,7 +650,7 @@ VOID EIDDebugPrintEIDUnlockLogonStruct(UCHAR dwLevel, PEID_INTERACTIVE_UNLOCK_LO
 	EIDCardLibraryTrace(dwLevel,L"CspDataLength %d",pUnlockLogon->Logon.CspDataLength);
 	if (pUnlockLogon->Logon.CspData)
 	{
-		PEID_SMARTCARD_CSP_INFO pCspInfo = (PEID_SMARTCARD_CSP_INFO) pUnlockLogon->Logon.CspData;
+		PEID_SMARTCARD_CSP_INFO pCspInfo = (PEID_SMARTCARD_CSP_INFO) pUnlockLogon->Logon.CspData;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		EIDCardLibraryTrace(dwLevel,L"MessageType %d",pCspInfo->MessageType);
 		EIDCardLibraryTrace(dwLevel,L"KeySpec %d",pCspInfo->KeySpec);
 		if (pCspInfo->nCardNameOffset)

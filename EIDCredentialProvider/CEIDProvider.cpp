@@ -338,7 +338,7 @@ HRESULT CEIDProvider::GetFieldDescriptorAt(
 					{
 						DWORD dwMessageLen = 256;
 						// C++17 init-statement: Message is only used within this if block
-						if (PWSTR Message = static_cast<PWSTR>(CoTaskMemAlloc(dwMessageLen*sizeof(WCHAR))))
+						if (PWSTR Message = static_cast<PWSTR>(CoTaskMemAlloc(dwMessageLen*sizeof(WCHAR))))  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 						{
 							LoadString(Handle, 4, Message, dwMessageLen);
 							(*ppcpfd)->pszLabel = Message;

@@ -242,7 +242,7 @@ DWORD MgScCardAcquireContext(
 {
     DWORD status = ERROR_SUCCESS;
     LPWSTR wszCardModule = nullptr;
-    DWORD cchCardModule = SCARD_AUTOALLOCATE;
+    DWORD cchCardModule = SCARD_AUTOALLOCATE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
     PINTERNAL_CONTEXT pInternal = nullptr;
     PFN_CARD_ACQUIRE_CONTEXT pfnCardAcquireContext = nullptr;
     DWORD cch = 0;
@@ -373,7 +373,7 @@ MgScCardAuthenticatePin(
     __out_opt                   PDWORD      pcAttemptsRemaining)
 {
     DWORD status = ERROR_SUCCESS;
-    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;
+    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
     
     LPSTR szPin = nullptr;
     DWORD cbPin = 0;
@@ -448,7 +448,7 @@ MgScCardCreateFile(
     __in                        DWORD       cbInitialCreationSize,
     __in                        CARD_FILE_ACCESS_CONDITION AccessCondition)
 {
-    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;
+    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 
     return pInternal->CardData.pfnCardCreateFile(
         &pInternal->CardData,
@@ -468,7 +468,7 @@ MgScCardDeauthenticate(
     __in                        LPWSTR      pwszUserId,
     __in                        DWORD       dwFlags)
 {
-    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;
+    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 
     if (nullptr != pInternal->CardData.pfnCardDeauthenticate)
         return pInternal->CardData.pfnCardDeauthenticate(
@@ -487,7 +487,7 @@ void
 MgScCardDeleteContext(
     __inout                     PMGSC_CONTEXT pMgSc)
 {
-    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;
+    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 
     pInternal->CardData.pfnCardDeleteContext(&pInternal->CardData);
 
@@ -506,7 +506,7 @@ MgScCardDeleteFile(
     __in                        LPSTR       pszFileName,
     __in                        DWORD       dwFlags)
 {
-    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;
+    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 
     return pInternal->CardData.pfnCardDeleteFile(
         &pInternal->CardData,
@@ -530,7 +530,7 @@ MgScCardReadFile(
     __inout                     PDWORD      pcbData)
 {
     DWORD status = ERROR_SUCCESS;
-    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;
+    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
     PBYTE pbLocal = nullptr;
     DWORD cbLocal = 0;
 
@@ -587,7 +587,7 @@ MgScCardWriteFile(
     __in_bcount(cbData)         PBYTE       pbData,
     __in                        DWORD       cbData)
 {
-    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;
+    PINTERNAL_CONTEXT pInternal = (PINTERNAL_CONTEXT) pMgSc->pvContext;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 
     return pInternal->CardData.pfnCardWriteFile(
         &pInternal->CardData,
@@ -604,7 +604,7 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 	SCARDCONTEXT hSCardContext = NULL;
 	SCARDHANDLE hSCardHandle = NULL;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 	std::array<BYTE, 32> bAtr;
-	DWORD cbAtr = static_cast<DWORD>(bAtr.size());
+	DWORD cbAtr = static_cast<DWORD>(bAtr.size());  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	LONG lReturn;
 	DWORD dwSize;
 	DWORD dwState;
