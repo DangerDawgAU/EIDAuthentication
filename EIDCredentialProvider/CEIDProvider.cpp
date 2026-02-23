@@ -27,7 +27,7 @@
 // tile provides the user with a field to log in as the administrator.
 // Otherwise, the tile asks the user to connect first.
 //
-#define _SEC_WINNT_AUTH_TYPES 0
+#define _SEC_WINNT_AUTH_TYPES 0  // NOSONAR - MACRO-02: Windows SDK configuration macro
 #pragma comment(lib,"credui")
 #include "CEIDProvider.h"
 #include "CEIDCredential.h"

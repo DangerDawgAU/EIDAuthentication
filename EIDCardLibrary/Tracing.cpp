@@ -27,7 +27,7 @@
 #include <evntrace.h>
 // load lib on the Vista tracing function
 #include <delayimp.h>
-#define _CRTDBG_MAPALLOC
+#define _CRTDBG_MAPALLOC  // NOSONAR - MACRO-02: CRT debug memory tracking macro
 #include <DbgHelp.h>
 #include <winhttp.h>
 
@@ -75,7 +75,7 @@ BOOL LookUpErrorMessage(PWSTR buf, int cch, DWORD err)
     }
 }
 
-BOOL IsTracingEnabled = FALSE;
+BOOL IsTracingEnabled = FALSE;  // NOSONAR - RUNTIME-01: ETW tracing state, modified by EnableCallback
 
 void NTAPI EnableCallback(
   __in      LPCGUID SourceId,
@@ -130,7 +130,7 @@ void EIDCardLibraryTracingUnRegister() {
 }
 
 // see http://www.codeproject.com/Articles/16598/Get-Your-DLL-s-Path-Name for the "__ImageBase"
-EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+EXTERN_C IMAGE_DOS_HEADER __ImageBase;  // NOSONAR - RUNTIME-01: Linker-defined symbol
 
 void EIDCardLibraryTraceEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR dwLevel, PCWSTR szFormat,...) {
 	_ASSERTE( _CrtCheckMemory( ) );

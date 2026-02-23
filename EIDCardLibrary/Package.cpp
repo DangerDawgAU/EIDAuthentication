@@ -17,7 +17,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#define _CRTDBG_MAP_ALLOC
+#define _CRTDBG_MAP_ALLOC  // NOSONAR - MACRO-02: CRT debug memory tracking macro
 #include <stdlib.h>
 #include <crtdbg.h>
 
