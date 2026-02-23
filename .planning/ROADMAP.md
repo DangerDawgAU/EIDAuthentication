@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 46: Const Correctness** - Make all const-eligible globals const, document exceptions (completed 2026-02-23)
 - [x] **Phase 47: Control Flow** - Reduce nesting, merge redundant conditionals, document SEH/COM (completed 2026-02-23)
 - [x] **Phase 48: Code Style & Macros** - Modernize style patterns and convert safe macros (completed 2026-02-23)
-- [ ] **Phase 49: Suppression** - Mark all unavoidable issues with //nosonar and rationale
+- [x] **Phase 49: Suppression** - Mark all unavoidable issues with //nosonar and rationale (completed 2026-02-23)
 - [ ] **Phase 50: Verification** - Confirm zero registered issues and document final state
 
 ### v1.5 CI/CD Security Enhancement (COMPLETE)
@@ -269,7 +269,7 @@ Phases execute in numeric order: 45 -> 46 -> 47 -> 48 -> 49 -> 50
 | 46. Const Correctness | 1/1 | Complete    | 2026-02-23 |
 | 47. Control Flow | 1/1 | Complete    | 2026-02-23 |
 | 48. Code Style & Macros | 1/1 | Complete    | 2026-02-23 |
-| 49. Suppression | 0/1 | Planned | - |
+| 49. Suppression | 1/1 | Complete    | 2026-02-23 |
 | 50. Verification | 0/1 | Planned | - |
 
 ### v1.5 CI/CD Security Enhancement (COMPLETE)
