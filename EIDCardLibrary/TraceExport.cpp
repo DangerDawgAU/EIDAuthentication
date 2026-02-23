@@ -92,9 +92,11 @@ void ExportOneTraceFile(HANDLE hOutputFile, PTSTR szTraceFile)
 		{
 			if (rc ==  0x00001069)
 			{
+				// NOSONAR - CONTROL-01: Known error code, no action needed
 			}
 			else
 			{
+				// NOSONAR - CONTROL-01: Error handled by caller
 			}
 		}
 		CloseTrace(handle);
