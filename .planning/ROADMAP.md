@@ -26,7 +26,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Milestone Goal:** Achieve zero SonarQube issues through aggressive remediation, fixing everything possible and suppressing only what truly cannot be fixed.
 
-- [x] **Phase 45: Critical Fixes** - Verify blocker fix and build stability (completed 2026-02-23)
+- [x] **Phase 45: Critical Fixes** - Verify blocker fix and build stability (completed 2026-02-23)
 - [ ] **Phase 46: Const Correctness** - Make all const-eligible globals const, document exceptions
 - [ ] **Phase 47: Control Flow** - Reduce nesting, merge redundant conditionals, document SEH/COM
 - [ ] **Phase 48: Code Style & Macros** - Modernize style patterns and convert safe macros
@@ -87,7 +87,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 17: Modern Types** - Convert ~197 legacy type usages (Complete) 2026-02-17
 - [x] **Phase 18: Code Quality** - Build verification after all code changes (Complete) 2026-02-17
 - [x] **Phase 19: Documentation** - Mark ~550 issues as "Won't Fix" with justification (Complete) 2026-02-17
-- [x] **Phase 20: Final Verification** - SonarQube confirmation all fixable issues resolved (Complete) 2026-02-17)
+- [x] **Phase 20: Final Verification** - SonarQube confirmation all fixable issues resolved (Complete 2026-02-17)
 
 </details>
 
@@ -132,7 +132,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. All 7 projects compile with zero errors
   3. No new compiler warnings introduced
 **Plans**: 1 plan
-- [ ] 45-01-PLAN.md - Verify fall-through annotation and clean build (CRIT-01, CRIT-02)
+- [x] 45-01-PLAN.md - Verify fall-through annotation and clean build (CRIT-01, CRIT-02) - COMPLETE
 
 ### Phase 46: Const Correctness
 **Goal**: All const-eligible global variables are marked const, exceptions documented with rationale
@@ -143,7 +143,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. All const-eligible global pointers are const at every level (const-correctness)
   3. Runtime-assigned globals documented with cannot-be-const rationale (LSA pointers, DLL state)
   4. Build passes with zero errors after const additions
-**Plans**: TBD
+**Plans**: 1 plan
+- [ ] 46-01-PLAN.md - Mark const-eligible globals const, document runtime-assigned globals (CONST-01, CONST-02, CONST-03)
 
 ### Phase 47: Control Flow
 **Goal**: Code has reduced nesting depth and merged redundant conditionals where safe
@@ -261,7 +262,7 @@ Phases execute in numeric order: 45 -> 46 -> 47 -> 48 -> 49 -> 50
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 45. Critical Fixes | 1/1 | Complete    | 2026-02-23 |
-| 46. Const Correctness | 0/1 | Not started | - |
+| 46. Const Correctness | 0/1 | Planned | - |
 | 47. Control Flow | 0/1 | Not started | - |
 | 48. Code Style & Macros | 0/1 | Not started | - |
 | 49. Suppression | 0/1 | Not started | - |
@@ -527,3 +528,4 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 *v1.5 complete: 2026-02-19*
 *v1.6 roadmap created: 2026-02-23*
 *v1.6 Phase 45 planned: 2026-02-23*
+*v1.6 Phase 46 planned: 2026-02-23*
