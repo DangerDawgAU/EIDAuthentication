@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-23)
 
 ## Current Position
 
-Phase: 46-const-correctness
-Current Plan: 02
-Status: Phase 46 complete - ready for Phase 47
-Last activity: 2026-02-23 - Phase 46-01 complete
+Phase: 47-control-flow
+Current Plan: 01
+Status: Phase 47 complete - ready for Phase 48
+Last activity: 2026-02-23 - Phase 47-01 complete
 
-Progress: [================                    ] 33% (2/6 phases in v1.6)
+Progress: [=====================               ] 50% (3/6 phases in v1.6)
 
 ## Performance Metrics
 
@@ -51,7 +51,7 @@ Recent decisions for v1.6:
 |-------|------|--------------|--------|
 | 45 | Critical Fixes | CRIT-01, CRIT-02 | COMPLETE |
 | 46 | Const Correctness | CONST-01, CONST-02, CONST-03 | COMPLETE |
-| 47 | Control Flow | FLOW-01, FLOW-02, FLOW-03 | Not started |
+| 47 | Control Flow | FLOW-01, FLOW-02, FLOW-03 | COMPLETE |
 | 48 | Code Style & Macros | STYLE-01-03, MACRO-01-02 | Not started |
 | 49 | Suppression | SUPPR-01, SUPPR-02, SUPPR-03, SUPPR-04 | Not started |
 | 50 | Verification | VERIF-01, VERIF-02, VERIF-03 | Not started |
@@ -76,8 +76,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 46-01-PLAN.md
-Resume file: .planning/phases/46-const-correctness/46-01-SUMMARY.md
+Stopped at: Completed 47-01-PLAN.md
+Resume file: .planning/phases/47-control-flow/47-01-SUMMARY.md
 
 ## Key Constraints (Always Remember)
 
@@ -92,4 +92,4 @@ Resume file: .planning/phases/46-const-correctness/46-01-SUMMARY.md
 
 *Last updated: 2026-02-23*
 *Current milestone: v1.6 IN PROGRESS*
-*Next: /gsd:plan-phase 47*
+*Next: /gsd:plan-phase 48*

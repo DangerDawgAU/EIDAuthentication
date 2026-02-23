@@ -20,9 +20,9 @@ SonarQube Final Remediation - Achieve zero registered SonarQube issues through a
 
 ### Control Flow
 
-- [ ] **FLOW-01**: Reduce nesting depth > 3 where safe (guard clauses, early returns)
-- [ ] **FLOW-02**: Merge redundant if statements with enclosing ones
-- [ ] **FLOW-03**: Document SEH/COM blocks that cannot be restructured
+- [x] **FLOW-01**: Reduce nesting depth > 3 where safe (guard clauses, early returns)
+- [x] **FLOW-02**: Merge redundant if statements with enclosing ones
+- [x] **FLOW-03**: Document SEH/COM blocks that cannot be restructured
 
 ### Code Style
 
@@ -260,9 +260,9 @@ Explicitly excluded. Documented to prevent scope creep.
 | CONST-01 | Phase 46 | Pending |
 | CONST-02 | Phase 46 | Pending |
 | CONST-03 | Phase 46 | Pending |
-| FLOW-01 | Phase 47 | Pending |
-| FLOW-02 | Phase 47 | Pending |
-| FLOW-03 | Phase 47 | Pending |
+| FLOW-01 | Phase 47 | Complete |
+| FLOW-02 | Phase 47 | Complete |
+| FLOW-03 | Phase 47 | Complete |
 | STYLE-01 | Phase 48 | Pending |
 | STYLE-02 | Phase 48 | Pending |
 | STYLE-03 | Phase 48 | Pending |
