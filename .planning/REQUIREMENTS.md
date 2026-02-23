@@ -9,8 +9,8 @@ SonarQube Final Remediation - Achieve zero registered SonarQube issues through a
 
 ### Critical Fixes
 
-- [ ] **CRIT-01**: Fix blocker fall-through annotation (already fixed in v1.2, verify)
-- [ ] **CRIT-02**: Verify all fixes compile and pass tests
+- [x] **CRIT-01**: Fix blocker fall-through annotation (already fixed in v1.2, verify)
+- [x] **CRIT-02**: Verify all fixes compile and pass tests
 
 ### Const Correctness
 
@@ -255,8 +255,8 @@ Explicitly excluded. Documented to prevent scope creep.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CRIT-01 | Phase 45 | Pending |
-| CRIT-02 | Phase 45 | Pending |
+| CRIT-01 | Phase 45 | Complete |
+| CRIT-02 | Phase 45 | Complete |
 | CONST-01 | Phase 46 | Pending |
 | CONST-02 | Phase 46 | Pending |
 | CONST-03 | Phase 46 | Pending |
