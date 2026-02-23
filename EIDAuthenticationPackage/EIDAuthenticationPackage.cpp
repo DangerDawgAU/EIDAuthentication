@@ -89,6 +89,11 @@ extern "C"
 
 	PLSA_UNICODE_STRING LsaInitializeUnicodeStringFromWideString(PWSTR Source)
 	{
+		if (Source == NULL)  // STRPTR-01: Validate pointer before wcslen
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Source string is NULL");
+			return NULL;
+		}
 		DWORD Size = static_cast<DWORD>(wcslen(Source));
 		// Validate string length won't overflow USHORT fields in LSA_UNICODE_STRING
 		if (Size > USHRT_MAX / sizeof(WCHAR))
@@ -583,14 +588,19 @@ extern "C"
 				__leave;
 			}
 			// success
-			// Validate password length won't overflow USHORT
-			if (wcslen(szPassword) > USHRT_MAX / sizeof(WCHAR))
+			// Validate password pointer and length
+			if (szPassword == NULL || wcslen(szPassword) > USHRT_MAX / sizeof(WCHAR))  // STRPTR-01: Validate pointer before wcslen
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Password too long for UNICODE_STRING");
+				if (szPassword == NULL)
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Password is NULL");
+				else
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Password too long for UNICODE_STRING");
 				response.dwError = ERROR_INVALID_PARAMETER;
 				__leave;
 			}
-			response.Password.MaximumLength = response.Password.Length = static_cast<USHORT>(sizeof(WCHAR) * wcslen(szPassword));
+			// Store size to avoid calling wcslen twice
+			DWORD PasswordSize = static_cast<DWORD>(wcslen(szPassword));
+			response.Password.MaximumLength = response.Password.Length = static_cast<USHORT>(sizeof(WCHAR) * PasswordSize);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"OK");
 		}
 		__finally
@@ -1111,7 +1121,7 @@ extern "C"
 
 								// Create LSA_UNICODE_STRING for the key name
 								LSA_UNICODE_STRING LsaKeyName;
-								LsaKeyName.Length = (USHORT)(wcslen(szKeyName) * sizeof(WCHAR));
+								LsaKeyName.Length = (USHORT)(wcslen(szKeyName) * sizeof(WCHAR));  // NOSONAR - STRPTR-02: Stack buffer, null-terminated by swprintf_s
 								LsaKeyName.MaximumLength = LsaKeyName.Length + sizeof(WCHAR);
 								LsaKeyName.Buffer = szKeyName;
 

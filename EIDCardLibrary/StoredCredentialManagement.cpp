@@ -458,13 +458,13 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 		{
 			usPasswordSize = usPasswordLen;
 		}
-		else if (szPassword == nullptr)
+		else if (szPassword != nullptr)  // STRPTR-01: Validate pointer before wcslen
 		{
-			usPasswordSize = 0;
+			usPasswordSize = static_cast<USHORT>(wcslen(szPassword) * sizeof(WCHAR));
 		}
 		else
 		{
-			usPasswordSize = static_cast<USHORT>(wcslen(szPassword) * sizeof(WCHAR));
+			usPasswordSize = 0;
 		}
 
 		// Disable encryption for empty passwords
