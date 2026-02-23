@@ -13,6 +13,7 @@ This roadmap transforms the EIDAuthentication Windows smart card authentication 
 - **v1.4 SonarQube Zero** - Phases 31-40 (COMPLETE 2026-02-18)
 - **v1.5 CI/CD Security Enhancement** - Phases 41-44 (COMPLETE 2026-02-19)
 - **v1.6 SonarQube Final Remediation** - Phases 45-50 (COMPLETE 2026-02-23)
+- **v1.7 UI/UX Enhancement** - Phases 51-53 (IN PROGRESS)
 
 ## Phases
 
@@ -21,6 +22,14 @@ This roadmap transforms the EIDAuthentication Windows smart card authentication 
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 Decimal phases appear between their surrounding integers in numeric order.
+
+### v1.7 UI/UX Enhancement (In Progress)
+
+**Milestone Goal:** Improve smart card configuration user experience with clearer certificate information and better progress feedback.
+
+- [ ] **Phase 51: Remove P12 Import** - Remove legacy P12 import option from Configure Smart Card window
+- [ ] **Phase 52: Expand Certificate Info** - Add Issuer, Serial, Key Size, Fingerprint to Selected Authority info box
+- [ ] **Phase 53: Add Progress Popup** - Add modal progress popup during card flashing operation
 
 ### v1.6 SonarQube Final Remediation (COMPLETE)
 
@@ -92,7 +101,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 17: Modern Types** - Convert ~197 legacy type usages (Complete) 2026-02-17
 - [x] **Phase 18: Code Quality** - Build verification after all code changes (Complete) 2026-02-17
 - [x] **Phase 19: Documentation** - Mark ~550 issues as "Won't Fix" with justification (Complete) 2026-02-17
-- [x] **Phase 20: Final Verification** - SonarQube confirmation all fixable issues resolved (Complete) 2026-02-17)
+- [x] **Phase 20: Final Verification** - SonarQube confirmation all fixable issues resolved (Complete 2026-02-17)
 
 </details>
 
@@ -126,7 +135,55 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ---
 
+## v1.7 Phase Details
+
+### Phase 51: Remove P12 Import
+**Goal**: Users see a cleaner Configuration Wizard without the legacy P12 import option
+**Depends on**: Phase 50 (v1.6 completion)
+**Requirements**: UIUX-01
+**Success Criteria** (what must be TRUE):
+  1. User cannot see P12 import controls in the Configure Smart Card wizard
+  2. User cannot trigger P12 import functionality through any UI element
+  3. Build compiles without errors after P12 removal
+**Plans**: TBD
+
+Plans:
+- [ ] 51-01: Remove P12 import UI controls and handlers
+
+### Phase 52: Expand Certificate Info
+**Goal**: Users can view complete certificate authority information in the Selected Authority info box
+**Depends on**: Phase 51
+**Requirements**: UIUX-03
+**Success Criteria** (what must be TRUE):
+  1. User can see the certificate Issuer name in the Selected Authority info box
+  2. User can see the certificate Serial Number in the info box
+  3. User can see the certificate Key Size in the info box
+  4. User can see the certificate Fingerprint (thumbprint) in the info box
+**Plans**: TBD
+
+Plans:
+- [ ] 52-01: Expand UpdateCertificatePanel() with additional certificate fields
+
+### Phase 53: Add Progress Popup
+**Goal**: Users see visual progress feedback during card flashing operations instead of a frozen UI
+**Depends on**: Phase 52
+**Requirements**: UIUX-02
+**Success Criteria** (what must be TRUE):
+  1. User sees a modal progress dialog when card flashing operation begins
+  2. Progress dialog displays animated marquee progress indicator during operation
+  3. Progress dialog automatically closes when card flashing completes
+  4. User cannot interact with the wizard while operation is in progress
+**Plans**: TBD
+
+Plans:
+- [ ] 53-01: Add modal progress popup for card flashing operation
+
+---
+
 ## v1.6 Phase Details
+
+<details>
+<summary>v1.6 Phase Details (COMPLETE)</summary>
 
 ### Phase 45: Critical Fixes
 **Goal**: Verify blocker fix from v1.2 is in place and all projects build cleanly
@@ -187,7 +244,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. All COM/SEH constraint issues marked with //nosonar and rationale
   4. Every //nosonar has an inline comment explaining why the issue cannot be fixed
 **Plans**: 1 plan
-- [ ] 49-01-PLAN.md - Add NOSONAR suppressions with rationale to all remaining issues (SUPPR-01, SUPPR-02, SUPPR-03, SUPPR-04)
+- [x] 49-01-PLAN.md - Add NOSONAR suppressions with rationale to all remaining issues (SUPPR-01, SUPPR-02, SUPPR-03, SUPPR-04) - COMPLETE
 
 ### Phase 50: Verification
 **Goal**: Zero registered SonarQube issues confirmed, final state documented
@@ -198,7 +255,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. All 7 projects build and pass tests after remediation
   3. Final suppression count and categories documented in VERIFICATION.md
 **Plans**: 1 plan
-- [ ] 50-01-PLAN.md - Build verification, SonarQube scan, final documentation (VERIF-01, VERIF-02, VERIF-03)
+- [x] 50-01-PLAN.md - Build verification, SonarQube scan, final documentation (VERIF-01, VERIF-02, VERIF-03) - COMPLETE
+
+</details>
 
 ---
 
@@ -262,6 +321,17 @@ Decimal phases appear between their surrounding integers in numeric order.
 ---
 
 ## Progress
+
+### v1.7 UI/UX Enhancement (In Progress)
+
+**Execution Order:**
+Phases execute in numeric order: 51 -> 52 -> 53
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 51. Remove P12 Import | 0/1 | Not started | - |
+| 52. Expand Certificate Info | 0/1 | Not started | - |
+| 53. Add Progress Popup | 0/1 | Not started | - |
 
 ### v1.6 SonarQube Final Remediation (COMPLETE)
 
@@ -406,7 +476,17 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 
 ## Coverage Summary
 
-### v1.6 Requirements (IN PROGRESS)
+### v1.7 Requirements (IN PROGRESS)
+
+| Category | Requirements | Phase |
+|----------|--------------|-------|
+| Smart Card Configuration | UIUX-01 | Phase 51 |
+| Smart Card Configuration | UIUX-03 | Phase 52 |
+| Smart Card Configuration | UIUX-02 | Phase 53 |
+
+**Total v1.7 Coverage:** 3/3 requirements mapped (100%)
+
+### v1.6 Requirements (COMPLETE)
 
 | Category | Requirements | Phase |
 |----------|--------------|-------|
@@ -540,9 +620,5 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 *v1.3 complete: 2026-02-18*
 *v1.4 complete: 2026-02-18*
 *v1.5 complete: 2026-02-19*
-*v1.6 roadmap created: 2026-02-23*
-*v1.6 Phase 45 planned: 2026-02-23*
-*v1.6 Phase 46 planned: 2026-02-23*
-*v1.6 Phase 49 planned: 2026-02-23*
-*v1.6 Phase 47 planned: 2026-02-23*
-*v1.6 Phase 50 planned: 2026-02-23*
+*v1.6 complete: 2026-02-23*
+*v1.7 roadmap created: 2026-02-24*
