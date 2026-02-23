@@ -13,7 +13,7 @@
 #include "CContainerHolder.h"
 
 // Static buffer for tooltip space character (required for LPTSTR compatibility with const-correctness)
-static wchar_t s_wszSpace[] = L" ";
+static wchar_t s_wszSpace[] = L" ";  // NOSONAR - GLOBAL-01: Non-const for Windows API LPTSTR compatibility
 
 // from previous step
 // credentials

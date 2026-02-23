@@ -67,7 +67,7 @@ struct FIELD_STATE_PAIR
 
 // Static buffer for empty string literals (C++23 /Zc:strictStrings compatibility)
 // pszLabel in CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR is LPWSTR (non-const)
-static wchar_t s_wszEmptyLabel[] = L"";
+static wchar_t s_wszEmptyLabel[] = L"";  // NOSONAR - GLOBAL-01: Non-const for Windows API LPWSTR compatibility
 
 // The field state value indicates whether the field is displayed
 // in the selected tile, the deselected tile, or both.
@@ -94,6 +94,7 @@ static const FIELD_STATE_PAIR s_rgMessageFieldStatePairs[] =
 // The first field is the index of the field.
 // The second is the type of the field.
 // The third is the name of the field, NOT the value which will appear in the field.
+// NOSONAR - GLOBAL-01: Non-const for Windows API credential provider compatibility
 static CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgCredProvFieldDescriptors[] =
 {
     { SFI_TILEIMAGE, CPFT_TILE_IMAGE, s_wszEmptyLabel},
@@ -106,6 +107,7 @@ static CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgCredProvFieldDescriptors[] =
 };
 
 // Same as s_rgCredProvFieldDescriptors above, but for the CMessageCredential.
+// NOSONAR - GLOBAL-01: Non-const for Windows API credential provider compatibility
 static CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgMessageCredProvFieldDescriptors[] =
 {
     { SMFI_TILEIMAGE, CPFT_TILE_IMAGE, s_wszEmptyLabel},

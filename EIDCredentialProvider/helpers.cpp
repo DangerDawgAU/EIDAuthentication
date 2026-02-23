@@ -36,7 +36,7 @@
 
 // Static buffer for empty string literal to avoid const-correctness issues
 // with PWSTR (non-const wchar_t*) initialization from L""
-static wchar_t s_wszEmpty[] = L"";
+static wchar_t s_wszEmpty[] = L"";  // NOSONAR - GLOBAL-01: Non-const for Windows API PWSTR compatibility
 
 #pragma warning(push)
 #pragma warning(disable : 4995)
