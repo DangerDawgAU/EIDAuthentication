@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 45: Critical Fixes** - Verify blocker fix and build stability (completed 2026-02-23)
 - [x] **Phase 46: Const Correctness** - Make all const-eligible globals const, document exceptions (completed 2026-02-23)
 - [x] **Phase 47: Control Flow** - Reduce nesting, merge redundant conditionals, document SEH/COM (completed 2026-02-23)
-- [ ] **Phase 48: Code Style & Macros** - Modernize style patterns and convert safe macros
+- [x] **Phase 48: Code Style & Macros** - Modernize style patterns and convert safe macros (completed 2026-02-23)
 - [ ] **Phase 49: Suppression** - Mark all unavoidable issues with //nosonar and rationale
 - [ ] **Phase 50: Verification** - Confirm zero registered issues and document final state
 
@@ -268,7 +268,7 @@ Phases execute in numeric order: 45 -> 46 -> 47 -> 48 -> 49 -> 50
 | 45. Critical Fixes | 1/1 | Complete    | 2026-02-23 |
 | 46. Const Correctness | 1/1 | Complete    | 2026-02-23 |
 | 47. Control Flow | 1/1 | Complete    | 2026-02-23 |
-| 48. Code Style & Macros | 0/1 | Planned | - |
+| 48. Code Style & Macros | 1/1 | Complete    | 2026-02-23 |
 | 49. Suppression | 0/1 | Planned | - |
 | 50. Verification | 0/1 | Planned | - |
 
