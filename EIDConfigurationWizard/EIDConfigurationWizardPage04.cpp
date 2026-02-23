@@ -151,7 +151,7 @@ EmptyClipboard();\
 SetClipboardData(CF_BITMAP,hbitmap);\
 CloseClipboard();\
 }
-HWND hWndTemp;
+HWND hWndTemp;  // NOSONAR - RUNTIME-01: Temporary window handle for UI operations
 
 HICON MiniIcon(HICON SourceIcon)
 {

@@ -54,7 +54,7 @@
 extern "C"
 {
 	// Save LsaDispatchTable
-	extern PLSA_SECPKG_FUNCTION_TABLE MyLsaDispatchTable;
+	extern PLSA_SECPKG_FUNCTION_TABLE MyLsaDispatchTable;  // NOSONAR - RUNTIME-01: LSA dispatch table, set by LSA
 	// ref to function
 
 	

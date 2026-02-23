@@ -5,7 +5,7 @@
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDConfigurationWizard/Common.h"
 
-HINSTANCE g_hinst;
+HINSTANCE g_hinst;  // NOSONAR - RUNTIME-01: HINSTANCE set by Windows at WinMain entry
 
 INT_PTR CALLBACK	WndProc_RemovePolicy(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK	WndProc_ForcePolicy(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
