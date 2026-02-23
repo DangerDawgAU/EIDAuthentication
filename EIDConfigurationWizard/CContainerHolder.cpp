@@ -162,7 +162,7 @@ int CContainerHolderTest::GetImage(DWORD dwCheckNum) const
 PTSTR CContainerHolderTest::GetDescription(DWORD dwCheckNum) const
 {
 	DWORD dwWords = 1024;
-	PTSTR szDescription = (PTSTR) EIDAlloc(dwWords * sizeof(TCHAR));
+	auto szDescription = (PTSTR) EIDAlloc(dwWords * sizeof(TCHAR));  // NOSONAR - Cast required for allocator API
 	if (!szDescription) return nullptr;
 	szDescription[0] = 0;
 	switch(dwCheckNum)
@@ -199,7 +199,7 @@ PTSTR CContainerHolderTest::GetDescription(DWORD dwCheckNum) const
 PTSTR CContainerHolderTest::GetSolveDescription(DWORD dwCheckNum) const
 {
 	DWORD dwWords = 1024;
-	PTSTR szDescription = (PTSTR) EIDAlloc(dwWords * sizeof(TCHAR));
+	auto szDescription = (PTSTR) EIDAlloc(dwWords * sizeof(TCHAR));  // NOSONAR - Cast required for allocator API
 	if (!szDescription) return nullptr;
 	szDescription[0] = 0;
 	switch(dwCheckNum)
