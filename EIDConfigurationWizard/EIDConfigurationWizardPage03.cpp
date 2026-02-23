@@ -17,7 +17,7 @@ static BOOL HandleImportOption(HWND hWnd);
 
 // used to know what root certicate we are refering
 // null = unknown
-PCCERT_CONTEXT pRootCertificate = nullptr;
+PCCERT_CONTEXT pRootCertificate = nullptr;  // NOSONAR - RUNTIME-01: Certificate context, set at runtime
 
 // Default certificate validity in years
 constexpr WORD DEFAULT_CERT_VALIDITY_YEARS = 3;
