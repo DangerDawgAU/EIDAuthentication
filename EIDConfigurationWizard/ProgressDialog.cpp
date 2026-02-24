@@ -55,16 +55,19 @@ HWND ShowProgressDialog(HWND hParentWnd)
 
     if (g_hProgressDialog)
     {
-        // Disable parent window for modal behavior
+        // Disable parent window FIRST to prevent user interaction during modal operation
         EnableWindow(hParentWnd, FALSE);
 
-        // Show and update the dialog
+        // Show and activate the dialog
         ShowWindow(g_hProgressDialog, SW_SHOW);
+        SetForegroundWindow(g_hProgressDialog);
+
+        // Force immediate paint to ensure dialog is visible before blocking operation
         UpdateWindow(g_hProgressDialog);
 
-        // Process any pending messages to ensure dialog paints
+        // Process pending messages to complete rendering
         MSG msg;
-        while (PeekMessage(&msg, g_hProgressDialog, 0, 0, PM_REMOVE))
+        while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);

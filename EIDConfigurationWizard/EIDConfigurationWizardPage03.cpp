@@ -4,6 +4,7 @@
 #include <ShObjIdl.h>
 #include "global.h"
 #include "EIDConfigurationWizard.h"
+#include "ProgressDialog.h"
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/CertificateUtilities.h"
 #include "../EIDCardLibrary/Tracing.h"
@@ -14,6 +15,16 @@
 static BOOL HandleDeleteOption(HWND hWnd);
 static BOOL HandleCreateOption(HWND hWnd, PCCERT_CONTEXT pRootCert);
 static BOOL HandleUseThisOption(HWND hWnd, PCCERT_CONTEXT pRootCert);
+
+// RAII helper to automatically close progress dialog on scope exit
+class ProgressGuard {
+    HWND m_hProgress;
+public:
+    explicit ProgressGuard(HWND hProgress) : m_hProgress(hProgress) {}
+    ~ProgressGuard() { CloseProgressDialog(m_hProgress); }
+    ProgressGuard(const ProgressGuard&) = delete;
+    ProgressGuard& operator=(const ProgressGuard&) = delete;
+};
 
 // used to know what root certicate we are refering
 // null = unknown
@@ -344,6 +355,13 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				}
 				break;
 			case PSN_WIZNEXT:
+			{
+				// Show progress dialog before card operations
+				// The dialog will be visible during the blocking certificate creation
+				// ProgressGuard automatically closes the dialog on scope exit
+				HWND hProgress = ShowProgressDialog(GetParent(hWnd));
+				ProgressGuard progressGuard(hProgress);
+
 				// Use early return pattern with extracted handlers to reduce nesting
 				if (IsDlgButtonChecked(hWnd, IDC_03DELETE) && HandleDeleteOption(hWnd))
 					return TRUE;
@@ -352,6 +370,7 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				if (IsDlgButtonChecked(hWnd, IDC_03USETHIS) && HandleUseThisOption(hWnd, pRootCertificate))
 					return TRUE;
 				break;
+			}
 		}
 		break;
 		case WM_COMMAND:

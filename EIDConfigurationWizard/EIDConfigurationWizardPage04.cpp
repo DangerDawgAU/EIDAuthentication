@@ -14,6 +14,16 @@
 
 #include "CContainerHolder.h"
 
+// RAII helper to automatically close progress dialog on scope exit
+class ProgressGuard {
+    HWND m_hProgress;
+public:
+    explicit ProgressGuard(HWND hProgress) : m_hProgress(hProgress) {}
+    ~ProgressGuard() { CloseProgressDialog(m_hProgress); }
+    ProgressGuard(const ProgressGuard&) = delete;
+    ProgressGuard& operator=(const ProgressGuard&) = delete;
+};
+
 #pragma comment(lib,"Netapi32")
 #pragma comment(lib,"Winscard")
 #pragma comment(lib,"Scarddlg")
@@ -450,9 +460,8 @@ static BOOL HandleRefreshRequest(HWND hWnd)
     }
 
     // Reconnect and trigger refresh
-    HWND hProgress = ShowProgressDialog(hWnd);
+    ProgressGuard progress(ShowProgressDialog(hWnd));
     pCredentialList->ConnectNotification(szReader, szCard, 0);
-    CloseProgressDialog(hProgress);
 
     // Send activation message to refresh UI
     NMHDR nmh;
@@ -529,12 +538,9 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 					{
 						pCredentialList = new CContainerHolderFactory<CContainerHolderTest>();  // NOSONAR - COM-01: UI credential list requires heap allocation
 						pCredentialList->SetUsageScenario(CPUS_INVALID,0);
-						// Show progress dialog before card operation
-						HWND hProgress = ShowProgressDialog(hWnd);
-						// Perform card enumeration (this blocks)
+						// Show progress dialog during card enumeration (blocking operation)
+						ProgressGuard progress(ShowProgressDialog(hWnd));
 						pCredentialList->ConnectNotification(szReader,szCard,0);
-						// Close progress dialog
-						CloseProgressDialog(hProgress);
 					}
 					
 					if (pCredentialList->HasContainerHolder())
@@ -571,6 +577,9 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 						PropSheet_SetWizButtons(hWnd, PSWIZB_BACK);
 					}
 				}
+				break;
+			case PSN_WIZNEXT:
+				// Proceed to next page
 				break;
 			case PSN_WIZBACK:
 				// back

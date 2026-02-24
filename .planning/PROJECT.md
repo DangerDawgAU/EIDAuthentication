@@ -17,7 +17,7 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 **v1.4 SonarQube Zero** — All fixable issues resolved, won't-fix documented ✓
 **v1.5 CI/CD Security Enhancement** — VirusTotal integration, artifact scanning ✓
 **v1.6 SonarQube Final Remediation** — Zero registered issues, 463 suppressions documented ✓
-**v1.7 UI/UX Enhancement** — Smart card configuration UI improvements (IN PROGRESS)
+**v1.7 UI/UX Enhancement** — Smart card configuration UI improvements ✓
 
 ## Requirements
 
@@ -31,13 +31,13 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 - ✓ Security Hotspots — 0 open (2 fixed)
 - ✓ Reliability Bugs — 0 open (3 fixed)
 
-### Active (v1.7 - Current Milestone)
+### Validated (v1.7 Shipped)
 
 **Goal:** Improve smart card configuration user experience with clearer certificate information and better progress feedback.
 
-- [ ] **UIUX-01**: Remove P12 import option from Configure Smart Card window
-- [ ] **UIUX-02**: Add modal progress popup during card flashing operation
-- [ ] **UIUX-03**: Expand Selected Authority info box with additional certificate fields
+- ✓ **UIUX-01**: Remove P12 import option from Configure Smart Card window (Phase 51)
+- ✓ **UIUX-02**: Add modal progress popup during card flashing operation (Phase 53)
+- ✓ **UIUX-03**: Expand Selected Authority info box with additional certificate fields (Phase 52)
 
 ### Validated (v1.6 Shipped)
 - ✓ Zero registered SonarQube issues — All 858 baseline issues fixed or suppressed
@@ -110,4 +110,4 @@ A clean, maintainable, and secure codebase with zero static analysis issues, lev
 | VT warn only | Non-blocking to avoid false positives blocking releases | — Pending |
 
 ---
-*Last updated: 2026-02-24 after v1.7 milestone initialization*
+*Last updated: 2026-02-24 after v1.7 completion (verified)*
