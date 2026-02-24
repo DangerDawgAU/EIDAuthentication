@@ -237,6 +237,10 @@ BEGIN
     IDS_03ALLFILES          "All Files"
     IDS_03VALIDITYLABEL     "Certificate validity (years):"
     IDS_03VALIDITYWARNING   "Warning: exceeds CA expiry!"
+    IDS_03ISSUER            "Issuer : %s"
+    IDS_03SERIAL            "Serial : %s"
+    IDS_03KEYSIZE           "Key Size : %d bits"
+    IDS_03FINGERPRINT       "Fingerprint : %s"
 END
 
 STRINGTABLE
