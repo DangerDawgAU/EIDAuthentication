@@ -154,6 +154,69 @@ VOID UpdateCertificatePanel(HWND hWnd)
 	szBuf = EID::Format(szMessage.c_str(), szLocalDate, szLocalTime);
 	SendDlgItemMessage(hWnd,IDC_03CERTIFICATEPANEL,LB_ADDSTRING,0,(LPARAM) szBuf.c_str());
 
+	// issuer :
+	CertGetNameString(pRootCertificate, CERT_NAME_SIMPLE_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, nullptr, szBuffer2, ARRAYSIZE(szBuffer2));
+	szMessage = EID::LoadStringW(g_hinst, IDS_03ISSUER);
+	szBuf = EID::Format(szMessage.c_str(), szBuffer2);
+	SendDlgItemMessage(hWnd, IDC_03CERTIFICATEPANEL, LB_ADDSTRING, 0, (LPARAM)szBuf.c_str());
+
+	// serial number :
+	DWORD dwSerialSize = 0;
+	if (CryptBinaryToString(pRootCertificate->pCertInfo->SerialNumber.pbData,
+		pRootCertificate->pCertInfo->SerialNumber.cbData,
+		CRYPT_STRING_HEXRAW | CRYPT_STRING_NOCRLF, nullptr, &dwSerialSize))
+	{
+		wchar_t* pSerialStr = static_cast<wchar_t*>(EIDAlloc(dwSerialSize * sizeof(wchar_t)));
+		if (pSerialStr)
+		{
+			if (CryptBinaryToString(pRootCertificate->pCertInfo->SerialNumber.pbData,
+				pRootCertificate->pCertInfo->SerialNumber.cbData,
+				CRYPT_STRING_HEXRAW | CRYPT_STRING_NOCRLF, pSerialStr, &dwSerialSize))
+			{
+				szMessage = EID::LoadStringW(g_hinst, IDS_03SERIAL);
+				szBuf = EID::Format(szMessage.c_str(), pSerialStr);
+				SendDlgItemMessage(hWnd, IDC_03CERTIFICATEPANEL, LB_ADDSTRING, 0, (LPARAM)szBuf.c_str());
+			}
+			EIDFree(pSerialStr);
+		}
+	}
+
+	// key size :
+	DWORD dwKeySize = CertGetPublicKeyLength(X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+		&pRootCertificate->pCertInfo->SubjectPublicKeyInfo);
+	szMessage = EID::LoadStringW(g_hinst, IDS_03KEYSIZE);
+	szBuf = EID::Format(szMessage.c_str(), dwKeySize);
+	SendDlgItemMessage(hWnd, IDC_03CERTIFICATEPANEL, LB_ADDSTRING, 0, (LPARAM)szBuf.c_str());
+
+	// fingerprint (SHA-1 thumbprint) :
+	DWORD dwHashSize = 0;
+	if (CertGetCertificateContextProperty(pRootCertificate, CERT_HASH_PROP_ID, nullptr, &dwHashSize))
+	{
+		BYTE* pHash = static_cast<BYTE*>(EIDAlloc(dwHashSize));
+		if (pHash)
+		{
+			if (CertGetCertificateContextProperty(pRootCertificate, CERT_HASH_PROP_ID, pHash, &dwHashSize))
+			{
+				DWORD dwFingerprintSize = 0;
+				if (CryptBinaryToString(pHash, dwHashSize, CRYPT_STRING_HEX | CRYPT_STRING_NOCRLF, nullptr, &dwFingerprintSize))
+				{
+					wchar_t* pFingerprint = static_cast<wchar_t*>(EIDAlloc(dwFingerprintSize * sizeof(wchar_t)));
+					if (pFingerprint)
+					{
+						if (CryptBinaryToString(pHash, dwHashSize, CRYPT_STRING_HEX | CRYPT_STRING_NOCRLF, pFingerprint, &dwFingerprintSize))
+						{
+							szMessage = EID::LoadStringW(g_hinst, IDS_03FINGERPRINT);
+							szBuf = EID::Format(szMessage.c_str(), pFingerprint);
+							SendDlgItemMessage(hWnd, IDC_03CERTIFICATEPANEL, LB_ADDSTRING, 0, (LPARAM)szBuf.c_str());
+						}
+						EIDFree(pFingerprint);
+					}
+				}
+			}
+			EIDFree(pHash);
+		}
+	}
+
 	// select option
 	CheckDlgButton(hWnd,IDC_03USETHIS,BST_CHECKED);
 	CheckDlgButton(hWnd,IDC_03_CREATE,BST_UNCHECKED);
