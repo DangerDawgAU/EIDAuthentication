@@ -13,7 +13,6 @@
 static BOOL HandleDeleteOption(HWND hWnd);
 static BOOL HandleCreateOption(HWND hWnd, PCCERT_CONTEXT pRootCert);
 static BOOL HandleUseThisOption(HWND hWnd, PCCERT_CONTEXT pRootCert);
-static BOOL HandleImportOption(HWND hWnd);
 
 // used to know what root certicate we are refering
 // null = unknown
@@ -57,38 +56,6 @@ VOID ValidateCertificateValidity(HWND hWnd, PCCERT_CONTEXT pRootCert)
 	{
 		EID::SetWindowTextW(GetDlgItem(hWnd, IDC_03VALIDITYWARNING), L"");
 	}
-}
-
-BOOL SelectFile(HWND hWnd)
-{
-	// select file to open
-	std::wstring szSpecContainer = EID::LoadStringW(g_hinst, IDS_03CONTAINERFILES);
-	std::wstring szSpecAll = EID::LoadStringW(g_hinst, IDS_03ALLFILES);
-	OPENFILENAME ofn;
-	wchar_t szFile[MAX_PATH] = { 0 };
-	std::wstring szFilter = EID::Format(L"%s%c*.pfx;*.p12%c%s%c*.*%c",
-	                                     szSpecContainer.c_str(), 0, 0,
-	                                     szSpecAll.c_str(), 0, 0);
-	ZeroMemory(&ofn, sizeof(ofn));
-	ofn.lStructSize = sizeof(ofn);
-	ofn.hwndOwner = hWnd;
-	ofn.lpstrFile = szFile;
-	ofn.nMaxFile = ARRAYSIZE(szFile);
-	ofn.lpstrFilter = szFilter.c_str();
-	ofn.nFilterIndex = 1;
-	ofn.lpstrFileTitle = nullptr;
-	ofn.nMaxFileTitle = 0;
-	ofn.lpstrInitialDir = nullptr;
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-	if (GetOpenFileName(&ofn)==TRUE)
-	{
-		EID::SetWindowTextW(GetDlgItem(hWnd,IDC_03FILENAME), szFile);
-		CheckDlgButton(hWnd,IDC_03IMPORT,BST_CHECKED);
-		CheckDlgButton(hWnd,IDC_03USETHIS,BST_UNCHECKED);
-		CheckDlgButton(hWnd,IDC_03_CREATE,BST_UNCHECKED);
-		return TRUE;
-	}
-	return FALSE;
 }
 
 BOOL CreateRootCertificate()
@@ -188,7 +155,6 @@ VOID UpdateCertificatePanel(HWND hWnd)
 	SendDlgItemMessage(hWnd,IDC_03CERTIFICATEPANEL,LB_ADDSTRING,0,(LPARAM) szBuf.c_str());
 
 	// select option
-	CheckDlgButton(hWnd,IDC_03IMPORT,BST_UNCHECKED);
 	CheckDlgButton(hWnd,IDC_03USETHIS,BST_CHECKED);
 	CheckDlgButton(hWnd,IDC_03_CREATE,BST_UNCHECKED);
 }
@@ -268,20 +234,6 @@ static BOOL HandleUseThisOption(HWND hWnd, PCCERT_CONTEXT pRootCert)
 	return FALSE;
 }
 
-static BOOL HandleImportOption(HWND hWnd)
-{
-	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"IDC_03IMPORT");
-	std::wstring szFileName = EID::GetWindowTextW(GetDlgItem(hWnd, IDC_03FILENAME));
-	std::wstring wszImportPassword = EID::GetWindowTextW(GetDlgItem(hWnd, IDC_03IMPORTPASSWORD));
-	if (!ImportFileToSmartCard((PWSTR)szFileName.c_str(), (PWSTR)wszImportPassword.c_str(), szReader, szCard))
-	{
-		MessageBoxWin32Ex(GetLastError(), hWnd);
-		SetWindowLongPtr(hWnd, DWLP_MSGRESULT, -1);
-		return TRUE;
-	}
-	return FALSE;
-}
-
 INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	int wmId;
@@ -334,8 +286,6 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				if (IsDlgButtonChecked(hWnd, IDC_03_CREATE) && HandleCreateOption(hWnd, pRootCertificate))
 					return TRUE;
 				if (IsDlgButtonChecked(hWnd, IDC_03USETHIS) && HandleUseThisOption(hWnd, pRootCertificate))
-					return TRUE;
-				if (IsDlgButtonChecked(hWnd, IDC_03IMPORT) && HandleImportOption(hWnd))
 					return TRUE;
 				break;
 		}
@@ -392,9 +342,6 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 					CryptUIDlgViewCertificate(&certViewInfo,&fPropertiesChanged);
 				}
-				break;
-			case IDC_03SELECTFILE:
-				SelectFile(hWnd);
 				break;
 		}
 		break;
