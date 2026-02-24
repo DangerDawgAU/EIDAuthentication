@@ -4,6 +4,8 @@
 #include <ShObjIdl.h>
 #include "global.h"
 #include "EIDConfigurationWizard.h"
+#include "ProgressDialog.h"
+#include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/CertificateUtilities.h"
 #include "../EIDCardLibrary/Tracing.h"
 #include "../EIDCardLibrary/StringConversion.h"
@@ -13,7 +15,16 @@
 static BOOL HandleDeleteOption(HWND hWnd);
 static BOOL HandleCreateOption(HWND hWnd, PCCERT_CONTEXT pRootCert);
 static BOOL HandleUseThisOption(HWND hWnd, PCCERT_CONTEXT pRootCert);
-static BOOL HandleImportOption(HWND hWnd);
+
+// RAII helper to automatically close progress dialog on scope exit
+class ProgressGuard {
+    HWND m_hProgress;
+public:
+    explicit ProgressGuard(HWND hProgress) : m_hProgress(hProgress) {}
+    ~ProgressGuard() { CloseProgressDialog(m_hProgress); }
+    ProgressGuard(const ProgressGuard&) = delete;
+    ProgressGuard& operator=(const ProgressGuard&) = delete;
+};
 
 // used to know what root certicate we are refering
 // null = unknown
@@ -57,38 +68,6 @@ VOID ValidateCertificateValidity(HWND hWnd, PCCERT_CONTEXT pRootCert)
 	{
 		EID::SetWindowTextW(GetDlgItem(hWnd, IDC_03VALIDITYWARNING), L"");
 	}
-}
-
-BOOL SelectFile(HWND hWnd)
-{
-	// select file to open
-	std::wstring szSpecContainer = EID::LoadStringW(g_hinst, IDS_03CONTAINERFILES);
-	std::wstring szSpecAll = EID::LoadStringW(g_hinst, IDS_03ALLFILES);
-	OPENFILENAME ofn;
-	wchar_t szFile[MAX_PATH] = { 0 };
-	std::wstring szFilter = EID::Format(L"%s%c*.pfx;*.p12%c%s%c*.*%c",
-	                                     szSpecContainer.c_str(), 0, 0,
-	                                     szSpecAll.c_str(), 0, 0);
-	ZeroMemory(&ofn, sizeof(ofn));
-	ofn.lStructSize = sizeof(ofn);
-	ofn.hwndOwner = hWnd;
-	ofn.lpstrFile = szFile;
-	ofn.nMaxFile = ARRAYSIZE(szFile);
-	ofn.lpstrFilter = szFilter.c_str();
-	ofn.nFilterIndex = 1;
-	ofn.lpstrFileTitle = nullptr;
-	ofn.nMaxFileTitle = 0;
-	ofn.lpstrInitialDir = nullptr;
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-	if (GetOpenFileName(&ofn)==TRUE)
-	{
-		EID::SetWindowTextW(GetDlgItem(hWnd,IDC_03FILENAME), szFile);
-		CheckDlgButton(hWnd,IDC_03IMPORT,BST_CHECKED);
-		CheckDlgButton(hWnd,IDC_03USETHIS,BST_UNCHECKED);
-		CheckDlgButton(hWnd,IDC_03_CREATE,BST_UNCHECKED);
-		return TRUE;
-	}
-	return FALSE;
 }
 
 BOOL CreateRootCertificate()
@@ -187,8 +166,70 @@ VOID UpdateCertificatePanel(HWND hWnd)
 	szBuf = EID::Format(szMessage.c_str(), szLocalDate, szLocalTime);
 	SendDlgItemMessage(hWnd,IDC_03CERTIFICATEPANEL,LB_ADDSTRING,0,(LPARAM) szBuf.c_str());
 
+	// issuer :
+	CertGetNameString(pRootCertificate, CERT_NAME_SIMPLE_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, nullptr, szBuffer2, ARRAYSIZE(szBuffer2));
+	szMessage = EID::LoadStringW(g_hinst, IDS_03ISSUER);
+	szBuf = EID::Format(szMessage.c_str(), szBuffer2);
+	SendDlgItemMessage(hWnd, IDC_03CERTIFICATEPANEL, LB_ADDSTRING, 0, (LPARAM)szBuf.c_str());
+
+	// serial number :
+	DWORD dwSerialSize = 0;
+	if (CryptBinaryToString(pRootCertificate->pCertInfo->SerialNumber.pbData,
+		pRootCertificate->pCertInfo->SerialNumber.cbData,
+		CRYPT_STRING_HEXRAW | CRYPT_STRING_NOCRLF, nullptr, &dwSerialSize))
+	{
+		wchar_t* pSerialStr = static_cast<wchar_t*>(EIDAlloc(dwSerialSize * sizeof(wchar_t)));
+		if (pSerialStr)
+		{
+			if (CryptBinaryToString(pRootCertificate->pCertInfo->SerialNumber.pbData,
+				pRootCertificate->pCertInfo->SerialNumber.cbData,
+				CRYPT_STRING_HEXRAW | CRYPT_STRING_NOCRLF, pSerialStr, &dwSerialSize))
+			{
+				szMessage = EID::LoadStringW(g_hinst, IDS_03SERIAL);
+				szBuf = EID::Format(szMessage.c_str(), pSerialStr);
+				SendDlgItemMessage(hWnd, IDC_03CERTIFICATEPANEL, LB_ADDSTRING, 0, (LPARAM)szBuf.c_str());
+			}
+			EIDFree(pSerialStr);
+		}
+	}
+
+	// key size :
+	DWORD dwKeySize = CertGetPublicKeyLength(X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+		&pRootCertificate->pCertInfo->SubjectPublicKeyInfo);
+	szMessage = EID::LoadStringW(g_hinst, IDS_03KEYSIZE);
+	szBuf = EID::Format(szMessage.c_str(), dwKeySize);
+	SendDlgItemMessage(hWnd, IDC_03CERTIFICATEPANEL, LB_ADDSTRING, 0, (LPARAM)szBuf.c_str());
+
+	// fingerprint (SHA-1 thumbprint) :
+	DWORD dwHashSize = 0;
+	if (CertGetCertificateContextProperty(pRootCertificate, CERT_HASH_PROP_ID, nullptr, &dwHashSize))
+	{
+		BYTE* pHash = static_cast<BYTE*>(EIDAlloc(dwHashSize));
+		if (pHash)
+		{
+			if (CertGetCertificateContextProperty(pRootCertificate, CERT_HASH_PROP_ID, pHash, &dwHashSize))
+			{
+				DWORD dwFingerprintSize = 0;
+				if (CryptBinaryToString(pHash, dwHashSize, CRYPT_STRING_HEX | CRYPT_STRING_NOCRLF, nullptr, &dwFingerprintSize))
+				{
+					wchar_t* pFingerprint = static_cast<wchar_t*>(EIDAlloc(dwFingerprintSize * sizeof(wchar_t)));
+					if (pFingerprint)
+					{
+						if (CryptBinaryToString(pHash, dwHashSize, CRYPT_STRING_HEX | CRYPT_STRING_NOCRLF, pFingerprint, &dwFingerprintSize))
+						{
+							szMessage = EID::LoadStringW(g_hinst, IDS_03FINGERPRINT);
+							szBuf = EID::Format(szMessage.c_str(), pFingerprint);
+							SendDlgItemMessage(hWnd, IDC_03CERTIFICATEPANEL, LB_ADDSTRING, 0, (LPARAM)szBuf.c_str());
+						}
+						EIDFree(pFingerprint);
+					}
+				}
+			}
+			EIDFree(pHash);
+		}
+	}
+
 	// select option
-	CheckDlgButton(hWnd,IDC_03IMPORT,BST_UNCHECKED);
 	CheckDlgButton(hWnd,IDC_03USETHIS,BST_CHECKED);
 	CheckDlgButton(hWnd,IDC_03_CREATE,BST_UNCHECKED);
 }
@@ -268,20 +309,6 @@ static BOOL HandleUseThisOption(HWND hWnd, PCCERT_CONTEXT pRootCert)
 	return FALSE;
 }
 
-static BOOL HandleImportOption(HWND hWnd)
-{
-	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"IDC_03IMPORT");
-	std::wstring szFileName = EID::GetWindowTextW(GetDlgItem(hWnd, IDC_03FILENAME));
-	std::wstring wszImportPassword = EID::GetWindowTextW(GetDlgItem(hWnd, IDC_03IMPORTPASSWORD));
-	if (!ImportFileToSmartCard((PWSTR)szFileName.c_str(), (PWSTR)wszImportPassword.c_str(), szReader, szCard))
-	{
-		MessageBoxWin32Ex(GetLastError(), hWnd);
-		SetWindowLongPtr(hWnd, DWLP_MSGRESULT, -1);
-		return TRUE;
-	}
-	return FALSE;
-}
-
 INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	int wmId;
@@ -328,6 +355,13 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 				}
 				break;
 			case PSN_WIZNEXT:
+			{
+				// Show progress dialog before card operations
+				// The dialog will be visible during the blocking certificate creation
+				// ProgressGuard automatically closes the dialog on scope exit
+				HWND hProgress = ShowProgressDialog(GetParent(hWnd));
+				ProgressGuard progressGuard(hProgress);
+
 				// Use early return pattern with extracted handlers to reduce nesting
 				if (IsDlgButtonChecked(hWnd, IDC_03DELETE) && HandleDeleteOption(hWnd))
 					return TRUE;
@@ -335,9 +369,8 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					return TRUE;
 				if (IsDlgButtonChecked(hWnd, IDC_03USETHIS) && HandleUseThisOption(hWnd, pRootCertificate))
 					return TRUE;
-				if (IsDlgButtonChecked(hWnd, IDC_03IMPORT) && HandleImportOption(hWnd))
-					return TRUE;
 				break;
+			}
 		}
 		break;
 		case WM_COMMAND:
@@ -392,9 +425,6 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 					CryptUIDlgViewCertificate(&certViewInfo,&fPropertiesChanged);
 				}
-				break;
-			case IDC_03SELECTFILE:
-				SelectFile(hWnd);
 				break;
 		}
 		break;

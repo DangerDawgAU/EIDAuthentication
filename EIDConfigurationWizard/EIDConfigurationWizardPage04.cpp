@@ -4,6 +4,7 @@
 #include <WinUser.h>
 #include "global.h"
 #include "EIDConfigurationWizard.h"
+#include "ProgressDialog.h"
 
 #include "../EIDCardLibrary/Tracing.h"
 #include "../EIDCardLibrary/GPO.h"
@@ -12,6 +13,16 @@
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 
 #include "CContainerHolder.h"
+
+// RAII helper to automatically close progress dialog on scope exit
+class ProgressGuard {
+    HWND m_hProgress;
+public:
+    explicit ProgressGuard(HWND hProgress) : m_hProgress(hProgress) {}
+    ~ProgressGuard() { CloseProgressDialog(m_hProgress); }
+    ProgressGuard(const ProgressGuard&) = delete;
+    ProgressGuard& operator=(const ProgressGuard&) = delete;
+};
 
 #pragma comment(lib,"Netapi32")
 #pragma comment(lib,"Winscard")
@@ -449,15 +460,8 @@ static BOOL HandleRefreshRequest(HWND hWnd)
     }
 
     // Reconnect and trigger refresh
-#pragma warning(push)
-#pragma warning(disable: 4302)
-    SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(IDC_WAIT)));
-#pragma warning(pop)
+    ProgressGuard progress(ShowProgressDialog(hWnd));
     pCredentialList->ConnectNotification(szReader, szCard, 0);
-#pragma warning(push)
-#pragma warning(disable: 4302)
-    SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(IDC_ARROW)));
-#pragma warning(pop)
 
     // Send activation message to refresh UI
     NMHDR nmh;
@@ -534,15 +538,9 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 					{
 						pCredentialList = new CContainerHolderFactory<CContainerHolderTest>();  // NOSONAR - COM-01: UI credential list requires heap allocation
 						pCredentialList->SetUsageScenario(CPUS_INVALID,0);
-#pragma warning(push)
-#pragma warning(disable: 4302)
-						SetCursor(LoadCursorW(nullptr,MAKEINTRESOURCEW(IDC_WAIT)));
-#pragma warning(pop)
+						// Show progress dialog during card enumeration (blocking operation)
+						ProgressGuard progress(ShowProgressDialog(hWnd));
 						pCredentialList->ConnectNotification(szReader,szCard,0);
-#pragma warning(push)
-#pragma warning(disable: 4302)
-						SetCursor(LoadCursorW(nullptr,MAKEINTRESOURCEW(IDC_ARROW)));
-#pragma warning(pop)
 					}
 					
 					if (pCredentialList->HasContainerHolder())
@@ -579,6 +577,9 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 						PropSheet_SetWizButtons(hWnd, PSWIZB_BACK);
 					}
 				}
+				break;
+			case PSN_WIZNEXT:
+				// Proceed to next page
 				break;
 			case PSN_WIZBACK:
 				// back

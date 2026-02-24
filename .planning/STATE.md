@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
-**Current focus:** v1.7 UI/UX Enhancement - Phase 51: Remove P12 Import
+**Current focus:** v1.7 UI/UX Enhancement - COMPLETE ✓
 
 ## Current Position
 
-Phase: 51 of 53 (Remove P12 Import)
-Plan: 0 of 1 in current phase
-Status: Ready to plan
-Last activity: 2026-02-24 - v1.7 roadmap created
+Phase: 53 of 53 (Add Progress Popup) - COMPLETE ✓
+Plan: 1 of 1 in current phase
+Status: User verified - wizard working correctly
+Last activity: 2026-02-24 - Fix #5 verified successful
 
-Progress: [..........] 0% (0/3 plans in v1.7)
+Progress: [██████████] 100% (v1.7 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 50+ (v1.0-v1.6)
+- Total plans completed: 53 (v1.0-v1.7)
 - v1.6 duration: 4 days (6 phases, 45-50)
-- v1.7 estimated: 1-2 days (3 phases, 51-53)
+- v1.7 duration: 1 day (3 phases, 51-53)
 - Trend: Stable
 
 **Recent Milestones:**
@@ -32,7 +32,7 @@ Progress: [..........] 0% (0/3 plans in v1.7)
 - v1.4: SonarQube Zero (COMPLETE 2026-02-18)
 - v1.5: CI/CD Security Enhancement (COMPLETE 2026-02-19)
 - v1.6: SonarQube Final Remediation (COMPLETE 2026-02-23)
-- v1.7: UI/UX Enhancement (IN PROGRESS)
+- v1.7: UI/UX Enhancement (COMPLETE ✓ 2026-02-24)
 
 ## Accumulated Context
 
@@ -46,13 +46,49 @@ Recent decisions for v1.7:
 - UIUX-03: Expand certificate info panel (Phase 52) - medium complexity, CryptoAPI patterns
 - UIUX-02: Add modal progress popup (Phase 53) - highest complexity, new dialog
 
+**Phase 53 Post-Execution Fixes:**
+
+*Fix #1 (2026-02-24 - Insufficient):*
+- Issue: Progress dialog had delayed appearance after pressing Next
+- Root cause: `CreateDialogParam` is asynchronous; message pump processed all messages but `IsWindowVisible` returns before paint
+- Attempt: `RedrawWindow` with `RDW_UPDATENOW`, process all messages, loop until `IsWindowVisible` returns TRUE
+- Result: Build succeeded but issue persisted
+
+*Fix #2 (2026-02-24 - Insufficient):*
+- Issue: User confirmed dialog still appears AFTER delay, not during
+- Root cause: `IsWindowVisible` returns TRUE immediately; need synchronous paint bypassing message queue
+- Solution: `UpdateWindow()` for direct WM_PAINT + process only paint-related messages for dialog
+- Build: Succeeded with 0 warnings, 0 errors
+- Result: No change in behavior
+
+*Fix #3 (2026-02-24 - Insufficient):*
+- Issue: Show dialog before disabling parent + process ALL messages
+- Root cause: Parent's WM_ENABLE paint competes with dialog paint
+- Solution: Show dialog FIRST, then disable parent, process all messages
+- Build: Succeeded with 0 warnings, 0 errors
+- Result: Issue persisted
+
+*Fix #4 (2026-02-24 - Insufficient):*
+- Issue: Show on PSN_WIZNEXT on Page 04, close on Page 05 activation
+- Root cause: Dialog was on wrong page - Page 04 has no blocking operation
+- Solution: Added PSN_WIZNEXT handler on Page 04, close on Page 05
+- Build: Succeeded with 0 warnings, 0 errors
+- Result: User reported "this behaviour is still present, there has been no change"
+
+*Fix #5 (2026-02-24 - Awaiting Verification):*
+- Issue: Dialog was on Page 04, but actual card flashing happens on Page 03
+- Root cause: **Wrong page** - The blocking operations (`CreateSmartCardCertificate`, `ClearCard`) occur in Page 03's PSN_WIZNEXT
+- Solution: Moved progress dialog to Page 03's PSN_WIZNEXT handler
+- Build: Succeeded with 0 warnings, 0 errors
+- Verification: Test all three options (Delete/Create/Use certificate)
+
 ### v1.7 Phase Structure
 
 | Phase | Goal | Requirements | Status |
 |-------|------|--------------|--------|
-| 51 | Remove P12 Import | UIUX-01 | Not started |
-| 52 | Expand Certificate Info | UIUX-03 | Not started |
-| 53 | Add Progress Popup | UIUX-02 | Not started |
+| 51 | Remove P12 Import | UIUX-01 | COMPLETE |
+| 52 | Expand Certificate Info | UIUX-03 | COMPLETE |
+| 53 | Add Progress Popup | UIUX-02 | COMPLETE (with fix) |
 
 ### v1.6 Phase Structure (COMPLETE)
 
@@ -71,13 +107,22 @@ None.
 
 ### Blockers/Concerns
 
-None.
+**None.** v1.7 UI/UX Enhancement complete and verified.
+
+**Fix #5 Success (2026-02-24):**
+- Root cause: Dialog was on Page 04, but card flashing operations happen on Page 03
+- Solution: Moved progress dialog to Page 03's PSN_WIZNEXT handler
+- Result: User verified - wizard working correctly with all three certificate options
 
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: v1.7 roadmap created, ready to plan Phase 51
-Resume file: None
+Stopped at: v1.7 complete - user verified wizard working correctly
+Resume file: .planning/phases/53-add-progress-popup/53-01-SUMMARY.md
+
+**Fix #5 Verified Success (2026-02-24):**
+- Dialog moved to Page 03 PSN_WIZNEXT where `CreateSmartCardCertificate` and `ClearCard` are called
+- User confirmed all three certificate options working correctly
 
 ## Key Constraints (Always Remember)
 
@@ -91,6 +136,6 @@ Resume file: None
 
 ---
 
-*Last updated: 2026-02-24*
-*Current milestone: v1.7 UI/UX Enhancement*
-*Next: Plan Phase 51 - Remove P12 Import*
+*Last updated: 2026-02-24 (v1.7 complete - user verified)*
+*Current milestone: v1.7 UI/UX Enhancement - COMPLETE ✓*
+*Next: Archive v1.7 milestone → Plan next milestone*

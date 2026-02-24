@@ -136,20 +136,13 @@ BEGIN
     CONTROL         "&Use this certification authority",IDC_03USETHIS,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,6,49,163,10
     CONTROL         "&Create a new certification authority",IDC_03_CREATE,
                     "Button",BS_AUTORADIOBUTTON | WS_TABSTOP,6,31,185,10
-    CONTROL         "&Import a p12 file into the smart card",IDC_03IMPORT,
-                    "Button",BS_AUTORADIOBUTTON | WS_TABSTOP,3,138,185,10
     LTEXT           "&Selected authority:",1009,12,68,250,10
-    LISTBOX         IDC_03CERTIFICATEPANEL,9,80,175,38,NOT LBS_NOTIFY | LBS_NOSEL | WS_TABSTOP
+    LISTBOX         IDC_03CERTIFICATEPANEL,9,80,175,75,NOT LBS_NOTIFY | LBS_NOSEL | WS_TABSTOP | WS_VSCROLL
     PUSHBUTTON      "&Show the certificate",IDC_03SHOW,192,80,81,12
     PUSHBUTTON      "&Select an authority",IDC_03SELECT,192,96,81,12
-    LTEXT           "Certificate validity (years):",IDC_03VALIDITYLABEL,9,122,90,10
-    EDITTEXT        IDC_03VALIDITYYEARS,100,120,30,12,ES_AUTOHSCROLL | ES_NUMBER | NOT WS_BORDER,WS_EX_CLIENTEDGE
-    LTEXT           "",IDC_03VALIDITYWARNING,135,122,138,10
-    EDITTEXT        IDC_03IMPORTPASSWORD,96,171,162,11,ES_PASSWORD | ES_AUTOHSCROLL | NOT WS_BORDER,WS_EX_CLIENTEDGE
-    LTEXT           "Password :",IDC_STC2,6,171,60,10
-    LTEXT           "File :",IDC_STC3,6,153,60,10
-    EDITTEXT        IDC_03FILENAME,96,153,162,11,ES_AUTOHSCROLL | NOT WS_BORDER,WS_EX_CLIENTEDGE
-    PUSHBUTTON      "...",IDC_03SELECTFILE,258,153,12,12
+    LTEXT           "Certificate validity (years):",IDC_03VALIDITYLABEL,9,159,90,10
+    EDITTEXT        IDC_03VALIDITYYEARS,100,157,30,12,ES_AUTOHSCROLL | ES_NUMBER | NOT WS_BORDER,WS_EX_CLIENTEDGE
+    LTEXT           "",IDC_03VALIDITYWARNING,135,159,138,10
     CONTROL         "Delete all certificates on the smart card before processing",IDC_03DELETE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,192,261,9
 END
@@ -193,6 +186,15 @@ BEGIN
     LTEXT           "Error description",IDC_WIZARDERROR,39,41,225,33
     LTEXT           "Detail :",IDC_STATIC,39,27,105,9
     ICON            "",IDC_07SHIELD,10,10,20,20
+END
+
+IDD_PROGRESS DIALOGEX 0, 0, 200, 60
+STYLE DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION
+CAPTION "Reading Smart Card"
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Reading certificate from smart card...", IDC_PROGRESSTEXT, 10, 10, 180, 12
+    CONTROL         "", IDC_PROGRESSBAR, "msctls_progress32", PBS_MARQUEE | WS_BORDER, 10, 30, 180, 14
 END
 
 
@@ -244,6 +246,10 @@ BEGIN
     IDS_03ALLFILES          "All Files"
     IDS_03VALIDITYLABEL     "Certificate validity (years):"
     IDS_03VALIDITYWARNING   "Warning: exceeds CA expiry!"
+    IDS_03ISSUER            "Issuer : %s"
+    IDS_03SERIAL            "Serial : %s"
+    IDS_03KEYSIZE           "Key Size : %d bits"
+    IDS_03FINGERPRINT       "Fingerprint : %s"
 END
 
 STRINGTABLE
