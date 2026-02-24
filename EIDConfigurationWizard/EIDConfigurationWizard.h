@@ -91,6 +91,10 @@
 #define IDC_03VALIDITYWARNING           154  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDS_03VALIDITYLABEL             155  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDS_03VALIDITYWARNING           156  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_03ISSUER                    157  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_03SERIAL                    158  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_03KEYSIZE                   159  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_03FINGERPRINT               160  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_STATIC                      -1  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 
 // Next default values for new objects
