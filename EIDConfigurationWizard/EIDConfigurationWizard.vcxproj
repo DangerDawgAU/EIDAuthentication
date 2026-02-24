@@ -219,11 +219,13 @@
     <ClCompile Include="EIDConfigurationWizardPage05.cpp" />
     <ClCompile Include="EIDConfigurationWizardPage06.cpp" />
     <ClCompile Include="EIDConfigurationWizardPage07.cpp" />
+    <ClCompile Include="ProgressDialog.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CContainerHolder.h" />
     <ClInclude Include="EIDConfigurationWizard.h" />
     <ClInclude Include="global.h" />
+    <ClInclude Include="ProgressDialog.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="EIDConfigurationWizard.rc" />

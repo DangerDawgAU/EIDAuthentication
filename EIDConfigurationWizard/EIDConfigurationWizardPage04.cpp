@@ -4,6 +4,7 @@
 #include <WinUser.h>
 #include "global.h"
 #include "EIDConfigurationWizard.h"
+#include "ProgressDialog.h"
 
 #include "../EIDCardLibrary/Tracing.h"
 #include "../EIDCardLibrary/GPO.h"
@@ -449,15 +450,9 @@ static BOOL HandleRefreshRequest(HWND hWnd)
     }
 
     // Reconnect and trigger refresh
-#pragma warning(push)
-#pragma warning(disable: 4302)
-    SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(IDC_WAIT)));
-#pragma warning(pop)
+    HWND hProgress = ShowProgressDialog(hWnd);
     pCredentialList->ConnectNotification(szReader, szCard, 0);
-#pragma warning(push)
-#pragma warning(disable: 4302)
-    SetCursor(LoadCursorW(nullptr, MAKEINTRESOURCEW(IDC_ARROW)));
-#pragma warning(pop)
+    CloseProgressDialog(hProgress);
 
     // Send activation message to refresh UI
     NMHDR nmh;
@@ -534,15 +529,12 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 					{
 						pCredentialList = new CContainerHolderFactory<CContainerHolderTest>();  // NOSONAR - COM-01: UI credential list requires heap allocation
 						pCredentialList->SetUsageScenario(CPUS_INVALID,0);
-#pragma warning(push)
-#pragma warning(disable: 4302)
-						SetCursor(LoadCursorW(nullptr,MAKEINTRESOURCEW(IDC_WAIT)));
-#pragma warning(pop)
+						// Show progress dialog before card operation
+						HWND hProgress = ShowProgressDialog(hWnd);
+						// Perform card enumeration (this blocks)
 						pCredentialList->ConnectNotification(szReader,szCard,0);
-#pragma warning(push)
-#pragma warning(disable: 4302)
-						SetCursor(LoadCursorW(nullptr,MAKEINTRESOURCEW(IDC_ARROW)));
-#pragma warning(pop)
+						// Close progress dialog
+						CloseProgressDialog(hProgress);
 					}
 					
 					if (pCredentialList->HasContainerHolder())
