@@ -4,6 +4,7 @@
 #include <ShObjIdl.h>
 #include "global.h"
 #include "EIDConfigurationWizard.h"
+#include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/CertificateUtilities.h"
 #include "../EIDCardLibrary/Tracing.h"
 #include "../EIDCardLibrary/StringConversion.h"
