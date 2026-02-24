@@ -49,6 +49,7 @@
 #define IDR_TASKFILEURL                 68  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDD_07TESTRESULTNOTOK           69  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDD_05PASSWORD                  70  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDD_PROGRESS                    71  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_STC3                        102  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_STC2                        103  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_03IMPORTPASSWORD            104  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
@@ -95,15 +96,17 @@
 #define IDS_03SERIAL                    158  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDS_03KEYSIZE                   159  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDS_03FINGERPRINT               160  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_PROGRESSBAR                 161  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_PROGRESSTEXT                162  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_STATIC                      -1  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        72  // NOSONAR - RESOURCE-01: VS resource editor tracking
+#define _APS_NEXT_RESOURCE_VALUE        73  // NOSONAR - RESOURCE-01: VS resource editor tracking
 #define _APS_NEXT_COMMAND_VALUE         40001  // NOSONAR - RESOURCE-01: VS resource editor tracking
-#define _APS_NEXT_CONTROL_VALUE         157  // NOSONAR - RESOURCE-01: VS resource editor tracking
+#define _APS_NEXT_CONTROL_VALUE         163  // NOSONAR - RESOURCE-01: VS resource editor tracking
 #define _APS_NEXT_SYMED_VALUE           241  // NOSONAR - RESOURCE-01: VS resource editor tracking
 #endif
 #endif

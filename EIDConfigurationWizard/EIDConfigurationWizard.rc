@@ -188,6 +188,15 @@ BEGIN
     ICON            "",IDC_07SHIELD,10,10,20,20
 END
 
+IDD_PROGRESS DIALOGEX 0, 0, 200, 60
+STYLE DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION
+CAPTION "Reading Smart Card"
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Reading certificate from smart card...", IDC_PROGRESSTEXT, 10, 10, 180, 12
+    CONTROL         "", IDC_PROGRESSBAR, "msctls_progress32", PBS_MARQUEE | WS_BORDER, 10, 30, 180, 14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
