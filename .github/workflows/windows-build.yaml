@@ -9,10 +9,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Check out repo
-        uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5
+        uses: actions/checkout@v4
 
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce
+        uses: microsoft/setup-msbuild@v2
         with:
           msbuild-architecture: x64
 
@@ -28,14 +28,20 @@ jobs:
       - name: Build app for release
         run: msbuild EIDCredentialProvider.sln -t:rebuild -property:Configuration=Release /p:Platform=x64
 
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      - name: Copy license for NSIS
+        run: Copy-Item LICENSE Installer\License.txt
+
+      - name: Verify build outputs
+        run: Get-ChildItem -Path x64\Release -Recurse
+
       - name: Create nsis installer
-        uses: joncloud/makensis-action@5834ecb5add98a9e12ccdb7307438f77c4bf228d
-        with: 
-          script-file: Installer/Installerx64.nsi
-          arguments: "/V3"
+        run: '"C:\Program Files (x86)\NSIS\makensis.exe" /V3 "Installer\Installerx64.nsi"'
 
       - name: upload binaries to release
-        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
+        uses: softprops/action-gh-release@v2
         if: ${{startsWith(github.ref, 'refs/tags/') }}
         with:
             files: Installer/EIDInstallx64.exe
