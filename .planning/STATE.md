@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** A clean, maintainable, and secure codebase with zero static analysis issues, leveraging modern C++23 features while preserving all existing authentication functionality.
-**Current focus:** v1.7 UI/UX Enhancement - Phase 51: Remove P12 Import
+**Current focus:** v1.7 UI/UX Enhancement - Phase 52: Expand Certificate Info
 
 ## Current Position
 
-Phase: 51 of 53 (Remove P12 Import)
+Phase: 52 of 53 (Expand Certificate Info)
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-02-24 - Phase 51 Remove P12 Import complete
+Last activity: 2026-02-24 - Phase 52 Expand Certificate Info complete
 
-Progress: [=======...] 33% (1/3 plans in v1.7)
+Progress: [==========..] 67% (2/3 plans in v1.7)
 
 ## Performance Metrics
 
@@ -51,7 +51,7 @@ Recent decisions for v1.7:
 | Phase | Goal | Requirements | Status |
 |-------|------|--------------|--------|
 | 51 | Remove P12 Import | UIUX-01 | COMPLETE |
-| 52 | Expand Certificate Info | UIUX-03 | Not started |
+| 52 | Expand Certificate Info | UIUX-03 | COMPLETE |
 | 53 | Add Progress Popup | UIUX-02 | Not started |
 
 ### v1.6 Phase Structure (COMPLETE)
@@ -76,8 +76,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-24
-Stopped at: Phase 51 Plan 01 (Remove P12 Import) complete
-Resume file: .planning/phases/51-remove-p12-import/51-01-SUMMARY.md
+Stopped at: Phase 52 Plan 01 (Expand Certificate Info) complete
+Resume file: .planning/phases/52-expand-cert-info/52-01-SUMMARY.md
 
 ## Key Constraints (Always Remember)
 
@@ -93,4 +93,4 @@ Resume file: .planning/phases/51-remove-p12-import/51-01-SUMMARY.md
 
 *Last updated: 2026-02-24*
 *Current milestone: v1.7 UI/UX Enhancement*
-*Next: Phase 52 - Expand Certificate Info*
+*Next: Phase 53 - Add Progress Popup*
