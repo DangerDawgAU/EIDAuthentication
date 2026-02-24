@@ -329,7 +329,7 @@ Phases execute in numeric order: 51 -> 52 -> 53
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 51. Remove P12 Import | 1/1 | Complete | 2026-02-24 |
+| 51. Remove P12 Import | 1/1 | Complete    | 2026-02-24 |
 | 52. Expand Certificate Info | 0/1 | Not started | - |
 | 53. Add Progress Popup | 0/1 | Not started | - |
 
