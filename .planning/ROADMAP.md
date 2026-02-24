@@ -27,7 +27,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Milestone Goal:** Improve smart card configuration user experience with clearer certificate information and better progress feedback.
 
-- [ ] **Phase 51: Remove P12 Import** - Remove legacy P12 import option from Configure Smart Card window
+- [x] **Phase 51: Remove P12 Import** - Remove legacy P12 import option from Configure Smart Card window (COMPLETE 2026-02-24)
 - [ ] **Phase 52: Expand Certificate Info** - Add Issuer, Serial, Key Size, Fingerprint to Selected Authority info box
 - [ ] **Phase 53: Add Progress Popup** - Add modal progress popup during card flashing operation
 
@@ -148,7 +148,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 1 plan
 
 Plans:
-- [ ] 51-01: Remove P12 import UI controls and handlers
+- [x] 51-01: Remove P12 import UI controls and handlers - COMPLETE 2026-02-24
 
 ### Phase 52: Expand Certificate Info
 **Goal**: Users can view complete certificate authority information in the Selected Authority info box
@@ -329,7 +329,7 @@ Phases execute in numeric order: 51 -> 52 -> 53
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 51. Remove P12 Import | 0/1 | Not started | - |
+| 51. Remove P12 Import | 1/1 | Complete | 2026-02-24 |
 | 52. Expand Certificate Info | 0/1 | Not started | - |
 | 53. Add Progress Popup | 0/1 | Not started | - |
 
@@ -622,4 +622,4 @@ Phases execute in numeric order: 1 -> 2 -> 2.1 -> 2.2 -> 3 -> 4 -> 5 -> 6
 *v1.5 complete: 2026-02-19*
 *v1.6 complete: 2026-02-23*
 *v1.7 roadmap created: 2026-02-24*
-*v1.7 Phase 51 plan created: 2026-02-24*
+*v1.7 Phase 51 complete: 2026-02-24*

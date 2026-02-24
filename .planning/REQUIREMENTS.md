@@ -9,7 +9,7 @@ Requirements for v1.7 UI/UX Enhancement milestone. Each maps to roadmap phases.
 
 ### Smart Card Configuration UI
 
-- [ ] **UIUX-01**: User can Configure Smart Card without P12 import option displayed
+- [x] **UIUX-01**: User can Configure Smart Card without P12 import option displayed
 - [ ] **UIUX-02**: User sees progress popup during card flashing operation
 - [ ] **UIUX-03**: User views enhanced certificate authority information in Selected Authority info box
 
@@ -30,7 +30,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| UIUX-01 | Phase 51 | Pending |
+| UIUX-01 | Phase 51 | Complete |
 | UIUX-02 | Phase 53 | Pending |
 | UIUX-03 | Phase 52 | Pending |
 
@@ -42,4 +42,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 
 *Requirements defined: 2026-02-24*
-*Last updated: 2026-02-24 after roadmap creation*
+*Last updated: 2026-02-24 after Phase 51 completion*
