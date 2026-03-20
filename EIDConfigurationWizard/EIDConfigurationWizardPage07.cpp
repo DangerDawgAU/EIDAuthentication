@@ -39,8 +39,11 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, [[maybe_unus
 				if (hDll)
 				{
 					HICON hIcon = LoadIcon(hDll, MAKEINTRESOURCE(105));
-					SendMessage(GetDlgItem(hWnd,IDC_07SHIELD),STM_SETIMAGE,IMAGE_ICON, (LPARAM) hIcon);
-					DestroyIcon(hIcon);
+					// STM_SETIMAGE does NOT copy the icon - the control takes ownership.
+					// Destroy the previous icon (if any) returned by STM_SETIMAGE, but NOT the new one.
+					HICON hPrevIcon = (HICON)SendMessage(GetDlgItem(hWnd,IDC_07SHIELD),STM_SETIMAGE,IMAGE_ICON, (LPARAM) hIcon);
+					if (hPrevIcon)
+						DestroyIcon(hPrevIcon);
 					FreeLibrary(hDll);
 				}
 			}
@@ -58,10 +61,25 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, [[maybe_unus
 					PropSheet_PressButton(hWnd, PSBTN_BACK);
 					break;
 				case PSN_WIZFINISH:
+					// Clean up the icon handle before closing (control owns it after STM_SETIMAGE)
+					{
+						HICON hIcon = (HICON)SendDlgItemMessage(hWnd, IDC_07SHIELD, STM_SETIMAGE, IMAGE_ICON, 0);
+						if (hIcon)
+							DestroyIcon(hIcon);
+					}
 					if (pCredentialList)
 					{
 						delete pCredentialList;
 						pCredentialList = nullptr;
+					}
+					break;
+
+				case PSN_RESET:
+					// Clean up the icon handle when wizard is cancelled
+					{
+						HICON hIcon = (HICON)SendDlgItemMessage(hWnd, IDC_07SHIELD, STM_SETIMAGE, IMAGE_ICON, 0);
+						if (hIcon)
+							DestroyIcon(hIcon);
 					}
 					break;
 				default:
