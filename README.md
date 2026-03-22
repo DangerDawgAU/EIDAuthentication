@@ -17,7 +17,64 @@ EID Authentication provides standalone Windows logon using smart card certificat
 4. Certificate extracted from card and verified against trust chain
 5. User logged on with token generated from certificate-mapped local account
 
-**Password Backup (Optional):** During enrollment, the Windows password can be encrypted with the smart card's public key and stored in LSA private data. This enables passwordless operation while maintaining recovery capability.
+**Password Backup (Optional):** During enrollment, the Windows password can be encrypted with the smart card's public key and stored in LSA private data. This enables passwordless operation while maintaining DPAPI compatibility.
+
+---
+
+## Security Configuration
+
+### Blank Password Accounts
+
+**Warning:** By default, Windows allows local accounts with blank passwords to log on at the physical console without credentials. This bypasses smart card authentication.
+
+**Default Windows Behavior:**
+
+| Logon Type | Blank Password Account |
+|------------|------------------------|
+| Physical console | ⚠️ Allowed - can log in without credentials |
+| Remote Desktop | Blocked |
+| Network access (SMB) | Blocked |
+
+**Required Group Policy:**
+
+To enforce smart-card-only logon with passwordless accounts:
+
+```
+Computer Configuration > Windows Settings > Security Settings >
+Local Policies > Security Options
+```
+
+**Policy:** `Accounts: Limit local account use of blank passwords to console logon only`
+
+**Setting:** `Disabled` (blocks ALL blank password logons)
+
+**Registry:**
+```
+HKLM\SYSTEM\CurrentControlSet\Control\Lsa\limitblankpassworduse = 0
+```
+
+### Deployment Strategies
+
+**Option 1: Smart-Card-Only (Recommended)**
+
+1. Disable blank password logon via Group Policy (above)
+2. Remove Windows passwords: `net user <username> ""`
+3. Enroll with blank password in Configuration Wizard
+4. Result: Smart card required for all logons
+
+**Option 2: Smart Card + Password Backup**
+
+1. Keep strong Windows passwords on accounts
+2. Enter real password during enrollment
+3. Result: Smart card required; password enables DPAPI/network auth
+
+### Password Validation Behavior
+
+| Phase | Password Validation |
+|-------|-------------------|
+| Enrollment | YES - wizard validates against Windows password |
+| Authentication | NO - token created from certificate only |
+| Post-Logon | Stored password used for DPAPI, network auth |
 
 ---
 
