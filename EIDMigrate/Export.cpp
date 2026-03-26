@@ -220,11 +220,9 @@ HRESULT ValidateCertificateForExport(
     // Check for expiration within 30 days
     FILETIME ftThirtyDays;
     ULARGE_INTEGER uli;
-    uli.LowPart = ftNow.dwLowDateTime;
-    uli.HighPart = ftNow.dwHighDateTime;
+    memcpy(&uli.QuadPart, &ftNow, sizeof(uli.QuadPart));
     uli.QuadPart += ULONGLONG(30) * 24 * 60 * 60 * 10000000; // 30 days in 100ns units
-    ftThirtyDays.dwLowDateTime = uli.LowPart;
-    ftThirtyDays.dwHighDateTime = uli.HighPart;
+    memcpy(&ftThirtyDays, &uli.QuadPart, sizeof(ftThirtyDays));
 
     if (CompareFileTime(&pCertContext->pCertInfo->NotAfter, &ftThirtyDays) < 0)
     {
