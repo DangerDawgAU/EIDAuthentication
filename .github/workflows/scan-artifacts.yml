@@ -92,8 +92,8 @@ jobs:
           New-Item -ItemType Directory -Path "x64\Release" -Force | Out-Null
           # Copy artifacts to the location NSI script expects
           Copy-Item artifacts\* x64\Release\
-          # Build the installer
-          makensis Installer/Installerx64.nsi
+          # Build the installer (use full path since chocolatey doesn't update PATH immediately)
+          & "C:\Program Files (x86)\NSIS\makensis.exe" /V3 "Installer\Installerx64.nsi"
           # NSIS outputs to current directory
           mv EIDInstallx64.exe artifacts/
         shell: pwsh
