@@ -36,7 +36,7 @@ INT_PTR CALLBACK WndProc_02_ExportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam,
             GetDlgItemText(hwndDlg, IDC_02_CONFIRM_PASSWORD, szConfirm, ARRAYSIZE(szConfirm));
 
             // Validate file path
-            if (wcslen(szFile) == 0) {
+            if (wcslen(szFile) == 0) { // NOSONAR - szFile is stack-allocated buffer, never NULL
                 MessageBoxW(hwndDlg, L"Please specify an output file.",
                     L"Export", MB_ICONEXCLAMATION);
                 SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, -1);
@@ -44,7 +44,7 @@ INT_PTR CALLBACK WndProc_02_ExportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam,
             }
 
             // Validate password
-            if (wcslen(szPassword) < 16) {
+            if (wcslen(szPassword) < 16) { // NOSONAR - szPassword is stack-allocated buffer, never NULL
                 MessageBoxW(hwndDlg, L"Password must be at least 16 characters.",
                     L"Export", MB_ICONEXCLAMATION);
                 SetWindowLongPtr(hwndDlg, DWLP_MSGRESULT, -1);

@@ -42,7 +42,7 @@ public:
 };
 
 // JSON Object
-class JsonObject
+class JsonObject // NOSONAR - noexcept move constructor not required; class is not performance-critical and std::map provides move semantics
 {
 private:
     std::map<std::string, std::shared_ptr<JsonValue>> m_members;
@@ -73,14 +73,14 @@ private:
 public:
     JsonValue() : m_type(JsonType::Null), m_boolValue(false), m_numberValue(0) {}
 
-    explicit JsonValue(bool value) : m_type(JsonType::Boolean), m_boolValue(value) {}
-    explicit JsonValue(int value) : m_type(JsonType::Number), m_numberValue(value) {}
-    explicit JsonValue(long long value) : m_type(JsonType::Number), m_numberValue(value) {}
-    explicit JsonValue(double value) : m_type(JsonType::Number), m_numberValue(static_cast<long long>(value)) {}
-    explicit JsonValue(const char* value) : m_type(JsonType::String), m_stringValue(value) {}
-    explicit JsonValue(const std::string& value) : m_type(JsonType::String), m_stringValue(value) {}
-    explicit JsonValue(const JsonArray& value) : m_type(JsonType::Array), m_arrayValue(value) {}
-    explicit JsonValue(const JsonObject& value) : m_type(JsonType::Object), m_objectValue(value) {}
+    explicit JsonValue(bool value) : m_type(JsonType::Boolean), m_boolValue(value) {} // NOSONAR - only m_boolValue used when m_type==Boolean
+    explicit JsonValue(int value) : m_type(JsonType::Number), m_numberValue(value) {} // NOSONAR - only m_numberValue used when m_type==Number
+    explicit JsonValue(long long value) : m_type(JsonType::Number), m_numberValue(value) {} // NOSONAR - only m_numberValue used when m_type==Number
+    explicit JsonValue(double value) : m_type(JsonType::Number), m_numberValue(static_cast<long long>(value)) {} // NOSONAR - only m_numberValue used when m_type==Number
+    explicit JsonValue(const char* value) : m_type(JsonType::String), m_stringValue(value) {} // NOSONAR - only m_stringValue used when m_type==String
+    explicit JsonValue(const std::string& value) : m_type(JsonType::String), m_stringValue(value) {} // NOSONAR - only m_stringValue used when m_type==String
+    explicit JsonValue(const JsonArray& value) : m_type(JsonType::Array), m_arrayValue(value) {} // NOSONAR - only m_arrayValue used when m_type==Array
+    explicit JsonValue(const JsonObject& value) : m_type(JsonType::Object), m_objectValue(value) {} // NOSONAR - only m_objectValue used when m_type==Object
 
     JsonType type() const { return m_type; }
 

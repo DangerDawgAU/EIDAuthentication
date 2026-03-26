@@ -119,7 +119,7 @@ namespace EID {
         return std::wstring(buffer);
     }
 
-    void ConvertToUnicodeString(const std::wstring& src, PUNICODE_STRING dst, PVOID buffer, ULONG bufferSize)
+    void ConvertToUnicodeString(const std::wstring& src, PUNICODE_STRING dst, PVOID buffer, ULONG bufferSize) // NOSONAR - PVOID (void*) is standard Windows API type for generic pointers
     {
         if (!dst || !buffer) {
             return;

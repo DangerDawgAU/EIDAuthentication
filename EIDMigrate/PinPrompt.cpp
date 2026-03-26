@@ -326,7 +326,7 @@ BOOL IsValidPinFormat(_In_ PCWSTR pwszPin)
         return FALSE;
 
     // PIN should be 4-8 digits
-    size_t cchLen = wcslen(pwszPin);
+    size_t cchLen = wcslen(pwszPin); // NOSONAR - pointer validated for NULL above (line 325)
     if (cchLen < 4 || cchLen > 8)
         return FALSE;
 

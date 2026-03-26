@@ -76,6 +76,12 @@ struct APP_STATE
         pLogFile(nullptr)
     {}
 
+    // Delete copy/move operations - this is a singleton
+    APP_STATE(const APP_STATE&) = delete;
+    APP_STATE& operator=(const APP_STATE&) = delete;
+    APP_STATE(APP_STATE&&) = delete;
+    APP_STATE& operator=(APP_STATE&&) = delete;
+
     ~APP_STATE()
     {
         if (pLogFile)

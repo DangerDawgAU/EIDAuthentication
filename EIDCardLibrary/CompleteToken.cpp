@@ -375,8 +375,13 @@ void DebugPrintSid(const WCHAR* Name, PSID Sid)
 	// Ensure cleanup on all exit paths
 	struct UserInfoCleanup {
 		PUSER_INFO_4* pp;
+		explicit UserInfoCleanup(PUSER_INFO_4* ptr) : pp(ptr) {}
 		~UserInfoCleanup() { if (pp && *pp) NetApiBufferFree(*pp); }
-	} cleanup{ &pUserInfo };
+		// Delete copy/move - this manages a resource
+		UserInfoCleanup(const UserInfoCleanup&) = delete;
+		UserInfoCleanup& operator=(const UserInfoCleanup&) = delete;
+	};
+	UserInfoCleanup cleanup(&pUserInfo);
 
 	if (pUserInfo->usri4_flags & UF_ACCOUNTDISABLE)
 	{

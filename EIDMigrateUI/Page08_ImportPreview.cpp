@@ -12,16 +12,16 @@ INT_PTR CALLBACK WndProc_08_ImportPreview(HWND hwndDlg, UINT uMsg, WPARAM wParam
         if (hList) {
             LVCOLUMN lvc = {0};
             lvc.mask = LVCF_TEXT | LVCF_WIDTH;
-            lvc.pszText = (LPWSTR)L"Username";
+            lvc.pszText = const_cast<LPWSTR>(L"Username"); // Safe: ListView won't modify
             lvc.cx = 100;
             ListView_InsertColumn(hList, 0, &lvc);
-            lvc.pszText = (LPWSTR)L"RID";
+            lvc.pszText = const_cast<LPWSTR>(L"RID"); // Safe: ListView won't modify
             lvc.cx = 50;
             ListView_InsertColumn(hList, 1, &lvc);
-            lvc.pszText = (LPWSTR)L"Encryption";
+            lvc.pszText = const_cast<LPWSTR>(L"Encryption"); // Safe: ListView won't modify
             lvc.cx = 80;
             ListView_InsertColumn(hList, 2, &lvc);
-            lvc.pszText = (LPWSTR)L"Status";
+            lvc.pszText = const_cast<LPWSTR>(L"Status"); // Safe: ListView won't modify
             lvc.cx = 100;
             ListView_InsertColumn(hList, 3, &lvc);
 
@@ -46,7 +46,7 @@ INT_PTR CALLBACK WndProc_08_ImportPreview(HWND hwndDlg, UINT uMsg, WPARAM wParam
                 for (const auto& cred : g_wizardData.credentials) {
                     LVITEM lvi = {0};
                     lvi.mask = LVIF_TEXT;
-                    lvi.pszText = (LPWSTR)cred.wsUsername.c_str();
+                    lvi.pszText = const_cast<LPWSTR>(cred.wsUsername.c_str()); // Safe: ListView won't modify
                     int iItem = ListView_InsertItem(hList, &lvi);
 
                     WCHAR szRID[32];
@@ -54,12 +54,12 @@ INT_PTR CALLBACK WndProc_08_ImportPreview(HWND hwndDlg, UINT uMsg, WPARAM wParam
                     ListView_SetItemText(hList, iItem, 1, szRID);
 
                     PCWSTR pwszEnc = (cred.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtCrypted) ? L"Certificate" : L"DPAPI";
-                    ListView_SetItemText(hList, iItem, 2, (LPWSTR)pwszEnc);
+                    ListView_SetItemText(hList, iItem, 2, const_cast<LPWSTR>(pwszEnc)); // Safe: ListView won't modify
 
                     // Check if user exists
                     std::wstring wsStatus = L"User exists";
                     // TODO: Check user existence
-                    ListView_SetItemText(hList, iItem, 3, (LPWSTR)wsStatus.c_str());
+                    ListView_SetItemText(hList, iItem, 3, const_cast<LPWSTR>(wsStatus.c_str())); // Safe: ListView won't modify
                 }
             }
 

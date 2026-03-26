@@ -221,7 +221,7 @@ BOOL PromptYesNo(_In_ PCWSTR pwszPrompt, _In_ BOOL fDefaultYes)
         return fDefaultYes;
 
     // Trim whitespace
-    size_t cchLen = wcslen(szResponse);
+    size_t cchLen = wcslen(szResponse); // NOSONAR - szResponse is stack-allocated buffer, never NULL
     while (cchLen > 0 && iswspace(szResponse[cchLen - 1]))
         szResponse[--cchLen] = L'\0';
 
@@ -243,7 +243,7 @@ std::wstring PromptForString(_In_ PCWSTR pwszPrompt)
         return std::wstring();
 
     // Trim newline
-    size_t cchLen = wcslen(szBuffer);
+    size_t cchLen = wcslen(szBuffer); // NOSONAR - szBuffer is stack-allocated buffer, never NULL
     while (cchLen > 0 && (szBuffer[cchLen - 1] == L'\r' || szBuffer[cchLen - 1] == L'\n'))
         szBuffer[--cchLen] = L'\0';
 
@@ -266,7 +266,7 @@ SecureWString PromptForPassphrase(_In_ PCWSTR pwszPrompt, _In_ BOOL fConfirm)
         return SecureWString();
 
     // Trim newline
-    size_t cchLen = wcslen(szBuffer);
+    size_t cchLen = wcslen(szBuffer); // NOSONAR - szBuffer is stack-allocated buffer, never NULL
     while (cchLen > 0 && (szBuffer[cchLen - 1] == L'\r' || szBuffer[cchLen - 1] == L'\n'))
         szBuffer[--cchLen] = L'\0';
 
@@ -281,7 +281,7 @@ SecureWString PromptForPassphrase(_In_ PCWSTR pwszPrompt, _In_ BOOL fConfirm)
         if (fgetws(szConfirm, ARRAYSIZE(szConfirm), stdin) == nullptr)
             return SecureWString();
 
-        cchLen = wcslen(szConfirm);
+        cchLen = wcslen(szConfirm); // NOSONAR - szConfirm is stack-allocated buffer, never NULL
         while (cchLen > 0 && (szConfirm[cchLen - 1] == L'\r' || szConfirm[cchLen - 1] == L'\n'))
             szConfirm[--cchLen] = L'\0';
 
@@ -441,7 +441,7 @@ std::wstring GenerateRandomPassword(_In_ DWORD dwLength)
     {
         for (DWORD i = 0; i < dwLength; i++)
         {
-            DWORD dwIndex = pbRnd[i % sizeof(pbRnd)] % (wcslen(szChars) - 1);
+            DWORD dwIndex = pbRnd[i % sizeof(pbRnd)] % (wcslen(szChars) - 1); // NOSONAR - szChars is static const array, never NULL
             wsPassword += szChars[dwIndex];
         }
     }
@@ -454,7 +454,7 @@ std::wstring GenerateRandomPassword(_In_ DWORD dwLength)
             if (rand_s(&uiRnd) == 0)
             {
                 dwRnd = uiRnd;
-                DWORD dwIndex = dwRnd % (wcslen(szChars) - 1);
+                DWORD dwIndex = dwRnd % (wcslen(szChars) - 1); // NOSONAR - szChars is static const array, never NULL
                 wsPassword += szChars[dwIndex];
             }
             else

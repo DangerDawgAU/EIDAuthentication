@@ -572,7 +572,7 @@ BOOL ValidateSmartCardPin(_In_ PCCERT_CONTEXT pCertContext, _In_ PCWSTR pwszPin)
     if (!pwszPin || pwszPin[0] == L'\0')
         return FALSE;
 
-    size_t cchLen = wcslen(pwszPin);
+    size_t cchLen = wcslen(pwszPin); // NOSONAR - pointer validated for NULL above (line 572)
 
     // PIN should be 4-8 digits for most smart cards
     if (cchLen < 4 || cchLen > 8)

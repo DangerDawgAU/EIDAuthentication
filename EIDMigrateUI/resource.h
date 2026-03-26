@@ -1,6 +1,7 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
 // Used by EIDMigrateUI.rc
+// NOSONAR - Macros are required by Windows Resource Compiler; cannot use constexpr/enum for resource IDs
 //
 
 // Dialog IDs

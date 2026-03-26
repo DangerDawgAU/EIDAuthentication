@@ -12,7 +12,7 @@ SecureBuffer::SecureBuffer() : m_pbData(nullptr), m_cbSize(0), m_fLocked(FALSE)
 
 SecureBuffer::SecureBuffer(DWORD cbSize) : m_pbData(nullptr), m_cbSize(cbSize), m_fLocked(FALSE)
 {
-    m_pbData = static_cast<PBYTE>(malloc(cbSize));
+    m_pbData = static_cast<PBYTE>(malloc(cbSize)); // NOSONAR - malloc used for secure memory, compatible with SecureZeroMemory
     if (!m_pbData)
         throw std::bad_alloc();
 
@@ -26,7 +26,7 @@ SecureBuffer::~SecureBuffer()
         if (m_fLocked)
             Unlock();
         SecureZeroMemory(m_pbData, m_cbSize);
-        free(m_pbData);
+        free(m_pbData); // NOSONAR - free used for secure memory, matching malloc
     }
 }
 
@@ -49,7 +49,7 @@ SecureBuffer& SecureBuffer::operator=(SecureBuffer&& other) noexcept
             if (m_fLocked)
                 Unlock();
             SecureZeroMemory(m_pbData, m_cbSize);
-            free(m_pbData);
+            free(m_pbData); // NOSONAR - free used for secure memory, matching malloc
         }
 
         m_pbData = other.m_pbData;
@@ -194,18 +194,18 @@ void CryptoOperationScope::Clear()
 }
 
 // Secure memory utility functions
-void SecureFree(_In_ PVOID pvMem, _In_ SIZE_T cbSize)
+void SecureFree(_In_ PVOID pvMem, _In_ SIZE_T cbSize) // NOSONAR - PVOID (void*) is standard Windows API type for generic pointers
 {
     if (pvMem && cbSize > 0)
     {
         SecureZeroMemory(pvMem, cbSize);
-        free(pvMem);
+        free(pvMem); // NOSONAR - free used for secure memory, matching malloc
     }
 }
 
 PVOID SecureAlloc(_In_ SIZE_T cbSize)
 {
-    PVOID pvMem = malloc(cbSize);
+    PVOID pvMem = malloc(cbSize); // NOSONAR - malloc used for secure memory, compatible with SecureZeroMemory
     if (pvMem)
     {
         SecureZeroMemory(pvMem, cbSize);

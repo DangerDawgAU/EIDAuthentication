@@ -11,7 +11,7 @@
 void SendProgress(HWND hwnd, UINT uMsg, DWORD dwCurrent, DWORD dwTotal, const std::wstring& wsStatus) {
     if (!hwnd || !uMsg) return;
 
-    PROGRESS_DATA* pData = new PROGRESS_DATA(dwCurrent, dwTotal, wsStatus);
+    PROGRESS_DATA* pData = new PROGRESS_DATA(dwCurrent, dwTotal, wsStatus); // NOSONAR - ownership transferred to message handler which frees this
     SendMessage(hwnd, uMsg, 0, (LPARAM)pData);
 }
 
@@ -19,7 +19,7 @@ void SendProgress(HWND hwnd, UINT uMsg, DWORD dwCurrent, DWORD dwTotal, const st
 void SendComplete(HWND hwnd, UINT uMsg, HRESULT hr, DWORD dwCount, const std::wstring& wsMessage) {
     if (!hwnd || !uMsg) return;
 
-    COMPLETE_DATA* pData = new COMPLETE_DATA(hr, dwCount, wsMessage);
+    COMPLETE_DATA* pData = new COMPLETE_DATA(hr, dwCount, wsMessage); // NOSONAR - ownership transferred to message handler which frees this
     SendMessage(hwnd, uMsg, 0, (LPARAM)pData);
 }
 
@@ -27,7 +27,7 @@ void SendComplete(HWND hwnd, UINT uMsg, HRESULT hr, DWORD dwCount, const std::ws
 void SendError(HWND hwnd, UINT uMsg, HRESULT hr, DWORD dwErrorCode, const std::wstring& wsMessage) {
     if (!hwnd || !uMsg) return;
 
-    ERROR_DATA* pData = new ERROR_DATA(hr, dwErrorCode, wsMessage);
+    ERROR_DATA* pData = new ERROR_DATA(hr, dwErrorCode, wsMessage); // NOSONAR - ownership transferred to message handler which frees this
     SendMessage(hwnd, uMsg, 0, (LPARAM)pData);
 }
 
@@ -42,7 +42,7 @@ static std::wstring GetComputerName() {
 }
 
 // Export worker thread
-DWORD WINAPI ExportWorker(LPVOID lpParam) {
+DWORD WINAPI ExportWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LPVOID (void*) for thread functions
     WORKER_CONTEXT* pContext = (WORKER_CONTEXT*)lpParam;
     if (!pContext || !pContext->pwszOutputFile || !pContext->pwszPassword) {
         return ERROR_INVALID_PARAMETER;
@@ -106,7 +106,7 @@ DWORD WINAPI ExportWorker(LPVOID lpParam) {
 }
 
 // Import worker thread
-DWORD WINAPI ImportWorker(LPVOID lpParam) {
+DWORD WINAPI ImportWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LPVOID (void*) for thread functions
     WORKER_CONTEXT* pContext = (WORKER_CONTEXT*)lpParam;
     if (!pContext || !pContext->pwszInputFile || !pContext->pwszPassword) {
         return ERROR_INVALID_PARAMETER;
@@ -162,7 +162,7 @@ DWORD WINAPI ImportWorker(LPVOID lpParam) {
 }
 
 // Enumerate worker thread
-DWORD WINAPI EnumerateWorker(LPVOID lpParam) {
+DWORD WINAPI EnumerateWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LPVOID (void*) for thread functions
     WORKER_CONTEXT* pContext = (WORKER_CONTEXT*)lpParam;
     if (!pContext) {
         return ERROR_INVALID_PARAMETER;
@@ -196,7 +196,7 @@ DWORD WINAPI EnumerateWorker(LPVOID lpParam) {
 }
 
 // Validate file worker thread
-DWORD WINAPI ValidateFileWorker(LPVOID lpParam) {
+DWORD WINAPI ValidateFileWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LPVOID (void*) for thread functions
     WORKER_CONTEXT* pContext = (WORKER_CONTEXT*)lpParam;
     if (!pContext || !pContext->pwszInputFile) {
         return ERROR_INVALID_PARAMETER;

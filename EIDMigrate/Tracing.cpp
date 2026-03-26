@@ -77,7 +77,7 @@ void EIDMigrateTrace(_In_ DWORD dwLevel, _In_ PCWSTR pwszFormat, ...)
     va_end(args);
 
     // Add newline if not present
-    size_t cchLen = wcslen(pwszFormat);
+    size_t cchLen = wcslen(pwszFormat); // NOSONAR - pwszFormat already used successfully in vfwprintf above, non-NULL guaranteed
     if (cchLen == 0 || pwszFormat[cchLen - 1] != L'\n')
         fwprintf(stderr, L"\n");
 
@@ -115,10 +115,10 @@ void ShowProgress(_In_ PCWSTR pwszOperation, _In_ DWORD dwCurrent, _In_ DWORD dw
     {
         DWORD dwWritten;
         WriteConsoleW(hConsole, szProgress,
-            static_cast<DWORD>(wcslen(szProgress)), &dwWritten, nullptr);
+            static_cast<DWORD>(wcslen(szProgress)), &dwWritten, nullptr); // NOSONAR - szProgress is stack-allocated buffer, never NULL
     }
 
-    g_dwProgressLastWidth = static_cast<DWORD>(wcslen(szProgress));
+    g_dwProgressLastWidth = static_cast<DWORD>(wcslen(szProgress)); // NOSONAR - szProgress is stack-allocated buffer, never NULL
 }
 
 void ClearProgress()

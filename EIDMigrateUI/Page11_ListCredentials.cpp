@@ -104,7 +104,7 @@ INT_PTR CALLBACK FilePasswordDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
             }
 
             // Password length validation
-            if (wcslen(szPassword) < 16)
+            if (wcslen(szPassword) < 16) // NOSONAR - szPassword is stack-allocated buffer, never NULL
             {
                 int nResult = MessageBoxW(hwndDlg,
                     L"The password is less than 16 characters. A strong password is recommended.\n\nDo you want to continue?",
@@ -175,7 +175,7 @@ static void PopulateCredentialList(HWND hList, _In_ const std::vector<Credential
 
         LVITEM lvi = {0};
         lvi.mask = LVIF_TEXT | LVIF_PARAM;
-        lvi.pszText = (LPWSTR)cred.wsUsername.c_str();
+        lvi.pszText = const_cast<LPWSTR>(cred.wsUsername.c_str()); // Safe: ListView won't modify the string
         lvi.iItem = (int)i;
         lvi.lParam = (LPARAM)i;  // Store index in lParam
         int iItem = ListView_InsertItem(hList, &lvi);
@@ -189,7 +189,7 @@ static void PopulateCredentialList(HWND hList, _In_ const std::vector<Credential
         // Column 3: Encryption
         PCWSTR pwszEnc = (cred.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtCrypted) ? L"Certificate" :
                          (cred.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtDPAPI) ? L"DPAPI" : L"None";
-        ListView_SetItemText(hList, iItem, 3, (LPWSTR)pwszEnc);
+        ListView_SetItemText(hList, iItem, 3, const_cast<LPWSTR>(pwszEnc)); // Safe: ListView won't modify the string
 
         // Column 4: Certificate Hash (preview)
         WCHAR szHash[64];
@@ -408,22 +408,22 @@ INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wPar
 
             // Column 0: Checkbox (automatic with LVS_EX_CHECKBOXES)
             // Column 1: Username
-            lvc.pszText = (LPWSTR)L"Username";
+            lvc.pszText = const_cast<LPWSTR>(L"Username"); // Safe: ListView won't modify the string
             lvc.cx = 120;
             ListView_InsertColumn(hList, 1, &lvc);
 
             // Column 2: RID
-            lvc.pszText = (LPWSTR)L"RID";
+            lvc.pszText = const_cast<LPWSTR>(L"RID"); // Safe: ListView won't modify the string
             lvc.cx = 60;
             ListView_InsertColumn(hList, 2, &lvc);
 
             // Column 3: Encryption
-            lvc.pszText = (LPWSTR)L"Encryption";
+            lvc.pszText = const_cast<LPWSTR>(L"Encryption"); // Safe: ListView won't modify the string
             lvc.cx = 90;
             ListView_InsertColumn(hList, 3, &lvc);
 
             // Column 4: Certificate Hash (preview)
-            lvc.pszText = (LPWSTR)L"Certificate Hash (preview)";
+            lvc.pszText = const_cast<LPWSTR>(L"Certificate Hash (preview)"); // Safe: ListView won't modify the string
             lvc.cx = 180;
             ListView_InsertColumn(hList, 4, &lvc);
         }

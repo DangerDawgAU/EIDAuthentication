@@ -88,7 +88,7 @@ BOOL CreateRootCertificate()
 	GetSystemTime(&(CertificateInfo.EndTime));
 	CertificateInfo.EndTime.wYear += 10;
 	CertificateInfo.fReturnCerticateContext = TRUE;
-	CertificateInfo.szSubject = (PWSTR)szSubject.c_str();
+	CertificateInfo.szSubject = const_cast<PWSTR>(szSubject.c_str()); // Safe: API won't modify
 	fReturn = CreateCertificate(&CertificateInfo);
 	DWORD dwError = GetLastError();
 	if (fReturn)
@@ -116,7 +116,7 @@ BOOL CreateSmartCardCertificate(PCCERT_CONTEXT pCertificate, PWSTR wszReader, PW
 	CertificateInfo.dwKeyType = AT_KEYEXCHANGE;
 	CertificateInfo.bHasSmartCardAuthentication = TRUE;
 	CertificateInfo.pRootCertificate = pCertificate;
-	CertificateInfo.szSubject = (PWSTR)szSubject.c_str();
+	CertificateInfo.szSubject = const_cast<PWSTR>(szSubject.c_str()); // Safe: API won't modify
 	GetSystemTime(&(CertificateInfo.StartTime));
 	GetSystemTime(&(CertificateInfo.EndTime));
 	// Use configurable validity period
@@ -406,7 +406,7 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					certViewInfo.dwSize = sizeof(CRYPTUI_VIEWCERTIFICATE_STRUCT);
 					certViewInfo.hwndParent = hWnd;
 					certViewInfo.dwFlags = CRYPTUI_DISABLE_EDITPROPERTIES | CRYPTUI_DISABLE_ADDTOSTORE | CRYPTUI_DISABLE_EXPORT | CRYPTUI_DISABLE_HTMLLINK;
-					certViewInfo.szTitle = (PWSTR)szTitle.c_str();
+					certViewInfo.szTitle = const_cast<PWSTR>(szTitle.c_str()); // Safe: API won't modify
 					certViewInfo.pCertContext = pRootCertificate;
 					certViewInfo.cPurposes = 0;
 					certViewInfo.rgszPurposes = nullptr;

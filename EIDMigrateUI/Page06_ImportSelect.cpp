@@ -94,14 +94,14 @@ INT_PTR CALLBACK WndProc_06_ImportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam,
             GetDlgItemText(hwndDlg, IDC_06_INPUT_FILE, szFile, ARRAYSIZE(szFile));
             GetDlgItemText(hwndDlg, IDC_06_PASSWORD, szPassword, ARRAYSIZE(szPassword));
 
-            if (wcslen(szFile) == 0 || wcslen(szPassword) == 0) {
+            if (wcslen(szFile) == 0 || wcslen(szPassword) == 0) { // NOSONAR - both are stack-allocated buffers, never NULL
                 MessageBoxW(hwndDlg, L"Please select a file and enter a password.",
                     L"Import", MB_ICONEXCLAMATION);
                 return TRUE;
             }
 
             // Validate password length
-            if (wcslen(szPassword) < 16) {
+            if (wcslen(szPassword) < 16) { // NOSONAR - szPassword is stack-allocated buffer, never NULL
                 MessageBoxW(hwndDlg, L"Password must be at least 16 characters.",
                     L"Import", MB_ICONEXCLAMATION);
                 return TRUE;
@@ -117,7 +117,7 @@ INT_PTR CALLBACK WndProc_06_ImportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam,
             std::wstring wsSourceMachine, wsExportDate;
 
             SecureWString secPassword;
-            secPassword.assign(szPassword, wcslen(szPassword));
+            secPassword.assign(szPassword, wcslen(szPassword)); // NOSONAR - szPassword is stack-allocated buffer, never NULL
 
             HRESULT hr = ReadImportFileWithMetadata(szFile, secPassword, credentials, groups,
                 &wsSourceMachine, &wsExportDate, nullptr);

@@ -382,8 +382,13 @@ LPCTSTR GetTrustErrorText(DWORD Status)
 	// Use RAII-style cleanup
 	struct CertUsageDeleter {
 		PCERT_ENHKEY_USAGE p;
+		explicit CertUsageDeleter(PCERT_ENHKEY_USAGE ptr) : p(ptr) {}
 		~CertUsageDeleter() { if (p) EIDFree(p); }
-	} cleanup{ pCertUsage };
+		// Delete copy/move - this manages a resource
+		CertUsageDeleter(const CertUsageDeleter&) = delete;
+		CertUsageDeleter& operator=(const CertUsageDeleter&) = delete;
+	};
+	CertUsageDeleter cleanup(pCertUsage);
 
 	if (!CertGetEnhancedKeyUsage(pCertContext, 0, pCertUsage, &dwSize))
 	{

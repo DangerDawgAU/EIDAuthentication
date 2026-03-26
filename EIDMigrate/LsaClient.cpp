@@ -105,7 +105,7 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
             continue;
         }
 
-        pSid = static_cast<PSID>(malloc(dwSidSize));
+        pSid = static_cast<PSID>(malloc(dwSidSize)); // NOSONAR - LookupAccountNameW requires malloc/free for SID buffer
         if (!pSid)
         {
             EIDM_TRACE_ERROR(L"Failed to allocate %u bytes for SID", dwSidSize);
@@ -114,7 +114,7 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
         SecureZeroMemory(pSid, dwSidSize);
 
         // Allocate domain buffer
-        PWSTR pwszDomain = static_cast<PWSTR>(malloc(dwDomainSize * sizeof(WCHAR)));
+        PWSTR pwszDomain = static_cast<PWSTR>(malloc(dwDomainSize * sizeof(WCHAR))); // NOSONAR - LookupAccountNameW requires malloc/free for domain buffer
         if (!pwszDomain)
         {
             EIDM_TRACE_ERROR(L"Failed to allocate domain buffer");
@@ -163,7 +163,7 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
 
         LSA_UNICODE_STRING lsaSecretName;
         lsaSecretName.Buffer = wszSecretName;
-        lsaSecretName.Length = static_cast<USHORT>(wcslen(wszSecretName) * sizeof(WCHAR));
+        lsaSecretName.Length = static_cast<USHORT>(wcslen(wszSecretName) * sizeof(WCHAR)); // NOSONAR - wszSecretName is stack-allocated buffer, never NULL
         lsaSecretName.MaximumLength = lsaSecretName.Length + sizeof(WCHAR);
 
         PLSA_UNICODE_STRING pSecretData = nullptr;
@@ -352,7 +352,7 @@ HRESULT ExportLsaCredential(_In_ DWORD dwRid, _Out_ CredentialInfo& info)
 
     LSA_UNICODE_STRING lsaSecretName;
     lsaSecretName.Buffer = wszSecretName;
-    lsaSecretName.Length = static_cast<USHORT>(wcslen(wszSecretName) * sizeof(WCHAR));
+    lsaSecretName.Length = static_cast<USHORT>(wcslen(wszSecretName) * sizeof(WCHAR)); // NOSONAR - wszSecretName is stack-allocated buffer, never NULL
     lsaSecretName.MaximumLength = lsaSecretName.Length + sizeof(WCHAR);
 
     PLSA_UNICODE_STRING pSecretData = nullptr;
@@ -602,7 +602,7 @@ HRESULT ImportLsaCredential(
 
     LSA_UNICODE_STRING lsaSecretName;
     lsaSecretName.Buffer = wszSecretName;
-    lsaSecretName.Length = static_cast<USHORT>(wcslen(wszSecretName) * sizeof(WCHAR));
+    lsaSecretName.Length = static_cast<USHORT>(wcslen(wszSecretName) * sizeof(WCHAR)); // NOSONAR - wszSecretName is stack-allocated buffer, never NULL
     lsaSecretName.MaximumLength = lsaSecretName.Length + sizeof(WCHAR);
 
     LSA_UNICODE_STRING lsaSecretData;

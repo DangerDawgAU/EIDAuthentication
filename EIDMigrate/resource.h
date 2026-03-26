@@ -1,6 +1,7 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
 // Used by EIDMigrate.rc
+// NOSONAR - Macros are required by Windows Resource Compiler; cannot use constexpr/enum for resource IDs
 //
 #define IDD_PIN_PROMPT                  100
 #define IDC_PIN_EDIT                    101

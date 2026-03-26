@@ -82,10 +82,10 @@ struct ERROR_DATA {
 };
 
 // Worker thread entry points
-DWORD WINAPI ExportWorker(LPVOID lpParam);
-DWORD WINAPI ImportWorker(LPVOID lpParam);
-DWORD WINAPI EnumerateWorker(LPVOID lpParam);
-DWORD WINAPI ValidateFileWorker(LPVOID lpParam);
+DWORD WINAPI ExportWorker(LPVOID lpParam); // NOSONAR - Windows API requires LPVOID (void*) for thread functions
+DWORD WINAPI ImportWorker(LPVOID lpParam); // NOSONAR - Windows API requires LPVOID (void*) for thread functions
+DWORD WINAPI EnumerateWorker(LPVOID lpParam); // NOSONAR - Windows API requires LPVOID (void*) for thread functions
+DWORD WINAPI ValidateFileWorker(LPVOID lpParam); // NOSONAR - Windows API requires LPVOID (void*) for thread functions
 
 // Helper to send progress to parent window
 void SendProgress(HWND hwnd, UINT uMsg, DWORD dwCurrent, DWORD dwTotal, const std::wstring& wsStatus = L"");
