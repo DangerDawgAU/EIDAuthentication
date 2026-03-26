@@ -94,8 +94,8 @@ jobs:
           Copy-Item artifacts\* x64\Release\
           # Build the installer (use full path since chocolatey doesn't update PATH immediately)
           & "C:\Program Files (x86)\NSIS\makensis.exe" /V3 "Installer\Installerx64.nsi"
-          # NSIS outputs to current directory
-          mv EIDInstallx64.exe artifacts/
+          # NSIS outputs to Installer/ directory
+          mv Installer\EIDInstallx64.exe artifacts/
         shell: pwsh
 
       - name: Create source code archive
