@@ -10,10 +10,10 @@
 // Undefine Windows macros that conflict with our enum values
 // (must come after includes that pull in Windows.h)
 #ifdef ERROR
-#undef ERROR
+#undef ERROR // NOSONAR - Must undef Windows macro that conflicts with enum value
 #endif
 #ifdef WARNING
-#undef WARNING
+#undef WARNING // NOSONAR - Must undef Windows macro that conflicts with enum value
 #endif
 
 static HANDLE g_hEventLog = nullptr;
@@ -35,7 +35,7 @@ void LogAuditEvent(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pwszUser
         WCHAR szMessage[512];
         SecureZeroMemory(szMessage, sizeof(szMessage));
 
-        switch (static_cast<DWORD>(eventType))
+        switch (static_cast<DWORD>(eventType)) // NOSONAR - static_cast used for enum to underlying type; std::to_underlying is C++23, project uses earlier standard
         {
         case 1:  // EID_AUDIT_EVENT_TYPE::EXPORT_SUCCESS
             swprintf_s(szMessage, L"Successfully exported credentials. User: %s",
@@ -74,7 +74,7 @@ void LogAuditEvent(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pwszUser
             break;
         }
 
-        PCWSTR pwszStrings[1] = { szMessage };
+        PCWSTR pwszStrings[1] = { szMessage }; // NOSONAR - C-style array required for Windows ReportEventW API which expects PCWSTR*
         ReportEventW(g_hEventLog, wType, 1, dwEventID, nullptr, 1, 0, pwszStrings, nullptr);
     }
 }
@@ -155,7 +155,7 @@ void FlushLogFile()
 
 PCWSTR GetEventTypeString(EID_AUDIT_EVENT_TYPE eventType)
 {
-    switch (static_cast<DWORD>(eventType))
+    switch (static_cast<DWORD>(eventType)) // NOSONAR - static_cast used for enum to underlying type; std::to_underlying is C++23, project uses earlier standard
     {
     case 1: return L"EXPORT_SUCCESS";          // EID_AUDIT_EVENT_TYPE::EXPORT_SUCCESS
     case 2: return L"EXPORT_FAILURE";          // EID_AUDIT_EVENT_TYPE::EXPORT_FAILURE
@@ -172,7 +172,7 @@ PCWSTR GetEventTypeString(EID_AUDIT_EVENT_TYPE eventType)
 
 WORD GetEventLogLevel(EID_AUDIT_EVENT_TYPE eventType)
 {
-    switch (static_cast<DWORD>(eventType))
+    switch (static_cast<DWORD>(eventType)) // NOSONAR - static_cast used for enum to underlying type; std::to_underlying is C++23, project uses earlier standard
     {
     case 2:  // EID_AUDIT_EVENT_TYPE::EXPORT_FAILURE
     case 4:  // EID_AUDIT_EVENT_TYPE::IMPORT_FAILURE

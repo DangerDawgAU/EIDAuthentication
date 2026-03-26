@@ -348,7 +348,7 @@ LONG CSmartCardConnectionNotifier::GetReaderStates(SCARD_READERSTATE rgscState[M
 		// init fake PNP reader
 		memset(&rgscState[0],0,sizeof(SCARD_READERSTATE));
 		rgscState[0].szReader = (LPWSTR) EIDAlloc((DWORD)(sizeof(WCHAR)*(wcslen(L"\\\\?PNP?\\NOTIFICATION")+1)));
-		wcscpy_s((WCHAR*) rgscState[0].szReader,wcslen(L"\\\\?PNP?\\NOTIFICATION")+1,L"\\\\?PNP?\\NOTIFICATION");
+		wcscpy_s((WCHAR*) rgscState[0].szReader,wcslen(L"\\\\?PNP?\\NOTIFICATION")+1,L"\\\\?PNP?\\NOTIFICATION"); // NOSONAR - SCARD_READERSTATE requires LPWSTR cast for string operations
 		rgscState[0].dwCurrentState = SCARD_STATE_UNAWARE;
 		rgscState[0].dwEventState = SCARD_STATE_UNAWARE;
 		*dwRdrCount = 1;
@@ -453,7 +453,7 @@ LONG CSmartCardConnectionNotifier::GetReaderStates(SCARD_READERSTATE rgscState[M
 			memset(&rgscState[dwPreviousRdrCount],0,sizeof(SCARD_READERSTATE));
 
 			rgscState[dwPreviousRdrCount].szReader = (LPWSTR) EIDAlloc((DWORD)(sizeof(WCHAR)*(wcslen(szReader[dwI])+1)));
-			wcscpy_s((WCHAR*) rgscState[dwPreviousRdrCount].szReader,wcslen(szReader[dwI])+1,szReader[dwI]);
+			wcscpy_s((WCHAR*) rgscState[dwPreviousRdrCount].szReader,wcslen(szReader[dwI])+1,szReader[dwI]); // NOSONAR - SCARD_READERSTATE requires LPWSTR cast for string operations
 			rgscState[dwPreviousRdrCount].dwCurrentState = SCARD_STATE_UNAWARE;
 			rgscState[dwPreviousRdrCount].dwEventState = SCARD_STATE_UNAWARE;
 			dwPreviousRdrCount++;

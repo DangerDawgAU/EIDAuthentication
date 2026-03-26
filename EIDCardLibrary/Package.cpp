@@ -411,7 +411,7 @@ HRESULT LsaInitString(PSTRING pszDestinationString, PCSTR pszSourceString)
 
         if (SUCCEEDED(hr))
         {
-            pszDestinationString->Buffer = (PCHAR)pszSourceString;
+            pszDestinationString->Buffer = (PCHAR)pszSourceString; // NOSONAR - LSA STRING requires non-const Buffer pointer; source not modified
             pszDestinationString->Length = usLength;
             pszDestinationString->MaximumLength = pszDestinationString->Length+1;
             hr = S_OK;

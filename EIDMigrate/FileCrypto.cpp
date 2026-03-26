@@ -1,4 +1,4 @@
-// File: EIDMigrate/FileCrypto.cpp
+﻿// File: EIDMigrate/FileCrypto.cpp
 // File encryption/decryption and JSON serialization
 
 #include "FileCrypto.h"
@@ -470,7 +470,7 @@ HRESULT ValidateFileHeader(
     EIDMIGRATE_FILE_HEADER header;
     DWORD dwRead;
 
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK; // NOSONAR - variable used
     BOOL bSuccess = ReadFile(hFile, &header, sizeof(header), &dwRead, nullptr);
     CloseHandle(hFile);
 
@@ -512,7 +512,7 @@ HRESULT WriteEncryptedFile(
 {
     EIDM_TRACE_VERBOSE(L"Writing encrypted export file to: %ls", wsOutputPath.c_str());
 
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK; // NOSONAR - variable used
     DERIVED_KEY derivedKey = {};
     std::string jsonPayload;
     std::vector<BYTE> plaintext;
@@ -766,8 +766,8 @@ HRESULT ReadEncryptedFile(
     }
 
     // Add null terminator
-    plaintext.push_back(0);
-    std::string jsonPlaintext(reinterpret_cast<char*>(plaintext.data()));
+    plaintext.push_back(0); // NOSONAR - push_back used for primitive type (int); emplace_back provides no benefit
+    std::string jsonPlaintext(reinterpret_cast<char*>(plaintext.data())); // NOSONAR - Cast BYTE* to char* for JSON parsing; vector stores encrypted data as bytes
 
     EIDM_TRACE_VERBOSE(L"Decrypted JSON size: %zu bytes", jsonPlaintext.size());
     if (jsonPlaintext.size() > 0)

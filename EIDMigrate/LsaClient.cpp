@@ -63,7 +63,7 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
     DWORD dwTotalEntries = 0;
 
     DWORD dwNetStatus = NetUserEnum(nullptr, 0, FILTER_NORMAL_ACCOUNT,
-        reinterpret_cast<LPBYTE*>(&pUserInfoArray),
+        reinterpret_cast<LPBYTE*>(&pUserInfoArray), // NOSONAR - Windows Net API requires LPBYTE* for output parameter
         MAX_PREFERRED_LENGTH,
         &dwEntriesRead,
         &dwTotalEntries,
@@ -190,7 +190,7 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
 
             if (pSecretData->Length >= dwMinPrivateDataSize)
             {
-                PEID_PRIVATE_DATA pPrivateData = reinterpret_cast<PEID_PRIVATE_DATA>(pSecretData->Buffer);
+                PEID_PRIVATE_DATA pPrivateData = reinterpret_cast<PEID_PRIVATE_DATA>(pSecretData->Buffer); // NOSONAR - Cast from PBYTE* to PEID_PRIVATE_DATA required for LSA private data structure
 
                 // Validate structure fields before accessing
                 if (pPrivateData->dwType >= static_cast<EID_PRIVATE_DATA_TYPE>(1) &&
@@ -230,7 +230,7 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
                     BYTE* pCertificate = pPrivateData->Data + pPrivateData->dwCertificatOffset;
 
                     // Validate the certificate data is within the secret buffer
-                    DWORD dwCertOffset = static_cast<DWORD>(pCertificate - reinterpret_cast<BYTE*>(pPrivateData));
+                    DWORD dwCertOffset = static_cast<DWORD>(pCertificate - reinterpret_cast<BYTE*>(pPrivateData)); // NOSONAR - Cast PEID_PRIVATE_DATA* to BYTE* required for pointer arithmetic within LSA secret buffer
                     DWORD dwCertEnd = dwCertOffset + pPrivateData->dwCertificatSize;
 
                     if (dwCertEnd <= pSecretData->Length)

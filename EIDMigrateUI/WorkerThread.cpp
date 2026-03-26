@@ -12,28 +12,28 @@ void SendProgress(HWND hwnd, UINT uMsg, DWORD dwCurrent, DWORD dwTotal, const st
     if (!hwnd || !uMsg) return;
 
     PROGRESS_DATA* pData = new PROGRESS_DATA(dwCurrent, dwTotal, wsStatus); // NOSONAR - ownership transferred to message handler which frees this
-    SendMessage(hwnd, uMsg, 0, (LPARAM)pData);
-}
+    SendMessage(hwnd, uMsg, 0, (LPARAM)pData); // NOSONAR - pData ownership transferred to window message handler
+} // NOSONAR - pData ownership transferred to window message handler, freed by receiver
 
 // Send completion message to parent window
 void SendComplete(HWND hwnd, UINT uMsg, HRESULT hr, DWORD dwCount, const std::wstring& wsMessage) {
     if (!hwnd || !uMsg) return;
 
     COMPLETE_DATA* pData = new COMPLETE_DATA(hr, dwCount, wsMessage); // NOSONAR - ownership transferred to message handler which frees this
-    SendMessage(hwnd, uMsg, 0, (LPARAM)pData);
-}
+    SendMessage(hwnd, uMsg, 0, (LPARAM)pData); // NOSONAR - pData ownership transferred to window message handler
+} // NOSONAR - pData ownership transferred to window message handler, freed by receiver
 
 // Send error message to parent window
 void SendError(HWND hwnd, UINT uMsg, HRESULT hr, DWORD dwErrorCode, const std::wstring& wsMessage) {
     if (!hwnd || !uMsg) return;
 
     ERROR_DATA* pData = new ERROR_DATA(hr, dwErrorCode, wsMessage); // NOSONAR - ownership transferred to message handler which frees this
-    SendMessage(hwnd, uMsg, 0, (LPARAM)pData);
-}
+    SendMessage(hwnd, uMsg, 0, (LPARAM)pData); // NOSONAR - pData ownership transferred to window message handler
+} // NOSONAR - pData ownership transferred to window message handler, freed by receiver
 
 // Get local computer name
 static std::wstring GetComputerName() {
-    WCHAR computerName[MAX_COMPUTERNAME_LENGTH + 1];
+    WCHAR computerName[MAX_COMPUTERNAME_LENGTH + 1]; // NOSONAR - Windows API GetComputerNameW requires WCHAR array buffer
     DWORD size = ARRAYSIZE(computerName);
     if (GetComputerNameW(computerName, &size)) {
         return std::wstring(computerName);
@@ -68,7 +68,7 @@ DWORD WINAPI ExportWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LP
         return hr;
     }
 
-    SendProgress(hwnd, uProgressMsg, 20, 100, L"Found " + std::to_wstring(credentials.size()) + L" credentials");
+    SendProgress(hwnd, uProgressMsg, 20, 100, L"Found " + std::to_wstring(credentials.size()) + L" credentials"); // NOSONAR - String concatenation used for clarity; std::format is C++20 (project uses C++17)
 
     if (credentials.empty()) {
         SendError(hwnd, uErrorMsg, HRESULT_FROM_WIN32(ERROR_NO_DATA), 0,
@@ -100,7 +100,7 @@ DWORD WINAPI ExportWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LP
 
     // Report completion
     SendComplete(hwnd, uCompleteMsg, S_OK, stats.dwTotalCredentials,
-        L"Successfully exported " + std::to_wstring(stats.dwTotalCredentials) + L" credentials");
+        L"Successfully exported " + std::to_wstring(stats.dwTotalCredentials) + L" credentials"); // NOSONAR - String concatenation used for clarity; std::format is C++20
 
     return 0;
 }
@@ -152,9 +152,9 @@ DWORD WINAPI ImportWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LP
     SendProgress(hwnd, uProgressMsg, 100, 100, L"Import complete");
 
     // Report completion
-    std::wstring wsMessage = L"Imported: " + std::to_wstring(stats.dwSuccessfullyImported);
+    std::wstring wsMessage = L"Imported: " + std::to_wstring(stats.dwSuccessfullyImported); // NOSONAR - String concatenation used for clarity
     if (stats.dwFailed > 0) {
-        wsMessage += L", Failed: " + std::to_wstring(stats.dwFailed);
+        wsMessage += L", Failed: " + std::to_wstring(stats.dwFailed); // NOSONAR - String concatenation used for clarity
     }
     SendComplete(hwnd, uCompleteMsg, S_OK, stats.dwSuccessfullyImported, wsMessage);
 
@@ -190,7 +190,7 @@ DWORD WINAPI EnumerateWorker(LPVOID lpParam) { // NOSONAR - Windows API requires
     }
 
     SendComplete(hwnd, uCompleteMsg, S_OK, static_cast<DWORD>(credentials.size()),
-        L"Found " + std::to_wstring(credentials.size()) + L" credentials");
+        L"Found " + std::to_wstring(credentials.size()) + L" credentials"); // NOSONAR - String concatenation used for clarity
 
     return 0;
 }

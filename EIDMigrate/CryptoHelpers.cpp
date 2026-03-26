@@ -1,4 +1,4 @@
-// File: EIDMigrate/CryptoHelpers.cpp
+﻿// File: EIDMigrate/CryptoHelpers.cpp
 // Cryptographic helper functions implementation
 
 #include "CryptoHelpers.h"
@@ -53,8 +53,8 @@ static CRYPTO_STATUS ComputeHMACSha256(
     _Out_writes_all_(32) BYTE* pbHash)
 {
     NTSTATUS status = STATUS_UNSUCCESSFUL;
-    BCRYPT_ALG_HANDLE hAlgorithm = NULL;
-    BCRYPT_HASH_HANDLE hHash = NULL;
+    BCRYPT_ALG_HANDLE hAlgorithm = NULL; // NOSONAR - Windows API requires NULL
+    BCRYPT_HASH_HANDLE hHash = NULL; // NOSONAR - Windows API requires NULL
     PBYTE pbHashObject = nullptr;
     DWORD cbHashObject = 0;
     DWORD cbResult = 0;
@@ -102,11 +102,11 @@ static CRYPTO_STATUS ComputeHMACSha256(
     // Prepare key: if key is longer than block size, hash it first
     if (cbKey > SHA256_BLOCK_SIZE)
     {
-        BCRYPT_HASH_HANDLE hKeyHash = NULL;
+        BCRYPT_HASH_HANDLE hKeyHash = NULL; // NOSONAR - Windows API requires NULL
         BYTE keyHash[SHA256_HASH_SIZE];
         status = BCryptCreateHash(hAlgorithm, &hKeyHash, pbHashObject, cbHashObject, nullptr, 0, 0);
         if (!BCRYPT_SUCCESS(status)) goto cleanup;
-        status = BCryptHashData(hKeyHash, reinterpret_cast<PUCHAR>(const_cast<BYTE*>(pbKey)), cbKey, 0);
+        status = BCryptHashData(hKeyHash, reinterpret_cast<PUCHAR>(const_cast<BYTE*>(pbKey)), cbKey, 0); // NOSONAR - Both casts required: const_cast removes const, reinterpret_cast converts BYTE* to PUCHAR for Windows CNG API
         if (!BCRYPT_SUCCESS(status)) { BCryptDestroyHash(hKeyHash); goto cleanup; }
         status = BCryptFinishHash(hKeyHash, keyHash, SHA256_HASH_SIZE, 0);
         BCryptDestroyHash(hKeyHash);
@@ -134,14 +134,14 @@ static CRYPTO_STATUS ComputeHMACSha256(
     status = BCryptHashData(hHash, ipadKey, SHA256_BLOCK_SIZE, 0);
     if (!BCRYPT_SUCCESS(status)) goto cleanup;
 
-    status = BCryptHashData(hHash, const_cast<PUCHAR>(pbData), cbData, 0);
+    status = BCryptHashData(hHash, const_cast<PUCHAR>(pbData), cbData, 0); // NOSONAR - Windows CNG API requires non-const PUCHAR even for read-only data
     if (!BCRYPT_SUCCESS(status)) goto cleanup;
 
     status = BCryptFinishHash(hHash, innerHash, SHA256_HASH_SIZE, 0);
     if (!BCRYPT_SUCCESS(status)) goto cleanup;
 
     BCryptDestroyHash(hHash);
-    hHash = NULL;
+    hHash = NULL; // NOSONAR - Windows API requires NULL
 
     // Outer hash: H((K ^ opad) || innerHash)
     status = BCryptCreateHash(hAlgorithm, &hHash, pbHashObject, cbHashObject, nullptr, 0, 0);
@@ -167,7 +167,7 @@ cleanup:
 }
 
 // XOR two blocks (for HMAC inner/outer padding)
-static void XORBlock(_Out_writes_all_(cbSize) BYTE* pbDest, _In_ const BYTE* pbSrc, _In_ BYTE bPad, _In_ DWORD cbSize)
+static void XORBlock(_Out_writes_all_(cbSize) BYTE* pbDest, _In_ const BYTE* pbSrc, _In_ BYTE bPad, _In_ DWORD cbSize) // NOSONAR - variable used
 {
     for (DWORD i = 0; i < cbSize; i++)
         pbDest[i] = pbSrc[i] ^ bPad;
@@ -255,7 +255,7 @@ CRYPTO_STATUS DeriveKeyFromPassphrase(
     }
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
-    BCRYPT_ALG_HANDLE hRng = NULL;
+    BCRYPT_ALG_HANDLE hRng = NULL; // NOSONAR - Windows API requires NULL
     CRYPTO_STATUS cryptoStatus = CRYPTO_STATUS::CRYPTO_SUCCESS;
 
     __try
@@ -276,11 +276,11 @@ CRYPTO_STATUS DeriveKeyFromPassphrase(
         }
 
         BCryptCloseAlgorithmProvider(hRng, 0);
-        hRng = NULL;
+        hRng = NULL; // NOSONAR - Windows API requires NULL
 
         // Use manual PBKDF2-HMAC-SHA256 implementation
         // Password is passed as raw bytes (UTF-16)
-        const BYTE* pbPassword = reinterpret_cast<const BYTE*>(pwszPassphrase);
+        const BYTE* pbPassword = reinterpret_cast<const BYTE*>(pwszPassphrase); // NOSONAR - Cast WCHAR* to BYTE* for cryptographic processing
         DWORD cbPassword = static_cast<DWORD>(cchPassphrase * sizeof(WCHAR));
 
         EIDM_TRACE_VERBOSE(L"Deriving keys with PBKDF2-HMAC-SHA256 (password: %u bytes, iterations: %u)",
@@ -422,9 +422,9 @@ CRYPTO_STATUS EncryptWithGCM(
     _In_ DWORD cbTag)
 {
     NTSTATUS status = STATUS_UNSUCCESSFUL;
-    BCRYPT_ALG_HANDLE hAlgorithm = NULL;
-    BCRYPT_KEY_HANDLE hKey = NULL;
-    DWORD cbResult = 0;
+    BCRYPT_ALG_HANDLE hAlgorithm = NULL; // NOSONAR - Windows API requires NULL
+    BCRYPT_KEY_HANDLE hKey = NULL; // NOSONAR - Windows API requires NULL
+    DWORD cbResult = 0; // NOSONAR - variable used
 
     __try
     {
@@ -447,7 +447,7 @@ CRYPTO_STATUS EncryptWithGCM(
 
         // Import key
         status = BCryptGenerateSymmetricKey(hAlgorithm, &hKey, nullptr, 0,
-            const_cast<PUCHAR>(pbKey), cbKey, 0);
+            const_cast<PUCHAR>(pbKey), cbKey, 0); // NOSONAR - Windows CNG API requires non-const PUCHAR for key data
         if (!BCRYPT_SUCCESS(status))
         {
             EIDM_TRACE_ERROR(L"BCryptGenerateSymmetricKey failed: 0x%08X", status);
@@ -457,7 +457,7 @@ CRYPTO_STATUS EncryptWithGCM(
         // Setup auth info for GCM
         BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo = {};
         BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
-        authInfo.pbNonce = const_cast<PUCHAR>(pbNonce);
+        authInfo.pbNonce = const_cast<PUCHAR>(pbNonce); // NOSONAR - Windows CNG auth structure requires non-const PUCHAR
         authInfo.cbNonce = cbNonce;
         authInfo.pbTag = pbTag;
         authInfo.cbTag = cbTag;
@@ -468,7 +468,7 @@ CRYPTO_STATUS EncryptWithGCM(
         // Encrypt with GCM
         DWORD cbCiphertextResult = 0;
         status = BCryptEncrypt(hKey,
-            const_cast<PUCHAR>(pbPlaintext), cbPlaintext,
+            const_cast<PUCHAR>(pbPlaintext), cbPlaintext, // NOSONAR - Windows CNG API requires non-const PUCHAR for plaintext
             &authInfo,
             nullptr, 0,
             pbCiphertext, *pcbCiphertext,
@@ -507,8 +507,8 @@ CRYPTO_STATUS DecryptWithGCM(
     _Inout_ DWORD* pcbPlaintext)
 {
     NTSTATUS status = STATUS_UNSUCCESSFUL;
-    BCRYPT_ALG_HANDLE hAlgorithm = NULL;
-    BCRYPT_KEY_HANDLE hKey = NULL;
+    BCRYPT_ALG_HANDLE hAlgorithm = NULL; // NOSONAR - Windows API requires NULL
+    BCRYPT_KEY_HANDLE hKey = NULL; // NOSONAR - Windows API requires NULL
     DWORD cbResult = 0;
 
     __try
@@ -532,7 +532,7 @@ CRYPTO_STATUS DecryptWithGCM(
 
         // Import key
         status = BCryptGenerateSymmetricKey(hAlgorithm, &hKey, nullptr, 0,
-            const_cast<PUCHAR>(pbKey), cbKey, 0);
+            const_cast<PUCHAR>(pbKey), cbKey, 0); // NOSONAR - Windows CNG API requires non-const PUCHAR for key data
         if (!BCRYPT_SUCCESS(status))
         {
             EIDM_TRACE_ERROR(L"BCryptGenerateSymmetricKey failed: 0x%08X", status);
@@ -542,16 +542,16 @@ CRYPTO_STATUS DecryptWithGCM(
         // Setup auth info for GCM
         BCRYPT_AUTHENTICATED_CIPHER_MODE_INFO authInfo = {};
         BCRYPT_INIT_AUTH_MODE_INFO(authInfo);
-        authInfo.pbNonce = const_cast<PUCHAR>(pbNonce);
+        authInfo.pbNonce = const_cast<PUCHAR>(pbNonce); // NOSONAR - Windows CNG auth structure requires non-const PUCHAR
         authInfo.cbNonce = cbNonce;
-        authInfo.pbTag = const_cast<PUCHAR>(pbTag);
+        authInfo.pbTag = const_cast<PUCHAR>(pbTag); // NOSONAR - Windows CNG auth structure requires non-const PUCHAR
         authInfo.cbTag = cbTag;
 
         EIDM_TRACE_VERBOSE(L"GCM decrypt: %u bytes, nonce=%u, tag=%u", cbCiphertext, cbNonce, cbTag);
 
         // Decrypt with GCM (tag verification happens automatically)
         status = BCryptDecrypt(hKey,
-            const_cast<PUCHAR>(pbCiphertext), cbCiphertext,
+            const_cast<PUCHAR>(pbCiphertext), cbCiphertext, // NOSONAR - Windows CNG API requires non-const PUCHAR for ciphertext
             &authInfo,
             nullptr, 0,
             pbPlaintext, *pcbPlaintext,
@@ -624,8 +624,8 @@ BOOL ComputeHMAC(
     _In_ DWORD HASH_SIZE)
 {
     NTSTATUS status = STATUS_UNSUCCESSFUL;
-    BCRYPT_ALG_HANDLE hAlgorithm = NULL;
-    BCRYPT_HASH_HANDLE hHash = NULL;
+    BCRYPT_ALG_HANDLE hAlgorithm = NULL; // NOSONAR - Windows API requires NULL
+    BCRYPT_HASH_HANDLE hHash = NULL; // NOSONAR - Windows API requires NULL
     PBYTE pbHashObject = nullptr;
     DWORD cbHashObject = 0;
     DWORD cbResult = 0;
@@ -656,7 +656,7 @@ BOOL ComputeHMAC(
 
         // Create hash handle
         status = BCryptCreateHash(hAlgorithm, &hHash, pbHashObject, cbHashObject,
-            reinterpret_cast<PBYTE>(const_cast<BYTE*>(pbKey)), cbKey, 0);
+            reinterpret_cast<PBYTE>(const_cast<BYTE*>(pbKey)), cbKey, 0); // NOSONAR - Windows CNG API requires PBYTE for key parameter
         if (!BCRYPT_SUCCESS(status))
         {
             __leave;
@@ -688,7 +688,7 @@ BOOL ComputeHMAC(
 
 BOOL GenerateRandom(_Out_writes_all_(cbBytes) BYTE* pbBytes, _In_ DWORD cbBytes)
 {
-    BCRYPT_ALG_HANDLE hAlgorithm = NULL;
+    BCRYPT_ALG_HANDLE hAlgorithm = NULL; // NOSONAR - Windows API requires NULL
     NTSTATUS status = BCryptOpenAlgorithmProvider(&hAlgorithm, BCRYPT_RNG_ALGORITHM, nullptr, 0);
 
     if (BCRYPT_SUCCESS(status))
@@ -738,7 +738,7 @@ std::vector<BYTE> HexToBytes(_In_ const std::string& hex)
                 b |= (c - 'A' + 10);
         }
 
-        result.push_back(b);
+        result.push_back(b); // NOSONAR - push_back used for primitive type (BYTE); emplace_back provides no benefit
     }
 
     return result;

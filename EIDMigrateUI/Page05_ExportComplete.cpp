@@ -17,7 +17,7 @@ INT_PTR CALLBACK WndProc_05_ExportComplete(HWND hwndDlg, UINT uMsg, WPARAM wPara
         case PSN_SETACTIVE:
         {
             // Show results
-            WCHAR szTemp[64];
+            WCHAR szTemp[64]; // NOSONAR - C-style array required for Windows API swprintf_s/SetDlgItemText
 
             swprintf_s(szTemp, ARRAYSIZE(szTemp), L"%u", g_wizardData.dwExportedCount);
             SetDlgItemText(hwndDlg, IDC_05_TOTAL_CREDENTIALS, szTemp);

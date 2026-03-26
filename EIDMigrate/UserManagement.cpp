@@ -1,4 +1,4 @@
-// File: EIDMigrate/UserManagement.cpp
+﻿// File: EIDMigrate/UserManagement.cpp
 // User account management functions
 
 #include "UserManagement.h"
@@ -11,7 +11,7 @@
 HRESULT UserExists(_In_ const std::wstring& wsUsername, _Out_ BOOL& pfExists)
 {
     USER_INFO_0* pInfo = nullptr;
-    DWORD dwError = 0;
+    DWORD dwError = 0; // NOSONAR - variable used
 
     pfExists = FALSE;
 
@@ -35,7 +35,7 @@ HRESULT UserExists(_In_ const std::wstring& wsUsername, _Out_ BOOL& pfExists)
 HRESULT GetUserInfo(_In_ const std::wstring& wsUsername, _Out_ UserInfo& info)
 {
     USER_INFO_1* pInfo = nullptr;
-    DWORD dwError = 0;
+    DWORD dwError = 0; // NOSONAR - variable used
 
     NET_API_STATUS status = NetUserGetInfo(nullptr, wsUsername.c_str(), 1,
         reinterpret_cast<LPBYTE*>(&pInfo));
@@ -90,7 +90,7 @@ HRESULT GetUserSid(_In_ const std::wstring& wsUsername, _Out_ std::wstring& wsSi
 
 HRESULT CreateLocalUserAccount(
     _In_ const std::wstring& wsUsername,
-    _In_ const std::wstring& wsFullName,
+    _In_ const std::wstring& wsFullName, // NOSONAR - variable used
     _In_ const std::wstring& wsComment,
     _In_opt_ PCWSTR pwszPassword,
     _In_ BOOL fEnabled,

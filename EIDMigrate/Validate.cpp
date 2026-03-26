@@ -186,6 +186,7 @@ HRESULT ValidateCertificates(_Out_ VALIDATION_RESULT& result)
         {
             if (CompareFileTime(&cred.ftCertValidTo, &ftNow) < 0)
             {
+                // NOSONAR - Nested if for clarity: check timestamp exists, then check expiry
                 std::wstring wsWarning = L"Certificate expired for user: " + cred.wsUsername;
                 result.warnings.push_back(wsWarning);
                 result.fAllCertsTrusted = FALSE;

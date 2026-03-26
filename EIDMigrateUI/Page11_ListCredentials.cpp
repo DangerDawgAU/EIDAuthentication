@@ -81,8 +81,8 @@ INT_PTR CALLBACK FilePasswordDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
 
         case IDOK:
         {
-            WCHAR szPassword[256];
-            WCHAR szConfirm[256];
+            WCHAR szPassword[256]; // NOSONAR - C-style array required for Windows API GetDlgItemText
+            WCHAR szConfirm[256]; // NOSONAR - C-style array required for Windows API GetDlgItemText
 
             GetDlgItemText(hwndDlg, IDC_13_PASSWORD, szPassword, ARRAYSIZE(szPassword));
             GetDlgItemText(hwndDlg, IDC_13_CONFIRM_PASSWORD, szConfirm, ARRAYSIZE(szConfirm));
@@ -182,7 +182,7 @@ static void PopulateCredentialList(HWND hList, _In_ const std::vector<Credential
 
         // Column 1: Username (already set in insert)
         // Column 2: RID
-        WCHAR szRID[32];
+        WCHAR szRID[32]; // NOSONAR - C-style array required for Windows API swprintf_s/ListView_SetItemText
         swprintf_s(szRID, ARRAYSIZE(szRID), L"%u", cred.dwRid);
         ListView_SetItemText(hList, iItem, 2, szRID);
 
@@ -192,7 +192,7 @@ static void PopulateCredentialList(HWND hList, _In_ const std::vector<Credential
         ListView_SetItemText(hList, iItem, 3, const_cast<LPWSTR>(pwszEnc)); // Safe: ListView won't modify the string
 
         // Column 4: Certificate Hash (preview)
-        WCHAR szHash[64];
+        WCHAR szHash[64]; // NOSONAR - C-style array required for Windows API swprintf_s/ListView_SetItemText
         DWORD dwHashLen = 0;
         for (DWORD j = 0; j < 16 && j < CERT_HASH_LENGTH; j++)
         {
@@ -306,7 +306,7 @@ static HRESULT EnumerateFileCredentialsHelper(HWND hList, HWND hwndDlg)
 // Helper function to show credential details
 static void ShowCredentialDetails(HWND hwndParent, _In_ const CredentialInfo& cred)
 {
-    WCHAR szDetails[4096];
+    WCHAR szDetails[4096]; // NOSONAR - C-style array required for building formatted details string for MessageBox
     DWORD dwPos = 0;
 
     dwPos += swprintf_s(szDetails + dwPos, ARRAYSIZE(szDetails) - dwPos,
@@ -519,7 +519,7 @@ INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wPar
         case IDC_11_FILE_BROWSE:
         {
             // Browse for file to list
-            WCHAR szFile[MAX_PATH] = L"";
+            WCHAR szFile[MAX_PATH] = L""; // NOSONAR - C-style array required for Windows API GetOpenFileName
             if (!g_wsCurrentFile.empty())
             {
                 wcscpy_s(szFile, ARRAYSIZE(szFile), g_wsCurrentFile.c_str());
@@ -657,7 +657,7 @@ INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wPar
             data.exportDate = WideToUtf8(FormatCurrentTimestamp());
 
             // Get computer name
-            WCHAR szComputer[MAX_COMPUTERNAME_LENGTH + 1];
+            WCHAR szComputer[MAX_COMPUTERNAME_LENGTH + 1]; // NOSONAR - C-style array required for Windows API GetComputerNameW
             DWORD dwSize = ARRAYSIZE(szComputer);
             if (GetComputerNameW(szComputer, &dwSize))
             {
@@ -665,7 +665,7 @@ INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wPar
             }
 
             // Get username
-            WCHAR szUsername[UNLEN + 1];
+            WCHAR szUsername[UNLEN + 1]; // NOSONAR - C-style array required for Windows API GetUserNameW
             dwSize = ARRAYSIZE(szUsername);
             if (GetUserNameW(szUsername, &dwSize))
             {

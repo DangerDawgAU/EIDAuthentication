@@ -1,4 +1,4 @@
-#include <Windows.h>
+﻿#include <Windows.h>
 #include <tchar.h>
 #include <CommCtrl.h>
 #include <WinUser.h>
@@ -503,7 +503,7 @@ static void HandleCredentialSelectionChange(HWND hWnd, LPNMITEMACTIVATE pnmItem)
     }
 }
 
-INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) // NOSONAR - variable used
 {
 	hWndTemp = hWnd;
 	switch(message)

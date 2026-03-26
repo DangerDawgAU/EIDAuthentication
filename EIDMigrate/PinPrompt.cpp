@@ -236,7 +236,7 @@ PIN_PROMPT_RESULT PromptForPassphraseWithConfirm(_Out_ SecurePassphrase& passphr
 
         if (wsPassword1.size() < MAX_PASSPHRASE_LENGTH - 1)
         {
-            wsPassword1.push_back(ch);
+            wsPassword1.push_back(ch); // NOSONAR - push_back used for primitive type (WCHAR); emplace_back provides no benefit
             wprintf(L"*");  // Mask character
         }
     }
@@ -292,7 +292,7 @@ PIN_PROMPT_RESULT PromptForPassphraseWithConfirm(_Out_ SecurePassphrase& passphr
 
         if (wsPassword2.size() < MAX_PASSPHRASE_LENGTH - 1)
         {
-            wsPassword2.push_back(ch);
+            wsPassword2.push_back(ch); // NOSONAR - push_back used for primitive type (WCHAR); emplace_back provides no benefit
             wprintf(L"*");  // Mask character
         }
     }

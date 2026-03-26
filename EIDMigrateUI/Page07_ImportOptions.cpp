@@ -23,7 +23,7 @@ INT_PTR CALLBACK WndProc_07_ImportOptions(HWND hwndDlg, UINT uMsg, WPARAM wParam
 
             // Show warning
             std::wstring wsWarning = L"This will import ";
-            WCHAR szCount[32];
+            WCHAR szCount[32]; // NOSONAR - C-style array required for Windows API swprintf_s
             swprintf_s(szCount, ARRAYSIZE(szCount), L"%u", g_wizardData.dwFileCredentialCount);
             wsWarning += szCount;
             wsWarning += L" credentials from ";

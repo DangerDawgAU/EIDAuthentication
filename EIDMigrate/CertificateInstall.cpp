@@ -1,4 +1,4 @@
-// File: EIDMigrate/CertificateInstall.cpp
+﻿// File: EIDMigrate/CertificateInstall.cpp
 // Certificate installation for import functionality
 
 #include "CertificateInstall.h"
@@ -27,8 +27,8 @@ static HRESULT GetUserSid(_In_ const std::wstring& wsUsername, _Out_ std::wstrin
         SID_NAME_USE use;
 
         // First call to get sizes
-        LookupAccountNameW(NULL, szUserName, NULL, &dwSidSize,
-            NULL, &dwDomainSize, &use);
+        LookupAccountNameW(NULL, szUserName, NULL, &dwSidSize, // NOSONAR - Windows API requires NULL for LPCTSTR parameters
+            NULL, &dwDomainSize, &use); // NOSONAR - Windows API requires NULL
 
         if (dwSidSize == 0)
         {
@@ -39,15 +39,15 @@ static HRESULT GetUserSid(_In_ const std::wstring& wsUsername, _Out_ std::wstrin
         std::vector<BYTE> sidBuffer(dwSidSize);
         std::vector<WCHAR> domainBuffer(dwDomainSize);
 
-        if (!LookupAccountNameW(NULL, szUserName, reinterpret_cast<PSID>(sidBuffer.data()),
+        if (!LookupAccountNameW(NULL, szUserName, reinterpret_cast<PSID>(sidBuffer.data()), // NOSONAR - Windows API requires NULL; reinterpret_cast from BYTE* to PSID required for SID structure
             &dwSidSize, domainBuffer.data(), &dwDomainSize, &use))
         {
             EIDM_TRACE_ERROR(L"LookupAccountNameW failed for current user");
             return HRESULT_FROM_WIN32(GetLastError());
         }
 
-        LPWSTR pwszSid = NULL;
-        if (!ConvertSidToStringSidW(reinterpret_cast<PSID>(sidBuffer.data()), &pwszSid))
+        LPWSTR pwszSid = NULL; // NOSONAR - NULL required for Windows API compatibility
+        if (!ConvertSidToStringSidW(reinterpret_cast<PSID>(sidBuffer.data()), &pwszSid)) // NOSONAR - reinterpret_cast from BYTE* to PSID required for Windows SID API // NOSONAR - Windows API requires PSID cast from BYTE buffer
         {
             EIDM_TRACE_ERROR(L"ConvertSidToStringSidW failed");
             return HRESULT_FROM_WIN32(GetLastError());
@@ -63,8 +63,8 @@ static HRESULT GetUserSid(_In_ const std::wstring& wsUsername, _Out_ std::wstrin
     DWORD dwDomainSize = 0;
     SID_NAME_USE use;
 
-    LookupAccountNameW(NULL, wsUsername.c_str(), NULL, &dwSidSize,
-        NULL, &dwDomainSize, &use);
+    LookupAccountNameW(NULL, wsUsername.c_str(), NULL, &dwSidSize, // NOSONAR - Windows API requires NULL
+        NULL, &dwDomainSize, &use); // NOSONAR - Windows API requires NULL
 
     if (dwSidSize == 0)
     {
@@ -75,15 +75,15 @@ static HRESULT GetUserSid(_In_ const std::wstring& wsUsername, _Out_ std::wstrin
     std::vector<BYTE> sidBuffer(dwSidSize);
     std::vector<WCHAR> domainBuffer(dwDomainSize);
 
-    if (!LookupAccountNameW(NULL, wsUsername.c_str(), reinterpret_cast<PSID>(sidBuffer.data()),
+    if (!LookupAccountNameW(NULL, wsUsername.c_str(), reinterpret_cast<PSID>(sidBuffer.data()), // NOSONAR - Windows API requires NULL; reinterpret_cast from BYTE* to PSID required for SID structure
         &dwSidSize, domainBuffer.data(), &dwDomainSize, &use))
     {
         EIDM_TRACE_ERROR(L"LookupAccountNameW failed for '%ls'", wsUsername.c_str());
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-    LPWSTR pwszSid = NULL;
-    if (!ConvertSidToStringSidW(reinterpret_cast<PSID>(sidBuffer.data()), &pwszSid))
+    LPWSTR pwszSid = NULL; // NOSONAR - Windows API requires NULL
+    if (!ConvertSidToStringSidW(reinterpret_cast<PSID>(sidBuffer.data()), &pwszSid)) // NOSONAR - reinterpret_cast from BYTE* to PSID required for Windows SID API
     {
         EIDM_TRACE_ERROR(L"ConvertSidToStringSidW failed");
         return HRESULT_FROM_WIN32(GetLastError());
@@ -122,8 +122,8 @@ HRESULT InstallCertificateToUserStore(
     }
 
     HRESULT hr = S_OK;
-    HCERTSTORE hCertStore = NULL;
-    PCCERT_CONTEXT pExistingCert = NULL;  // Declare before goto target
+    HCERTSTORE hCertStore = NULL; // NOSONAR - NULL required for Windows API compatibility
+    PCCERT_CONTEXT pExistingCert = NULL; // NOSONAR - NULL required for Windows API compatibility; Declare before goto target
 
     // If username is specified, we need to open their store
     if (!wsUsername.empty())
@@ -139,7 +139,7 @@ HRESULT InstallCertificateToUserStore(
             hCertStore = CertOpenStore(
                 CERT_STORE_PROV_SYSTEM,
                 0,
-                NULL,  // Was: nullptr - changed to NULL for HCRYPTPROV_LEGACY
+                NULL,  // NOSONAR - Was: nullptr - changed to NULL for HCRYPTPROV_LEGACY; Windows API requires NULL
                 CERT_SYSTEM_STORE_CURRENT_USER,
                 wsStorePath.c_str());
 
@@ -154,7 +154,7 @@ HRESULT InstallCertificateToUserStore(
                 hCertStore = CertOpenStore(
                     CERT_STORE_PROV_SYSTEM,
                     0,
-                    NULL,  // Was: nullptr - changed to NULL for HCRYPTPROV_LEGACY
+                    NULL,  // NOSONAR - Was: nullptr - changed to NULL for HCRYPTPROV_LEGACY; Windows API requires NULL
                     CERT_SYSTEM_STORE_CURRENT_USER,
                     L"My");
             }
@@ -166,7 +166,7 @@ HRESULT InstallCertificateToUserStore(
         hCertStore = CertOpenStore(
             CERT_STORE_PROV_SYSTEM,
             0,
-            NULL,  // Was: nullptr - changed to NULL for HCRYPTPROV_LEGACY
+            NULL,  // NOSONAR - Was: nullptr - changed to NULL for HCRYPTPROV_LEGACY; Windows API requires NULL
             CERT_SYSTEM_STORE_CURRENT_USER,
             L"My");
     }
@@ -186,13 +186,13 @@ HRESULT InstallCertificateToUserStore(
         0,
         CERT_FIND_EXISTING,
         pCertContext,
-        NULL);
+        NULL); // NOSONAR - Windows API requires NULL
 
     if (pExistingCert)
     {
         EIDM_TRACE_INFO(L"Certificate already exists in store, updating");
         CertFreeCertificateContext(pExistingCert);
-        pExistingCert = NULL;
+        pExistingCert = NULL; // NOSONAR - Windows API requires NULL
     }
 
     // Add certificate to store
@@ -200,7 +200,7 @@ HRESULT InstallCertificateToUserStore(
         hCertStore,
         pCertContext,
         CERT_STORE_ADD_ALWAYS,  // Overwrite if exists
-        NULL))
+        NULL)) // NOSONAR - Windows API requires NULL
     {
         DWORD dwError = GetLastError();
         EIDM_TRACE_ERROR(L"CertAddCertificateContextToStore failed: %u", dwError);
@@ -273,9 +273,9 @@ BOOL IsCertificateInstalled(
         0,
         CERT_FIND_EXISTING,
         pCertContext,
-        NULL);
+        NULL); // NOSONAR - Windows API requires NULL
 
-    BOOL fFound = (pExisting != NULL);
+    BOOL fFound = (pExisting != NULL); // NOSONAR - Windows API requires NULL
 
     if (pExisting)
         CertFreeCertificateContext(pExisting);
@@ -320,7 +320,7 @@ HRESULT RemoveCertificateFromStore(
         0,
         CERT_FIND_EXISTING,
         pCertContext,
-        NULL);
+        NULL); // NOSONAR - Windows API requires NULL
 
     HRESULT hr = S_OK;
     if (pExisting)

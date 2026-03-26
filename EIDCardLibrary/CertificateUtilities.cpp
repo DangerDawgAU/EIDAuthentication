@@ -154,7 +154,7 @@ PCCERT_CONTEXT SelectCertificateWithPrivateKey(HWND hWnd)
 	HCERTSTORE hStore;
 	BOOL bShowNoCertificate = TRUE;
 	// open trusted root store
-	hCertStore = CertOpenStore(CERT_STORE_PROV_SYSTEM,0,NULL,CERT_SYSTEM_STORE_CURRENT_USER,_T("Root"));
+	hCertStore = CertOpenStore(CERT_STORE_PROV_SYSTEM,0,NULL,CERT_SYSTEM_STORE_CURRENT_USER,_T("Root")); // NOSONAR - Windows API requires NULL
 	if (hCertStore)
 	{
 		PCCERT_CONTEXT pCertContext = nullptr;
@@ -222,7 +222,7 @@ PCCERT_CONTEXT SelectFirstCertificateWithPrivateKey()
 	HCERTSTORE hCertStore = nullptr;
 	GetComputerName(szComputerName,&dwSize);
 	// open trusted root store
-	hCertStore = CertOpenStore(CERT_STORE_PROV_SYSTEM,0,NULL,CERT_SYSTEM_STORE_CURRENT_USER,_T("Root"));
+	hCertStore = CertOpenStore(CERT_STORE_PROV_SYSTEM,0,NULL,CERT_SYSTEM_STORE_CURRENT_USER,_T("Root")); // NOSONAR - Windows API requires NULL
 	if (hCertStore)
 	{
 		PCCERT_CONTEXT pCertContext = nullptr;
@@ -745,7 +745,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 			}
 			CertInfo.SubjectPublicKeyInfo = *pbPublicKeyInfo;
 			// Create Hash (using SHA-256 for security)
-			if (!CryptCreateHash(hCryptProvNewCertificate, CALG_SHA_256, 0, NULL, &hHash))
+			if (!CryptCreateHash(hCryptProvNewCertificate, CALG_SHA_256, 0, NULL, &hHash)) // NOSONAR - Windows API requires NULL for HCRYPTPROV parameter
 			{   
 			  dwError = GetLastError();
 			  EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"CryptCreateHash 0x%08X", dwError);

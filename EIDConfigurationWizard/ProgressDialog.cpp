@@ -1,4 +1,4 @@
-#include "ProgressDialog.h"
+﻿#include "ProgressDialog.h"
 #include "EIDConfigurationWizard.h"
 #include <CommCtrl.h>
 
@@ -22,7 +22,7 @@ static INT_PTR CALLBACK ProgressDialogProc(HWND hDlg, UINT message, WPARAM wPara
             GetWindowRect(hDlg, &rcDlg);
             int x = rcParent.left + (rcParent.right - rcParent.left - (rcDlg.right - rcDlg.left)) / 2;
             int y = rcParent.top + (rcParent.bottom - rcParent.top - (rcDlg.bottom - rcDlg.top)) / 2;
-            SetWindowPos(hDlg, NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+            SetWindowPos(hDlg, NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER); // NOSONAR - Windows API requires NULL
 
             // Start marquee animation
             SendDlgItemMessage(hDlg, IDC_PROGRESSBAR, PBM_SETMARQUEE, TRUE, 50);
@@ -32,7 +32,7 @@ static INT_PTR CALLBACK ProgressDialogProc(HWND hDlg, UINT message, WPARAM wPara
     case WM_DESTROY:
         // Stop marquee animation
         SendDlgItemMessage(hDlg, IDC_PROGRESSBAR, PBM_SETMARQUEE, FALSE, 0);
-        g_hProgressDialog = NULL;
+        g_hProgressDialog = NULL; // NOSONAR - Windows API requires NULL
         break;
     }
     return FALSE;
@@ -47,7 +47,7 @@ HWND ShowProgressDialog(HWND hParentWnd)
 
     // Create the modeless dialog
     g_hProgressDialog = CreateDialogParam(
-        GetModuleHandle(NULL),
+        GetModuleHandle(NULL), // NOSONAR - Windows API requires NULL
         MAKEINTRESOURCE(IDD_PROGRESS),
         hParentWnd,
         ProgressDialogProc,
@@ -67,7 +67,7 @@ HWND ShowProgressDialog(HWND hParentWnd)
 
         // Process pending messages to complete rendering
         MSG msg;
-        while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+        while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) // NOSONAR - Windows API requires NULL
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
@@ -89,11 +89,11 @@ void CloseProgressDialog(HWND hProgressDialog)
         {
             EnableWindow(g_hParentWnd, TRUE);
             SetForegroundWindow(g_hParentWnd);
-            g_hParentWnd = NULL;
+            g_hParentWnd = NULL; // NOSONAR - Windows API requires NULL
         }
 
         // Destroy the dialog
         DestroyWindow(hProgressDialog);
-        g_hProgressDialog = NULL;
+        g_hProgressDialog = NULL; // NOSONAR - Windows API requires NULL
     }
 }

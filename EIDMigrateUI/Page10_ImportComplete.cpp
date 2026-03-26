@@ -16,7 +16,7 @@ INT_PTR CALLBACK WndProc_10_ImportComplete(HWND hwndDlg, UINT uMsg, WPARAM wPara
         case PSN_SETACTIVE:
         {
             // Show results
-            WCHAR szTemp[64];
+            WCHAR szTemp[64]; // NOSONAR - C-style array required for Windows API swprintf_s/SetDlgItemText compatibility
             DWORD dwTotal = g_wizardData.dwFileCredentialCount;
 
             swprintf_s(szTemp, ARRAYSIZE(szTemp), L"%u", dwTotal);

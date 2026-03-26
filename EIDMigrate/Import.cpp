@@ -500,7 +500,7 @@ HRESULT ValidateCertificateForImport(
     if (!pCertContext)
     {
         pfTrusted = FALSE;
-        warnings.push_back(L"No certificate provided");
+        warnings.emplace_back(L"No certificate provided");
         return E_INVALIDARG;
     }
 
@@ -514,7 +514,7 @@ HRESULT ValidateCertificateForImport(
     // Check if certificate is expired
     if (CompareFileTime(&pCertContext->pCertInfo->NotAfter, &ftNow) < 0)
     {
-        warnings.push_back(L"Certificate has expired");
+        warnings.emplace_back(L"Certificate has expired");
         pfTrusted = FALSE;
         return S_OK;
     }
@@ -522,7 +522,7 @@ HRESULT ValidateCertificateForImport(
     // Check if certificate is not yet valid
     if (CompareFileTime(&pCertContext->pCertInfo->NotBefore, &ftNow) > 0)
     {
-        warnings.push_back(L"Certificate is not yet valid");
+        warnings.emplace_back(L"Certificate is not yet valid");
         pfTrusted = FALSE;
         return S_OK;
     }
@@ -538,7 +538,7 @@ HRESULT ValidateCertificateForImport(
 
     if (CompareFileTime(&pCertContext->pCertInfo->NotAfter, &ftThirtyDays) < 0)
     {
-        warnings.push_back(L"Certificate expires within 30 days");
+        warnings.emplace_back(L"Certificate expires within 30 days");
         pfTrusted = TRUE; // Still trusted, just warning
     }
 

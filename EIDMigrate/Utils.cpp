@@ -102,7 +102,7 @@ DWORD GetRidFromSid(_In_ PSID pSid)
     if (dwSubAuthorityCount == 0)
         return 0;
 
-    return static_cast<DWORD>(*GetSidSubAuthority(pSid, dwSubAuthorityCount - 1));
+    return *GetSidSubAuthority(pSid, dwSubAuthorityCount - 1);
 }
 
 // Computer name

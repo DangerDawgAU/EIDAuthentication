@@ -28,7 +28,7 @@ public:
         return p;
     }
 
-    void deallocate(pointer p, size_type n) noexcept
+    void deallocate(pointer p, size_type n) noexcept // NOSONAR - allocator deallocates memory (clears and frees), cannot be const
     {
         if (p)
         {

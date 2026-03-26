@@ -41,7 +41,7 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, [[maybe_unus
 					HICON hIcon = LoadIcon(hDll, MAKEINTRESOURCE(105));
 					// STM_SETIMAGE does NOT copy the icon - the control takes ownership.
 					// Destroy the previous icon (if any) returned by STM_SETIMAGE, but NOT the new one.
-					HICON hPrevIcon = (HICON)SendMessage(GetDlgItem(hWnd,IDC_07SHIELD),STM_SETIMAGE,IMAGE_ICON, (LPARAM) hIcon);
+					HICON hPrevIcon = (HICON)SendMessage(GetDlgItem(hWnd,IDC_07SHIELD),STM_SETIMAGE,IMAGE_ICON, (LPARAM) hIcon); // NOSONAR - Explicit HICON type preferred over auto for Windows API clarity
 					if (hPrevIcon)
 						DestroyIcon(hPrevIcon);
 					FreeLibrary(hDll);

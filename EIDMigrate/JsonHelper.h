@@ -30,7 +30,7 @@ private:
     std::vector<std::shared_ptr<JsonValue>> m_values;
 
 public:
-    JsonArray() {}
+    JsonArray() = default;
     size_t size() const { return m_values.size(); }
     bool empty() const { return m_values.empty(); }
 
@@ -48,7 +48,7 @@ private:
     std::map<std::string, std::shared_ptr<JsonValue>> m_members;
 
 public:
-    JsonObject() {}
+    JsonObject() = default;
     size_t size() const { return m_members.size(); }
     bool empty() const { return m_members.empty(); }
 
@@ -111,15 +111,15 @@ private:
     JsonObject m_rootObject;
 
 public:
-    JsonBuilder() {}
+    JsonBuilder() = default;
 
-    void startObject(const std::string& key = "")
+    void startObject(const std::string& key = "") const
     {
         // For nested objects, we'd need a stack (not implemented for simple case)
         // The key parameter is ignored for the root object
     }
 
-    void endObject()
+    void endObject() const
     {
         // Navigate back up (not fully implemented for this simple case)
     }
@@ -187,7 +187,7 @@ private:
     JsonObject parseObject();
 
 public:
-    JsonParser(const std::string& json) : m_json(json), m_pos(0) {}
+    explicit JsonParser(const std::string& json) : m_json(json), m_pos(0) {}
 
     std::shared_ptr<JsonValue> parse()
     {

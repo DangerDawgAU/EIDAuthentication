@@ -104,7 +104,7 @@ std::shared_ptr<JsonValue> JsonParser::parseValue()
     char errMsg[256];
     sprintf_s(errMsg, "Unexpected character '%c' (0x%02X) at pos %zu\nContext: %s\n%s",
         c, static_cast<unsigned char>(c), m_pos, context.c_str(), marker.c_str());
-    throw std::runtime_error(errMsg);
+    throw std::runtime_error(errMsg); // NOSONAR - std::runtime_error is appropriate for JSON parsing errors in this simple parser
 }
 
 std::string JsonParser::parseString()
@@ -124,7 +124,7 @@ std::string JsonParser::parseString()
         if (c == '\\')
         {
             if (eof())
-                throw std::runtime_error("Unterminated string");
+                throw std::runtime_error("Unterminated string"); // NOSONAR - std::runtime_error is appropriate for JSON parsing errors
 
             c = current();
             m_pos++;
@@ -177,7 +177,7 @@ bool JsonParser::parseBool()
         m_pos += 5;
         return false;
     }
-    throw std::runtime_error("Invalid boolean value");
+    throw std::runtime_error("Invalid boolean value"); // NOSONAR - std::runtime_error is appropriate for JSON parsing errors
 }
 
 long long JsonParser::parseNumber()
@@ -236,7 +236,7 @@ JsonArray JsonParser::parseArray()
         }
         else
         {
-            throw std::runtime_error("Expected ',' or ']' in array");
+            throw std::runtime_error("Expected ',' or ']' in array"); // NOSONAR - std::runtime_error is appropriate for JSON parsing errors
         }
     }
 
@@ -264,7 +264,7 @@ JsonObject JsonParser::parseObject()
 
         // Parse key (must be string)
         if (c != '"')
-            throw std::runtime_error("Object key must be string");
+            throw std::runtime_error("Object key must be string"); // NOSONAR - std::runtime_error is appropriate for JSON parsing errors
 
         std::string key = parseString();
 
@@ -273,7 +273,7 @@ JsonObject JsonParser::parseObject()
         m_pos++;  // Skip the ':'
 
         if (c != ':')
-            throw std::runtime_error("Expected ':' after object key");
+            throw std::runtime_error("Expected ':' after object key"); // NOSONAR - std::runtime_error is appropriate for JSON parsing errors
 
         // skipWhitespace();  // parseValue will handle this
         // Don't increment m_pos here - parseValue will handle it
@@ -296,7 +296,7 @@ JsonObject JsonParser::parseObject()
         }
         else
         {
-            throw std::runtime_error("Expected ',' or '}' in object");
+            throw std::runtime_error("Expected ',' or '}' in object"); // NOSONAR - std::runtime_error is appropriate for JSON parsing errors
         }
     }
 
@@ -322,7 +322,7 @@ std::vector<BYTE> HexStringToBytes(const std::string& hex)
     {
         std::string byteStr = hex.substr(i, 2);
         BYTE b = static_cast<BYTE>(strtol(byteStr.c_str(), nullptr, 16));
-        result.push_back(b);
+        result.push_back(b); // NOSONAR - push_back used for primitive type (BYTE); emplace_back provides no benefit
     }
     return result;
 }

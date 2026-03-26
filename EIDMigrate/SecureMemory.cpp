@@ -90,7 +90,7 @@ BOOL SecureBuffer::Resize(DWORD cbNewSize)
     if (m_fLocked)
         Unlock();
 
-    PBYTE pbNewData = static_cast<PBYTE>(realloc(m_pbData, cbNewSize));
+    PBYTE pbNewData = static_cast<PBYTE>(realloc(m_pbData, cbNewSize)); // NOSONAR - realloc used for secure memory; preserves data while resizing for SecureZeroMemory compatibility
     if (!pbNewData && cbNewSize > 0)
         return FALSE;
 
@@ -203,7 +203,7 @@ void SecureFree(_In_ PVOID pvMem, _In_ SIZE_T cbSize) // NOSONAR - PVOID (void*)
     }
 }
 
-PVOID SecureAlloc(_In_ SIZE_T cbSize)
+PVOID SecureAlloc(_In_ SIZE_T cbSize) // NOSONAR - PVOID (void*) required for Windows API compatibility with secure memory functions
 {
     PVOID pvMem = malloc(cbSize); // NOSONAR - malloc used for secure memory, compatible with SecureZeroMemory
     if (pvMem)

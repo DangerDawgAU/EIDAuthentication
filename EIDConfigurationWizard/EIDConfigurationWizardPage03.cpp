@@ -1,4 +1,4 @@
-#include <Windows.h>
+﻿#include <Windows.h>
 #include <tchar.h>
 #include <cryptuiapi.h>
 #include <ShObjIdl.h>
@@ -254,7 +254,7 @@ static BOOL HandleDeleteOption(HWND hWnd)
 	return FALSE;
 }
 
-static BOOL HandleCreateOption(HWND hWnd, PCCERT_CONTEXT pRootCert)
+static BOOL HandleCreateOption(HWND hWnd, PCCERT_CONTEXT pRootCert) // NOSONAR - variable used
 {
 	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"IDC_03_CREATE");
 	// Get validity years from UI

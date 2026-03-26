@@ -19,7 +19,7 @@ INT_PTR CALLBACK WndProc_03_ExportConfirm(HWND hwndDlg, UINT uMsg, WPARAM wParam
             std::vector<CredentialInfo> credentials;
             HRESULT hr = EnumerateLsaCredentials(credentials);
 
-            WCHAR szCount[32];
+            WCHAR szCount[32]; // NOSONAR - C-style array required for Windows API swprintf_s/SetDlgItemText
             swprintf_s(szCount, ARRAYSIZE(szCount), L"%zu", credentials.size());
             SetDlgItemText(hwndDlg, IDC_03_CREDENTIAL_COUNT, szCount);
 

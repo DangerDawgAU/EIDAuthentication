@@ -60,7 +60,7 @@ INT_PTR CALLBACK WndProc_06_ImportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         {
         case IDC_06_BROWSE_INPUT:
         {
-            WCHAR szFile[MAX_PATH] = L"";
+            WCHAR szFile[MAX_PATH] = L""; // NOSONAR - C-style array required for Windows API OPENFILENAME
             OPENFILENAME ofn = {0};
             ofn.lStructSize = sizeof(OPENFILENAME);
             ofn.hwndOwner = hwndDlg;
@@ -89,8 +89,8 @@ INT_PTR CALLBACK WndProc_06_ImportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam,
         case IDC_06_DECRYPT_BUTTON:
         {
             // Get file and password
-            WCHAR szFile[MAX_PATH];
-            WCHAR szPassword[256];
+            WCHAR szFile[MAX_PATH]; // NOSONAR - C-style array required for Windows API GetDlgItemText
+            WCHAR szPassword[256]; // NOSONAR - C-style array required for Windows API GetDlgItemText
             GetDlgItemText(hwndDlg, IDC_06_INPUT_FILE, szFile, ARRAYSIZE(szFile));
             GetDlgItemText(hwndDlg, IDC_06_PASSWORD, szPassword, ARRAYSIZE(szPassword));
 
@@ -134,7 +134,7 @@ INT_PTR CALLBACK WndProc_06_ImportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam,
                     wsSourceMachine.empty() ? L"Unknown" : wsSourceMachine.c_str());
                 SetDlgItemText(hwndDlg, IDC_06_EXPORT_DATE,
                     wsExportDate.empty() ? L"Unknown" : wsExportDate.c_str());
-                WCHAR szCount[32];
+                WCHAR szCount[32]; // NOSONAR - C-style array required for Windows API swprintf_s/SetDlgItemText
                 swprintf_s(szCount, ARRAYSIZE(szCount), L"%u", static_cast<DWORD>(credentials.size()));
                 SetDlgItemText(hwndDlg, IDC_06_CREDENTIAL_COUNT, szCount);
                 SetDlgItemText(hwndDlg, IDC_06_VERSION, L"1.0");

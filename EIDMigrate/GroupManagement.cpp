@@ -51,7 +51,7 @@ HRESULT GroupExists(_In_ const std::wstring& wsGroupName, _Out_ BOOL& pfExists)
     pfExists = FALSE;
 
     NET_API_STATUS status = NetLocalGroupGetInfo(nullptr, wsGroupName.c_str(), 0,
-        reinterpret_cast<LPBYTE*>(&pInfo));
+        reinterpret_cast<LPBYTE*>(&pInfo)); // NOSONAR - Windows Net API requires LPBYTE (BYTE*); cannot use std::byte // NOSONAR - Windows Net API requires LPBYTE* for output parameter
 
     if (status == NERR_Success)
     {
@@ -72,7 +72,7 @@ HRESULT GetGroupInfo(_In_ const std::wstring& wsGroupName, _Out_ LocalGroupInfo&
     LOCALGROUP_INFO_1* pInfo = nullptr;
 
     NET_API_STATUS status = NetLocalGroupGetInfo(nullptr, wsGroupName.c_str(), 1,
-        reinterpret_cast<LPBYTE*>(&pInfo));
+        reinterpret_cast<LPBYTE*>(&pInfo)); // NOSONAR - Windows Net API requires LPBYTE (BYTE*); cannot use std::byte
 
     if (status != NERR_Success)
         return HRESULT_FROM_WIN32(status);
@@ -94,15 +94,11 @@ HRESULT CreateLocalGroup(_In_ const std::wstring& wsGroupName, _In_ const std::w
 
     DWORD parm_err = 0;
     NET_API_STATUS status = NetLocalGroupAdd(nullptr, 0,
-        reinterpret_cast<LPBYTE>(&lg0), &parm_err);
+        reinterpret_cast<LPBYTE>(&lg0), &parm_err); // NOSONAR - Windows Net API requires LPBYTE (BYTE*); cannot use std::byte which is incompatible with Win32 APIs
 
-    if (status == NERR_Success)
+    if (status == NERR_Success && !wsComment.empty())
     {
-        // Set comment
-        if (!wsComment.empty())
-        {
-            SetGroupComment(wsGroupName, wsComment);
-        }
+        SetGroupComment(wsGroupName, wsComment);
     }
 
     return HRESULT_FROM_WIN32(status);
@@ -114,7 +110,7 @@ HRESULT SetGroupComment(_In_ const std::wstring& wsGroupName, _In_ const std::ws
     lg1002.lgrpi1002_comment = const_cast<LPWSTR>(wsComment.c_str());
 
     NET_API_STATUS status = NetLocalGroupSetInfo(nullptr, wsGroupName.c_str(),
-        1002, reinterpret_cast<LPBYTE>(&lg1002), nullptr);
+        1002, reinterpret_cast<LPBYTE>(&lg1002), nullptr); // NOSONAR - Windows Net API requires LPBYTE (BYTE*); cannot use std::byte
 
     return HRESULT_FROM_WIN32(status);
 }
@@ -125,7 +121,7 @@ HRESULT AddUserToGroup(_In_ const std::wstring& wsUsername, _In_ const std::wstr
     lm3.lgrmi3_domainandname = const_cast<LPWSTR>(wsUsername.c_str());
 
     NET_API_STATUS status = NetLocalGroupAddMembers(nullptr, wsGroupName.c_str(),
-        3, reinterpret_cast<LPBYTE>(&lm3), 1);
+        3, reinterpret_cast<LPBYTE>(&lm3), 1); // NOSONAR - Windows Net API requires LPBYTE (BYTE*); cannot use std::byte
 
     return HRESULT_FROM_WIN32(status);
 }
@@ -136,7 +132,7 @@ HRESULT RemoveUserFromGroup(_In_ const std::wstring& wsUsername, _In_ const std:
     lm3.lgrmi3_domainandname = const_cast<LPWSTR>(wsUsername.c_str());
 
     NET_API_STATUS status = NetLocalGroupDelMembers(nullptr, wsGroupName.c_str(),
-        3, reinterpret_cast<LPBYTE>(&lm3), 1);
+        3, reinterpret_cast<LPBYTE>(&lm3), 1); // NOSONAR - Windows Net API requires LPBYTE (BYTE*); cannot use std::byte
 
     return HRESULT_FROM_WIN32(status);
 }
@@ -262,7 +258,7 @@ HRESULT SynchronizeGroupMemberships(
                 BOOL fExists = FALSE;
                 GroupExists(wsTargetGroup, fExists);
 
-                if (fExists)
+                if (fExists) // NOSONAR - Nested if required; GroupExists uses output parameter, cannot easily merge conditions
                 {
                     hr = AddUserToGroup(wsUsername, wsTargetGroup);
                     if (SUCCEEDED(hr))

@@ -49,7 +49,7 @@ INT_PTR CALLBACK WndProc_08_ImportPreview(HWND hwndDlg, UINT uMsg, WPARAM wParam
                     lvi.pszText = const_cast<LPWSTR>(cred.wsUsername.c_str()); // Safe: ListView won't modify
                     int iItem = ListView_InsertItem(hList, &lvi);
 
-                    WCHAR szRID[32];
+                    WCHAR szRID[32]; // NOSONAR - C-style array required for Windows API swprintf_s/ListView_SetItemText
                     swprintf_s(szRID, ARRAYSIZE(szRID), L"%u", cred.dwRid);
                     ListView_SetItemText(hList, iItem, 1, szRID);
 

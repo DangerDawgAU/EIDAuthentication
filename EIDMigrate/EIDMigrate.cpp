@@ -444,7 +444,7 @@ int wmain(_In_ int argc, _In_ PWSTR argv[])
         if (!wsPassword.empty())
         {
             SecureZeroMemory(
-                const_cast<PWSTR>(wsPassword.c_str()),
+                const_cast<PWSTR>(wsPassword.c_str()), // NOSONAR - SecureZeroMemory requires non-const for secure memory clearing
                 wsPassword.length() * sizeof(WCHAR));
         }
     }
