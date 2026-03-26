@@ -1,0 +1,788 @@
+// File: EIDMigrate/FileCrypto.cpp
+// File encryption/decryption and JSON serialization
+
+#include "FileCrypto.h"
+#include "CryptoHelpers.h"
+#include "AuditLogging.h"
+#include "Tracing.h"
+#include "Utils.h"
+#include "JsonHelper.h"
+#include <fstream>
+#include <sstream>
+#include <vector>
+
+// Forward declarations from StoredCredentialManagement
+extern EID_PRIVATE_DATA_TYPE GetEncryptionTypeFromStoredData(const BYTE* pbStoredData, DWORD cbStoredData);
+
+// Convert CredentialInfo to JSON
+std::string CredentialToJson(_In_ const CredentialInfo& info)
+{
+    JsonBuilder builder;
+
+    // Create credential object
+    builder.startObject();
+    builder.add("username", WideToUtf8(info.wsUsername));
+    builder.add("sid", WideToUtf8(info.wsSid));
+    builder.add("rid", static_cast<int>(info.dwRid));
+
+    // Certificate hash as hex string
+    std::string hashHex = BytesToHex(info.CertificateHash, CERT_HASH_LENGTH);
+    builder.add("certificateHash", hashHex);
+
+    // Certificate as Base64
+    std::string certBase64 = EncodeBase64(info.Certificate.data(),
+        static_cast<DWORD>(info.Certificate.size()));
+    builder.add("certificate", certBase64);
+
+    // Encryption type
+    const char* encryptType = "unknown";
+    switch (info.EncryptionType)
+    {
+    case EID_PRIVATE_DATA_TYPE::eidpdtClearText:
+        encryptType = "cleartext";
+        break;
+    case EID_PRIVATE_DATA_TYPE::eidpdtCrypted:
+        encryptType = "certificate";
+        break;
+    case EID_PRIVATE_DATA_TYPE::eidpdtDPAPI:
+        encryptType = "dpapi";
+        break;
+    }
+    builder.add("encryptionType", encryptType);
+
+    // Encrypted password
+    if (!info.EncryptedPassword.empty())
+    {
+        std::string pwdBase64 = EncodeBase64(info.EncryptedPassword.data(),
+            static_cast<DWORD>(info.EncryptedPassword.size()));
+        builder.add("encryptedPassword", pwdBase64);
+    }
+
+    // Symmetric key (only for certificate encryption)
+    if (!info.SymmetricKey.empty())
+    {
+        std::string keyBase64 = EncodeBase64(info.SymmetricKey.data(),
+            static_cast<DWORD>(info.SymmetricKey.size()));
+        builder.add("symmetricKey", keyBase64);
+    }
+
+    builder.add("algorithm", WideToUtf8(info.wsAlgorithm));
+
+    // Metadata
+    builder.startObject("metadata");
+    if (info.dwPasswordLength > 0)
+        builder.add("passwordLength", static_cast<int>(info.dwPasswordLength));
+
+    if (!info.wsCertSubject.empty())
+        builder.add("certificateSubject", WideToUtf8(info.wsCertSubject));
+
+    if (!info.wsCertIssuer.empty())
+        builder.add("certificateIssuer", WideToUtf8(info.wsCertIssuer));
+
+    // Timestamps
+    if (info.ftCertValidFrom.dwHighDateTime || info.ftCertValidFrom.dwLowDateTime)
+        builder.add("certificateValidFrom", WideToUtf8(FormatTimestamp(info.ftCertValidFrom)));
+
+    if (info.ftCertValidTo.dwHighDateTime || info.ftCertValidTo.dwLowDateTime)
+        builder.add("certificateValidTo", WideToUtf8(FormatTimestamp(info.ftCertValidTo)));
+
+    builder.endObject(); // metadata
+
+    return builder.build();
+}
+
+// Convert GroupInfo to JSON
+std::string GroupToJson(_In_ const GroupInfo& group)
+{
+    JsonBuilder builder;
+
+    builder.startObject();
+    builder.add("name", WideToUtf8(group.wsName));
+    builder.add("comment", WideToUtf8(group.wsComment));
+    builder.add("isBuiltin", group.fBuiltin);
+
+    // Members array
+    JsonArray membersArray;
+    for (const auto& member : group.wsMembers)
+    {
+        membersArray.push_back(std::make_shared<JsonValue>(WideToUtf8(member)));
+    }
+    builder.add("members", membersArray);
+
+    return builder.build();
+}
+
+// Convert ExportFileData to complete JSON
+std::string ExportDataToJson(_In_ const ExportFileData& data)
+{
+    // Build the JSON structure directly
+    JsonObject rootObj;
+
+    rootObj["version"] = std::make_shared<JsonValue>(static_cast<int>(data.dwVersion));
+    rootObj["formatVersion"] = std::make_shared<JsonValue>(data.formatVersion);
+    rootObj["exportDate"] = std::make_shared<JsonValue>(data.exportDate);
+    rootObj["sourceMachine"] = std::make_shared<JsonValue>(WideToUtf8(data.wsSourceMachine));
+    rootObj["exportedBy"] = std::make_shared<JsonValue>(WideToUtf8(data.wsExportedBy));
+
+    // Build credentials array
+    JsonArray credsArray;
+    for (const auto& cred : data.credentials)
+    {
+        // Create credential object directly
+        JsonObject credObj;
+
+        credObj["username"] = std::make_shared<JsonValue>(WideToUtf8(cred.wsUsername));
+        credObj["sid"] = std::make_shared<JsonValue>(WideToUtf8(cred.wsSid));
+        credObj["rid"] = std::make_shared<JsonValue>(static_cast<int>(cred.dwRid));
+
+        // Certificate hash as hex string
+        std::string hashHex = BytesToHex(cred.CertificateHash, CERT_HASH_LENGTH);
+        credObj["certificateHash"] = std::make_shared<JsonValue>(hashHex);
+
+        // Certificate as Base64
+        std::string certBase64 = EncodeBase64(cred.Certificate.data(),
+            static_cast<DWORD>(cred.Certificate.size()));
+        credObj["certificate"] = std::make_shared<JsonValue>(certBase64);
+
+        // Encryption type
+        const char* encryptType = "unknown";
+        switch (cred.EncryptionType)
+        {
+        case EID_PRIVATE_DATA_TYPE::eidpdtClearText:
+            encryptType = "cleartext";
+            break;
+        case EID_PRIVATE_DATA_TYPE::eidpdtCrypted:
+            encryptType = "certificate";
+            break;
+        case EID_PRIVATE_DATA_TYPE::eidpdtDPAPI:
+            encryptType = "dpapi";
+            break;
+        }
+        credObj["encryptionType"] = std::make_shared<JsonValue>(encryptType);
+
+        // Encrypted password
+        if (!cred.EncryptedPassword.empty())
+        {
+            std::string pwdBase64 = EncodeBase64(cred.EncryptedPassword.data(),
+                static_cast<DWORD>(cred.EncryptedPassword.size()));
+            credObj["encryptedPassword"] = std::make_shared<JsonValue>(pwdBase64);
+        }
+
+        // Symmetric key
+        if (!cred.SymmetricKey.empty())
+        {
+            std::string keyBase64 = EncodeBase64(cred.SymmetricKey.data(),
+                static_cast<DWORD>(cred.SymmetricKey.size()));
+            credObj["symmetricKey"] = std::make_shared<JsonValue>(keyBase64);
+        }
+
+        credObj["algorithm"] = std::make_shared<JsonValue>(WideToUtf8(cred.wsAlgorithm));
+
+        // Metadata object
+        JsonObject metaObj;
+        if (cred.dwPasswordLength > 0)
+            metaObj["passwordLength"] = std::make_shared<JsonValue>(static_cast<int>(cred.dwPasswordLength));
+        if (!cred.wsCertSubject.empty())
+            metaObj["certificateSubject"] = std::make_shared<JsonValue>(WideToUtf8(cred.wsCertSubject));
+        if (!cred.wsCertIssuer.empty())
+            metaObj["certificateIssuer"] = std::make_shared<JsonValue>(WideToUtf8(cred.wsCertIssuer));
+        if (cred.ftCertValidFrom.dwHighDateTime || cred.ftCertValidFrom.dwLowDateTime)
+            metaObj["certificateValidFrom"] = std::make_shared<JsonValue>(WideToUtf8(FormatTimestamp(cred.ftCertValidFrom)));
+        if (cred.ftCertValidTo.dwHighDateTime || cred.ftCertValidTo.dwLowDateTime)
+            metaObj["certificateValidTo"] = std::make_shared<JsonValue>(WideToUtf8(FormatTimestamp(cred.ftCertValidTo)));
+
+        if (!metaObj.members().empty())
+            credObj["metadata"] = std::make_shared<JsonValue>(metaObj);
+
+        credsArray.push_back(std::make_shared<JsonValue>(credObj));
+    }
+    rootObj["credentials"] = std::make_shared<JsonValue>(credsArray);
+
+    // Build groups array
+    JsonArray groupsArray;
+    for (const auto& group : data.groups)
+    {
+        JsonObject groupObj;
+        groupObj["name"] = std::make_shared<JsonValue>(WideToUtf8(group.wsName));
+        groupObj["comment"] = std::make_shared<JsonValue>(WideToUtf8(group.wsComment));
+        groupObj["isBuiltin"] = std::make_shared<JsonValue>(group.fBuiltin);
+
+        JsonArray membersArray;
+        for (const auto& member : group.wsMembers)
+        {
+            membersArray.push_back(std::make_shared<JsonValue>(WideToUtf8(member)));
+        }
+        groupObj["members"] = std::make_shared<JsonValue>(membersArray);
+
+        groupsArray.push_back(std::make_shared<JsonValue>(groupObj));
+    }
+    rootObj["groups"] = std::make_shared<JsonValue>(groupsArray);
+
+    // Statistics object
+    JsonObject statsObj;
+    statsObj["totalCredentials"] = std::make_shared<JsonValue>(static_cast<int>(data.stats.totalCredentials));
+    statsObj["certificateEncrypted"] = std::make_shared<JsonValue>(static_cast<int>(data.stats.certificateEncrypted));
+    statsObj["dpapiEncrypted"] = std::make_shared<JsonValue>(static_cast<int>(data.stats.dpapiEncrypted));
+    statsObj["skipped"] = std::make_shared<JsonValue>(static_cast<int>(data.stats.skipped));
+    rootObj["statistics"] = std::make_shared<JsonValue>(statsObj);
+
+    // Convert to string
+    JsonValue rootValue(rootObj);
+    return rootValue.stringify();
+}
+
+// Parse JSON to CredentialInfo
+HRESULT JsonToCredential(_In_ const std::string& json, _Out_ CredentialInfo& info)
+{
+    JsonParser parser(json);
+    std::shared_ptr<JsonValue> root = parser.parse();
+
+    if (!root || root->type() != JsonType::Object)
+        return E_INVALIDARG;
+
+    const JsonObject& obj = root->asObject();
+
+    // Extract fields
+    if (obj.has("username"))
+        info.wsUsername = Utf8ToWide(obj["username"]->asString());
+
+    if (obj.has("sid"))
+        info.wsSid = Utf8ToWide(obj["sid"]->asString());
+
+    if (obj.has("rid"))
+        info.dwRid = static_cast<DWORD>(obj["rid"]->asNumber());
+
+    if (obj.has("certificateHash"))
+    {
+        std::string hashHex = obj["certificateHash"]->asString();
+        std::vector<BYTE> hashBytes = HexToBytes(hashHex);
+        if (hashBytes.size() == CERT_HASH_LENGTH)
+        {
+            memcpy(info.CertificateHash, hashBytes.data(), CERT_HASH_LENGTH);
+        }
+    }
+
+    if (obj.has("certificate"))
+    {
+        std::string certBase64 = obj["certificate"]->asString();
+        info.Certificate = DecodeBase64(certBase64);
+    }
+
+    if (obj.has("encryptionType"))
+    {
+        std::string type = obj["encryptionType"]->asString();
+        if (type == "certificate")
+            info.EncryptionType = EID_PRIVATE_DATA_TYPE::eidpdtCrypted;
+        else if (type == "dpapi")
+            info.EncryptionType = EID_PRIVATE_DATA_TYPE::eidpdtDPAPI;
+        else
+            info.EncryptionType = EID_PRIVATE_DATA_TYPE::eidpdtClearText;
+    }
+
+    if (obj.has("encryptedPassword"))
+    {
+        std::string pwdBase64 = obj["encryptedPassword"]->asString();
+        info.EncryptedPassword = DecodeBase64(pwdBase64);
+    }
+
+    if (obj.has("symmetricKey"))
+    {
+        std::string keyBase64 = obj["symmetricKey"]->asString();
+        info.SymmetricKey = DecodeBase64(keyBase64);
+    }
+
+    if (obj.has("algorithm"))
+        info.wsAlgorithm = Utf8ToWide(obj["algorithm"]->asString());
+
+    // Parse metadata if present
+    if (obj.has("metadata"))
+    {
+        const JsonObject& meta = obj["metadata"]->asObject();
+        if (meta.has("passwordLength"))
+            info.dwPasswordLength = static_cast<DWORD>(meta["passwordLength"]->asNumber());
+        if (meta.has("certificateSubject"))
+            info.wsCertSubject = Utf8ToWide(meta["certificateSubject"]->asString());
+        if (meta.has("certificateIssuer"))
+            info.wsCertIssuer = Utf8ToWide(meta["certificateIssuer"]->asString());
+    }
+
+    return S_OK;
+}
+
+// Parse JSON to GroupInfo
+HRESULT JsonToGroup(_In_ const std::string& json, _Out_ GroupInfo& group)
+{
+    JsonParser parser(json);
+    std::shared_ptr<JsonValue> root = parser.parse();
+
+    if (!root || root->type() != JsonType::Object)
+        return E_INVALIDARG;
+
+    const JsonObject& obj = root->asObject();
+
+    if (obj.has("name"))
+        group.wsName = Utf8ToWide(obj["name"]->asString());
+
+    if (obj.has("comment"))
+        group.wsComment = Utf8ToWide(obj["comment"]->asString());
+
+    if (obj.has("isBuiltin"))
+        group.fBuiltin = obj["isBuiltin"]->asBool();
+
+    // Parse members array
+    if (obj.has("members") && obj["members"]->type() == JsonType::Array)
+    {
+        for (const auto& memberVal : obj["members"]->asArray().values())
+        {
+            if (memberVal->type() == JsonType::String)
+                group.wsMembers.push_back(Utf8ToWide(memberVal->asString()));
+        }
+    }
+
+    return S_OK;
+}
+
+// Parse JSON to ExportFileData
+HRESULT JsonToExportData(_In_ const std::string& json, _Out_ ExportFileData& data)
+{
+    JsonParser parser(json);
+    std::shared_ptr<JsonValue> root = parser.parse();
+
+    if (!root || root->type() != JsonType::Object)
+        return E_INVALIDARG;
+
+    const JsonObject& rootObj = root->asObject();
+
+    // Extract fields
+    if (rootObj.has("version"))
+        data.dwVersion = static_cast<DWORD>(rootObj["version"]->asNumber());
+
+    if (rootObj.has("formatVersion"))
+        data.formatVersion = rootObj["formatVersion"]->asString();
+
+    if (rootObj.has("exportDate"))
+        data.exportDate = rootObj["exportDate"]->asString();
+
+    if (rootObj.has("sourceMachine"))
+        data.wsSourceMachine = Utf8ToWide(rootObj["sourceMachine"]->asString());
+
+    if (rootObj.has("exportedBy"))
+        data.wsExportedBy = Utf8ToWide(rootObj["exportedBy"]->asString());
+
+    // Parse credentials array
+    if (rootObj.has("credentials") && rootObj["credentials"]->type() == JsonType::Array)
+    {
+        for (const auto& credVal : rootObj["credentials"]->asArray().values())
+        {
+            if (credVal->type() == JsonType::Object)
+            {
+                // Serialize back to string and parse
+                std::string credJson = credVal->stringify();
+                CredentialInfo info;
+                if (SUCCEEDED(JsonToCredential(credJson, info)))
+                {
+                    data.credentials.push_back(info);
+                }
+            }
+        }
+    }
+
+    // Parse groups array
+    if (rootObj.has("groups") && rootObj["groups"]->type() == JsonType::Array)
+    {
+        for (const auto& groupVal : rootObj["groups"]->asArray().values())
+        {
+            if (groupVal->type() == JsonType::Object)
+            {
+                std::string groupJson = groupVal->stringify();
+                GroupInfo group;
+                if (SUCCEEDED(JsonToGroup(groupJson, group)))
+                {
+                    data.groups.push_back(group);
+                }
+            }
+        }
+    }
+
+    // Parse statistics
+    if (rootObj.has("statistics") && rootObj["statistics"]->type() == JsonType::Object)
+    {
+        const JsonObject& stats = rootObj["statistics"]->asObject();
+        if (stats.has("totalCredentials"))
+            data.stats.totalCredentials = static_cast<DWORD>(stats["totalCredentials"]->asNumber());
+        if (stats.has("certificateEncrypted"))
+            data.stats.certificateEncrypted = static_cast<DWORD>(stats["certificateEncrypted"]->asNumber());
+        if (stats.has("dpapiEncrypted"))
+            data.stats.dpapiEncrypted = static_cast<DWORD>(stats["dpapiEncrypted"]->asNumber());
+        if (stats.has("skipped"))
+            data.stats.skipped = static_cast<DWORD>(stats["skipped"]->asNumber());
+    }
+
+    return S_OK;
+}
+
+// Validate JSON schema (basic validation)
+HRESULT ValidateJsonSchema(_In_ const std::string& json)
+{
+    JsonParser parser(json);
+    std::shared_ptr<JsonValue> root = parser.parse();
+
+    if (!root || root->type() != JsonType::Object)
+        return E_INVALIDARG;
+
+    const JsonObject& obj = root->asObject();
+
+    // Check required fields
+    if (!obj.has("version") || obj.has("formatVersion") ||
+        !obj.has("exportDate") || !obj.has("sourceMachine") ||
+        !obj.has("credentials"))
+    {
+        return E_INVALIDARG;
+    }
+
+    // Check credentials array
+    if (!obj.has("credentials") || obj["credentials"]->type() != JsonType::Array)
+        return E_INVALIDARG;
+
+    return S_OK;
+}
+
+// Validate file header
+HRESULT ValidateFileHeader(
+    _In_ const std::wstring& wsInputPath,
+    _Out_ BOOL& pfValid,
+    _Out_ std::wstring& wsError)
+{
+    EIDM_TRACE_VERBOSE(L"Validating file header: %ls", wsInputPath.c_str());
+
+    pfValid = FALSE;
+    wsError = L"";
+
+    HANDLE hFile = CreateFileW(wsInputPath.c_str(), GENERIC_READ, FILE_SHARE_READ,
+        nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        wsError = FormatErrorMessage(GetLastError());
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    EIDMIGRATE_FILE_HEADER header;
+    DWORD dwRead;
+
+    HRESULT hr = S_OK;
+    BOOL bSuccess = ReadFile(hFile, &header, sizeof(header), &dwRead, nullptr);
+    CloseHandle(hFile);
+
+    if (!bSuccess)
+    {
+        wsError = L"Failed to read file header";
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    if (dwRead != sizeof(header))
+    {
+        wsError = L"File too small to be valid";
+        return E_INVALIDARG;
+    }
+
+    // Validate magic number
+    if (memcmp(header.Magic, EIDMIGRATE_MAGIC, sizeof(header.Magic)) != 0)
+    {
+        wsError = L"Invalid file format (bad magic)";
+        return E_INVALIDARG;
+    }
+
+    // Validate version
+    if (header.FormatVersion != EIDMIGRATE_VERSION)
+    {
+        wsError = L"Unsupported file version";
+        return E_INVALIDARG;
+    }
+
+    pfValid = TRUE;
+    return S_OK;
+}
+
+// Write encrypted export file
+HRESULT WriteEncryptedFile(
+    _In_ const std::wstring& wsOutputPath,
+    _In_ const SecureWString& wsPassword,
+    _In_ const ExportFileData& data)
+{
+    EIDM_TRACE_VERBOSE(L"Writing encrypted export file to: %ls", wsOutputPath.c_str());
+
+    HRESULT hr = S_OK;
+    DERIVED_KEY derivedKey = {};
+    std::string jsonPayload;
+    std::vector<BYTE> plaintext;
+    std::vector<BYTE> ciphertext;
+    std::vector<BYTE> completeFile;
+    HANDLE hFile = INVALID_HANDLE_VALUE;
+    std::vector<BYTE> nonce(GCM_NONCE_SIZE);
+
+    // Convert to JSON
+    jsonPayload = ExportDataToJson(data);
+    if (jsonPayload.empty())
+    {
+        EIDM_TRACE_ERROR(L"Failed to serialize to JSON");
+        return E_FAIL;
+    }
+
+    // Derive encryption key
+    CRYPTO_STATUS cryptoStatus = DeriveKeyFromPassphrase(
+        wsPassword.c_str(), wsPassword.length(), &derivedKey);
+    if (cryptoStatus != CRYPTO_STATUS::CRYPTO_SUCCESS)
+    {
+        EIDM_TRACE_ERROR(L"Failed to derive encryption key");
+        return E_FAIL;
+    }
+
+    // Generate random nonce
+    if (!GenerateRandom(nonce.data(), GCM_NONCE_SIZE))
+    {
+        EIDM_TRACE_ERROR(L"Failed to generate nonce");
+        SecureZeroMemory(&derivedKey, sizeof(derivedKey));
+        return E_FAIL;
+    }
+
+    // Prepare plaintext
+    plaintext.assign(jsonPayload.begin(), jsonPayload.end());
+
+    // Allocate buffer for ciphertext (same size as plaintext for GCM)
+    ciphertext.resize(plaintext.size());
+
+    // Allocate buffer for tag
+    std::vector<BYTE> tag(GCM_TAG_SIZE);
+
+    // Encrypt with AES-256-GCM
+    DWORD cbCiphertext = static_cast<DWORD>(ciphertext.size());
+    cryptoStatus = EncryptWithGCM(
+        derivedKey.rgbKey, PBKDF2_KEY_SIZE,
+        nonce.data(), GCM_NONCE_SIZE,
+        plaintext.data(), static_cast<DWORD>(plaintext.size()),
+        ciphertext.data(), &cbCiphertext,
+        tag.data(), GCM_TAG_SIZE);
+
+    if (cryptoStatus != CRYPTO_STATUS::CRYPTO_SUCCESS)
+    {
+        EIDM_TRACE_ERROR(L"Failed to encrypt data");
+        SecureZeroMemory(&derivedKey, sizeof(derivedKey));
+        SecureZeroMemory(plaintext.data(), plaintext.size());
+        return E_FAIL;
+    }
+
+    // Build file header
+    EIDMIGRATE_FILE_HEADER header = {};
+    SecureZeroMemory(&header, sizeof(header));
+    memcpy(header.Magic, EIDMIGRATE_MAGIC, sizeof(header.Magic));
+    header.FormatVersion = EIDMIGRATE_VERSION;
+    memcpy(header.PBKDF2Salt, derivedKey.rgbSalt, PBKDF2_SALT_SIZE);
+    memcpy(header.GCMNonce, nonce.data(), GCM_NONCE_SIZE);
+    SecureZeroMemory(header.Reserved, sizeof(header.Reserved));
+    header.PBKDF2Iterations = PBKDF2_ITERATIONS;
+    header.GCMTagLength = GCM_TAG_SIZE;
+    header.PayloadLength = jsonPayload.size();
+    memcpy(header.GCMTag, tag.data(), GCM_TAG_SIZE);
+
+    // Calculate total file size
+    size_t nTotalSize = sizeof(EIDMIGRATE_FILE_HEADER) + ciphertext.size();
+
+    // Allocate complete file buffer
+    completeFile.resize(nTotalSize);
+
+    // Copy header
+    memcpy(completeFile.data(), &header, sizeof(header));
+
+    // Copy ciphertext
+    memcpy(completeFile.data() + sizeof(header), ciphertext.data(), ciphertext.size());
+
+    // Compute HMAC
+    std::vector<BYTE> fileHmac(HMAC_SIZE);
+    ComputeHMAC(derivedKey.rgbAuthKey, PBKDF2_KEY_SIZE,
+        completeFile.data(), static_cast<DWORD>(completeFile.size()),
+        fileHmac.data(), HMAC_SIZE);
+
+    // Append HMAC
+    completeFile.insert(completeFile.end(), fileHmac.begin(), fileHmac.end());
+
+    // Write file
+    hFile = CreateFileW(wsOutputPath.c_str(), GENERIC_WRITE, 0,
+        nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        EIDM_TRACE_ERROR(L"Failed to create output file: %u", GetLastError());
+        SecureZeroMemory(&derivedKey, sizeof(derivedKey));
+        SecureZeroMemory(plaintext.data(), plaintext.size());
+        SecureZeroMemory(completeFile.data(), completeFile.size());
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    DWORD dwWritten;
+    if (!WriteFile(hFile, completeFile.data(), static_cast<DWORD>(completeFile.size()),
+        &dwWritten, nullptr))
+    {
+        EIDM_TRACE_ERROR(L"Failed to write file: %u", GetLastError());
+        SecureZeroMemory(&derivedKey, sizeof(derivedKey));
+        SecureZeroMemory(plaintext.data(), plaintext.size());
+        SecureZeroMemory(completeFile.data(), completeFile.size());
+        CloseHandle(hFile);
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    CloseHandle(hFile);
+    SecureZeroMemory(&derivedKey, sizeof(derivedKey));
+    SecureZeroMemory(plaintext.data(), plaintext.size());
+    SecureZeroMemory(completeFile.data(), completeFile.size());
+
+    EIDM_TRACE_INFO(L"Export file created successfully: %ls", wsOutputPath.c_str());
+    return S_OK;
+}
+
+// Read and decrypt export file
+HRESULT ReadEncryptedFile(
+    _In_ const std::wstring& wsInputPath,
+    _In_ const SecureWString& wsPassword,
+    _Out_ ExportFileData& data)
+{
+    EIDM_TRACE_VERBOSE(L"Reading encrypted export file: %ls", wsInputPath.c_str());
+
+    DERIVED_KEY derivedKey = {};
+    EIDMIGRATE_FILE_HEADER header;
+    std::vector<BYTE> fileData;
+    HANDLE hFile = INVALID_HANDLE_VALUE;
+
+    // Open and read file
+    hFile = CreateFileW(wsInputPath.c_str(), GENERIC_READ, FILE_SHARE_READ,
+        nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        EIDM_TRACE_ERROR(L"Failed to open input file: %u", GetLastError());
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    // Get file size
+    LARGE_INTEGER liFileSize;
+    if (!GetFileSizeEx(hFile, &liFileSize))
+    {
+        CloseHandle(hFile);
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    if (liFileSize.QuadPart < sizeof(header))
+    {
+        CloseHandle(hFile);
+        EIDM_TRACE_ERROR(L"File too small");
+        return E_INVALIDARG;
+    }
+
+    // Allocate buffer
+    fileData.resize(static_cast<size_t>(liFileSize.QuadPart));
+
+    DWORD dwRead;
+    if (!ReadFile(hFile, fileData.data(), static_cast<DWORD>(fileData.size()),
+        &dwRead, nullptr))
+    {
+        CloseHandle(hFile);
+        EIDM_TRACE_ERROR(L"Failed to read file");
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
+    CloseHandle(hFile);
+    hFile = INVALID_HANDLE_VALUE;
+
+    // Copy header
+    memcpy(&header, fileData.data(), sizeof(header));
+
+    // Validate magic
+    if (memcmp(header.Magic, EIDMIGRATE_MAGIC, sizeof(header.Magic)) != 0)
+    {
+        EIDM_TRACE_ERROR(L"Invalid file format (bad magic)");
+        return E_INVALIDARG;
+    }
+
+    // Validate version
+    if (header.FormatVersion != EIDMIGRATE_VERSION)
+    {
+        EIDM_TRACE_ERROR(L"Unsupported file version: %u", header.FormatVersion);
+        return E_INVALIDARG;
+    }
+
+    // Derive key from passphrase using salt from file header
+    CRYPTO_STATUS cryptoStatus = DeriveKeyFromPassphraseWithSalt(
+        wsPassword.c_str(), wsPassword.length(), header.PBKDF2Salt, &derivedKey);
+    if (cryptoStatus != CRYPTO_STATUS::CRYPTO_SUCCESS)
+    {
+        EIDM_TRACE_ERROR(L"Failed to derive decryption key (wrong passphrase?)");
+        return HRESULT_FROM_WIN32(ERROR_LOGON_FAILURE);
+    }
+
+    // Verify HMAC
+    size_t nHmacOffset = fileData.size() - HMAC_SIZE;
+    std::vector<BYTE> fileWithoutHmac(fileData.data(), fileData.data() + nHmacOffset);
+    std::vector<BYTE> fileHmac(HMAC_SIZE);
+    ComputeHMAC(derivedKey.rgbAuthKey, PBKDF2_KEY_SIZE,
+        fileWithoutHmac.data(), static_cast<DWORD>(fileWithoutHmac.size()),
+        fileHmac.data(), HMAC_SIZE);
+
+    std::vector<BYTE> storedHmac(HMAC_SIZE);
+    memcpy(storedHmac.data(), fileData.data() + nHmacOffset, HMAC_SIZE);
+
+    if (fileHmac != storedHmac)
+    {
+        SecureZeroMemory(&derivedKey, sizeof(derivedKey));
+        SecureZeroMemory(fileData.data(), fileData.size());
+        EIDM_TRACE_ERROR(L"HMAC mismatch - file may be corrupted");
+        return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+    }
+
+    // Extract ciphertext and tag
+    size_t nCiphertextOffset = sizeof(header);
+    size_t nCiphertextSize = header.PayloadLength;
+
+    const BYTE* pbCiphertext = fileData.data() + nCiphertextOffset;
+    const BYTE* pbTag = header.GCMTag;  // Tag is in the header
+
+    // Prepare plaintext buffer
+    std::vector<BYTE> plaintext(nCiphertextSize);
+    DWORD cbPlaintext = static_cast<DWORD>(nCiphertextSize);
+
+    // Decrypt with GCM
+    cryptoStatus = DecryptWithGCM(
+        derivedKey.rgbKey, PBKDF2_KEY_SIZE,
+        header.GCMNonce, GCM_NONCE_SIZE,
+        pbCiphertext, static_cast<DWORD>(nCiphertextSize),
+        pbTag, GCM_TAG_SIZE,
+        plaintext.data(), &cbPlaintext);
+
+    if (cryptoStatus != CRYPTO_STATUS::CRYPTO_SUCCESS)
+    {
+        SecureZeroMemory(&derivedKey, sizeof(derivedKey));
+        SecureZeroMemory(fileData.data(), fileData.size());
+        EIDM_TRACE_ERROR(L"Failed to decrypt data");
+        return HRESULT_FROM_WIN32(ERROR_LOGON_FAILURE);
+    }
+
+    // Add null terminator
+    plaintext.push_back(0);
+    std::string jsonPlaintext(reinterpret_cast<char*>(plaintext.data()));
+
+    EIDM_TRACE_VERBOSE(L"Decrypted JSON size: %zu bytes", jsonPlaintext.size());
+    if (jsonPlaintext.size() > 0)
+    {
+        // Log first 100 chars for debugging
+        std::string preview = jsonPlaintext.substr(0, min(100, jsonPlaintext.size()));
+        EIDM_TRACE_VERBOSE(L"JSON preview: %S", preview.c_str());
+    }
+
+    // Clear sensitive data
+    SecureZeroMemory(&derivedKey, sizeof(derivedKey));
+    SecureZeroMemory(plaintext.data(), plaintext.size());
+    SecureZeroMemory(fileData.data(), fileData.size());
+
+    // Parse JSON
+    return JsonToExportData(jsonPlaintext, data);
+}
+

@@ -467,8 +467,10 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 			usPasswordSize = 0;
 		}
 
-		// Disable encryption for empty passwords
-		if (!usPasswordSize) fEncryptPassword = FALSE;
+		// Use certificate-based encryption for all passwords (including empty)
+		// This enables migration of credentials between machines - empty passwords
+		// would otherwise use DPAPI which is machine-bound and non-portable.
+		// if (!usPasswordSize) fEncryptPassword = FALSE;  // REMOVED: Force certificate encryption for migratability
 
 		if (fEncryptPassword)
 		{

@@ -142,6 +142,17 @@ enum class EID_CREDENTIAL_PROVIDER_READER_STATE
 	EIDCPRSThreadFinished,
 };
 
+// Password encryption types for stored credentials
+enum class EID_PRIVATE_DATA_TYPE
+{
+	eidpdtClearText = 1,   // Plaintext (not used)
+	eidpdtCrypted = 2,     // Certificate-based encryption (RSA+AES)
+	eidpdtDPAPI = 3,       // DPAPI encryption (machine-bound)
+};
+
+// Forward declaration of EID_PRIVATE_DATA structure
+struct EID_PRIVATE_DATA;
+
 enum EID_CALLPACKAGE_MESSAGE  // NOSONAR - ENUM-01: Unscoped enum required for Windows SDK compatibility
 {
 	EIDCMCreateStoredCredential,
@@ -152,6 +163,10 @@ enum EID_CALLPACKAGE_MESSAGE  // NOSONAR - ENUM-01: Unscoped enum required for W
 	EIDCMGetStoredCredentialRid,
 	EIDCMEIDGinaAuthenticationChallenge,
 	EIDCMEIDGinaAuthenticationResponse,
+	// EIDMigrate messages - Administrator only
+	EIDCMEnumerateCredentials,         // Enumerate all stored credentials
+	EIDCMExportCredential,             // Export full credential data
+	EIDCMImportCredential,             // Import credential data
 };
 
 //Message used for LsaApCallPackage
@@ -279,3 +294,76 @@ struct EID_SSP_CALLBACK_MESSAGE
 	HANDLE hToken;
 };
 using PEID_SSP_CALLBACK_MESSAGE = EID_SSP_CALLBACK_MESSAGE*;
+
+//
+// EIDMigrate - Credential Migration Structures
+//
+
+// Maximum username length for EIDMigrate operations
+constexpr DWORD EIDM_MAX_USERNAME_LENGTH = 256;
+
+// Response structure for enumerate credentials
+struct EIDM_ENUM_RESPONSE
+{
+	DWORD dwError;                            // Win32 error code (0 = SUCCESS)
+	DWORD dwCredentialCount;                  // Number of credentials returned
+	// Followed by: EIDM_CREDENTIAL_SUMMARY[dwCredentialCount]
+};
+using PEIDM_ENUM_RESPONSE = EIDM_ENUM_RESPONSE*;
+
+// Credential summary structure
+struct EIDM_CREDENTIAL_SUMMARY
+{
+	DWORD dwRid;                              // Relative ID of user account
+	WCHAR wszUsername[EIDM_MAX_USERNAME_LENGTH];  // Username (null-terminated)
+	UCHAR CertificateHash[CERT_HASH_LENGTH];  // SHA-256 hash of certificate
+	EID_PRIVATE_DATA_TYPE EncryptionType;     // Password encryption type
+	DWORD dwFlags;                            // Credential flags (reserved for future use)
+};
+using PEIDM_CREDENTIAL_SUMMARY = EIDM_CREDENTIAL_SUMMARY*;
+
+// Response structure for export
+struct EIDM_EXPORT_RESPONSE
+{
+	DWORD dwError;                            // Win32 error code (0 = SUCCESS)
+	DWORD dwRid;                              // RID of exported credential
+	DWORD dwPrivateDataSize;                  // Size of EID_PRIVATE_DATA structure
+	DWORD dwCertificateSize;                  // Size of certificate data
+	DWORD dwPasswordSize;                     // Size of encrypted password data
+	EID_PRIVATE_DATA_TYPE EncryptionType;     // Password encryption type
+	UCHAR CertificateHash[CERT_HASH_LENGTH];  // SHA-256 hash of certificate
+	WCHAR wszUsername[EIDM_MAX_USERNAME_LENGTH];  // Username (null-terminated)
+	// Following this structure in the buffer:
+	// 1. EID_PRIVATE_DATA structure (dwPrivateDataSize bytes)
+	// 2. Certificate data (dwCertificateSize bytes)
+	// 3. Encrypted password data (dwPasswordSize bytes)
+};
+using PEIDM_EXPORT_RESPONSE = EIDM_EXPORT_RESPONSE*;
+
+// Request structure for import
+struct EIDM_IMPORT_REQUEST
+{
+	EID_CALLPACKAGE_MESSAGE MessageType;      // EIDCMImportCredential
+	DWORD dwRid;                              // Target RID for credential
+	DWORD dwPrivateDataSize;                  // Size of EID_PRIVATE_DATA structure
+	DWORD dwCertificateSize;                  // Size of certificate data
+	DWORD dwPasswordSize;                     // Size of encrypted password data
+	EID_PRIVATE_DATA_TYPE EncryptionType;     // Password encryption type
+	UCHAR CertificateHash[CERT_HASH_LENGTH];  // SHA-256 hash of certificate
+	WCHAR wszUsername[EIDM_MAX_USERNAME_LENGTH];  // Username (null-terminated)
+	DWORD dwFlags;                            // Flags (e.g., create user if not exists)
+	// Following this structure in the buffer:
+	// 1. EID_PRIVATE_DATA structure (dwPrivateDataSize bytes)
+	// 2. Certificate data (dwCertificateSize bytes)
+	// 3. Encrypted password data (dwPasswordSize bytes)
+};
+using PEIDM_IMPORT_REQUEST = EIDM_IMPORT_REQUEST*;
+
+// Response structure for import
+struct EIDM_IMPORT_RESPONSE
+{
+	DWORD dwError;                            // Win32 error code (0 = SUCCESS)
+	DWORD dwRid;                              // RID of imported credential
+	BOOL fUserCreated;                        // TRUE if user account was created
+};
+using PEIDM_IMPORT_RESPONSE = EIDM_IMPORT_RESPONSE*;

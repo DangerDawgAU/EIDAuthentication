@@ -1,0 +1,381 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#define APSTUDIO_HIDDEN_SYMBOLS
+#include "windows.h"
+#undef APSTUDIO_HIDDEN_SYMBOLS
+#include "../EIDCardLibrary/EIDAuthenticateVersion.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Manifest (requires Administrator elevation)
+//
+
+1 RT_MANIFEST "EIDMigrateUI.manifest"
+
+/////////////////////////////////////////////////////////////////////////////
+// Neutral resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION EIDAuthenticateVersionNumeric
+ PRODUCTVERSION EIDAuthenticateVersionNumeric
+ FILEFLAGSMASK 0x0L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "000004b0"
+        BEGIN
+            VALUE "CompanyName", "www.mysmartlogon.com"
+            VALUE "FileDescription", "EID Credential Migration Tool"
+            VALUE "FileVersion", EIDAuthenticateVersionText
+            VALUE "InternalName", "EIDMigrateUI.exe"
+            VALUE "OriginalFilename", "EIDMigrateUI.exe"
+            VALUE "ProductName", "EIDAuthenticate"
+            VALUE "ProductVersion", EIDAuthenticateVersionText
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0, 1200
+    END
+END
+
+#endif    // Neutral resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United States) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_01_WELCOME DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    CONTROL         "Export credentials from this machine",IDC_01_EXPORT,"Button",
+                    BS_COMMANDLINK | WS_TABSTOP,21,21,231,35
+    CONTROL         "Import credentials to this machine",IDC_01_IMPORT,"Button",
+                    BS_COMMANDLINK | WS_TABSTOP,21,69,231,35
+    CONTROL         "View/List credentials",IDC_01_LIST,"Button",
+                    BS_COMMANDLINK | WS_TABSTOP,21,117,231,35
+    CONTROL         "Validate export file",IDC_01_VALIDATE,"Button",
+                    BS_COMMANDLINK | WS_TABSTOP,21,165,231,35
+END
+
+IDD_02_EXPORT_SELECT DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Output file:",IDC_02_OUTPUT_LABEL,10,15,40,10
+    EDITTEXT        IDC_02_OUTPUT_FILE,10,25,200,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse...",IDC_02_BROWSE_OUTPUT,215,24,48,14
+    LTEXT           "Encryption password:",IDC_02_PASSWORD_LABEL,10,50,80,10
+    EDITTEXT        IDC_02_PASSWORD,10,60,200,12,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "Show password",IDC_02_SHOW_PASSWORD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    10,78,70,10
+    LTEXT           "Confirm password:",IDC_02_CONFIRM_LABEL,10,95,70,10
+    EDITTEXT        IDC_02_CONFIRM_PASSWORD,10,105,200,12,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "Validate certificates during export",IDC_02_VALIDATE_CERTS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,10,128,150,10
+    CONTROL         "Include local groups in export",IDC_02_INCLUDE_GROUPS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP | BS_AUTOCHECKBOX,10,145,150,10
+    LTEXT           "The password must be at least 16 characters long.",
+                    IDC_STATIC,10,170,253,20
+END
+
+IDD_03_EXPORT_CONFIRM DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Ready to export credentials. Review the summary below:",
+                    IDC_STATIC,10,10,253,20
+    LTEXT           "Credentials found:",IDC_STATIC,10,40,80,10
+    LTEXT           "0",IDC_03_CREDENTIAL_COUNT,95,40,50,10
+    LTEXT           "Output file:",IDC_STATIC,10,55,80,10
+    LTEXT           "",IDC_03_OUTPUT_PATH,95,55,168,10
+    LTEXT           "Encryption:",IDC_STATIC,10,70,80,10
+    LTEXT           "AES-256-GCM with PBKDF2 (600,000 iterations)",IDC_03_ENCRYPTION_INFO,
+                    95,70,168,10
+    CONTROL         "",IDC_03_SHIELD,"Static",SS_ICON,10,95,20,20
+    LTEXT           "Click Next to begin the export process.",
+                    IDC_03_SUMMARY,35,95,228,30
+END
+
+IDD_04_EXPORT_PROGRESS DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Exporting credentials...",IDC_04_PROGRESSTEXT,10,80,253,12
+    CONTROL         "",IDC_04_PROGRESSBAR,"msctls_progress32",PBS_MARQUEE | WS_BORDER,
+                    10,100,253,14
+END
+
+IDD_05_EXPORT_COMPLETE DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    CONTROL         "",IDC_05_SHIELD,"Static",SS_ICON,10,10,20,20
+    LTEXT           "Export completed successfully!",IDC_05_SUCCESS_TEXT,35,10,228,20
+    LTEXT           "Total credentials:",IDC_STATIC,40,45,80,10
+    LTEXT           "0",IDC_05_TOTAL_CREDENTIALS,125,45,50,10
+    LTEXT           "Certificate-encrypted:",IDC_STATIC,40,60,80,10
+    LTEXT           "0",IDC_05_CERT_ENCRYPTED,125,60,50,10
+    LTEXT           "DPAPI-encrypted:",IDC_STATIC,40,75,80,10
+    LTEXT           "0",IDC_05_DPAPI_ENCRYPTED,125,75,50,10
+    LTEXT           "Groups exported:",IDC_STATIC,40,90,80,10
+    LTEXT           "0",IDC_05_GROUPS_EXPORTED,125,90,50,10
+    LTEXT           "Output file:",IDC_STATIC,10,115,80,10
+    LTEXT           "",IDC_05_OUTPUT_PATH,10,128,200,10
+    PUSHBUTTON      "Open Folder",IDC_05_OPEN_FOLDER,10,150,80,14
+END
+
+IDD_06_IMPORT_SELECT DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Select an export file to import:",IDC_06_INPUT_LABEL,10,10,253,10
+    EDITTEXT        IDC_06_INPUT_FILE,10,25,200,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse...",IDC_06_BROWSE_INPUT,215,24,48,14
+    LTEXT           "Decryption password:",IDC_06_PASSWORD_LABEL,10,50,80,10
+    EDITTEXT        IDC_06_PASSWORD,10,60,200,12,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "Show password",IDC_06_SHOW_PASSWORD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    10,78,70,10
+    PUSHBUTTON      "Decrypt && Validate",IDC_06_DECRYPT_BUTTON,10,95,100,14
+    GROUPBOX        "File Information",IDC_STATIC,10,120,253,80
+    LTEXT           "Source machine:",IDC_STATIC,20,135,70,10
+    LTEXT           "N/A",IDC_06_SOURCE_MACHINE,95,135,160,10
+    LTEXT           "Export date:",IDC_STATIC,20,150,70,10
+    LTEXT           "N/A",IDC_06_EXPORT_DATE,95,150,160,10
+    LTEXT           "Credentials:",IDC_STATIC,20,165,70,10
+    LTEXT           "N/A",IDC_06_CREDENTIAL_COUNT,95,165,160,10
+    LTEXT           "Version:",IDC_STATIC,20,180,70,10
+    LTEXT           "N/A",IDC_06_VERSION,95,180,160,10
+END
+
+IDD_07_IMPORT_OPTIONS DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    GROUPBOX        "Import Mode",IDC_07_OPTIONS_GROUP,10,10,253,55
+    CONTROL         "Preview only (dry-run) - no changes will be made",IDC_07_DRY_RUN,
+                    "Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,20,25,230,10
+    CONTROL         "Perform import - changes will be made to this machine",IDC_07_FORCE_IMPORT,
+                    "Button",BS_AUTORADIOBUTTON,20,40,230,10
+    CONTROL         "Create missing user accounts",IDC_07_CREATE_USERS,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,20,75,230,10
+    CONTROL         "Continue on individual credential errors",IDC_07_CONTINUE_ON_ERROR,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,90,230,10
+    CONTROL         "Overwrite existing credentials",IDC_07_OVERWRITE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,20,105,230,10
+    LTEXT           "",IDC_07_WARNING_TEXT,10,130,253,40
+END
+
+IDD_08_IMPORT_PREVIEW DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "The following credentials will be imported:",IDC_08_PREVIEW_TEXT,10,10,253,10
+    CONTROL         "",IDC_08_LIST,"SysListView32",LVS_REPORT | LVS_SINGLESEL | WS_TABSTOP,
+                    10,25,253,80,WS_EX_CLIENTEDGE
+    LTEXT           "Warnings:",IDC_STATIC,10,115,253,10
+    LTEXT           "",IDC_08_WARNINGS,10,128,253,40
+    CONTROL         "",IDC_08_SHIELD,"Static",SS_ICON,10,175,20,20
+    LTEXT           "Click Next to continue with the import.",IDC_STATIC,35,178,228,15
+END
+
+IDD_09_IMPORT_PROGRESS DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Importing credentials...",IDC_09_PROGRESSTEXT,10,80,253,12
+    CONTROL         "",IDC_09_PROGRESSBAR,"msctls_progress32",WS_BORDER,10,100,253,14
+    LTEXT           "",IDC_09_CURRENT_USER,10,120,253,10
+END
+
+IDD_10_IMPORT_COMPLETE DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    CONTROL         "",IDC_10_SHIELD,"Static",SS_ICON,10,10,20,20
+    LTEXT           "",IDC_10_SUMMARY_TEXT,35,10,228,20
+    LTEXT           "Total credentials:",IDC_STATIC,40,45,80,10
+    LTEXT           "0",IDC_10_TOTAL,125,45,50,10
+    LTEXT           "Successfully imported:",IDC_STATIC,40,60,80,10
+    LTEXT           "0",IDC_10_IMPORTED,125,60,50,10
+    LTEXT           "Failed:",IDC_STATIC,40,75,80,10
+    LTEXT           "0",IDC_10_FAILED,125,75,50,10
+    LTEXT           "Users created:",IDC_STATIC,40,90,80,10
+    LTEXT           "0",IDC_10_USERS_CREATED,125,90,50,10
+    LTEXT           "Groups created:",IDC_STATIC,40,105,80,10
+    LTEXT           "0",IDC_10_GROUPS_CREATED,125,105,50,10
+    LTEXT           "",IDC_10_WARNINGS,10,130,253,30
+    PUSHBUTTON      "View Log",IDC_10_VIEW_LOG,10,165,80,14
+END
+
+IDD_11_LIST_CREDENTIALS DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    CONTROL         "Local machine",IDC_11_LOCAL,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,
+                    10,10,80,10
+    CONTROL         "From export file",IDC_11_FROM_FILE,"Button",BS_AUTORADIOBUTTON,100,10,80,10
+    PUSHBUTTON      "Browse...",IDC_11_FILE_BROWSE,185,8,48,14
+    CONTROL         "",IDC_11_LIST,"SysListView32",LVS_REPORT | LVS_SINGLESEL | WS_TABSTOP,
+                    10,30,253,120,WS_EX_CLIENTEDGE
+    PUSHBUTTON      "Refresh",IDC_11_REFRESH,10,160,50,14
+    PUSHBUTTON      "Export Selected",IDC_11_EXPORT_SELECTED,70,160,80,14
+    PUSHBUTTON      "View Details",IDC_11_DETAILS,160,160,50,14
+END
+
+IDD_12_VALIDATE_FILE DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Select export file to validate:",IDC_STATIC,10,10,253,10
+    EDITTEXT        IDC_12_FILE_PATH,10,25,200,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse...",IDC_12_BROWSE,215,24,48,14
+    LTEXT           "Passphrase:",IDC_STATIC,10,45,50,10
+    EDITTEXT        IDC_12_PASSWORD,60,43,140,12,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "Show",IDC_12_SHOW_PASSWORD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,205,45,40,10
+    PUSHBUTTON      "Validate",IDC_12_VALIDATE,10,63,60,14
+    GROUPBOX        "Validation Results",IDC_STATIC,10,88,253,110
+    LTEXT           "File format:",IDC_STATIC,20,103,70,10
+    LTEXT           "N/A",IDC_12_FORMAT_STATUS,95,103,160,10
+    LTEXT           "Header integrity:",IDC_STATIC,20,118,70,10
+    LTEXT           "N/A",IDC_12_HEADER_STATUS,95,118,160,10
+    LTEXT           "HMAC:",IDC_STATIC,20,133,70,10
+    LTEXT           "N/A",IDC_12_HMAC_STATUS,95,133,160,10
+    LTEXT           "Encryption:",IDC_STATIC,20,148,70,10
+    LTEXT           "N/A",IDC_12_ENCRYPTION_STATUS,95,148,160,10
+    LTEXT           "JSON structure:",IDC_STATIC,20,163,70,10
+    LTEXT           "N/A",IDC_12_JSON_STATUS,95,163,160,10
+    LTEXT           "Credentials:",IDC_STATIC,20,178,70,10
+    LTEXT           "N/A",IDC_12_CREDENTIAL_COUNT,95,178,160,10
+    LTEXT           "Source machine:",IDC_STATIC,20,193,70,10
+    LTEXT           "N/A",IDC_12_SOURCE_MACHINE,95,193,160,10
+END
+
+IDD_PROGRESS DIALOGEX 0, 0, 200, 60
+STYLE DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION
+CAPTION "Working"
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Please wait...", IDC_04_PROGRESSTEXT, 10, 10, 180, 12
+    CONTROL         "", IDC_04_PROGRESSBAR, "msctls_progress32", PBS_MARQUEE | WS_BORDER, 10, 30, 180, 14
+END
+
+IDD_13_PASSWORD_PROMPT DIALOGEX 0, 0, 280, 160
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION
+CAPTION "Set User Password"
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "A certificate was found for this user. You can optionally set a password for the user account as a fallback login method.", IDC_13_INFO_TEXT, 10, 10, 260, 30
+    LTEXT           "User:", IDC_STATIC, 10, 50, 30, 10
+    LTEXT           "", IDC_13_USERNAME, 45, 50, 225, 10
+    LTEXT           "Password:", IDC_STATIC, 10, 70, 40, 10
+    EDITTEXT        IDC_13_PASSWORD, 10, 82, 260, 12, ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "Confirm password:", IDC_STATIC, 10, 100, 60, 10
+    EDITTEXT        IDC_13_CONFIRM_PASSWORD, 10, 112, 260, 12, ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "Show password", IDC_13_SHOW_PASSWORD, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 10, 130, 70, 10
+    DEFPUSHBUTTON   "OK", IDOK, 165, 140, 50, 14
+    PUSHBUTTON      "Skip", IDC_13_SKIP, 220, 140, 50, 14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDS_CAPTION             "EID Credential Migration Tool"
+    IDS_TITLE_WELCOME       "Welcome"
+    IDS_TITLE_EXPORT_SELECT "Select Export Options"
+    IDS_TITLE_EXPORT_CONFIRM "Confirm Export"
+    IDS_TITLE_EXPORT_COMPLETE "Export Complete"
+    IDS_TITLE_IMPORT_SELECT "Select Import File"
+    IDS_TITLE_IMPORT_OPTIONS "Import Options"
+    IDS_TITLE_IMPORT_PREVIEW "Preview Import"
+    IDS_TITLE_IMPORT_COMPLETE "Import Complete"
+    IDS_TITLE_LIST          "View Credentials"
+    IDS_TITLE_VALIDATE      "Validate Export File"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_EID_NOT_AVAILABLE   "The EID Authentication Package is not available."
+    IDS_REQUIRE_ADMIN       "EID Migrate Tool requires Administrator privileges."
+END
+
+STRINGTABLE
+BEGIN
+    IDS_ERROR_INVALID_PASSWORD       "The password must be at least 16 characters."
+    IDS_ERROR_PASSWORD_MISMATCH      "The passwords do not match."
+    IDS_ERROR_NO_CREDENTIALS         "No EID credentials were found."
+    IDS_ERROR_FILE_WRITE             "Failed to write the export file."
+    IDS_ERROR_FILE_READ              "Failed to read the import file."
+    IDS_ERROR_DECRYPT_FAILED         "Failed to decrypt the file. Check the password."
+    IDS_ERROR_INVALID_FILE           "The file is not a valid export file."
+END
+
+STRINGTABLE
+BEGIN
+    IDS_WARNING_SHORT_PASSWORD       "Password is less than 16 characters."
+    IDS_WARNING_OVERWRITE            "This will overwrite existing credentials."
+    IDS_WARNING_MISSING_USERS        "Some users do not exist on this machine."
+END
+
+STRINGTABLE
+BEGIN
+    IDS_INFO_EXPORT_COMPLETE         "Export completed successfully."
+    IDS_INFO_IMPORT_COMPLETE         "Import completed."
+    IDS_INFO_CREATING_USERS          "Creating user accounts..."
+END
+
+#endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED

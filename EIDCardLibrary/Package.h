@@ -17,6 +17,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#pragma once
+
+#include <vector>
+#include <Windows.h>
 
 BOOL IsEIDPackageAvailable();
 
@@ -59,3 +63,39 @@ BOOL LsaEIDHasStoredCredential(__in_opt PWSTR szUsername);
 DWORD LsaEIDGetRIDFromStoredCredential(__in PCCERT_CONTEXT pContext);
 
 //BOOL CanEncryptPassword(__in_opt HCRYPTPROV hProv, __in_opt DWORD dwKeySpec,  __in_opt PCCERT_CONTEXT pCertContext);
+
+//
+// EIDMigrate LSA IPC Client Wrapper Functions
+//
+
+/**
+ * Enumerate all EID credentials from LSA
+ * Returns an array of EIDM_CREDENTIAL_SUMMARY structures
+ * Requires Administrator privileges
+ */
+HRESULT LsaEIDEnumerateCredentials(_Out_ std::vector<EIDM_CREDENTIAL_SUMMARY>& credentials);
+
+/**
+ * Export a single EID credential from LSA
+ * Returns complete EIDM_EXPORT_RESPONSE structure for the specified RID
+ * Caller is responsible for freeing the returned pointer with EIDFree()
+ * Requires Administrator privileges
+ */
+HRESULT LsaEIDExportCredential(_In_ DWORD dwRid, _Out_ PEIDM_EXPORT_RESPONSE* ppExportResponse);
+
+/**
+ * Import an EID credential to LSA
+ * Takes complete credential data from export file and stores it in LSA
+ * Returns EIDM_IMPORT_RESPONSE structure with result
+ * Caller is responsible for freeing the returned pointer with EIDFree()
+ * Requires Administrator privileges
+ */
+HRESULT LsaEIDImportCredential(
+    _In_ const EIDM_IMPORT_REQUEST* pImportRequest,
+    _In_reads_bytes_(cbPrivateData) const BYTE* pbPrivateData,
+    _In_ DWORD cbPrivateData,
+    _In_reads_bytes_(cbCertificate) const BYTE* pbCertificate,
+    _In_ DWORD cbCertificate,
+    _In_reads_bytes_(cbPassword) const BYTE* pbPassword,
+    _In_ DWORD cbPassword,
+    _Out_ PEIDM_IMPORT_RESPONSE* ppImportResponse);

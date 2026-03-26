@@ -87,16 +87,31 @@ Section "Core" SecCore
   Push "$INSTDIR\EIDLogManager.exe"
   Call AddFileSize
 
+  FILE "..\x64\Release\EIDMigrate.exe"
+  Push "$INSTDIR\EIDMigrate.exe"
+  Call AddFileSize
+
+  FILE "..\x64\Release\EIDMigrateUI.exe"
+  Push "$INSTDIR\EIDMigrateUI.exe"
+  Call AddFileSize
+
   ; Copy DLLs to System32 (required for LSA and Credential Provider)
   ${DisableX64FSRedirection}
-  CopyFiles "$INSTDIR\EIDAuthenticationPackage.dll" "$SYSDIR\EIDAuthenticationPackage.dll"
-  CopyFiles "$INSTDIR\EIDCredentialProvider.dll" "$SYSDIR\EIDCredentialProvider.dll"
-  CopyFiles "$INSTDIR\EIDPasswordChangeNotification.dll" "$SYSDIR\EIDPasswordChangeNotification.dll"
+  ; Use /REBOOTOK to handle locked files (LSA loads DLLs at boot only)
+  Delete /REBOOTOK "$SYSDIR\EIDAuthenticationPackage.dll"
+  Delete /REBOOTOK "$SYSDIR\EIDCredentialProvider.dll"
+  Delete /REBOOTOK "$SYSDIR\EIDPasswordChangeNotification.dll"
 
-  ; Create Start Menu folder and shortcuts
+  CopyFiles /SILENT "$INSTDIR\EIDAuthenticationPackage.dll" "$SYSDIR\EIDAuthenticationPackage.dll"
+  CopyFiles /SILENT "$INSTDIR\EIDCredentialProvider.dll" "$SYSDIR\EIDCredentialProvider.dll"
+  CopyFiles /SILENT "$INSTDIR\EIDPasswordChangeNotification.dll" "$SYSDIR\EIDPasswordChangeNotification.dll"
+
+  ; Create Start Menu folder and shortcuts for all executables
   CreateDirectory "$SMPROGRAMS\EID Authentication"
   CreateShortcut "$SMPROGRAMS\EID Authentication\Configuration Wizard.lnk" "$INSTDIR\EIDConfigurationWizard.exe" "" "$INSTDIR\EIDConfigurationWizard.exe" 0
   CreateShortcut "$SMPROGRAMS\EID Authentication\Log Manager.lnk" "$INSTDIR\EIDLogManager.exe" "" "$INSTDIR\EIDLogManager.exe" 0
+  CreateShortcut "$SMPROGRAMS\EID Authentication\Credential Migration (CLI).lnk" "$INSTDIR\EIDMigrate.exe" "" "$INSTDIR\EIDMigrate.exe" 0
+  CreateShortcut "$SMPROGRAMS\EID Authentication\Credential Migration (GUI).lnk" "$INSTDIR\EIDMigrateUI.exe" "" "$INSTDIR\EIDMigrateUI.exe" 0
   CreateShortcut "$SMPROGRAMS\EID Authentication\Uninstall.lnk" "$INSTDIR\EIDUninstall.exe" "" "$INSTDIR\EIDUninstall.exe" 0
 
   ; Create desktop shortcut pointing to Program Files
@@ -246,6 +261,8 @@ Section "Uninstall"
   ; Delete Start Menu shortcuts and folder
   Delete "$SMPROGRAMS\EID Authentication\Configuration Wizard.lnk"
   Delete "$SMPROGRAMS\EID Authentication\Log Manager.lnk"
+  Delete "$SMPROGRAMS\EID Authentication\Credential Migration (CLI).lnk"
+  Delete "$SMPROGRAMS\EID Authentication\Credential Migration (GUI).lnk"
   Delete "$SMPROGRAMS\EID Authentication\Uninstall.lnk"
   RMDir "$SMPROGRAMS\EID Authentication"
 
@@ -272,6 +289,8 @@ Section "Uninstall"
   Delete "$INSTDIR\EIDConfigurationWizard.exe"
   Delete "$INSTDIR\EIDConfigurationWizardElevated.exe"
   Delete "$INSTDIR\EIDLogManager.exe"
+  Delete "$INSTDIR\EIDMigrate.exe"
+  Delete "$INSTDIR\EIDMigrateUI.exe"
 
   ; Delete uninstaller
   Delete "$INSTDIR\EIDUninstall.exe"

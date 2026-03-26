@@ -270,12 +270,16 @@ BOOL UnRegisterTheSecurityPackage()
 
 void EIDAuthenticationPackageDllRegister()
 {
+	// Register as Security Package (SSP interface)
 	AppendValueToMultiSz(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Lsa", L"Security Packages", AUTHENTICATIONPACKAGENAMET);
+	// Also register as Authentication Package (AP interface) for LsaLookupAuthenticationPackage
+	AppendValueToMultiSz(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Lsa", L"Authentication Packages", AUTHENTICATIONPACKAGENAMET);
 }
 
 void EIDAuthenticationPackageDllUnRegister()
 {
 	RemoveValueFromMultiSz(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Lsa", L"Security Packages", AUTHENTICATIONPACKAGENAMET);
+	RemoveValueFromMultiSz(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\Lsa", L"Authentication Packages", AUTHENTICATIONPACKAGENAMET);
 }
 
 void EIDPasswordChangeNotificationDllRegister()

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -19,30 +19,30 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{4711AF6D-0E6C-4D71-9238-053FB0B287DA}</ProjectGuid>
-    <RootNamespace>EIDAuthenticationPackage</RootNamespace>
+    <ProjectGuid>{A8B5C7D9-E1F2-4A3B-8C5D-1E2F3A4B5C6D}</ProjectGuid>
+    <RootNamespace>EIDMigrateUI</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
@@ -88,32 +88,30 @@
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
-    <RunCodeAnalysis Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</RunCodeAnalysis>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <LanguageStandard>stdcpp23</LanguageStandard>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;EIDAUTHENTICATIONPACKAGE_EXPORTS;%(PreprocessorDefinitions);WINVER=0x0600;_WIN32_WINNT=0x0600</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DisableSpecificWarnings>4005;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>$(ProjectDir);..\EIDCardLibrary;..\EIDMigrate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <OutputFile>$(OutDir)$(ProjectName).dll</OutputFile>
-      <ModuleDefinitionFile>EIDAuthenticationPackage.def</ModuleDefinitionFile>
-      <AdditionalDependencies>netapi32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <DelayLoadDLLs>%(DelayLoadDLLs);advapi32.dll</DelayLoadDLLs>
+      <AdditionalDependencies>comctl32.lib;advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
+      <DelayLoadDLLs>%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
-    <PostBuildEvent>
-      <Command>
-      </Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
@@ -122,57 +120,51 @@
     <ClCompile>
       <LanguageStandard>stdcpp23</LanguageStandard>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;EIDAUTHENTICATIONPACKAGE_EXPORTS;%(PreprocessorDefinitions);WINVER=0x0600;_WIN32_WINNT=0x0600</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <WarningLevel>Level4</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DisableSpecificWarnings>4005;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>$(ProjectDir);..\EIDCardLibrary;..\EIDMigrate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <OutputFile>$(OutDir)$(ProjectName).dll</OutputFile>
-      <ModuleDefinitionFile>EIDAuthenticationPackage.def</ModuleDefinitionFile>
-      <AdditionalDependencies>netapi32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <DelayLoadDLLs>%(DelayLoadDLLs);advapi32.dll</DelayLoadDLLs>
+      <AdditionalDependencies>comctl32.lib;advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
+      <DelayLoadDLLs>%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <RandomizedBaseAddress>false</RandomizedBaseAddress>
     </Link>
-    <PostBuildEvent>
-      <Command>
-      </Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <LanguageStandard>stdcpp23</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;EIDAUTHENTICATIONPACKAGE_EXPORTS;%(PreprocessorDefinitions);WINVER=0x0600;_WIN32_WINNT=0x0600</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <DebugInformationFormat>
-      </DebugInformationFormat>
-      <EnablePREfast>true</EnablePREfast>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4005;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>$(ProjectDir);..\EIDCardLibrary;..\EIDMigrate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalOptions>/LTCG  %(AdditionalOptions)</AdditionalOptions>
-      <OutputFile>$(OutDir)$(ProjectName).dll</OutputFile>
-      <ModuleDefinitionFile>EIDAuthenticationPackage.def</ModuleDefinitionFile>
-      <AdditionalDependencies>netapi32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <DelayLoadDLLs>%(DelayLoadDLLs);advapi32.dll</DelayLoadDLLs>
+      <AdditionalDependencies>comctl32.lib;advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
+      <DelayLoadDLLs>%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
-    <PostBuildEvent>
-      <Command>
-      </Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
@@ -182,43 +174,107 @@
       <LanguageStandard>stdcpp23</LanguageStandard>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;EIDAUTHENTICATIONPACKAGE_EXPORTS;%(PreprocessorDefinitions);WINVER=0x0600;_WIN32_WINNT=0x0600</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
-      <DebugInformationFormat>
-      </DebugInformationFormat>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4005;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>$(ProjectDir);..\EIDCardLibrary;..\EIDMigrate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalOptions>/LTCG  %(AdditionalOptions)</AdditionalOptions>
-      <OutputFile>$(OutDir)$(ProjectName).dll</OutputFile>
-      <ModuleDefinitionFile>EIDAuthenticationPackage.def</ModuleDefinitionFile>
-      <AdditionalDependencies>netapi32.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <DelayLoadDLLs>%(DelayLoadDLLs);advapi32.dll</DelayLoadDLLs>
+      <AdditionalDependencies>comctl32.lib;advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
+      <DelayLoadDLLs>%(DelayLoadDLLs)</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <NoManifest>true</NoManifest>
     </Link>
-    <PostBuildEvent>
-      <Command>
-      </Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup>
+    <Manifest>
+      <EnableDpiAwareness>PerMonitorV2</EnableDpiAwareness>
+    </Manifest>
+  </ItemDefinitionGroup>
+  <PropertyGroup>
+    <GenerateManifest>false</GenerateManifest>
+    <EmbedManifest>false</EmbedManifest>
+  </PropertyGroup>
   <ItemGroup>
-    <ClCompile Include="EIDAuthenticationPackage.cpp" />
-    <ClCompile Include="EIDRundll32Commands.cpp" />
-    <ClCompile Include="EIDSecuritySupportProvider.cpp" />
-    <ClCompile Include="EIDSecuritySupportProviderUserMode.cpp" />
+    <ClCompile Include="EIDMigrateUI.cpp" />
+    <ClCompile Include="Page01_Welcome.cpp" />
+    <ClCompile Include="Page02_ExportSelect.cpp" />
+    <ClCompile Include="Page03_ExportConfirm.cpp" />
+    <ClCompile Include="Page04_ExportProgress.cpp" />
+    <ClCompile Include="Page05_ExportComplete.cpp" />
+    <ClCompile Include="Page06_ImportSelect.cpp" />
+    <ClCompile Include="Page07_ImportOptions.cpp" />
+    <ClCompile Include="Page08_ImportPreview.cpp" />
+    <ClCompile Include="Page09_ImportProgress.cpp" />
+    <ClCompile Include="Page10_ImportComplete.cpp" />
+    <ClCompile Include="Page11_ListCredentials.cpp" />
+    <ClCompile Include="Page12_ValidateFile.cpp" />
+    <ClCompile Include="Page13_PasswordPrompt.cpp" />
+    <ClCompile Include="WorkerThread.cpp" />
+    <ClCompile Include="..\EIDMigrate\CryptoHelpers.cpp" />
+    <ClCompile Include="..\EIDMigrate\FileCrypto.cpp" />
+    <ClCompile Include="..\EIDMigrate\Export.cpp" />
+    <ClCompile Include="..\EIDMigrate\Import.cpp" />
+    <ClCompile Include="..\EIDMigrate\JsonHelper.cpp" />
+    <ClCompile Include="..\EIDMigrate\List.cpp" />
+    <ClCompile Include="..\EIDMigrate\LsaClient.cpp" />
+    <ClCompile Include="..\EIDMigrate\Utils.cpp" />
+    <ClCompile Include="..\EIDMigrate\GroupManagement.cpp" />
+    <ClCompile Include="..\EIDMigrate\UserManagement.cpp" />
+    <ClCompile Include="..\EIDMigrate\Validate.cpp" />
+    <ClCompile Include="..\EIDMigrate\Tracing.cpp" />
+    <ClCompile Include="..\EIDMigrate\AuditLogging.cpp" />
+    <ClCompile Include="..\EIDMigrate\SecureMemory.cpp" />
+    <ClCompile Include="..\EIDMigrate\PinPrompt.cpp" />
+    <ClCompile Include="..\EIDMigrate\CertificateInstall.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="EIDAuthenticationPackage.def" />
-    <None Include="ReadMe.txt" />
+    <ClInclude Include="EIDMigrateUI.h" />
+    <ClInclude Include="Page01_Welcome.h" />
+    <ClInclude Include="Page02_ExportSelect.h" />
+    <ClInclude Include="Page03_ExportConfirm.h" />
+    <ClInclude Include="Page04_ExportProgress.h" />
+    <ClInclude Include="Page05_ExportComplete.h" />
+    <ClInclude Include="Page06_ImportSelect.h" />
+    <ClInclude Include="Page07_ImportOptions.h" />
+    <ClInclude Include="Page08_ImportPreview.h" />
+    <ClInclude Include="Page09_ImportProgress.h" />
+    <ClInclude Include="Page10_ImportComplete.h" />
+    <ClInclude Include="Page11_ListCredentials.h" />
+    <ClInclude Include="Page12_ValidateFile.h" />
+    <ClInclude Include="Page13_PasswordPrompt.h" />
+    <ClInclude Include="WorkerThread.h" />
+    <ClInclude Include="..\EIDMigrate\EIDMigrate.h" />
+    <ClInclude Include="..\EIDMigrate\CryptoHelpers.h" />
+    <ClInclude Include="..\EIDMigrate\FileCrypto.h" />
+    <ClInclude Include="..\EIDMigrate\Export.h" />
+    <ClInclude Include="..\EIDMigrate\Import.h" />
+    <ClInclude Include="..\EIDMigrate\JsonHelper.h" />
+    <ClInclude Include="..\EIDMigrate\List.h" />
+    <ClInclude Include="..\EIDMigrate\LsaClient.h" />
+    <ClInclude Include="..\EIDMigrate\Utils.h" />
+    <ClInclude Include="..\EIDMigrate\GroupManagement.h" />
+    <ClInclude Include="..\EIDMigrate\UserManagement.h" />
+    <ClInclude Include="..\EIDMigrate\Validate.h" />
+    <ClInclude Include="..\EIDMigrate\Tracing.h" />
+    <ClInclude Include="..\EIDMigrate\AuditLogging.h" />
+    <ClInclude Include="..\EIDMigrate\SecureMemory.h" />
+    <ClInclude Include="..\EIDMigrate\PinPrompt.h" />
+    <ClInclude Include="..\EIDMigrate\FileFormat.h" />
+    <ClInclude Include="..\EIDMigrate\CertificateInstall.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="resources.rc" />
+    <ResourceCompile Include="EIDMigrateUI.rc" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EIDCardLibrary\EIDCardLibrary.vcxproj">
@@ -227,7 +283,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resources.h" />
+    <Manifest Include="EIDMigrateUI.manifest" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

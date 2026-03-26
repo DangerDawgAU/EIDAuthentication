@@ -21,27 +21,8 @@
 #include <utility>
 #include <span>
 
-
-enum class EID_PRIVATE_DATA_TYPE
-{
-	eidpdtClearText=1,
-	eidpdtCrypted = 2,
-	eidpdtDPAPI = 3,
-
-};
-
-// Validates that an EID_PRIVATE_DATA_TYPE value is a known valid type
-// Marked constexpr+noexcept for compile-time evaluation and LSASS compatibility
-constexpr bool IsValidPrivateDataType(EID_PRIVATE_DATA_TYPE type) noexcept
-{
-    return type >= EID_PRIVATE_DATA_TYPE::eidpdtClearText && type <= EID_PRIVATE_DATA_TYPE::eidpdtDPAPI;
-}
-
-// Compile-time validation of private data type enum bounds
-static_assert(IsValidPrivateDataType(EID_PRIVATE_DATA_TYPE::eidpdtClearText), "eidpdtClearText must be a valid type");
-static_assert(IsValidPrivateDataType(EID_PRIVATE_DATA_TYPE::eidpdtDPAPI), "eidpdtDPAPI must be a valid type");
-
-using PEID_PRIVATE_DATA_TYPE = EID_PRIVATE_DATA_TYPE*;
+// Forward declaration - EID_PRIVATE_DATA_TYPE is defined in EIDCardLibrary.h
+// EID_PRIVATE_DATA structure definition
 struct EID_PRIVATE_DATA
 {
 	EID_PRIVATE_DATA_TYPE dwType;

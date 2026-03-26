@@ -10,6 +10,8 @@
     - EIDConfigurationWizard.exe (Configuration tool)
     - EIDCardLibrary (shared library)
     - EIDLogManager.exe (Log management utility)
+    - EIDMigrate.exe (Credential migration CLI utility, x64 only)
+    - EIDMigrateUI.exe (Credential migration GUI wizard, x64 only)
     - Installer (NSIS installer for Release builds)
 
 .PARAMETER Configuration
@@ -104,8 +106,17 @@ $outputFiles | ForEach-Object { Write-Host "  $($_.Name)" -ForegroundColor White
 Write-Host ""
 Write-Host "File sizes:" -ForegroundColor White
 $outputFiles | ForEach-Object {
-    Write-Host "  $($_.Name) - $($_.Length) bytes" -ForegroundColor Gray
+    $color = "Gray"
+    if ($_.Name -eq "EIDMigrate.exe") { $color = "Cyan" }
+    if ($_.Name -eq "EIDMigrateUI.exe") { $color = "Cyan" }
+    Write-Host "  $($_.Name) - $($_.Length) bytes" -ForegroundColor $color
 }
+
+# Note about EIDMigrate tools
+Write-Host ""
+Write-Host "NOTE: EIDMigrate.exe is a CLI credential migration utility (x64 only)." -ForegroundColor Cyan
+Write-Host "      EIDMigrateUI.exe is a GUI wizard for credential migration (x64 only)." -ForegroundColor Cyan
+Write-Host "      Use with caution in production environments." -ForegroundColor Yellow
 
 # Build installer (Release only)
 if ($Configuration -eq "Release") {
@@ -193,8 +204,14 @@ if ($Configuration -eq "Release") {
             Write-Host "Size: $sizeMB MB ($sizeKB KB)" -ForegroundColor White
             Write-Host ""
             Write-Host "Installer includes:" -ForegroundColor White
+            Write-Host "  - LSA Authentication Package" -ForegroundColor Gray
+            Write-Host "  - Credential Provider v2" -ForegroundColor Gray
+            Write-Host "  - Password Change Notification" -ForegroundColor Gray
+            Write-Host "  - Configuration Wizard" -ForegroundColor Gray
+            Write-Host "  - EIDMigrate.exe (CLI credential migration utility)" -ForegroundColor Gray
+            Write-Host "  - EIDMigrateUI.exe (GUI credential migration wizard)" -ForegroundColor Gray
+            Write-Host "  - Start Menu folder with all application shortcuts" -ForegroundColor Gray
             Write-Host "  - Certificate cleanup script (CleanupCertificates.ps1)" -ForegroundColor Gray
-            Write-Host "  - All DLLs and executables" -ForegroundColor Gray
             Write-Host "  - Uninstaller with certificate removal" -ForegroundColor Gray
             Write-Host ""
         } else {

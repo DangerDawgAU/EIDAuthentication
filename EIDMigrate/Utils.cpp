@@ -1,0 +1,468 @@
+// File: EIDMigrate/Utils.cpp
+// General utility functions implementation
+
+#define _CRT_RAND_S
+#include "Utils.h"
+#include <lm.h>
+#include <shlwapi.h>
+#include <chrono>
+#include <sstream>
+#include <bcrypt.h>
+#include <sddl.h>
+#include <stdlib.h>
+
+#pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "netapi32.lib")
+#pragma comment(lib, "bcrypt.lib")
+#pragma comment(lib, "advapi32.lib")
+#pragma comment(lib, "version.lib")
+
+// String conversion utilities
+std::string WideToUtf8(_In_ const std::wstring& ws)
+{
+    if (ws.empty())
+        return std::string();
+
+    int cchNeeded = WideCharToMultiByte(CP_UTF8, 0, ws.c_str(),
+        static_cast<int>(ws.length()), nullptr, 0, nullptr, nullptr);
+    if (cchNeeded <= 0)
+        return std::string();
+
+    std::string result(cchNeeded, 0);
+    WideCharToMultiByte(CP_UTF8, 0, ws.c_str(),
+        static_cast<int>(ws.length()), &result[0], cchNeeded, nullptr, nullptr);
+
+    return result;
+}
+
+std::wstring Utf8ToWide(_In_ const std::string& s)
+{
+    if (s.empty())
+        return std::wstring();
+
+    int cchNeeded = MultiByteToWideChar(CP_UTF8, 0, s.c_str(),
+        static_cast<int>(s.length()), nullptr, 0);
+    if (cchNeeded <= 0)
+        return std::wstring();
+
+    std::wstring result(cchNeeded, 0);
+    MultiByteToWideChar(CP_UTF8, 0, s.c_str(),
+        static_cast<int>(s.length()), &result[0], cchNeeded);
+
+    return result;
+}
+
+std::wstring AnsiToWide(_In_ const std::string& s)
+{
+    if (s.empty())
+        return std::wstring();
+
+    int cchNeeded = MultiByteToWideChar(CP_ACP, 0, s.c_str(),
+        static_cast<int>(s.length()), nullptr, 0);
+    if (cchNeeded <= 0)
+        return std::wstring();
+
+    std::wstring result(cchNeeded, 0);
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(),
+        static_cast<int>(s.length()), &result[0], cchNeeded);
+
+    return result;
+}
+
+// SID conversion utilities
+std::wstring SidToString(_In_ PSID pSid)
+{
+    if (!pSid)
+        return std::wstring();
+
+    LPWSTR pwszSid = nullptr;
+    if (!ConvertSidToStringSidW(pSid, &pwszSid))
+        return std::wstring();
+
+    std::wstring wsResult(pwszSid);
+    LocalFree(pwszSid);
+
+    return wsResult;
+}
+
+BOOL StringToSid(_In_ const std::wstring& wsSid, _Out_ PSID* ppSid)
+{
+    if (!ppSid || wsSid.empty())
+        return FALSE;
+
+    return ConvertStringSidToSidW(wsSid.c_str(), ppSid);
+}
+
+DWORD GetRidFromSid(_In_ PSID pSid)
+{
+    if (!pSid)
+        return 0;
+
+    DWORD dwSubAuthorityCount = *GetSidSubAuthorityCount(pSid);
+    if (dwSubAuthorityCount == 0)
+        return 0;
+
+    return static_cast<DWORD>(*GetSidSubAuthority(pSid, dwSubAuthorityCount - 1));
+}
+
+// Computer name
+std::wstring GetComputerName()
+{
+    WCHAR szBuffer[MAX_COMPUTERNAME_LENGTH + 1];
+    DWORD dwSize = ARRAYSIZE(szBuffer);
+
+    if (!::GetComputerNameW(szBuffer, &dwSize))
+        return L".";
+
+    return std::wstring(szBuffer);
+}
+
+std::wstring GetUserName()
+{
+    WCHAR szBuffer[UNLEN + 1];
+    DWORD dwSize = ARRAYSIZE(szBuffer);
+
+    if (!::GetUserNameW(szBuffer, &dwSize))
+        return L"?";
+
+    return std::wstring(szBuffer);
+}
+
+// File path utilities
+std::wstring GetFileExtension(_In_ const std::wstring& wsPath)
+{
+    return PathFindExtensionW(wsPath.c_str());
+}
+
+std::wstring GetFileName(_In_ const std::wstring& wsPath)
+{
+    return PathFindFileNameW(wsPath.c_str());
+}
+
+std::wstring GetDirectoryPath(_In_ const std::wstring& wsPath)
+{
+    WCHAR szDir[MAX_PATH];
+    wcscpy_s(szDir, wsPath.c_str());
+    PathRemoveFileSpecW(szDir);
+    return std::wstring(szDir);
+}
+
+bool FileExists(_In_ const std::wstring& wsPath)
+{
+    return (GetFileAttributesW(wsPath.c_str()) != INVALID_FILE_ATTRIBUTES);
+}
+
+bool IsFileReadable(_In_ const std::wstring& wsPath)
+{
+    HANDLE hFile = CreateFileW(wsPath.c_str(), GENERIC_READ,
+        FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return false;
+
+    CloseHandle(hFile);
+    return true;
+}
+
+bool IsFileWritable(_In_ const std::wstring& wsPath)
+{
+    HANDLE hFile = CreateFileW(wsPath.c_str(), GENERIC_WRITE,
+        0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return false;
+
+    CloseHandle(hFile);
+    return true;
+}
+
+// Time formatting
+std::wstring FormatTimestamp(_In_ const FILETIME& ft)
+{
+    // Convert FILETIME to system time
+    FILETIME ftLocal;
+    if (!FileTimeToLocalFileTime(&ft, &ftLocal))
+        return L"?";
+
+    SYSTEMTIME st;
+    if (!FileTimeToSystemTime(&ftLocal, &st))
+        return L"?";
+
+    // Format as ISO 8601
+    WCHAR szBuffer[64];
+    swprintf_s(szBuffer, L"%04d-%02d-%02dT%02d:%02d:%02d",
+        st.wYear, st.wMonth, st.wDay,
+        st.wHour, st.wMinute, st.wSecond);
+
+    return std::wstring(szBuffer);
+}
+
+std::wstring FormatCurrentTimestamp()
+{
+    SYSTEMTIME st;
+    GetSystemTime(&st);  // Use UTC time, not local time
+
+    WCHAR szBuffer[64];
+    swprintf_s(szBuffer, L"%04d-%02d-%02dT%02d:%02d:%02dZ",
+        st.wYear, st.wMonth, st.wDay,
+        st.wHour, st.wMinute, st.wSecond);
+
+    return std::wstring(szBuffer);
+}
+
+// Prompt user for input
+BOOL PromptYesNo(_In_ PCWSTR pwszPrompt, _In_ BOOL fDefaultYes)
+{
+    if (!pwszPrompt)
+        return fDefaultYes;
+
+    fwprintf(stderr, L"%ls", pwszPrompt);
+
+    WCHAR szResponse[16];
+    if (fgetws(szResponse, ARRAYSIZE(szResponse), stdin) == nullptr)
+        return fDefaultYes;
+
+    // Trim whitespace
+    size_t cchLen = wcslen(szResponse);
+    while (cchLen > 0 && iswspace(szResponse[cchLen - 1]))
+        szResponse[--cchLen] = L'\0';
+
+    if (cchLen == 0)
+        return fDefaultYes;
+
+    return (towupper(szResponse[0]) == L'Y');
+}
+
+std::wstring PromptForString(_In_ PCWSTR pwszPrompt)
+{
+    if (!pwszPrompt)
+        return std::wstring();
+
+    fwprintf(stderr, L"%ls", pwszPrompt);
+
+    WCHAR szBuffer[512];
+    if (fgetws(szBuffer, ARRAYSIZE(szBuffer), stdin) == nullptr)
+        return std::wstring();
+
+    // Trim newline
+    size_t cchLen = wcslen(szBuffer);
+    while (cchLen > 0 && (szBuffer[cchLen - 1] == L'\r' || szBuffer[cchLen - 1] == L'\n'))
+        szBuffer[--cchLen] = L'\0';
+
+    return std::wstring(szBuffer, cchLen);
+}
+
+SecureWString PromptForPassphrase(_In_ PCWSTR pwszPrompt, _In_ BOOL fConfirm)
+{
+    if (!pwszPrompt)
+        pwszPrompt = L"Enter passphrase: ";
+
+    // Note: This is a simple implementation. For production,
+    // we should use proper console input masking.
+    // We'll implement the proper version in PinPrompt.cpp
+
+    fwprintf(stderr, L"%ls", pwszPrompt);
+
+    WCHAR szBuffer[256];
+    if (fgetws(szBuffer, ARRAYSIZE(szBuffer), stdin) == nullptr)
+        return SecureWString();
+
+    // Trim newline
+    size_t cchLen = wcslen(szBuffer);
+    while (cchLen > 0 && (szBuffer[cchLen - 1] == L'\r' || szBuffer[cchLen - 1] == L'\n'))
+        szBuffer[--cchLen] = L'\0';
+
+    SecureWString wsResult(szBuffer, cchLen);
+    SecureZeroMemory(szBuffer, sizeof(szBuffer));
+
+    if (fConfirm)
+    {
+        fwprintf(stderr, L"Confirm passphrase: ");
+
+        WCHAR szConfirm[256];
+        if (fgetws(szConfirm, ARRAYSIZE(szConfirm), stdin) == nullptr)
+            return SecureWString();
+
+        cchLen = wcslen(szConfirm);
+        while (cchLen > 0 && (szConfirm[cchLen - 1] == L'\r' || szConfirm[cchLen - 1] == L'\n'))
+            szConfirm[--cchLen] = L'\0';
+
+        if (wcscmp(szBuffer, szConfirm) != 0)
+        {
+            fwprintf(stderr, L"Error: Passphrases do not match.\n");
+            SecureZeroMemory(szConfirm, sizeof(szConfirm));
+            return SecureWString();
+        }
+
+        SecureZeroMemory(szConfirm, sizeof(szConfirm));
+    }
+
+    return wsResult;
+}
+
+// Version info
+std::wstring GetFileVersion(_In_ PCWSTR pwszFilePath)
+{
+    if (!pwszFilePath)
+        return std::wstring();
+
+    DWORD dwDummy = 0;
+    DWORD dwSize = GetFileVersionInfoSizeW(pwszFilePath, &dwDummy);
+    if (dwSize == 0)
+        return std::wstring();
+
+    std::vector<BYTE> buffer(dwSize);
+    if (!GetFileVersionInfoW(pwszFilePath, 0, dwSize, buffer.data()))
+        return std::wstring();
+
+    LPVOID pvBuffer = nullptr;
+    UINT uLen = 0;
+    if (!VerQueryValueW(buffer.data(), L"\\StringFileInfo\\040904b0\\FileVersion",
+        &pvBuffer, &uLen))
+        return std::wstring();
+
+    return std::wstring(static_cast<PWSTR>(pvBuffer));
+}
+
+// Check if running as administrator
+BOOL IsRunningAsAdmin()
+{
+    SID_IDENTIFIER_AUTHORITY auth = SECURITY_NT_AUTHORITY;
+    PSID pAdminSid = nullptr;
+
+    if (!AllocateAndInitializeSid(&auth, 2,
+        SECURITY_BUILTIN_DOMAIN_RID,
+        DOMAIN_ALIAS_RID_ADMINS,
+        0, 0, 0, 0, 0, 0, &pAdminSid))
+        return FALSE;
+
+    BOOL fIsAdmin = FALSE;
+    if (!CheckTokenMembership(nullptr, pAdminSid, &fIsAdmin))
+        fIsAdmin = FALSE;
+
+    FreeSid(pAdminSid);
+    return fIsAdmin;
+}
+
+// Enable a privilege for the current process
+BOOL EnablePrivilege(_In_ PCWSTR pwszPrivilege)
+{
+    HANDLE hToken = nullptr;
+    if (!OpenProcessToken(GetCurrentProcess(),
+        TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
+        return FALSE;
+
+    LUID luid;
+    if (!LookupPrivilegeValueW(nullptr, pwszPrivilege, &luid))
+    {
+        CloseHandle(hToken);
+        return FALSE;
+    }
+
+    TOKEN_PRIVILEGES tp = {};
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Luid = luid;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    BOOL fResult = AdjustTokenPrivileges(hToken, FALSE, &tp,
+        sizeof(tp), nullptr, nullptr);
+
+    DWORD dwError = GetLastError();
+    CloseHandle(hToken);
+
+    return fResult && (dwError == ERROR_SUCCESS);
+}
+
+// Error formatting
+std::wstring FormatErrorMessage(_In_ DWORD dwError)
+{
+    LPWSTR pwszMessage = nullptr;
+    DWORD dwLen = FormatMessageW(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr, dwError, 0,
+        reinterpret_cast<LPWSTR>(&pwszMessage), 0, nullptr);
+
+    if (dwLen == 0 || !pwszMessage)
+    {
+        WCHAR szBuffer[64];
+        swprintf_s(szBuffer, L"Error 0x%08X", dwError);
+        return std::wstring(szBuffer);
+    }
+
+    std::wstring wsResult(pwszMessage);
+    LocalFree(pwszMessage);
+
+    // Remove trailing newlines
+    while (!wsResult.empty() && (wsResult.back() == L'\r' || wsResult.back() == L'\n'))
+        wsResult.pop_back();
+
+    return wsResult;
+}
+
+std::wstring FormatHResult(_In_ HRESULT hr)
+{
+    if (HRESULT_FACILITY(hr) == FACILITY_WIN32)
+        return FormatErrorMessage(HRESULT_CODE(hr));
+
+    LPWSTR pwszMessage = nullptr;
+    DWORD dwLen = FormatMessageW(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        nullptr, hr, 0,
+        reinterpret_cast<LPWSTR>(&pwszMessage), 0, nullptr);
+
+    if (dwLen == 0 || !pwszMessage)
+    {
+        WCHAR szBuffer[64];
+        swprintf_s(szBuffer, L"HRESULT 0x%08X", hr);
+        return std::wstring(szBuffer);
+    }
+
+    std::wstring wsResult(pwszMessage);
+    LocalFree(pwszMessage);
+
+    while (!wsResult.empty() && (wsResult.back() == L'\r' || wsResult.back() == L'\n'))
+        wsResult.pop_back();
+
+    return wsResult;
+}
+
+std::wstring GenerateRandomPassword(_In_ DWORD dwLength)
+{
+    static const wchar_t szChars[] =
+        L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+
+    std::wstring wsPassword;
+    wsPassword.reserve(dwLength);
+
+    // Initialize random seed
+    DWORD dwRnd = 0;
+    BYTE pbRnd[32];
+
+    // Use BCrypt for cryptographically secure random numbers
+    if (BCryptGenRandom(nullptr, pbRnd, sizeof(pbRnd), 0) >= 0)
+    {
+        for (DWORD i = 0; i < dwLength; i++)
+        {
+            DWORD dwIndex = pbRnd[i % sizeof(pbRnd)] % (wcslen(szChars) - 1);
+            wsPassword += szChars[dwIndex];
+        }
+    }
+    else
+    {
+        // Fallback to rand_s
+        for (DWORD i = 0; i < dwLength; i++)
+        {
+            unsigned int uiRnd = 0;
+            if (rand_s(&uiRnd) == 0)
+            {
+                dwRnd = uiRnd;
+                DWORD dwIndex = dwRnd % (wcslen(szChars) - 1);
+                wsPassword += szChars[dwIndex];
+            }
+            else
+            {
+                wsPassword += L'a'; // Fallback
+            }
+        }
+    }
+
+    return wsPassword;
+}
