@@ -85,14 +85,18 @@ jobs:
 
       - name: Setup NSIS
         uses: joncloud/makensis-action@v1
-        with:
-          script-file: 'Installer/Installerx64.nsi'
 
       - name: Build NSIS Installer
         run: |
+          # Create the expected directory structure for the NSI script
+          New-Item -ItemType Directory -Path "x64\Release" -Force | Out-Null
+          # Copy artifacts to the location NSI script expects
+          Copy-Item artifacts\* x64\Release\
+          # Build the installer
           makensis Installer/Installerx64.nsi
           # NSIS outputs to current directory
           mv EIDInstallx64.exe artifacts/
+        shell: pwsh
 
       - name: Create source code archive
         run: |
@@ -159,13 +163,14 @@ jobs:
         with:
           vt_api_key: ${{ secrets.VT_API_KEY }}
           files: |
-            ./artifacts/EIDCredentialProvider.dll
-            ./artifacts/EIDCardLibrary.dll
-            ./artifacts/EIDLogManager.dll
-            ./artifacts/EIDPasswordChangeNotification.dll
             ./artifacts/EIDAuthenticationPackage.dll
+            ./artifacts/EIDCredentialProvider.dll
+            ./artifacts/EIDPasswordChangeNotification.dll
             ./artifacts/EIDConfigurationWizard.exe
             ./artifacts/EIDConfigurationWizardElevated.exe
+            ./artifacts/EIDLogManager.exe
+            ./artifacts/EIDMigrate.exe
+            ./artifacts/EIDMigrateUI.exe
             ./artifacts/EIDInstallx64.exe
             ./artifacts/source.zip
           request_rate: 4  # WF-02: Free tier compliance (4 requests/minute)
@@ -235,7 +240,7 @@ jobs:
             }
 
             body += `\n\n---\n`;
-            body += `_Scanned 9 artifacts: 5 DLLs, 2 EXEs, 1 installer, 1 source archive_\n`;
+            body += `_Scanned 10 artifacts: 3 DLLs, 6 EXEs, 1 installer, 1 source archive_\n`;
             body += `_Note: Detections may be false positives for security software (LSASS interaction)._`;
 
             // Post comment on the commit
