@@ -85,6 +85,8 @@ HKLM\SYSTEM\CurrentControlSet\Control\Lsa\limitblankpassworduse = 0
 | **EIDConfigurationWizard.exe** | Enrollment wizard for certificate creation, validation, and credential storage |
 | **EIDConfigurationWizardElevated.exe** | UAC elevation helper for policy operations requiring admin rights |
 | **EIDLogManager.exe** | ETW trace control and crash dump configuration for diagnostics |
+| **EIDMigrate.exe** | Command-line tool for bulk credential export and import |
+| **EIDMigrateUI.exe** | GUI wizard for credential backup and migration |
 
 | DLL | Purpose |
 |-----|---------|
@@ -258,6 +260,94 @@ Windows Password Filter API implementation:
 - **OS:** Windows 7 SP1+ (x64 only)
 - **Build:** Visual Studio 2022, Platform Toolset v143, C++23
 - **Runtime:** Smart Card Resource Manager (SCardSvr), Smart Card Device Enumeration (ScDeviceEnum)
+
+---
+
+## Bulk User Import/Export
+
+The EIDMigrate tools enable bulk backup and migration of smart card credentials between machines. Credentials are exported to an encrypted `.eid` file format and can be restored to the same or a different machine.
+
+### Tools
+
+| Tool | Purpose |
+|------|---------|
+| **EIDMigrate.exe** | Command-line interface for export/import operations |
+| **EIDMigrateUI.exe** | GUI wizard for step-by-step migration |
+
+### Command-Line Usage
+
+```cmd
+# Export all local credentials to encrypted file
+EIDMigrate.exe export -local -output backup.eid -password "passphrase-16-chars-min" -v
+
+# Import credentials from file
+EIDMigrate.exe import -local -input backup.eid -password "passphrase-16-chars-min" -v
+
+# List all stored credentials
+EIDMigrate.exe list -local -v
+
+# Validate exported file
+EIDMigrate.exe validate -input backup.eid -password "passphrase-16-chars-min" -v
+```
+
+### GUI Wizard
+
+The EIDMigrateUI wizard provides four migration flows:
+
+1. **Export** - Select credentials, confirm, and export to encrypted file
+2. **Import** - Select file, preview credentials, and import to local machine
+3. **List** - View all stored credentials (local machine or from file)
+4. **Validate** - Verify file integrity and credential count
+
+### File Format
+
+Export files use the `.eid` extension with the following security:
+
+- **Encryption:** AES-256-GCM (PBKDF2-HMAC-SHA256 key derivation)
+- **Password:** Minimum 16 characters required
+- **Integrity:** HMAC-SHA256 signature
+- **Content:** Credentials, groups, and metadata in JSON format
+
+### Important Notes
+
+- **Password Requirement:** Export/import passwords must be at least 16 characters
+- **Certificate Installation:** Imported certificates are automatically installed to the user's MY store
+- **LSA Secret Format:** Uses double underscore format: `L$_EID__<HEX_RID>`
+- **Cross-Machine:** Exported files can be imported to different machines
+
+---
+
+## Code Signing
+
+By default, Windows enforces code signing requirements for LSA Authentication Packages and Credential Providers. To load unsigned DLLs during development or testing, you must disable this protection.
+
+### Disable Code Signing Enforcement
+
+**Registry Key:**
+```
+HKLM\SYSTEM\CurrentControlSet\Control\Lsa\RestrictBlankPasswordUse
+```
+
+**Setting:** `0` (Disabled)
+
+Alternatively, for development builds, use:
+```
+HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\DisableLsaSigning
+```
+
+**Setting:** `1` (Allow unsigned LSA packages)
+
+### Production Deployment
+
+For production deployments, all binaries must be code-signed:
+- `EIDAuthenticationPackage.dll` (LSA Authentication Package)
+- `EIDCredentialProvider.dll` (Credential Provider)
+- `EIDPasswordChangeNotification.dll` (Password Filter)
+
+Code signing ensures:
+- OS verifies binary integrity at load time
+- Users can verify software publisher
+- Tamper detection via digital signatures
 
 ---
 
