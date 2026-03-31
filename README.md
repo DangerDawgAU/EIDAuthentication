@@ -355,13 +355,39 @@ Code signing ensures:
 
 ## Building
 
-```cmd
-build.bat
-cd Installer
-"C:\Program Files (x86)\NSIS\makensis.exe" Installerx64.nsi
+**Requirements:**
+- Visual Studio 2022 with C++23 support (Platform Toolset v143)
+- NSIS (Nullsoft Scriptable Install System) for installer creation
+
+**Build Commands:**
+
+```powershell
+# Release build (default)
+.\build.ps1
+
+# Debug build
+.\build.ps1 Debug x64
+
+# Win32 build (32-bit)
+.\build.ps1 Release Win32
 ```
 
-Output: `Installer\EIDInstallx64.exe`
+**What Gets Built:**
+
+| Component | Description |
+|-----------|-------------|
+| `EIDAuthenticationPackage.dll` | LSA Authentication Package |
+| `EIDCredentialProvider.dll` | Credential Provider v2 |
+| `EIDPasswordChangeNotification.dll` | Password Filter |
+| `EIDConfigurationWizard.exe` | Enrollment wizard |
+| `EIDLogManager.exe` | ETW trace control utility |
+| `EIDMigrate.exe` | Migration CLI tool (x64 only) |
+| `EIDMigrateUI.exe` | Migration GUI wizard (x64 only) |
+| `EIDInstallx64.exe` | NSIS installer (Release x64 only) |
+
+**Output Location:**
+- Built binaries: `x64\Release\` or `x64\Debug\`
+- Installer: `Installer\EIDInstallx64.exe`
 
 ---
 
