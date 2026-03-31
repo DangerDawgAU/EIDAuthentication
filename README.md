@@ -220,12 +220,14 @@ Windows Password Filter API implementation:
 ### Group Policy
 `HKLM\SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider`
 
-| Policy | Type | Purpose |
-|--------|------|---------|
-| `AllowSignatureOnlyKeys` | DWORD | Accept signature-only keys |
-| `AllowCertificatesWithNoEKU` | DWORD | Accept certificates without Smart Card Logon EKU |
-| `AllowTimeInvalidCertificates` | DWORD | Accept expired certificates |
-| `EnforceCSPWhitelist` | DWORD | Block non-whitelisted CSP providers |
+| Policy | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `AllowSignatureOnlyKeys` | DWORD | 0 | Accept signature-only keys |
+| `AllowCertificatesWithNoEKU` | DWORD | 0 | Accept certificates without Smart Card Logon EKU |
+| `AllowTimeInvalidCertificates` | DWORD | 0 | Accept expired certificates |
+| `EnforceCSPWhitelist` | DWORD | 0 | Block non-whitelisted CSP providers |
+
+**Note:** `0` = Disabled, `1` = Enabled. These policies are **disabled by default** for security. Only enable if specifically required for your environment.
 
 ---
 
