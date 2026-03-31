@@ -1,6 +1,6 @@
 # EIDMigrate - Complete Debugging Session and Solution
 
-**Latest Update:** 2026-03-26 Evening (Bug Fixes #13-15: Refresh Crash, Export Password, UTC Dates, Checkboxes, Import Metadata)
+**Latest Update:** 2026-03-30 - Session 10: Icon Integration
 **Original Sessions:**
 - 2026-03-24 2:00 PM - 5:00 PM (Session 1 - IPC Investigation)
 - 2026-03-24 5:20 PM - 6:00 PM (Session 2 - Crash Fix)
@@ -9,7 +9,9 @@
 - 2026-03-25 Late Afternoon (Session 5 - EIDMigrateUI GUI Wizard)
 - 2026-03-25 Evening (Session 6 - Validate Command Fix)
 - 2026-03-26 (Session 7 - UI Polish and Bug Fixes)
-**Total Debugging Time:** ~15-18 hours across 7 sessions
+- 2026-03-26 (Session 8 - EIDLogManager GUI Formatting)
+- 2026-03-30 (Session 10 - Icon Integration)
+**Total Debugging Time:** ~18-20 hours across 10 sessions
 
 **Status:** ✅ FULLY RESOLVED - All credential operations working including export/import/validate/UTC dates
 
@@ -7914,3 +7916,494 @@ In the import wizard, after decrypting an export file, the UI displayed literal 
 | Export Date | "Export Date" | "2026-03-26T15:30:45Z" |
 
 *Document Updated: 2026-03-26 Evening - Bug Fix #15 Applied*
+---
+
+## EIDLogManager GUI Formatting Update (2026-03-26)
+
+### Overview
+
+**Date:** 2026-03-26
+**Component:** EIDLogManager.exe - Log Manager GUI
+**Status:** ✅ UPDATED - GUI now matches EIDMigrateUI style
+
+### Changes Applied
+
+The EIDLogManager GUI was updated to match the visual style of the EIDMigrateUI welcome page:
+
+**Before:**
+- Old-style dialog with MS Shell Dlg font
+- Group boxes for organizing controls
+- Mix of push buttons and command links
+- Crash dump management included
+
+**After:**
+- Modern DIALOGEX style with Segoe UI font (9pt)
+- Clean layout matching EIDMigrateUI welcome page
+- Command link buttons stacked vertically
+- Simplified to log management only
+- Dialog centered on screen (DS_CENTER style)
+
+### Dialog Layout
+
+**File:** `EIDLogManager/EIDLogManager.rc`
+
+```rc
+IDD_EIDLOGMANAGER_DIALOG DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "EID Log Manager"
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    CONTROL         "Enable Tracing",IDC_ENABLELOG,"Button",BS_COMMANDLINK | WS_TABSTOP,21,21,231,35
+    CONTROL         "Disable Tracing",IDC_DISABLELOG,"Button",BS_COMMANDLINK | WS_TABSTOP,21,69,231,35
+    CONTROL         "Save Log",IDC_SAVELOG,"Button",BS_COMMANDLINK | WS_TABSTOP,21,117,231,35
+    CONTROL         "Clear Logs",IDC_CLEARLOG,"Button",BS_COMMANDLINK | WS_TABSTOP,21,165,231,35
+END
+```
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `EIDLogManager/EIDLogManager.rc` | Updated dialog style, removed group boxes, switched to command links |
+| `EIDLogManager/resource.h` | Removed crash dump control IDs |
+| `EIDLogManager/EIDLogManager.cpp` | Removed crash dump handling code, updated formatting |
+| `EIDLogManager/stdafx.h` | Updated comments to English |
+| `EIDLogManager/stdafx.cpp` | Added file header comment |
+| `EIDLogManager/targetver.h` | Updated comments to English |
+
+### GUI Comparison
+
+| Feature | Before | After |
+|---------|--------|-------|
+| Dialog Type | DIALOG | DIALOGEX |
+| Font | MS Shell Dlg, 8pt | Segoe UI, 9pt |
+| Dialog Size | 260x207 | 273x209 (matches other apps) |
+| Position | Top-left corner | Centered on screen |
+| Button Style | Mix of PUSHBUTTON/COMMANDLINK | All BS_COMMANDLINK |
+| Organization | Group boxes | Clean vertical stack |
+| Crash Dump | Included | Removed (simplified) |
+
+### Output
+
+**Location:** `x64/Release/EIDLogManager.exe` (194 KB)
+
+**Installer:** Included in `Installer/EIDInstallx64.exe`
+
+**Start Menu:** "Log Manager" shortcut in "EID Authentication" folder
+
+---
+
+*Document Updated: 2026-03-26 - Session 8: EIDLogManager GUI Formatting*
+
+---
+
+## EIDLogManager Configurable Tracing Enhancement (2026-03-26)
+
+### Overview
+
+**Date:** 2026-03-26
+**Component:** EIDLogManager.exe - Log Manager GUI
+**Status:** ✅ NEW FEATURE - Configurable trace logging
+
+### Problem Statement
+
+Prior to this enhancement, the EIDLogManager provided only basic on/off control for ETW tracing:
+- Trace level was hardcoded to VERBOSE (all messages)
+- Log file path was hardcoded to `C:\Windows\System32\LogFiles\WMI\EIDCredentialProvider.etl`
+- Max file size was hardcoded to 64 MB
+- Number of rotated files was hardcoded to 5
+- No auto-start capability
+
+### Solution Implemented
+
+Added comprehensive configuration options to EIDLogManager with registry-backed storage:
+
+| Feature | Description | Default |
+|---------|-------------|---------|
+| **Trace Level** | Select minimum level: Error (1), Warning (2), Info (3), Verbose (4) | Info (3) |
+| **Log Path** | Customizable output file location via browse dialog | `C:\Windows\System32\LogFiles\WMI\EIDCredentialProvider.etl` |
+| **Max File Size** | Maximum size per log file in MB (1-1024) | 64 MB |
+| **File Count** | Number of rotated log files to keep (1-100) | 5 files |
+| **Auto Start** | Enable logging automatically on Windows startup | Disabled |
+| **Status Display** | Shows current logging state (ACTIVE/STOPPED) | - |
+
+### New UI Layout
+
+**File:** `EIDLogManager/EIDLogManager.rc`
+
+The dialog was redesigned with organized group boxes:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ EID Log Manager                                             │
+├─────────────────────────────────────────────────────────────┤
+│ ┌─ Log File Settings ─────────────────────────────────────┐ │
+│ │ Log file path: [___________________] [Browse...]        │ │
+│ │ Max file size (MB): [64__]  Number of files: [5__]      │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ ┌─ Trace Level ────────────────────────────────────────────┐ │
+│ │ ◉ Error  ○ Warning  ○ Info  ○ Verbose                    │ │
+│ │   Higher levels include all lower levels                │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ ┌─ Options ────────────────────────────────────────────────┐ │
+│ │ ☐ Enable logging on Windows startup                    │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ ┌─ Status ─────────────────────────────────────────────────┐ │
+│ │ Status: Logging is STOPPED                               │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ [Apply Settings] [Enable Tracing] [Disable Tracing]        │
+│ [Save Log]     [Clear Logs]                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Registry Configuration
+
+**Configuration Key:** `HKLM\SOFTWARE\EIDAuthentication\LogManager`
+
+| Value | Type | Default | Description |
+|-------|------|---------|-------------|
+| `TraceLevel` | REG_DWORD | 4 | ETW trace level (1-5) |
+| `LogPath` | REG_SZ | (hardcoded) | Full path to ETL file |
+| `MaxFileSize` | REG_DWORD | 64 | Maximum file size in MB |
+| `FileCounter` | REG_DWORD | 5 | Number of rotated files |
+| `AutoStart` | REG_DWORD | 0 | Enable on startup (1=enabled) |
+
+### Trace Levels Explained
+
+| Level | Name | Description |
+|-------|------|-------------|
+| 1 | Error | Critical errors and failures only |
+| 2 | Warning | Warnings and errors |
+| 3 | Info | Informational messages (recommended) |
+| 4 | Verbose | All trace messages including debug |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `EIDCardLibrary/Registration.h` | Added `SetTraceConfig()`, `GetTraceConfig()` declarations |
+| `EIDCardLibrary/Registration.cpp` | Added config registry functions, modified `EnableLogging()` to read config |
+| `EIDLogManager/EIDLogManager.rc` | Complete dialog redesign with groups, radio buttons, edit controls |
+| `EIDLogManager/resource.h` | Added 15 new control IDs (200-214) |
+| `EIDLogManager/EIDLogManager.cpp` | Added `LoadSettings()`, `SaveSettings()`, `UpdateStatus()`, `BrowseForLogPath()` |
+| `EIDCardLibrary/smartcardmodule.cpp` | Fixed include path to use `../include/cardmod.h` |
+| `include/cardmod.h` | Used from repository (Microsoft CNG Development Kit header) |
+
+### API Additions
+
+**File:** `EIDCardLibrary/Registration.h`
+
+```cpp
+// Registry path: HKLM\SOFTWARE\EIDAuthentication\LogManager
+BOOL SetTraceConfig(DWORD dwLevel, LPCWSTR szLogPath, DWORD dwMaxSizeMB,
+                    DWORD dwFileCounter, BOOL fAutoStart);
+BOOL GetTraceConfig(DWORD* pdwLevel, LPWSTR szLogPath, DWORD cchPath,
+                    DWORD* pdwMaxSizeMB, DWORD* pdwFileCounter, BOOL* pfAutoStart);
+```
+
+### Enhanced EnableLogging() Behavior
+
+The `EnableLogging()` function now:
+1. Reads configuration from registry via `GetTraceConfig()`
+2. Applies dynamic values to ETW Autologger registry
+3. Uses configured values for:
+   - `EnableLevel` (trace level)
+   - `FileName` (log path)
+   - `MaxFileSize` (file size limit)
+   - `FileCounter` (rotation count)
+   - `Start` (auto-start flag)
+
+### UI Control IDs
+
+| ID | Control |
+|----|--------|
+| `IDC_LOG_FILE_GROUP` | Log file settings group box |
+| `IDC_LOG_FILE_PATH` | Log path edit control |
+| `IDC_LOG_BROWSE_PATH` | Browse button |
+| `IDC_LOG_MAX_SIZE` | Max file size edit |
+| `IDC_LOG_FILE_COUNT` | File count edit |
+| `IDC_LOG_LEVEL_GROUP` | Trace level group box |
+| `IDC_LOG_LEVEL_ERROR` | Error radio button |
+| `IDC_LOG_LEVEL_WARNING` | Warning radio button |
+| `IDC_LOG_LEVEL_INFO` | Info radio button |
+| `IDC_LOG_LEVEL_VERBOSE` | Verbose radio button |
+| `IDC_LOG_OPTIONS_GROUP` | Options group box |
+| `IDC_LOG_AUTO_START` | Auto-start checkbox |
+| `IDC_LOG_STATUS_GROUP` | Status group box |
+| `IDC_LOG_STATUS_TEXT` | Status text display |
+| `IDC_LOG_APPLY` | Apply Settings button |
+
+### Build Output
+
+**Location:** `x64/Release/EIDLogManager.exe` (151 KB)
+
+**Test Results:**
+- ✅ Application launches successfully
+- ✅ Settings load from registry on startup
+- ✅ Settings persist after closing
+- ✅ Trace level selection works
+- ✅ Browse dialog for log path works
+- ✅ Enable/disable logging functions correctly
+- ✅ Status display updates in real-time
+
+### Usage Example
+
+1. Open EIDLogManager
+2. Select trace level (e.g., "Error" for minimal logging)
+3. Optionally change log path via Browse button
+4. Optionally adjust max file size and file count
+5. Click "Apply Settings"
+6. Click "Enable Tracing"
+7. Status shows "Logging is ACTIVE"
+
+### cardmod.h Integration
+
+**Location:** `include/cardmod.h`
+
+The smart card minidriver header is now included from the repository instead of requiring the external Microsoft CNG Development Kit:
+
+```cpp
+// In smartcardmodule.cpp
+#include "../include/cardmod.h"
+```
+
+This resolves build issues and ensures consistent behavior across builds.
+
+---
+
+## Session 10: Icon Integration (2026-03-30)
+
+**Status:** ✅ COMPLETED - All application icons integrated with automatic build system
+
+### Overview
+
+Implemented a complete icon system for the EID Authentication suite. All executables now have custom icons that are automatically embedded during the build process.
+
+### Icon Requirements
+
+| Icon | Filename | Purpose | Size |
+|------|----------|---------|------|
+| Configuration Wizard | `app_configuration_wizard.ico` | EIDConfigurationWizard.exe | 256x256 ICO |
+| Migrate GUI | `app_migrate_gui.ico` | EIDMigrateUI.exe | 256x256 ICO |
+| Migrate CLI | `app_migrate_cli.ico` | EIDMigrate.exe | 256x256 ICO |
+| Log Manager | `app_log_manager.ico` | EIDLogManager.exe | 256x256 ICO |
+| Installer | `app_installer.ico` | EIDInstallx64.exe | 256x256 ICO |
+| Trace Consumer | `app_trace_consumer.ico` | EIDTraceConsumer.exe | 256x256 ICO |
+| Credential Provider Tile | `cred_tile_image.bmp` | Windows logon screen | 48x48 BMP |
+
+### Implementation Details
+
+#### 1. Icon Folder Structure
+
+```
+icons/
+├── app_configuration_wizard.ico  # Configuration Wizard icon
+├── app_log_manager.ico            # Log Manager icon
+├── app_migrate_cli.ico            # CLI Migration tool icon
+├── app_migrate_gui.ico            # GUI Migration wizard icon
+├── app_installer.ico              # Installer icon
+├── app_trace_consumer.ico          # Trace Consumer icon
+├── cred_tile_image.bmp            # Credential provider tile (48x48)
+├── icons.md                        # Icon documentation
+├── convert-icons.ps1              # PNG to ICO/BMP conversion script
+└── bulk-image-crop/               # Source PNG files
+```
+
+#### 2. Build Integration (build.ps1)
+
+The `build.ps1` script now automatically copies icons from the `icons/` folder to project directories before compilation:
+
+```powershell
+# Icon mapping in build.ps1
+$iconMappings = @(
+    @{ Source = "cred_tile_image.bmp"; Destination = "EIDCredentialProvider\SmartcardCredentialProvider.bmp" }
+    @{ Source = "app_configuration_wizard.ico"; Destination = "EIDConfigurationWizard\app.ico" }
+    @{ Source = "app_log_manager.ico"; Destination = "EIDLogManager\EIDLogManager.ico" }
+    @{ Source = "app_migrate_cli.ico"; Destination = "EIDMigrate\app.ico" }
+    @{ Source = "app_migrate_gui.ico"; Destination = "EIDMigrateUI\app.ico" }
+    @{ Source = "app_trace_consumer.ico"; Destination = "EIDTraceConsumer\app.ico" }
+    @{ Source = "app_installer.ico"; Destination = "Installer\installer.ico" }
+)
+```
+
+**Features:**
+- If custom icon exists in `icons/`: uses custom icon
+- If custom icon missing: uses `EIDLogManager.ico` as placeholder
+- Build continues even with missing icons (graceful degradation)
+
+#### 3. Resource File Changes
+
+All projects now use consistent resource ID `IDI_APP_ICON`:
+
+**EIDConfigurationWizard.rc:**
+```rc
+IDI_APP_ICON ICON "app.ico"
+```
+
+**EIDMigrateUI.rc:**
+```rc
+IDI_APP_ICON ICON "app.ico"
+```
+
+**EIDLogManager.rc:**
+```rc
+IDI_APP_ICON ICON "EIDLogManager.ico"
+```
+
+**EIDMigrate.rc:**
+```rc
+IDI_APP_ICON ICON "app.ico"
+```
+
+**EIDTraceConsumer.rc:**
+```rc
+IDI_APP_ICON ICON "app.ico"
+```
+
+#### 4. Icon Loading (EIDCardLibrary/Package.cpp)
+
+The `SetIcon()` function now tries app icon first, falls back to system icon:
+
+```cpp
+VOID SetIcon(HWND hWnd)
+{
+    // First try to load app-specific icon (IDI_APP_ICON = 101)
+    HMODULE hApp = GetModuleHandle(NULL);
+    if (hApp)
+    {
+        HANDLE hbicon = LoadImage(hApp, MAKEINTRESOURCE(101), IMAGE_ICON,
+                                   GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), 0);
+        if (hbicon)
+        {
+            SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM) hbicon);
+            hbicon = LoadImage(hApp, MAKEINTRESOURCE(101), IMAGE_ICON,
+                               GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 0);
+            if (hbicon)
+                SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM) hbicon);
+            return;  // Successfully loaded app icon
+        }
+    }
+
+    // Fall back to system icon (imageres.dll resource 58)
+    HMODULE hDll = EIDLoadSystemLibrary(TEXT("imageres.dll"));
+    // ... system icon loading code
+}
+```
+
+#### 5. Installer Icon (Installerx64.nsi)
+
+Added icon directives to NSIS installer script:
+
+```nsis
+Icon "installer.ico"
+UninstallIcon "installer.ico"
+```
+
+The build.ps1 script temporarily comments out these lines if `installer.ico` is missing.
+
+#### 6. Credential Provider Tile Image
+
+**Important:** The credential provider tile image uses a different format:
+
+- **File:** `cred_tile_image.bmp`
+- **Format:** 48x48 pixel 32-bit BMP
+- **Used by:** EIDCredentialProvider.dll
+- **Displayed on:** Windows logon screen, lock screen, UAC prompts
+
+**Why 48x48?** Windows credential provider API (`CPFT_TILE_IMAGE`) traditionally uses a fixed bitmap size. Windows automatically scales it for display based on DPI settings.
+
+**DPI Scaling:**
+- 100% DPI: ~48-64 pixels displayed
+- 150% DPI: ~72-96 pixels displayed
+- 200% DPI: ~96-128 pixels displayed
+
+### PNG to ICO Conversion
+
+The `icons/convert-icons.ps1` script converts source PNG images to required formats:
+
+```powershell
+# Convert PNG to ICO (256x256 embedded in ICO container)
+function Convert-PngToIco {
+    param($pngPath, $icoPath)
+    # Creates ICO with embedded PNG data
+}
+
+# Convert PNG to BMP (48x48 for credential provider)
+function Convert-PngToBmp {
+    param($pngPath, $bmpPath, $width, $height)
+    # Scales PNG to specified size and saves as BMP
+}
+```
+
+### Icon Mapping (User's Custom Icons)
+
+| Source PNG | Converted To | Purpose |
+|------------|--------------|---------|
+| `Gemini_Generated_Image_tgdtf3tgdtf3tgdt.png` (no number) | `app_configuration_wizard.ico` | Configuration Wizard |
+| `Gemini_Generated_Image_tgdtf3tgdtf3tgdt(1).png` | `app_log_manager.ico` | Log Manager |
+| `Gemini_Generated_Image_tgdtf3tgdtf3tgdt(2).png` | `app_migrate_cli.ico` | CLI Migration |
+| `Gemini_Generated_Image_tgdtf3tgdtf3tgdt(3).png` | `app_migrate_gui.ico` | GUI Migration |
+| `Gemini_Generated_Image_tgdtf3tgdtf3tgdt(4).png` | `app_trace_consumer.ico` | Trace Consumer |
+| `Gemini_Generated_Image_tgdtf3tgdtf3tgdt(5).png` | `app_installer.ico` | Installer |
+| `Gemini_Generated_Image_tgdtf3tgdtf3tgdt(6).png` | `cred_tile_image.bmp` (48x48) | Credential Provider Tile |
+
+### File Changes Summary
+
+**New Files:**
+- `icons/icons.md` - Complete icon documentation
+- `icons/convert-icons.ps1` - PNG to ICO/BMP conversion script
+
+**Modified Files:**
+- `build.ps1` - Added icon copying logic (including `app_trace_consumer.ico`)
+- `EIDConfigurationWizard/EIDConfigurationWizard.rc` - Added icon resource
+- `EIDConfigurationWizard/EIDConfigurationWizard.h` - Added `IDI_APP_ICON` define
+- `EIDMigrateUI/EIDMigrateUI.rc` - Added icon resource
+- `EIDMigrateUI/resource.h` - Added `IDI_APP_ICON` define
+- `EIDMigrate/EIDMigrate.rc` - Added icon resource
+- `EIDMigrate/resource.h` - Added `IDI_APP_ICON` define
+- `EIDLogManager/EIDLogManager.rc` - Added icon resource
+- `EIDLogManager/resource.h` - Added `IDI_APP_ICON` define
+- `EIDTraceConsumer/EIDTraceConsumer.rc` - **NEW** - Created resource file with icon
+- `EIDTraceConsumer/EIDTraceConsumer.vcxproj` - **NEW** - Added resource compilation
+- `EIDCardLibrary/Package.cpp` - Updated `SetIcon()` to use app icon first
+- `Installer/Installerx64.nsi` - Added icon directives
+
+### Usage
+
+**To add/replace icons:**
+1. Place new icon files in `icons/` folder with correct names
+2. Run `build.ps1` - icons are automatically copied
+3. All executables and installer will have new icons
+
+**To convert new PNG source images:**
+```powershell
+cd icons
+.\convert-icons.ps1
+```
+
+### Testing
+
+After build, verify icons in:
+1. Window title bars of all executables
+2. Taskbar when applications are running
+3. Desktop shortcuts
+4. Windows logon screen (credential provider tile)
+5. Installer UI
+
+### Known Limitations
+
+1. **Single Resolution ICO:** Current icons contain only 256x256 embedded PNG. Windows downscales for smaller sizes. For optimal sharpness at all sizes, include 16x16, 32x32, 48x48, and 256x256 in each ICO file.
+
+2. **Credential Provider Tile:** Uses traditional 48x48 BMP format. For high-DPI displays, this may appear slightly soft when scaled. Modern Windows 10+ supports PNG-based tiles, but current implementation uses legacy bitmap format.
+
+### Future Enhancements
+
+1. **Multi-resolution ICO files:** Create ICO files with embedded 16x16, 32x32, 48x48, and 256x256 versions for optimal display at all sizes.
+
+2. **High-DPI Credential Provider Tile:** Implement PNG-based tile image support for sharper display on high-DPI monitors.
+
+3. **Start Menu Folder Icon:** Add folder icon for the "EID Authentication" Start Menu folder.
+
+---
+
+*Document Updated: 2026-03-30 - Session 10: Icon Integration*

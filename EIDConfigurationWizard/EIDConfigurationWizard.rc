@@ -24,6 +24,15 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// Icon
+//
+
+// Icon will be copied from icons/app_configuration_wizard.ico by build.ps1
+// If not present, the app will use a default system icon
+IDI_APP_ICON           ICON                    "app.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // Version
 //
 
@@ -195,6 +204,18 @@ FONT 9, "Segoe UI", 0, 0, 0x0
 BEGIN
     LTEXT           "Reading certificate from smart card...", IDC_PROGRESSTEXT, 10, 10, 180, 12
     CONTROL         "", IDC_PROGRESSBAR, "msctls_progress32", PBS_MARQUEE | WS_BORDER, 10, 30, 180, 14
+END
+
+IDD_CA_NAME_CONFIG DIALOGEX 0, 0, 300, 120
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION
+CAPTION "Certificate Authority Name"
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Enter a name for the Certificate Authority. It will be prefixed with ""EID:"" automatically.", IDC_CA_NAME_LABEL, 10, 10, 280, 20
+    EDITTEXT        IDC_CA_NAME_EDIT, 10, 35, 280, 14, ES_AUTOHSCROLL
+    CONTROL         "Use computer name as default", IDC_CA_NAME_DEFAULT, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 10, 60, 280, 10
+    DEFPUSHBUTTON   "OK", IDOK, 120, 85, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 180, 85, 50, 14
 END
 
 

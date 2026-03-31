@@ -31,6 +31,15 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// Icon
+//
+
+// Icon will be copied from icons/app_migrate_gui.ico by build.ps1
+// If not present, the app will use a default system icon
+IDI_APP_ICON            ICON                    "app.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // Version
 //
 

@@ -13,6 +13,10 @@
   Name "EID Authentication"
   OutFile "EIDInstallx64.exe"
 
+  ;Installer icon (optional - copied by build.ps1 if exists)
+  Icon "installer.ico"
+  UninstallIcon "installer.ico"
+
   ;Default installation folder
   InstallDir "$PROGRAMFILES64\EID Authentication"
 

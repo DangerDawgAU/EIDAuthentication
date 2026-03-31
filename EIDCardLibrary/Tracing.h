@@ -105,3 +105,94 @@ void EIDLogStackTraceEx(
 	DWORD dwLine,
 	PCSTR szFunction,
 	DWORD errorCode);
+
+// ================================================================
+// Structured CSV Logging
+// ================================================================
+
+// Include event definitions and CSV configuration
+#include "EventDefinitions.h"
+#include "CSVConfig.h"
+
+// Structured logging function that logs to both ETW and CSV
+// This is the primary interface for security-relevant events
+void EIDCardLibraryLogStructured(
+    EID_EVENT_ID eventId,
+    EID_SEVERITY severity,
+    EID_OUTCOME outcome,
+    PCWSTR pwszUsername,
+    PCWSTR pwszAction,
+    PCWSTR pwszMessage,
+    PCWSTR pwszDomain = nullptr,
+    PCWSTR pwszSourceIP = nullptr,
+    DWORD dwProcessID = 0,
+    DWORD dwThreadID = 0,
+    DWORD dwSessionID = 0,
+    PCWSTR pwszResource = nullptr,
+    PCWSTR pwszReason = nullptr);
+
+// CSV logging lifecycle functions
+void EID_CSV_Initialize();
+void EID_CSV_Shutdown();
+BOOL EID_CSV_IsEnabled();
+HRESULT EID_CSV_UpdateConfig(const EID_CSV_CONFIG& config);
+
+// ================================================================
+// Convenience Macros for Common Scenarios
+// ================================================================
+
+// Authentication success/failure logging
+#define EID_LOG_AUTH_SUCCESS(user, msg) \
+    EIDCardLibraryLogStructured(EID_EVENT_ID::AUTH_SUCCESS, \
+        EID_SEVERITY::INFO, EID_OUTCOME::SUCCESS, user, L"Authentication", msg)
+
+#define EID_LOG_AUTH_FAILURE(user, reason) \
+    EIDCardLibraryLogStructured(EID_EVENT_ID::AUTH_FAILURE, \
+        EID_SEVERITY::WARNING, EID_OUTCOME::FAILURE, user, L"Authentication", L"Failed", \
+        nullptr, nullptr, 0, 0, 0, nullptr, reason)
+
+// PIN verification logging
+#define EID_LOG_PIN_SUCCESS(user) \
+    EIDCardLibraryLogStructured(EID_EVENT_ID::AUTH_PIN_SUCCESS, \
+        EID_SEVERITY::INFO, EID_OUTCOME::SUCCESS, user, L"PIN Verification", L"PIN verified")
+
+#define EID_LOG_PIN_FAILURE(user, reason) \
+    EIDCardLibraryLogStructured(EID_EVENT_ID::AUTH_PIN_FAILURE, \
+        EID_SEVERITY::WARNING, EID_OUTCOME::FAILURE, user, L"PIN Verification", L"Failed", \
+        nullptr, nullptr, 0, 0, 0, nullptr, reason)
+
+// Certificate validation logging
+#define EID_LOG_CERT_SUCCESS(subject) \
+    EIDCardLibraryLogStructured(EID_EVENT_ID::CERT_VALIDATE_SUCCESS, \
+        EID_SEVERITY::INFO, EID_OUTCOME::SUCCESS, nullptr, L"Certificate Validation", subject)
+
+#define EID_LOG_CERT_FAILURE(reason) \
+    EIDCardLibraryLogStructured(EID_EVENT_ID::CERT_VALIDATE_FAILURE, \
+        EID_SEVERITY::ERROR, EID_OUTCOME::FAILURE, nullptr, L"Certificate Validation", L"Failed", \
+        nullptr, nullptr, 0, 0, 0, nullptr, reason)
+
+// Session logging
+#define EID_LOG_SESSION_LOGON(user) \
+    EIDCardLibraryLogStructured(EID_EVENT_ID::SESSION_LOGON_SUCCESS, \
+        EID_SEVERITY::INFO, EID_OUTCOME::SUCCESS, user, L"Logon", L"User logged on")
+
+#define EID_LOG_SESSION_LOGOFF(user) \
+    EIDCardLibraryLogStructured(EID_EVENT_ID::SESSION_LOGOFF, \
+        EID_SEVERITY::INFO, EID_OUTCOME::SUCCESS, user, L"Logoff", L"User logged off")
+
+// Audit logging
+#define EID_LOG_AUDIT_EXPORT(count) \
+    EIDCardLibraryLogStructured(EID_EVENT_ID::AUDIT_CREDENTIAL_EXPORT, \
+        EID_SEVERITY::WARNING, EID_OUTCOME::SUCCESS, nullptr, L"Credential Export", \
+        L"Credentials exported", nullptr, nullptr, 0, 0, 0, nullptr, nullptr)
+
+#define EID_LOG_AUDIT_IMPORT(count) \
+    EIDCardLibraryLogStructured(EID_EVENT_ID::AUDIT_CREDENTIAL_IMPORT, \
+        EID_SEVERITY::WARNING, EID_OUTCOME::SUCCESS, nullptr, L"Credential Import", \
+        L"Credentials imported", nullptr, nullptr, 0, 0, 0, nullptr, nullptr)
+
+// Configuration change logging
+#define EID_LOG_CONFIG_CHANGE(setting, oldVal, newVal) \
+    EIDCardLibraryLogStructured(EID_EVENT_ID::CONFIG_COLUMNS_CHANGED, \
+        EID_SEVERITY::INFO, EID_OUTCOME::SUCCESS, nullptr, L"Configuration Change", \
+        setting, nullptr, nullptr, 0, 0, 0, nullptr, nullptr)

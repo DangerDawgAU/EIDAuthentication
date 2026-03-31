@@ -3,6 +3,7 @@
 // Used by EIDMigrateUI.rc
 // NOSONAR - Macros are required by Windows Resource Compiler; cannot use constexpr/enum for resource IDs
 //
+#define IDI_APP_ICON                    200 // NOSONAR - RESOURCE-01: RC.exe requires #define macros (use 200 to avoid conflicts)
 
 // Dialog IDs
 #define IDD_01_WELCOME                  100
@@ -12,7 +13,7 @@
 #define IDD_05_EXPORT_COMPLETE          104
 #define IDD_06_IMPORT_SELECT            105
 #define IDD_07_IMPORT_OPTIONS           106
-#define IDD_08_IMPORT_PREVIEW           107
+#define IDD_08_IMPORT_PREVIEW            107
 #define IDD_09_IMPORT_PROGRESS          108
 #define IDD_10_IMPORT_COMPLETE          109
 #define IDD_11_LIST_CREDENTIALS         110

@@ -8,10 +8,12 @@
 #include <winscard.h>
 #pragma warning(pop)
 
-// cardmoh.h can be found in "Microsoft CNG Development Kit"
-#include <cardmod.h>
+// cardmod.h is available in the repository's include directory
+#include "../include/cardmod.h"
 #include "Tracing.h"
 #include "EIDCardLibrary.h"
+#include "CSVConfig.h"
+#include "CSVLogger.h"
 
 //
 // Security: Safe DLL loading helper to prevent DLL hijacking attacks
@@ -423,6 +425,60 @@ MgScCardAuthenticatePin(
 					(PBYTE) szPin,
 					cbPin - 1,
 					pcAttemptsRemaining);
+
+        // Log smart card PIN authentication result
+        if (ERROR_SUCCESS == status)
+        {
+            EIDCardLibraryLogStructured(
+                EID_EVENT_ID::AUTH_PIN_SUCCESS,
+                EID_SEVERITY::INFO,
+                EID_OUTCOME::SUCCESS,
+                nullptr,
+                L"SmartCard PIN",
+                L"Smart card PIN authenticated successfully",
+                nullptr,
+                nullptr,
+                0,
+                0,
+                0,
+                pwszUserId,
+                nullptr
+            );
+        }
+        else
+        {
+            WCHAR szReason[64];
+            if (SCARD_W_WRONG_CHV == status)
+            {
+                swprintf_s(szReason, ARRAYSIZE(szReason), L"Wrong PIN (%d attempts remaining)",
+                         pcAttemptsRemaining ? *pcAttemptsRemaining : 0);
+            }
+            else if (SCARD_W_CHV_BLOCKED == status)
+            {
+                swprintf_s(szReason, ARRAYSIZE(szReason), L"Card blocked - too many failed attempts");
+            }
+            else
+            {
+                swprintf_s(szReason, ARRAYSIZE(szReason), L"Error 0x%08X", status);
+            }
+
+            EIDCardLibraryLogStructured(
+                EID_EVENT_ID::AUTH_PIN_FAILURE,
+                EID_SEVERITY::WARNING,
+                EID_OUTCOME::FAILURE,
+                nullptr,
+                L"SmartCard PIN",
+                L"Smart card PIN authentication failed",
+                nullptr,
+                nullptr,
+                0,
+                0,
+                0,
+                pwszUserId,
+                szReason
+            );
+        }
+
         CHECK_DWORD(status);
     }
     __finally
@@ -679,6 +735,24 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 			__leave;
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"cardmodule authentication successful");
+
+		// Log successful smart card authentication at card level
+		EIDCardLibraryLogStructured(
+			EID_EVENT_ID::SC_CARD_DETECTED,
+			EID_SEVERITY::VERBOSE,
+			EID_OUTCOME::SUCCESS,
+			nullptr,
+			L"SmartCard",
+			L"Smart card authenticated successfully",
+			nullptr,
+			nullptr,
+			0,
+			0,
+			0,
+			szCard,
+			szReader
+		);
+
 		fReturn = TRUE;
 	}
 	__finally

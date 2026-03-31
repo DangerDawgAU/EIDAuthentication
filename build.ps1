@@ -60,7 +60,100 @@ if (-not (Test-Path $devEnvPath)) {
     exit 1
 }
 
+# Copy icons to project directories (if they exist)
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "Processing Icons" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+
+$iconsSourceDir = "icons"
+$iconMappings = @(
+    # Credential Provider Tile Image (BMP)
+    @{ Source = "cred_tile_image.bmp"; Destination = "EIDCredentialProvider\SmartcardCredentialProvider.bmp" }
+    # Configuration Wizard Icon
+    @{ Source = "app_configuration_wizard.ico"; Destination = "EIDConfigurationWizard\app.ico" }
+    # Log Manager Icon (has existing icons - will be replaced if new ones exist)
+    @{ Source = "app_log_manager.ico"; Destination = "EIDLogManager\EIDLogManager.ico" }
+    # Migrate CLI Icon
+    @{ Source = "app_migrate_cli.ico"; Destination = "EIDMigrate\app.ico" }
+    # Migrate UI Icon
+    @{ Source = "app_migrate_gui.ico"; Destination = "EIDMigrateUI\app.ico" }
+    # Trace Consumer Icon
+    @{ Source = "app_trace_consumer.ico"; Destination = "EIDTraceConsumer\app.ico" }
+    # Installer Icon
+    @{ Source = "app_installer.ico"; Destination = "Installer\installer.ico" }
+)
+
+$iconsCopied = 0
+$iconsMissing = 0
+$placeholdersUsed = 0
+
+# Placeholder icon - use existing EIDLogManager.ico as fallback
+$placeholderIcon = "EIDLogManager\EIDLogManager.ico"
+$placeholderExists = Test-Path $placeholderIcon
+
+if (Test-Path $iconsSourceDir) {
+    foreach ($mapping in $iconMappings) {
+        $sourcePath = Join-Path $iconsSourceDir $mapping.Source
+        $destPath = $mapping.Destination
+
+        # Create destination directory if it doesn't exist
+        $destDir = Split-Path $destPath -Parent
+        if (-not (Test-Path $destDir)) {
+            New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+        }
+
+        if (Test-Path $sourcePath) {
+            # Copy custom icon (overwrite existing)
+            Copy-Item -Path $sourcePath -Destination $destPath -Force
+            Write-Host "  Copied: $($mapping.Source) -> $destPath" -ForegroundColor Green
+            $iconsCopied++
+        } elseif ($placeholderExists -and ($mapping.Destination -notlike "*SmartcardCredentialProvider.bmp")) {
+            # Use placeholder icon for .ico files (not for credential provider BMP)
+            # Skip if destination is the same as placeholder (avoid self-copy)
+            if ($destPath -ne $placeholderIcon) {
+                Copy-Item -Path $placeholderIcon -Destination $destPath -Force
+                Write-Host "  Placeholder: $placeholderIcon -> $destPath" -ForegroundColor DarkGray
+                $placeholdersUsed++
+            } else {
+                Write-Host "  Skipped: $($mapping.Source) (original exists)" -ForegroundColor DarkGray
+            }
+        } else {
+            Write-Host "  Skipped: $($mapping.Source) (not found, no placeholder available)" -ForegroundColor DarkGray
+            $iconsMissing++
+        }
+    }
+} else {
+    Write-Host "  Icons directory not found - using placeholder icons" -ForegroundColor Yellow
+    # Use placeholder for all when icons/ directory doesn't exist
+    foreach ($mapping in $iconMappings) {
+        $destPath = $mapping.Destination
+        $destDir = Split-Path $destPath -Parent
+        if (-not (Test-Path $destDir)) {
+            New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+        }
+
+        if ($placeholderExists -and ($mapping.Destination -notlike "*SmartcardCredentialProvider.bmp") -and ($destPath -ne $placeholderIcon)) {
+            Copy-Item -Path $placeholderIcon -Destination $destPath -Force
+            $placeholdersUsed++
+        }
+    }
+    $iconsMissing = $iconMappings.Count - $placeholdersUsed
+}
+
+if ($iconsCopied -gt 0) {
+    Write-Host ""
+    Write-Host "Custom icons copied: $iconsCopied" -ForegroundColor Green
+}
+if ($placeholdersUsed -gt 0) {
+    Write-Host "Placeholder icons used: $placeholdersUsed (default icons)" -ForegroundColor DarkGray
+}
+if ($iconsMissing -gt 0) {
+    Write-Host "Icons missing: $iconsMissing" -ForegroundColor Yellow
+}
+
 # Clean previous build artifacts
+Write-Host ""
 Write-Host "Cleaning previous build..." -ForegroundColor Yellow
 $buildDir = "x64\$Configuration"
 if (Test-Path $buildDir) {
@@ -160,6 +253,21 @@ if ($Configuration -eq "Release") {
             Remove-Item -Path $installerPath -Force
         }
 
+        # Handle installer icon - check if it exists after copying
+        $nsiFile = "Installer\Installerx64.nsi"
+        $nsiBackup = $null
+        $installerIconExists = Test-Path "Installer\installer.ico"
+
+        if (-not $installerIconExists) {
+            Write-Host "  Note: installer.ico not found - using NSIS default icon" -ForegroundColor DarkGray
+            # Temporarily comment out Icon directives in NSI file
+            $nsiContent = Get-Content $nsiFile -Raw
+            $nsiBackup = $nsiContent
+            $nsiContentModified = $nsiContent -replace '(^\s*Icon\s+")', '#$1'
+            $nsiContentModified = $nsiContentModified -replace '(^\s*UninstallIcon\s+")', '#$1'
+            Set-Content -Path $nsiFile -Value $nsiContentModified -NoNewline
+        }
+
         Push-Location "Installer"
         try {
             # Run NSIS and capture output
@@ -175,6 +283,10 @@ if ($Configuration -eq "Release") {
                 Write-Host "INSTALLER BUILD FAILED with exit code $nsisExitCode" -ForegroundColor Red
                 Write-Host "============================================================" -ForegroundColor Red
                 Write-Host "Check the NSIS output above for errors" -ForegroundColor Yellow
+                # Restore NSI file before exiting
+                if ($nsiBackup -ne $null) {
+                    Set-Content -Path $nsiFile -Value $nsiBackup -NoNewline
+                }
                 Pop-Location
                 exit 1
             }
@@ -185,11 +297,19 @@ if ($Configuration -eq "Release") {
             Write-Host "INSTALLER BUILD FAILED" -ForegroundColor Red
             Write-Host "============================================================" -ForegroundColor Red
             Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Yellow
+            # Restore NSI file before exiting
+            if ($nsiBackup -ne $null) {
+                Set-Content -Path $nsiFile -Value $nsiBackup -NoNewline
+            }
             Pop-Location
             exit 1
         }
         finally {
             Pop-Location
+            # Restore NSI file if it was modified
+            if ($nsiBackup -ne $null) {
+                Set-Content -Path $nsiFile -Value $nsiBackup -NoNewline
+            }
         }
 
         if (Test-Path $installerPath) {

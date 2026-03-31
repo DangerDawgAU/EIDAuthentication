@@ -365,6 +365,225 @@ void EIDConfigurationWizardDllUnRegister()
 	RegDeleteTree(HKEY_CLASSES_ROOT, L"CLSID\\{F5D846B4-14B0-11DE-B23C-27A355D89593}");
 }
 
+// Trace configuration registry path: HKLM\SOFTWARE\EIDAuthentication\LogManager
+static const TCHAR szTraceConfigKey[] = L"SOFTWARE\\EIDAuthentication\\LogManager";
+
+// Default values for trace configuration
+static const DWORD dwDefaultLevel = 4;  // WINEVENT_LEVEL_INFO
+static const DWORD dwDefaultMaxSize = 64;  // MB
+static const DWORD dwDefaultFileCounter = 5;  // Number of rotated files
+static const BOOL fDefaultAutoStart = FALSE;
+
+BOOL SetTraceConfig(DWORD dwLevel, LPCWSTR szLogPath, DWORD dwMaxSizeMB, DWORD dwFileCounter, BOOL fAutoStart)
+{
+	HKEY hKey = nullptr;
+	LONG err = 0;
+	BOOL fReturn = FALSE;
+
+	// Validate trace level (must be 1-5)
+	if (dwLevel < WINEVENT_LEVEL_CRITICAL || dwLevel > WINEVENT_LEVEL_VERBOSE)
+	{
+		dwLevel = dwDefaultLevel;
+	}
+
+	// Validate max file size (1-1024 MB)
+	if (dwMaxSizeMB < 1 || dwMaxSizeMB > 1024)
+	{
+		dwMaxSizeMB = dwDefaultMaxSize;
+	}
+
+	// Validate file counter (1-100)
+	if (dwFileCounter < 1 || dwFileCounter > 100)
+	{
+		dwFileCounter = dwDefaultFileCounter;
+	}
+
+	__try
+	{
+		// Create or open the registry key
+		err = RegCreateKeyEx(HKEY_LOCAL_MACHINE, szTraceConfigKey, 0, nullptr,
+			0, KEY_READ | KEY_WRITE, nullptr, &hKey, nullptr);
+		if (err != ERROR_SUCCESS)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"RegCreateKeyEx failed: 0x%08X", err);
+			__leave;
+		}
+
+		// Write trace level
+		err = RegSetValueEx(hKey, L"TraceLevel", 0, REG_DWORD,
+			(const BYTE*)&dwLevel, sizeof(DWORD));
+		if (err != ERROR_SUCCESS)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"RegSetValueEx(TraceLevel) failed: 0x%08X", err);
+			__leave;
+		}
+
+		// Write log file path
+		if (szLogPath != nullptr && szLogPath[0] != L'\0')
+		{
+			err = RegSetValueEx(hKey, L"LogPath", 0, REG_SZ,
+				(const BYTE*)szLogPath, (DWORD)((wcslen(szLogPath) + 1) * sizeof(WCHAR)));
+			if (err != ERROR_SUCCESS)
+			{
+				EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"RegSetValueEx(LogPath) failed: 0x%08X", err);
+				__leave;
+			}
+		}
+
+		// Write max file size
+		err = RegSetValueEx(hKey, L"MaxFileSize", 0, REG_DWORD,
+			(const BYTE*)&dwMaxSizeMB, sizeof(DWORD));
+		if (err != ERROR_SUCCESS)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"RegSetValueEx(MaxFileSize) failed: 0x%08X", err);
+			__leave;
+		}
+
+		// Write file counter
+		err = RegSetValueEx(hKey, L"FileCounter", 0, REG_DWORD,
+			(const BYTE*)&dwFileCounter, sizeof(DWORD));
+		if (err != ERROR_SUCCESS)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"RegSetValueEx(FileCounter) failed: 0x%08X", err);
+			__leave;
+		}
+
+		// Write auto-start flag
+		DWORD dwAutoStart = fAutoStart ? 1 : 0;
+		err = RegSetValueEx(hKey, L"AutoStart", 0, REG_DWORD,
+			(const BYTE*)&dwAutoStart, sizeof(DWORD));
+		if (err != ERROR_SUCCESS)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"RegSetValueEx(AutoStart) failed: 0x%08X", err);
+			__leave;
+		}
+
+		fReturn = TRUE;
+	}
+	__finally
+	{
+		if (hKey != nullptr)
+		{
+			RegCloseKey(hKey);
+		}
+	}
+
+	return fReturn;
+}
+
+BOOL GetTraceConfig(DWORD* pdwLevel, LPWSTR szLogPath, DWORD cchPath, DWORD* pdwMaxSizeMB, DWORD* pdwFileCounter, BOOL* pfAutoStart)
+{
+	HKEY hKey = nullptr;
+	LONG err = 0;
+	BOOL fReturn = FALSE;
+	DWORD dwType = 0;
+	DWORD dwSize = 0;
+
+	// Set default values
+	if (pdwLevel != nullptr) *pdwLevel = dwDefaultLevel;
+	if (szLogPath != nullptr && cchPath > 0)
+		wcscpy_s(szLogPath, cchPath, L"c:\\windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl");
+	if (pdwMaxSizeMB != nullptr) *pdwMaxSizeMB = dwDefaultMaxSize;
+	if (pdwFileCounter != nullptr) *pdwFileCounter = dwDefaultFileCounter;
+	if (pfAutoStart != nullptr) *pfAutoStart = fDefaultAutoStart;
+
+	__try
+	{
+		// Open the registry key
+		err = RegOpenKeyEx(HKEY_LOCAL_MACHINE, szTraceConfigKey, 0, KEY_READ, &hKey);
+		if (err != ERROR_SUCCESS)
+		{
+			// Key doesn't exist yet, return defaults
+			fReturn = TRUE;
+			__leave;
+		}
+
+		// Read trace level
+		if (pdwLevel != nullptr)
+		{
+			dwSize = sizeof(DWORD);
+			err = RegQueryValueEx(hKey, L"TraceLevel", nullptr, &dwType,
+				(LPBYTE)pdwLevel, &dwSize);
+			if (err == ERROR_SUCCESS && dwType == REG_DWORD)
+			{
+				// Validate the read value
+				if (*pdwLevel < WINEVENT_LEVEL_CRITICAL || *pdwLevel > WINEVENT_LEVEL_VERBOSE)
+				{
+					*pdwLevel = dwDefaultLevel;
+				}
+			}
+			else
+			{
+				*pdwLevel = dwDefaultLevel;
+			}
+		}
+
+		// Read log file path
+		if (szLogPath != nullptr && cchPath > 0)
+		{
+			dwSize = cchPath * sizeof(WCHAR);
+			err = RegQueryValueEx(hKey, L"LogPath", nullptr, &dwType,
+				(LPBYTE)szLogPath, &dwSize);
+			if (err != ERROR_SUCCESS || dwType != REG_SZ)
+			{
+				wcscpy_s(szLogPath, cchPath, L"c:\\windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl");
+			}
+		}
+
+		// Read max file size
+		if (pdwMaxSizeMB != nullptr)
+		{
+			dwSize = sizeof(DWORD);
+			err = RegQueryValueEx(hKey, L"MaxFileSize", nullptr, &dwType,
+				(LPBYTE)pdwMaxSizeMB, &dwSize);
+			if (err != ERROR_SUCCESS || dwType != REG_DWORD)
+			{
+				*pdwMaxSizeMB = dwDefaultMaxSize;
+			}
+		}
+
+		// Read file counter
+		if (pdwFileCounter != nullptr)
+		{
+			dwSize = sizeof(DWORD);
+			err = RegQueryValueEx(hKey, L"FileCounter", nullptr, &dwType,
+				(LPBYTE)pdwFileCounter, &dwSize);
+			if (err != ERROR_SUCCESS || dwType != REG_DWORD)
+			{
+				*pdwFileCounter = dwDefaultFileCounter;
+			}
+		}
+
+		// Read auto-start flag
+		if (pfAutoStart != nullptr)
+		{
+			DWORD dwAutoStart = 0;
+			dwSize = sizeof(DWORD);
+			err = RegQueryValueEx(hKey, L"AutoStart", nullptr, &dwType,
+				(LPBYTE)&dwAutoStart, &dwSize);
+			if (err == ERROR_SUCCESS && dwType == REG_DWORD)
+			{
+				*pfAutoStart = (dwAutoStart != 0);
+			}
+			else
+			{
+				*pfAutoStart = fDefaultAutoStart;
+			}
+		}
+
+		fReturn = TRUE;
+	}
+	__finally
+	{
+		if (hKey != nullptr)
+		{
+			RegCloseKey(hKey);
+		}
+	}
+
+	return fReturn;
+}
+
 BOOL EnableLogging()
 {
 	struct RegEntry { LPCTSTR szSubKey; LPCTSTR szValueName; DWORD dwType; const void* pData; DWORD cbData; };
@@ -372,42 +591,60 @@ BOOL EnableLogging()
 	static const TCHAR szBaseKey[] = L"SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider";
 	static const TCHAR szGuidKey[] = L"SYSTEM\\CurrentControlSet\\Control\\WMI\\Autologger\\EIDCredentialProvider\\{B4866A0A-DB08-4835-A26F-414B46F3244C}";
 	static const TCHAR szGuidValue[] = L"{B4866A0A-DB08-4835-A26F-414B46F3244C}";
-	static const TCHAR szFileName[] = L"c:\\windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl";
+
+	// Read configuration from registry
+	DWORD dwConfigLevel;
+	DWORD dwConfigMaxSize;
+	DWORD dwConfigFileCounter;
+	BOOL fConfigAutoStart;
+	WCHAR szConfigPath[MAX_PATH];
+
+	GetTraceConfig(&dwConfigLevel, szConfigPath, MAX_PATH, &dwConfigMaxSize, &dwConfigFileCounter, &fConfigAutoStart);
+
+	// Static values
 	static const DWORD dw0 = 0;
 	static const DWORD dw1 = 1;
-	static const DWORD dw5 = 5;
 	static const DWORD dw8 = 8;
-	static const DWORD dw64 = 64;
 	static const DWORD dw4864 = 4864;
 	static const DWORD64 qw0 = 0;
 
-	static const RegEntry entries[] = {
-		{ szBaseKey, L"Guid",            REG_SZ,    szGuidValue, sizeof(szGuidValue) },
-		{ szBaseKey, L"FileName",        REG_SZ,    szFileName,  sizeof(szFileName) },
-		{ szBaseKey, L"FileMax",         REG_DWORD, &dw8,   sizeof(DWORD) },
-		{ szBaseKey, L"Start",           REG_DWORD, &dw1,   sizeof(DWORD) },
-		{ szBaseKey, L"BufferSize",      REG_DWORD, &dw8,   sizeof(DWORD) },
-		{ szBaseKey, L"FlushTimer",      REG_DWORD, &dw0,   sizeof(DWORD) },
-		{ szBaseKey, L"MaximumBuffers",  REG_DWORD, &dw0,   sizeof(DWORD) },
-		{ szBaseKey, L"MinimumBuffers",  REG_DWORD, &dw0,   sizeof(DWORD) },
-		{ szBaseKey, L"ClockType",       REG_DWORD, &dw1,   sizeof(DWORD) },
-		{ szBaseKey, L"MaxFileSize",     REG_DWORD, &dw64,  sizeof(DWORD) },
-		{ szBaseKey, L"LogFileMode",     REG_DWORD, &dw4864,sizeof(DWORD) },
-		{ szBaseKey, L"FileCounter",     REG_DWORD, &dw5,   sizeof(DWORD) },
-		{ szBaseKey, L"Status",          REG_DWORD, &dw0,   sizeof(DWORD) },
-		{ szGuidKey, L"Enabled",         REG_DWORD, &dw1,   sizeof(DWORD) },
-		{ szGuidKey, L"EnableLevel",     REG_DWORD, &dw5,   sizeof(DWORD) },
-		{ szGuidKey, L"EnableProperty",  REG_DWORD, &dw0,   sizeof(DWORD) },
-		{ szGuidKey, L"Status",          REG_DWORD, &dw0,   sizeof(DWORD) },
-		{ szGuidKey, L"MatchAllKeyword", REG_QWORD, &qw0,   sizeof(DWORD64) },
-		{ szGuidKey, L"MatchAnyKeyword", REG_QWORD, &qw0,   sizeof(DWORD64) },
-	};
+	// Dynamic values from configuration
+	DWORD dwEnableLevel = dwConfigLevel;
+	DWORD dwMaxFileSize = dwConfigMaxSize;
+	DWORD dwFileCounter = dwConfigFileCounter;
+	DWORD dwStart = fConfigAutoStart ? 1 : 0;
+	DWORD dwFileMax = dwConfigFileCounter + 3;  // Add buffer for FileMax
+
+	// Use static array instead of vector to avoid C++ unwinding in SEH
+	RegEntry entries[19];
+	DWORD dwPathSize = (DWORD)((wcslen(szConfigPath) + 1) * sizeof(WCHAR));
+
+	// Build registry entries dynamically based on configuration
+	entries[0]  = { szBaseKey, L"Guid",            REG_SZ,    szGuidValue,   (DWORD)sizeof(szGuidValue) };
+	entries[1]  = { szBaseKey, L"FileName",        REG_SZ,    szConfigPath,  dwPathSize };
+	entries[2]  = { szBaseKey, L"FileMax",         REG_DWORD, &dwFileMax,     sizeof(DWORD) };
+	entries[3]  = { szBaseKey, L"Start",           REG_DWORD, &dwStart,       sizeof(DWORD) };
+	entries[4]  = { szBaseKey, L"BufferSize",      REG_DWORD, &dw8,           sizeof(DWORD) };
+	entries[5]  = { szBaseKey, L"FlushTimer",      REG_DWORD, &dw0,           sizeof(DWORD) };
+	entries[6]  = { szBaseKey, L"MaximumBuffers",  REG_DWORD, &dw0,           sizeof(DWORD) };
+	entries[7]  = { szBaseKey, L"MinimumBuffers",  REG_DWORD, &dw0,           sizeof(DWORD) };
+	entries[8]  = { szBaseKey, L"ClockType",       REG_DWORD, &dw1,           sizeof(DWORD) };
+	entries[9]  = { szBaseKey, L"MaxFileSize",     REG_DWORD, &dwMaxFileSize, sizeof(DWORD) };
+	entries[10] = { szBaseKey, L"LogFileMode",     REG_DWORD, &dw4864,        sizeof(DWORD) };
+	entries[11] = { szBaseKey, L"FileCounter",     REG_DWORD, &dwFileCounter, sizeof(DWORD) };
+	entries[12] = { szBaseKey, L"Status",          REG_DWORD, &dw0,           sizeof(DWORD) };
+	entries[13] = { szGuidKey, L"Enabled",         REG_DWORD, &dw1,           sizeof(DWORD) };
+	entries[14] = { szGuidKey, L"EnableLevel",     REG_DWORD, &dwEnableLevel, sizeof(DWORD) };
+	entries[15] = { szGuidKey, L"EnableProperty",  REG_DWORD, &dw0,           sizeof(DWORD) };
+	entries[16] = { szGuidKey, L"Status",          REG_DWORD, &dw0,           sizeof(DWORD) };
+	entries[17] = { szGuidKey, L"MatchAllKeyword", REG_QWORD, &qw0,           sizeof(DWORD64) };
+	entries[18] = { szGuidKey, L"MatchAnyKeyword", REG_QWORD, &qw0,           sizeof(DWORD64) };
 
 	LONG err = 0;
 	BOOL fReturn = FALSE;
 	__try
 	{
-		for (int i = 0; i < _countof(entries); i++)
+		for (int i = 0; i < 19; i++)
 		{
 			err = RegSetKeyValue(HKEY_LOCAL_MACHINE, entries[i].szSubKey,
 				entries[i].szValueName, entries[i].dwType, entries[i].pData, entries[i].cbData);

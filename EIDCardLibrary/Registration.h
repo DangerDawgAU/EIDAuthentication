@@ -29,6 +29,11 @@ void EIDConfigurationWizardDllUnRegister();
 BOOL EnableLogging();
 BOOL DisableLogging();
 BOOL IsLoggingEnabled();
+
+// Trace configuration functions
+// Registry path: HKLM\SOFTWARE\EIDAuthentication\LogManager
+BOOL SetTraceConfig(DWORD dwLevel, LPCWSTR szLogPath, DWORD dwMaxSizeMB, DWORD dwFileCounter, BOOL fAutoStart);
+BOOL GetTraceConfig(DWORD* pdwLevel, LPWSTR szLogPath, DWORD cchPath, DWORD* pdwMaxSizeMB, DWORD* pdwFileCounter, BOOL* pfAutoStart);
 void EnableCrashDump(PTSTR szPath);
 void DisableCrashDump();
 BOOL IsCrashDumpEnabled();

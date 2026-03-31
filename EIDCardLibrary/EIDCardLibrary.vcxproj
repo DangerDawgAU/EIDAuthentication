@@ -175,6 +175,11 @@
     <ClCompile Include="StringConversion.cpp" />
     <ClCompile Include="Tracing.cpp" />
     <ClCompile Include="TraceExport.cpp" />
+    <ClCompile Include="CSVConfig.cpp" />
+    <ClCompile Include="CSVLogger.cpp" />
+    <ClCompile Include="EventDefinitions.cpp" />
+    <ClCompile Include="..\EIDMigrate\JsonHelper.cpp" />
+    <ClCompile Include="..\EIDMigrate\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CContainer.h" />
@@ -197,6 +202,9 @@
     <ClInclude Include="StringConversion.h" />
     <ClInclude Include="Tracing.h" />
     <ClInclude Include="TraceExport.h" />
+    <ClInclude Include="CSVConfig.h" />
+    <ClInclude Include="CSVLogger.h" />
+    <ClInclude Include="EventDefinitions.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />

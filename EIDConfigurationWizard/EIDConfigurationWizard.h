@@ -2,6 +2,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by EIDConfigurationWizard.rc
 //
+#define IDI_APP_ICON                    101 // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDS_NO_CERTIFICATE              11  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDS_04TRUSTENABLETIMEINVALID    12  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDS_04TRUSTMAKETRUSTED          13  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
@@ -90,13 +91,17 @@
 #define IDC_03VALIDITYYEARS             152  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_03VALIDITYLABEL             153  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_03VALIDITYWARNING           154  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
-#define IDS_03VALIDITYLABEL             155  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
-#define IDS_03VALIDITYWARNING           156  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
-#define IDS_03ISSUER                    157  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
-#define IDS_03SERIAL                    158  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
-#define IDS_03KEYSIZE                   159  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
-#define IDS_03FINGERPRINT               160  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
-#define IDC_PROGRESSBAR                 161  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDD_CA_NAME_CONFIG              155  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_CA_NAME_EDIT                156  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_CA_NAME_LABEL               157  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_CA_NAME_DEFAULT             158  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_03VALIDITYLABEL             160  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_03VALIDITYWARNING           161  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_03ISSUER                    162  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_03SERIAL                    163  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_03KEYSIZE                   164  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_03FINGERPRINT               165  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_PROGRESSBAR                 166  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_PROGRESSTEXT                162  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_STATIC                      -1  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 
@@ -106,7 +111,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        73  // NOSONAR - RESOURCE-01: VS resource editor tracking
 #define _APS_NEXT_COMMAND_VALUE         40001  // NOSONAR - RESOURCE-01: VS resource editor tracking
-#define _APS_NEXT_CONTROL_VALUE         163  // NOSONAR - RESOURCE-01: VS resource editor tracking
+#define _APS_NEXT_CONTROL_VALUE         159  // NOSONAR - RESOURCE-01: VS resource editor tracking
 #define _APS_NEXT_SYMED_VALUE           241  // NOSONAR - RESOURCE-01: VS resource editor tracking
 #endif
 #endif

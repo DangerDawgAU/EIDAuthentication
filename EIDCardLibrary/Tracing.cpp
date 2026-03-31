@@ -35,6 +35,9 @@
 #include "Tracing.h"
 #include "guid.h"
 #include "StringConversion.h"
+#include "CSVLogger.h"
+#include "CSVConfig.h"
+#include "EventDefinitions.h"
 #include <string>
 #include <array>
 
@@ -569,4 +572,112 @@ void EIDLogStackTraceEx(
 #endif
 		EventWriteString(hPub, WINEVENT_LEVEL_VERBOSE, 0, FrameBuffer);
 	}
+}
+
+// ================================================================
+// Structured CSV Logging Implementation
+// ================================================================
+
+// Static flag to track CSV initialization
+static BOOL g_CSVInitialized = FALSE;
+
+// Structured logging function - logs to both ETW and CSV
+void EIDCardLibraryLogStructured(
+    EID_EVENT_ID eventId,
+    EID_SEVERITY severity,
+    EID_OUTCOME outcome,
+    PCWSTR pwszUsername,
+    PCWSTR pwszAction,
+    PCWSTR pwszMessage,
+    PCWSTR pwszDomain,
+    PCWSTR pwszSourceIP,
+    DWORD dwProcessID,
+    DWORD dwThreadID,
+    DWORD dwSessionID,
+    PCWSTR pwszResource,
+    PCWSTR pwszReason)
+{
+	// Initialize CSV logger on first use
+	if (!g_CSVInitialized)
+	{
+		EID_CSV_Initialize();
+		g_CSVInitialized = TRUE;
+	}
+
+	// Build ETW message (with event ID prefix for correlation)
+	WCHAR szETWMessage[512];  // NOSONAR - LSASS-01: Stack-allocated buffer for LSASS safety
+	swprintf_s(szETWMessage, ARRAYSIZE(szETWMessage),
+		L"[EID:%04u] %s: %s",
+		static_cast<DWORD>(eventId),
+		pwszAction ? pwszAction : L"(no action)",
+		pwszMessage ? pwszMessage : L"(no message)");
+
+	// Log to ETW (existing functionality)
+	EIDCardLibraryTraceEx(__FILE__, __LINE__, __FUNCTION__,
+		static_cast<UCHAR>(severity), szETWMessage);
+
+	// Log to CSV if enabled
+	if (EID_CSV_IsEnabled())
+	{
+		EIDCSVLogger::LogEvent(
+			eventId, severity, outcome,
+			pwszUsername, pwszAction, pwszMessage,
+			pwszDomain, pwszSourceIP,
+			dwProcessID ? dwProcessID : GetCurrentProcessId(),
+			dwThreadID ? dwThreadID : GetCurrentThreadId(),
+			dwSessionID, pwszResource, pwszReason
+		);
+	}
+}
+
+// CSV lifecycle: Initialize (loads config and starts logger)
+void EID_CSV_Initialize()
+{
+	EID_CSV_CONFIG config;
+	HRESULT hr = EID_CSV_LoadConfig(config);
+
+	// Even if config load fails, initialize with defaults
+	if (FAILED(hr))
+	{
+		config = EID_CSV_CONFIG();
+		wcscpy_s(config.szLogPath, EID_CSV_DEFAULT_LOG_PATH);
+	}
+
+	// Initialize the CSV logger
+	if (config.fEnabled)
+	{
+		EIDCSVLogger::Initialize(config);
+	}
+}
+
+// CSV lifecycle: Shutdown (closes log file)
+void EID_CSV_Shutdown()
+{
+	EIDCSVLogger::Shutdown();
+}
+
+// CSV status: Check if logging is enabled
+BOOL EID_CSV_IsEnabled()
+{
+	return EIDCSVLogger::IsEnabled();
+}
+
+// CSV configuration: Update at runtime
+HRESULT EID_CSV_UpdateConfig(const EID_CSV_CONFIG& config)
+{
+	// Save to both JSON file and registry
+	HRESULT hrJson = EID_CSV_SaveConfigToFile(EID_CSV_CONFIG_PATH, config);
+	HRESULT hrReg = EID_CSV_SaveConfigToRegistry(config);
+
+	// Update runtime logger
+	HRESULT hrLogger = EIDCSVLogger::UpdateConfig(config);
+
+	// Return success if logger update succeeded
+	if (SUCCEEDED(hrLogger))
+	{
+		return hrLogger;
+	}
+
+	// Otherwise return the most specific error
+	return FAILED(hrJson) ? hrJson : hrReg;
 }

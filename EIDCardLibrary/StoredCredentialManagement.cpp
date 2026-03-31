@@ -36,6 +36,8 @@
 #include "Tracing.h"
 #include "CertificateValidation.h"
 #include "StringConversion.h"
+#include "CSVConfig.h"
+#include "CSVLogger.h"
 #include <string>
 #include <span>
 #include <array>
@@ -2198,12 +2200,34 @@ BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE
 				LsaPolicyHandle,
 				&lusSecretName,
 				nullptr);
+
+			// Log LSA secret deletion
+			if (ntsResult == STATUS_SUCCESS)
+			{
+				WCHAR szRid[16];
+				swprintf_s(szRid, ARRAYSIZE(szRid), L"0x%08X", dwRid);
+				EIDCardLibraryLogStructured(
+					EID_EVENT_ID::LSA_SECRET_DELETED,
+					EID_SEVERITY::INFO,
+					EID_OUTCOME::SUCCESS,
+					nullptr,
+					L"LSA Secret Delete",
+					L"LSA secret deleted successfully",
+					nullptr,
+					nullptr,
+					0,
+					0,
+					0,
+					szRid,
+					nullptr
+				);
+			}
 		}
 		else
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Setting %x",dwRid);
 			//  Initialize an LSA_UNICODE_STRING for the value
-			//  of the private data. 
+			//  of the private data.
 			lusSecretData.Buffer = (PWSTR) pbSecret;
 			lusSecretData.Length = usSecretSize;
 			lusSecretData.MaximumLength = usSecretSize;
@@ -2211,12 +2235,55 @@ BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE
 				LsaPolicyHandle,
 				&lusSecretName,
 				&lusSecretData);
+
+			// Log LSA secret write
+			if (ntsResult == STATUS_SUCCESS)
+			{
+				WCHAR szRid[16];
+				swprintf_s(szRid, ARRAYSIZE(szRid), L"0x%08X", dwRid);
+				EIDCardLibraryLogStructured(
+					EID_EVENT_ID::LSA_SECRET_CREATED,
+					EID_SEVERITY::INFO,
+					EID_OUTCOME::SUCCESS,
+					nullptr,
+					L"LSA Secret Write",
+					L"LSA secret stored successfully",
+					nullptr,
+					nullptr,
+					0,
+					0,
+					0,
+					szRid,
+					nullptr
+				);
+			}
 		}
 		if( STATUS_SUCCESS != ntsResult )
 		{
 			//  An error occurred. Display it as a win32 error code.
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by LsaStorePrivateData", ntsResult);
 			dwError = LsaNtStatusToWinError(ntsResult);
+
+			// Log LSA operation failure
+			WCHAR szRid[16], szError[32];
+			swprintf_s(szRid, ARRAYSIZE(szRid), L"0x%08X", dwRid);
+			swprintf_s(szError, ARRAYSIZE(szError), L"0x%08X", ntsResult);
+			EIDCardLibraryLogStructured(
+				EID_EVENT_ID::AUTHZ_CREDENTIAL_DENIED,
+				EID_SEVERITY::ERROR,
+				EID_OUTCOME::FAILURE,
+				nullptr,
+				L"LSA Secret Operation",
+				L"LSA secret operation failed",
+				nullptr,
+				nullptr,
+				0,
+				0,
+				0,
+				szRid,
+				szError
+			);
+
 			__leave;
 		}
 		fReturn = TRUE;
@@ -2299,15 +2366,74 @@ BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_
 		{
 			if (0xc0000034 == ntsResult)
 			{
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Private info not found for dwRid = 0x%x", dwRid);
+				// LSA secret not found is expected when scanning multiple RIDs
+				// Log at VERBOSE level to avoid log noise - this is not an error condition
+				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"LSA secret not found for dwRid = 0x%x (expected during scan)", dwRid);
+
+				WCHAR szRid[16];
+				swprintf_s(szRid, ARRAYSIZE(szRid), L"0x%08X", dwRid);
+				EIDCardLibraryLogStructured(
+					EID_EVENT_ID::AUTHZ_LSA_SECRET_SCAN_NOT_FOUND,
+					EID_SEVERITY::VERBOSE,
+					EID_OUTCOME::SUCCESS,  // Not a failure - this is expected during scans
+					nullptr,
+					L"LSA Secret Scan",
+					L"Credential not found for this RID (continuing scan)",
+					nullptr,
+					nullptr,
+					0,
+					0,
+					0,
+					szRid,
+					nullptr
+				);
 			}
 			else
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by LsaRetrievePrivateData", ntsResult);
+
+				// Log LSA read error
+				WCHAR szRid[16], szError[32];
+				swprintf_s(szRid, ARRAYSIZE(szRid), L"0x%08X", dwRid);
+				swprintf_s(szError, ARRAYSIZE(szError), L"0x%08X", ntsResult);
+				EIDCardLibraryLogStructured(
+					EID_EVENT_ID::AUTHZ_CREDENTIAL_DENIED,
+					EID_SEVERITY::ERROR,
+					EID_OUTCOME::FAILURE,
+					nullptr,
+					L"LSA Secret Read",
+					L"LSA secret read failed",
+					nullptr,
+					nullptr,
+					0,
+					0,
+					0,
+					szRid,
+					szError
+				);
 			}
 			dwError = LsaNtStatusToWinError(ntsResult);
 			__leave;
-		} 
+		}
+
+		// Log LSA secret read success
+		WCHAR szRid[16];
+		swprintf_s(szRid, ARRAYSIZE(szRid), L"0x%08X", dwRid);
+		EIDCardLibraryLogStructured(
+			EID_EVENT_ID::AUTHZ_LSA_SECRET_READ,
+			EID_SEVERITY::INFO,
+			EID_OUTCOME::SUCCESS,
+			nullptr,
+			L"LSA Secret Read",
+			L"LSA secret retrieved successfully",
+			nullptr,
+			nullptr,
+			0,
+			0,
+			0,
+			szRid,
+			nullptr
+		); 
 		*ppPrivateData = (PEID_PRIVATE_DATA) EIDAlloc(pData->Length);
 		if (!*ppPrivateData)
 		{

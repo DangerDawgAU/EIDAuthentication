@@ -1,5 +1,6 @@
-// stdafx.cpp�: fichier source incluant simplement les fichiers Include standard
-// EIDLogManager.pch repr�sente l'en-t�te pr�compil�
-// stdafx.obj contient les informations de type pr�compil�es
+// File: EIDLogManager/stdafx.cpp
+// Source file that includes just the standard includes
+// EIDLogManager.pch will be the pre-compiled header
+// stdafx.obj will contain the pre-compiled type information
 
 #include "stdafx.h"

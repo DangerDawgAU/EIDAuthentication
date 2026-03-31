@@ -35,6 +35,8 @@ WCHAR szUserName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 const DWORD dwUserNameSize = ARRAYSIZE(szUserName);
 WCHAR szPassword[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 const DWORD dwPasswordSize = ARRAYSIZE(szPassword);
+WCHAR szCAName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+const DWORD dwCANameSize = ARRAYSIZE(szCAName);
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,

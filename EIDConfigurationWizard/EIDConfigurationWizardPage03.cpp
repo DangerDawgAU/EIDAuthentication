@@ -11,10 +11,15 @@
 #include "../EIDCardLibrary/StringConversion.h"
 #include <string>
 
+// External global for CA name configuration
+extern WCHAR szCAName[];
+extern const DWORD dwCANameSize;
+
 // Forward declarations for option handlers (extracted to reduce nesting)
 static BOOL HandleDeleteOption(HWND hWnd);
 static BOOL HandleCreateOption(HWND hWnd, PCCERT_CONTEXT pRootCert);
 static BOOL HandleUseThisOption(HWND hWnd, PCCERT_CONTEXT pRootCert);
+static BOOL PromptForCAName(HWND hWndParent);
 
 // RAII helper to automatically close progress dialog on scope exit
 class ProgressGuard {
@@ -25,6 +30,90 @@ public:
     ProgressGuard(const ProgressGuard&) = delete;
     ProgressGuard& operator=(const ProgressGuard&) = delete;
 };
+
+// Dialog procedure for CA name configuration
+INT_PTR CALLBACK DlgProc_CANameConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_INITDIALOG:
+    {
+        // Set default checkbox as checked
+        CheckDlgButton(hWnd, IDC_CA_NAME_DEFAULT, BST_CHECKED);
+
+        // Pre-fill with computer name (without CN= prefix, will be added automatically)
+        wchar_t szComputerName[MAX_COMPUTERNAME_LENGTH + 1];
+        DWORD dwSize = ARRAYSIZE(szComputerName);
+        if (GetComputerName(szComputerName, &dwSize))
+        {
+            EID::SetWindowTextW(GetDlgItem(hWnd, IDC_CA_NAME_EDIT), szComputerName);
+        }
+        return TRUE;
+    }
+    case WM_COMMAND:
+    {
+        WORD wmId = LOWORD(wParam);
+        if (wmId == IDOK)
+        {
+            // Get the CA name from the edit control
+            WCHAR szBuffer[256];
+            GetDlgItemText(hWnd, IDC_CA_NAME_EDIT, szBuffer, ARRAYSIZE(szBuffer));
+
+            // Validate the CA name is not empty
+            if (szBuffer[0] == L'\0')
+            {
+                MessageBox(hWnd, L"Please enter a Certificate Authority name.", L"Validation Error", MB_OK | MB_ICONERROR);
+                return TRUE;
+            }
+
+            // Validate that the user didn't include "CN=" prefix (we add it automatically)
+            if (wcsstr(szBuffer, L"CN=") != nullptr)
+            {
+                MessageBox(hWnd, L"Please enter only the name without the ""CN="" prefix. It will be added automatically.", L"Validation Error", MB_OK | MB_ICONERROR);
+                return TRUE;
+            }
+
+            // Store the CA name in the global variable
+            wcscpy_s(szCAName, dwCANameSize, szBuffer);
+            EndDialog(hWnd, IDOK);
+            return TRUE;
+        }
+        else if (wmId == IDCANCEL)
+        {
+            EndDialog(hWnd, IDCANCEL);
+            return TRUE;
+        }
+        else if (wmId == IDC_CA_NAME_DEFAULT)
+        {
+            // Toggle based on checkbox state
+            BOOL fUseDefault = IsDlgButtonChecked(hWnd, IDC_CA_NAME_DEFAULT) == BST_CHECKED;
+            if (fUseDefault)
+            {
+                // Re-fill with computer name (without CN= prefix, will be added automatically)
+                wchar_t szComputerName[MAX_COMPUTERNAME_LENGTH + 1];
+                DWORD dwSize = ARRAYSIZE(szComputerName);
+                if (GetComputerName(szComputerName, &dwSize))
+                {
+                    EID::SetWindowTextW(GetDlgItem(hWnd, IDC_CA_NAME_EDIT), szComputerName);
+                }
+            }
+            return TRUE;
+        }
+        break;
+    }
+    }
+    return FALSE;
+}
+
+// Function to prompt for CA name, returns TRUE if user provided a name, FALSE if cancelled
+static BOOL PromptForCAName(HWND hWndParent)
+{
+    // Initialize CA name as empty
+    szCAName[0] = L'\0';
+
+    INT_PTR result = DialogBox(g_hinst, MAKEINTRESOURCE(IDD_CA_NAME_CONFIG), hWndParent, DlgProc_CANameConfig);
+    return (result == IDOK);
+}
 
 // used to know what root certicate we are refering
 // null = unknown
@@ -73,10 +162,22 @@ VOID ValidateCertificateValidity(HWND hWnd, PCCERT_CONTEXT pRootCert)
 BOOL CreateRootCertificate()
 {
 	BOOL fReturn;
-	wchar_t szComputerNameBuf[MAX_COMPUTERNAME_LENGTH + 1];
-	DWORD dwSize = ARRAYSIZE(szComputerNameBuf);
-	GetComputerName(szComputerNameBuf, &dwSize);
-	std::wstring szSubject = EID::Format(L"CN=%s", szComputerNameBuf);
+	std::wstring szSubject;
+
+	// Use custom CA name if provided, otherwise fall back to computer name
+	// Always prepend "CN=EID:" to the name
+	if (szCAName[0] != L'\0')
+	{
+		szSubject = EID::Format(L"CN=EID:%s", szCAName);
+	}
+	else
+	{
+		wchar_t szComputerNameBuf[MAX_COMPUTERNAME_LENGTH + 1];
+		DWORD dwSize = ARRAYSIZE(szComputerNameBuf);
+		GetComputerName(szComputerNameBuf, &dwSize);
+		szSubject = EID::Format(L"CN=EID:%s", szComputerNameBuf);
+	}
+
 	UI_CERTIFICATE_INFO CertificateInfo;
 	memset(&CertificateInfo, 0, sizeof(CertificateInfo));
 	CertificateInfo.dwSaveon = UI_CERTIFICATE_INFO_SAVEON_SYSTEMSTORE;
@@ -257,6 +358,15 @@ static BOOL HandleDeleteOption(HWND hWnd)
 static BOOL HandleCreateOption(HWND hWnd, PCCERT_CONTEXT pRootCert) // NOSONAR - variable used
 {
 	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"IDC_03_CREATE");
+
+	// Prompt for CA name before creating the root certificate
+	if (!PromptForCAName(hWnd))
+	{
+		// User cancelled the CA name dialog
+		SetWindowLongPtr(hWnd, DWLP_MSGRESULT, -1);
+		return TRUE;
+	}
+
 	// Get validity years from UI
 	WORD wValidityYears = (WORD)GetDlgItemInt(hWnd, IDC_03VALIDITYYEARS, nullptr, FALSE);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (wValidityYears < MIN_CERT_VALIDITY_YEARS) wValidityYears = MIN_CERT_VALIDITY_YEARS;

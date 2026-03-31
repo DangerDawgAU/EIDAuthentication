@@ -49,8 +49,10 @@
 #include "../EIDCardLibrary/CertificateValidation.h"
 #include "../EIDCardLibrary/StoredCredentialManagement.h"
 #include "../EIDCardLibrary/SmartCardModule.h"
+#include "../EIDCardLibrary/CSVLogger.h"
+#include "../EIDCardLibrary/CSVConfig.h"
 
-	
+
 extern "C"
 {
 	// Save LsaDispatchTable
@@ -268,6 +270,17 @@ extern "C"
 		MyLsaDispatchTable = reinterpret_cast<PLSA_SECPKG_FUNCTION_TABLE>(LsaDispatchTable);
 
 		*AuthenticationPackageName = LsaInitializeString(AUTHENTICATIONPACKAGENAME);
+
+		// Initialize CSV logging
+		EID_CSV_Initialize();
+		EIDCardLibraryLogStructured(
+			EID_EVENT_ID::LSA_PACKAGE_INIT,
+			EID_SEVERITY::INFO,
+			EID_OUTCOME::SUCCESS,
+			nullptr,
+			L"LSA Package",
+			L"Authentication package initialized"
+		);
 
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Leave");
 		// don't fail
@@ -789,6 +802,24 @@ extern "C"
 	{
 		UNREFERENCED_PARAMETER(AuthenticationInformationLength);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
+
+		// Log session logon initiation
+		EIDCardLibraryLogStructured(
+			EID_EVENT_ID::SESSION_LOGON_INIT,
+			EID_SEVERITY::INFO,
+			EID_OUTCOME::UNKNOWN,
+			nullptr,
+			L"Logon",
+			L"Smart card logon initiated",
+			nullptr,
+			nullptr,
+			0,
+			0,
+			0,
+			nullptr,
+			nullptr
+		);
+
 		NTSTATUS Status;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 		DWORD dwLen = MAX_COMPUTERNAME_LENGTH +1;
 		WCHAR ComputerName[MAX_COMPUTERNAME_LENGTH + 1];
@@ -859,19 +890,101 @@ extern "C"
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"PIN verification failed");
 				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"CheckPINandGetRemainingAttemptsIfPossible 0x%08X", Status);
+				// Log PIN verification failure
+				EIDCardLibraryLogStructured(
+					EID_EVENT_ID::AUTH_PIN_FAILURE,
+					EID_SEVERITY::WARNING,
+					EID_OUTCOME::FAILURE,
+					nullptr,
+					L"PIN Verification",
+					L"PIN verification failed",
+					nullptr,
+					nullptr,
+					0,
+					0,
+					0,
+					nullptr,
+					L"Smart card PIN incorrect"
+				);
 				return Status;
 			}
+
+			// Log PIN verification success
+			EIDCardLibraryLogStructured(
+				EID_EVENT_ID::AUTH_PIN_SUCCESS,
+				EID_SEVERITY::INFO,
+				EID_OUTCOME::SUCCESS,
+				nullptr,
+				L"PIN Verification",
+				L"PIN verified successfully",
+				nullptr,
+				nullptr,
+				0,
+				0,
+				0,
+				nullptr,
+				nullptr
+			);
 
 			pCertContext = GetCertificateFromCspInfo(pSmartCardCspInfo);
 			if (!pCertContext) {
 				EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"[AUTH_CERT_ERROR] Smart card logon failed: Unable to get certificate from CSP info");
+				// Log certificate read failure
+				EIDCardLibraryLogStructured(
+					EID_EVENT_ID::CERT_READ_FAILURE,
+					EID_SEVERITY::ERROR,
+					EID_OUTCOME::FAILURE,
+					nullptr,
+					L"Certificate Read",
+					L"Unable to get certificate from CSP info",
+					nullptr,
+					nullptr,
+					0,
+					0,
+					0,
+					nullptr,
+					L"CSP info invalid"
+				);
 				return STATUS_LOGON_FAILURE;
 			}
+
+			// Log certificate read success
+			EIDCardLibraryLogStructured(
+				EID_EVENT_ID::CERT_READ_SUCCESS,
+				EID_SEVERITY::INFO,
+				EID_OUTCOME::SUCCESS,
+				nullptr,
+				L"Certificate Read",
+				L"Certificate retrieved from smart card",
+				nullptr,
+				nullptr,
+				0,
+				0,
+				0,
+				nullptr,
+				nullptr
+			);
 
 			// username = username on certificate
 			if (!manager->GetUsernameFromCertContext(pCertContext, &szUserName, &dwRid))
 			{
 				EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"[AUTH_CERT_ERROR] Smart card logon failed: Could not get username from certificate (0x%08x)", GetLastError());
+				// Log certificate validation failure
+				EIDCardLibraryLogStructured(
+					EID_EVENT_ID::CERT_VALIDATE_FAILURE,
+					EID_SEVERITY::ERROR,
+					EID_OUTCOME::FAILURE,
+					nullptr,
+					L"Certificate Validation",
+					L"Could not extract username from certificate",
+					nullptr,
+					nullptr,
+					0,
+					0,
+					0,
+					nullptr,
+					L"Certificate subject invalid"
+				);
 				return STATUS_LOGON_FAILURE;
 			}
 			if (!szUserName) {
@@ -885,8 +998,41 @@ extern "C"
 			if (!IsTrustedCertificate(pCertContext))
 			{
 				EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"[AUTH_CERT_ERROR] Smart card logon failed for user '%s': Untrusted certificate (0x%08x)", szUserName, GetLastError());
+				// Log untrusted certificate
+				EIDCardLibraryLogStructured(
+					EID_EVENT_ID::CERT_VALIDATE_FAILURE,
+					EID_SEVERITY::ERROR,
+					EID_OUTCOME::FAILURE,
+					szUserName,
+					L"Certificate Validation",
+					L"Certificate trust verification failed",
+					nullptr,
+					nullptr,
+					0,
+					0,
+					0,
+					nullptr,
+					L"Untrusted certificate chain"
+				);
 				return STATUS_LOGON_FAILURE;
 			}
+
+			// Log certificate validation success
+			EIDCardLibraryLogStructured(
+				EID_EVENT_ID::CERT_VALIDATE_SUCCESS,
+				EID_SEVERITY::INFO,
+				EID_OUTCOME::SUCCESS,
+				szUserName,
+				L"Certificate Validation",
+				L"Certificate chain validated successfully",
+				nullptr,
+				nullptr,
+				0,
+				0,
+				0,
+				nullptr,
+				nullptr
+			);
 			
 			EIDFree(szUserName);
 
@@ -989,8 +1135,33 @@ extern "C"
 			}
 			Status = STATUS_SUCCESS;
 
-			// Log successful authentication
+			// Log successful authentication to both ETW and CSV
 			EIDSecurityAudit(SECURITY_AUDIT_SUCCESS, L"[AUTH_SUCCESS] Smart card logon succeeded for user '%wZ'", *AccountName);
+
+			// Convert AccountName to wide string for CSV logging
+			WCHAR szUserNameBuffer[256] = L"";
+			if (*AccountName && (*AccountName)->Buffer)
+			{
+				wcsncpy_s(szUserNameBuffer, (*AccountName)->Buffer,
+					min((*AccountName)->Length / sizeof(WCHAR), ARRAYSIZE(szUserNameBuffer) - 1));
+			}
+
+			EIDCardLibraryLogStructured(
+				EID_EVENT_ID::AUTH_SUCCESS,
+				EID_SEVERITY::INFO,
+				EID_OUTCOME::SUCCESS,
+				szUserNameBuffer,
+				L"Authentication",
+				L"Smart card logon succeeded",
+				nullptr,
+				nullptr,
+				0,
+				0,
+				LogonId->LowPart,
+				nullptr,
+				nullptr
+			);
+
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Success !!");
 			SecureZeroMemory(pwzPin, sizeof(pwzPin));
 			SecureZeroMemory(pwzPinUncrypted, sizeof(pwzPinUncrypted));

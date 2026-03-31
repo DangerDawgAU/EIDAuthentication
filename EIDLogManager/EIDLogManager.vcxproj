@@ -176,6 +176,9 @@
     <None Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <Manifest Include="EIDLogManager.manifest" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="EIDLogManager.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />

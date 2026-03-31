@@ -3,10 +3,10 @@
 // Used by EIDMigrate.rc
 // NOSONAR - Macros are required by Windows Resource Compiler; cannot use constexpr/enum for resource IDs
 //
+#define IDI_APP_ICON                    101 // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDD_PIN_PROMPT                  100
-#define IDC_PIN_EDIT                    101
-#define IDC_PIN_PROMPT_LABEL            102
-#define IDI_EIDMIGRATE                  200
+#define IDC_PIN_EDIT                    102
+#define IDC_PIN_PROMPT_LABEL            103
 #define IDS_APP_NAME                    300
 #define IDS_APP_VERSION                 301
 #define IDS_APP_COPYRIGHT               302

@@ -224,6 +224,22 @@ VOID CenterWindow(HWND hWnd)
 
 VOID SetIcon(HWND hWnd)
 {
+	// First try to load app-specific icon (IDI_APP_ICON = 101)
+	HMODULE hApp = GetModuleHandle(NULL);
+	if (hApp)
+	{
+		HANDLE hbicon = LoadImage(hApp, MAKEINTRESOURCE(101), IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), 0);
+		if (hbicon)
+		{
+			SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM) hbicon);
+			hbicon = LoadImage(hApp, MAKEINTRESOURCE(101), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 0);
+			if (hbicon)
+				SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM) hbicon);
+			return;  // Successfully loaded app icon
+		}
+	}
+
+	// Fall back to system icon (imageres.dll resource 58)
 	HMODULE hDll = EIDLoadSystemLibrary(TEXT("imageres.dll"));
 	if (hDll)
 	{
