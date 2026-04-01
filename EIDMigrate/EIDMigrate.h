@@ -5,6 +5,7 @@
 
 #include <Windows.h>
 #include <string>
+#include <vector>
 #include "Tracing.h"
 
 // Application information
@@ -43,6 +44,7 @@ struct COMMAND_OPTIONS
     std::wstring OutputFile;
     std::wstring LogFile;
     std::wstring Password;
+    std::vector<std::wstring> SelectedGroups;  // Specific groups to export/import
     BOOL DryRun;
     BOOL Force;
     BOOL CreateUsers;

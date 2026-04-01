@@ -274,30 +274,59 @@ HRESULT CEIDCredential::GetStringValue(
 
 // Get the image to show in the user tile.
 HRESULT CEIDCredential::GetBitmapValue(
-    DWORD dwFieldID, 
+    DWORD dwFieldID,
     HBITMAP* phbmp
     )
 {
-    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
+    HRESULT hr = E_INVALIDARG;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 	if ((SFI_TILEIMAGE == dwFieldID) && phbmp)
     {
-        HBITMAP hbmp;
-		// load the bitmap saved in the resource.
-		hbmp = LoadBitmap(HINST_THISDLL, MAKEINTRESOURCE(IDB_TILE_IMAGE));
+        *phbmp = nullptr;
+
+		// Use LoadImage instead of deprecated LoadBitmap
+		// LoadImage with LR_CREATEDIBSECTION creates a DIB section bitmap
+		// which is more reliable for credential providers
+		HBITMAP hbmp = static_cast<HBITMAP>(LoadImageW(
+			HINST_THISDLL,
+			MAKEINTRESOURCEW(IDB_TILE_IMAGE),
+			IMAGE_BITMAP,
+			0,  // Use actual width from resource
+			0,  // Use actual height from resource
+			LR_CREATEDIBSECTION | LR_DEFAULTSIZE
+		));
+
 		if (hbmp != nullptr)
 		{
 			hr = S_OK;
 			*phbmp = hbmp;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"GetBitmapValue: Bitmap loaded successfully");
 		}
 		else
 		{
-			hr = HRESULT_FROM_WIN32(GetLastError());
+			DWORD dwErr = GetLastError();
+			hr = HRESULT_FROM_WIN32(dwErr);
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"GetBitmapValue: LoadImageW failed with error 0x%08x", dwErr);
+			EIDLogErrorWithContext("GetBitmapValue", hr, L"LoadImageW failed; g_hinst=0x%p, ID=%d", HINST_THISDLL, IDB_TILE_IMAGE);
+
+			// Fallback: Try LoadBitmap as backup for older systems
+			hbmp = LoadBitmap(HINST_THISDLL, MAKEINTRESOURCE(IDB_TILE_IMAGE));
+			if (hbmp != nullptr)
+			{
+				hr = S_OK;
+				*phbmp = hbmp;
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"GetBitmapValue: Fallback to LoadBitmap succeeded");
+			}
+			else
+			{
+				dwErr = GetLastError();
+				hr = HRESULT_FROM_WIN32(dwErr);
+				EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"GetBitmapValue: LoadBitmap fallback also failed with error 0x%08x", dwErr);
+			}
 		}
     }
     else
     {
-        hr = E_INVALIDARG;
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"E_INVALIDARG");
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"GetBitmapValue: Invalid field ID or null phbmp (fieldId=%lu)", dwFieldID);
     }
 	if (!SUCCEEDED(hr))
 	{

@@ -43,6 +43,7 @@ INT_PTR CALLBACK WndProc_09_ImportProgress(HWND hwndDlg, UINT uMsg, WPARAM wPara
                 s_workerContext.pfCreateUsers = &g_wizardData.fCreateUsers;
                 s_workerContext.pfContinueOnError = &g_wizardData.fContinueOnError;
                 s_workerContext.pUserPasswords = &g_wizardData.userPasswords;
+                s_workerContext.pSelectedGroups = &g_wizardData.SelectedGroups;
 
                 DWORD dwThreadId;
                 s_hWorkerThread = CreateThread(nullptr, 0, ImportWorker,

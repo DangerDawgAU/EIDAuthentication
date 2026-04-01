@@ -82,6 +82,8 @@ $iconMappings = @(
     @{ Source = "app_trace_consumer.ico"; Destination = "EIDTraceConsumer\app.ico" }
     # Installer Icon
     @{ Source = "app_installer.ico"; Destination = "Installer\installer.ico" }
+    # Credential Provider Icon (for DisplayIcon in installed programs)
+    @{ Source = "cred_provider.ico"; Destination = "Installer\cred_provider.ico" }
 )
 
 $iconsCopied = 0

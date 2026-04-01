@@ -92,7 +92,7 @@ HRESULT CMessageCredential::Initialize(
     return S_OK;
 }
 
-// LogonUI calls this in order to give us a callback in case we need to notify it of 
+// LogonUI calls this in order to give us a callback in case we need to notify it of
 // anything, such as for getting and setting values.
 HRESULT CMessageCredential::Advise(
     ICredentialProviderCredentialEvents* pcpce
@@ -118,12 +118,12 @@ HRESULT CMessageCredential::UnAdvise()
     return S_OK;
 }
 
-// LogonUI calls this function when our tile is selected (zoomed). If you simply want 
-// fields to show/hide based on the selected state, there's no need to do anything 
+// LogonUI calls this function when our tile is selected (zoomed). If you simply want
+// fields to show/hide based on the selected state, there's no need to do anything
 // here - you can set that up in the field definitions.  But if you want to do something
-// more complicated, like change the contents of a field when the tile is selected, you 
+// more complicated, like change the contents of a field when the tile is selected, you
 // would do it here.
-HRESULT CMessageCredential::SetSelected(BOOL* pbAutoLogon)  
+HRESULT CMessageCredential::SetSelected(BOOL* pbAutoLogon)
 {
 	UNREFERENCED_PARAMETER(pbAutoLogon);
     return S_OK;
@@ -136,7 +136,7 @@ HRESULT CMessageCredential::SetDeselected()
 	return S_OK;
 }
 
-// Get info for a particular field of a tile. Called by logonUI to get information to 
+// Get info for a particular field of a tile. Called by logonUI to get information to
 // display the tile.
 HRESULT CMessageCredential::GetFieldState(
     DWORD dwFieldID,
@@ -157,7 +157,7 @@ HRESULT CMessageCredential::GetFieldState(
 				*pcpfs = CPFS_DISPLAY_IN_SELECTED_TILE;
 			}
 		}
-        
+
         hr = S_OK;
     }
     else
@@ -169,7 +169,7 @@ HRESULT CMessageCredential::GetFieldState(
 
 // Called to request the string value of the indicated field.
 HRESULT CMessageCredential::GetStringValue(
-    DWORD dwFieldID, 
+    DWORD dwFieldID,
     PWSTR* ppwsz
     )
 {
@@ -178,7 +178,7 @@ HRESULT CMessageCredential::GetStringValue(
     // Check to make sure dwFieldID is a legitimate index
     if (dwFieldID < ARRAYSIZE(_rgCredProvFieldDescriptors) && ppwsz )
 	{
-		if (dwFieldID == SMFI_MESSAGE) 
+		if (dwFieldID == SMFI_MESSAGE)
 		{
 			// Make a copy of the string and return that. The caller
 			// is responsible for freeing it.
@@ -232,16 +232,27 @@ HRESULT CMessageCredential::GetStringValue(
 
 // Called to request the image value of the indicated field.
 HRESULT CMessageCredential::GetBitmapValue(
-    DWORD dwFieldID, 
+    DWORD dwFieldID,
     HBITMAP* phbmp
     )
 {
-    UNREFERENCED_PARAMETER(dwFieldID);
-    UNREFERENCED_PARAMETER(phbmp);
-	HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
+	HRESULT hr = E_INVALIDARG;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 	if ((SFI_TILEIMAGE == dwFieldID) && phbmp)
-    {	
-		HBITMAP hbmp = LoadBitmap(HINST_THISDLL, MAKEINTRESOURCE(IDB_TILE_IMAGE));
+    {
+		*phbmp = nullptr;
+
+		// Use LoadImage instead of deprecated LoadBitmap
+		// LoadImage with LR_CREATEDIBSECTION creates a DIB section bitmap
+		// which is more reliable for credential providers
+		HBITMAP hbmp = static_cast<HBITMAP>(LoadImageW(
+			HINST_THISDLL,
+			MAKEINTRESOURCEW(IDB_TILE_IMAGE),
+			IMAGE_BITMAP,
+			0,  // Use actual width from resource
+			0,  // Use actual height from resource
+			LR_CREATEDIBSECTION | LR_DEFAULTSIZE
+		));
+
 		if (hbmp != nullptr)
 		{
 			hr = S_OK;
@@ -249,7 +260,18 @@ HRESULT CMessageCredential::GetBitmapValue(
 		}
 		else
 		{
-			hr = HRESULT_FROM_WIN32(GetLastError());
+			// Fallback: Try LoadBitmap as backup for older systems
+			DWORD dwErr = GetLastError();
+			hbmp = LoadBitmap(HINST_THISDLL, MAKEINTRESOURCE(IDB_TILE_IMAGE));
+			if (hbmp != nullptr)
+			{
+				hr = S_OK;
+				*phbmp = hbmp;
+			}
+			else
+			{
+				hr = HRESULT_FROM_WIN32(dwErr);
+			}
 		}
 	}
     else
@@ -294,8 +316,8 @@ HRESULT CMessageCredential::GetSubmitButtonValue(
 
 // Our credential doesn't have any settable strings.
 HRESULT CMessageCredential::SetStringValue(
-    DWORD dwFieldID, 
-    PCWSTR pwz      
+    DWORD dwFieldID,
+    PCWSTR pwz
     )
 {
     UNREFERENCED_PARAMETER(dwFieldID);
@@ -305,7 +327,7 @@ HRESULT CMessageCredential::SetStringValue(
 
 // Our credential doesn't have any checkable boxes.
 HRESULT CMessageCredential::GetCheckboxValue(
-    DWORD dwFieldID, 
+    DWORD dwFieldID,
     BOOL* pbChecked,
     PWSTR* ppwszLabel
     )
@@ -318,7 +340,7 @@ HRESULT CMessageCredential::GetCheckboxValue(
 
 // Our credential doesn't have a checkbox.
 HRESULT CMessageCredential::SetCheckboxValue(
-    DWORD dwFieldID, 
+    DWORD dwFieldID,
     BOOL bChecked
     )
 {
@@ -329,8 +351,8 @@ HRESULT CMessageCredential::SetCheckboxValue(
 
 // Our credential doesn't have a combobox.
 HRESULT CMessageCredential::GetComboBoxValueCount(
-    DWORD dwFieldID, 
-    DWORD* pcItems, 
+    DWORD dwFieldID,
+    DWORD* pcItems,
     DWORD* pdwSelectedItem
     )
 {
@@ -342,7 +364,7 @@ HRESULT CMessageCredential::GetComboBoxValueCount(
 
 // Our credential doesn't have a combobox.
 HRESULT CMessageCredential::GetComboBoxValueAt(
-    DWORD dwFieldID, 
+    DWORD dwFieldID,
     DWORD dwItem,
     PWSTR* ppwszItem
     )
@@ -367,8 +389,8 @@ HRESULT CMessageCredential::SetComboBoxSelectedValue(
 // We're not providing a way to log on from this credential, so we don't need serialization.
 HRESULT CMessageCredential::GetSerialization(
     CREDENTIAL_PROVIDER_GET_SERIALIZATION_RESPONSE* pcpgsr,
-    CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION* pcpcs, 
-    PWSTR* ppwszOptionalStatusText, 
+    CREDENTIAL_PROVIDER_CREDENTIAL_SERIALIZATION* pcpcs,
+    PWSTR* ppwszOptionalStatusText,
     CREDENTIAL_PROVIDER_STATUS_ICON* pcpsiOptionalStatusIcon
     )
 {
@@ -381,9 +403,9 @@ HRESULT CMessageCredential::GetSerialization(
 
 // We're not providing a way to log on from this credential, so it can't have a result.
 HRESULT CMessageCredential::ReportResult(
-    NTSTATUS ntsStatus, 
+    NTSTATUS ntsStatus,
     NTSTATUS ntsSubstatus,
-    PWSTR* ppwszOptionalStatusText, 
+    PWSTR* ppwszOptionalStatusText,
     CREDENTIAL_PROVIDER_STATUS_ICON* pcpsiOptionalStatusIcon
     )
 {

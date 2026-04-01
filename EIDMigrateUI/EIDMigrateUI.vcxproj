@@ -220,6 +220,7 @@
     <ClCompile Include="Page11_ListCredentials.cpp" />
     <ClCompile Include="Page12_ValidateFile.cpp" />
     <ClCompile Include="Page13_PasswordPrompt.cpp" />
+    <ClCompile Include="Page14_GroupSelect.cpp" />
     <ClCompile Include="WorkerThread.cpp" />
     <ClCompile Include="..\EIDMigrate\CryptoHelpers.cpp" />
     <ClCompile Include="..\EIDMigrate\FileCrypto.cpp" />
@@ -253,6 +254,7 @@
     <ClInclude Include="Page11_ListCredentials.h" />
     <ClInclude Include="Page12_ValidateFile.h" />
     <ClInclude Include="Page13_PasswordPrompt.h" />
+    <ClInclude Include="Page14_GroupSelect.h" />
     <ClInclude Include="WorkerThread.h" />
     <ClInclude Include="..\EIDMigrate\EIDMigrate.h" />
     <ClInclude Include="..\EIDMigrate\CryptoHelpers.h" />

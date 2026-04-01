@@ -324,6 +324,18 @@ BEGIN
     PUSHBUTTON      "Skip", IDC_13_SKIP, 220, 140, 50, 14
 END
 
+IDD_14_GROUP_SELECT DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Select the groups to export/import:",IDC_14_GROUPS_LABEL,10,10,253,10
+    LISTBOX         IDC_14_GROUP_LIST,10,25,253,110,LBS_MULTIPLESEL | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Selected: 0 groups",IDC_14_SELECTED_COUNT,10,140,253,10
+    LTEXT           "Leave all unselected to export/import all groups.",IDC_14_INFO_TEXT,10,155,253,20
+    PUSHBUTTON      "Select All",IDC_14_SELECT_ALL,10,180,80,14
+    PUSHBUTTON      "Clear All",IDC_14_CLEAR_ALL,100,180,80,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -343,6 +355,7 @@ BEGIN
     IDS_TITLE_IMPORT_COMPLETE "Import Complete"
     IDS_TITLE_LIST          "View Credentials"
     IDS_TITLE_VALIDATE      "Validate Export File"
+    IDS_TITLE_GROUP_SELECT  "Select Groups"
 END
 
 STRINGTABLE

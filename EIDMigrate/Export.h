@@ -35,6 +35,7 @@ struct EXPORT_OPTIONS
 {
     BOOL fValidateCerts;
     BOOL fIncludeGroups;
+    std::vector<std::wstring> SelectedGroups;  // Specific groups to export (empty = all)
     std::wstring wsSourceMachine;
 
     EXPORT_OPTIONS() :

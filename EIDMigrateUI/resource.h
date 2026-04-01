@@ -20,6 +20,7 @@
 #define IDD_12_VALIDATE_FILE            111
 #define IDD_PROGRESS                    112
 #define IDD_13_PASSWORD_PROMPT          113
+#define IDD_14_GROUP_SELECT             114
 
 // Control IDs - Welcome Page
 #define IDC_01_EXPORT                   1001
@@ -140,6 +141,14 @@
 #define IDC_13_SKIP                     13005
 #define IDC_13_INFO_TEXT                13006
 
+// Control IDs - Group Select Page
+#define IDC_14_GROUP_LIST               14001
+#define IDC_14_SELECT_ALL               14002
+#define IDC_14_CLEAR_ALL                14003
+#define IDC_14_GROUPS_LABEL             14004
+#define IDC_14_INFO_TEXT                14005
+#define IDC_14_SELECTED_COUNT           14006
+
 // Common controls
 #define IDC_STATIC                      -1
 
@@ -155,6 +164,7 @@
 #define IDS_TITLE_IMPORT_COMPLETE       9
 #define IDS_TITLE_LIST                  10
 #define IDS_TITLE_VALIDATE              11
+#define IDS_TITLE_GROUP_SELECT          12
 
 #define IDS_EID_NOT_AVAILABLE           50
 #define IDS_REQUIRE_ADMIN               51

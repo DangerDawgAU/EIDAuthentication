@@ -14,12 +14,161 @@ All Windows application icons should be provided as `.ico` files containing mult
 Recommended: Use 32-bit PNG-compressed format for 256x256, standard BMP for smaller sizes.
 
 ### Credential Provider Tile Image (.bmp file)
-**Special format requirement:** The credential provider tile image must be a **48x48 pixel 32-bit BMP** file.
-- Format: Windows BMP (BITMAPFILEHEADER with BITMAPINFOHEADER)
-- Bit depth: 32-bit (BGRA with alpha channel)
-- Size: Exactly 48x48 pixels
-- Background: Should have transparent or neutral background
-- Note: PNG files must be converted to BMP for use in credential providers
+**CRITICAL: Special format requirement for Windows Credential Provider!**
+
+The credential provider tile image requires a specific BMP format that Windows expects for logon screen display. Many image editors create incompatible BMPs.
+
+**Technical Specifications:**
+
+| Property | Required Value | Notes |
+|----------|----------------|-------|
+| Dimensions | **128x128 pixels** | Scaled by Windows as needed |
+| Bit depth | **32-bit BGRA** | Full color with alpha channel |
+| Compression | **BI_BITFIELDS (3)** | CRITICAL - not BI_RGB! |
+| Color masks | **Present (12 bytes)** | Required after BITMAPINFOHEADER |
+| Resolution | 2834 x 2834 px/m (72 DPI) | Standard DPI |
+| File size | ~65 KB (65592 bytes typical) | Header + pixel data |
+
+**BMP Header Structure:**
+```
+Offset  Size  Field                Value
+------  ----  -----               -----
+0x00    2     Magic               "BM"
+0x02    4     File size           0x000138 (65592 bytes)
+0x0A    4     Pixel data offset   0x36 (54 bytes)
+0x0E    4     Header size         40 (BITMAPINFOHEADER)
+0x12    4     Width               128
+0x16    4     Height              128
+0x1A    2     Planes              1
+0x1C    2     Bits per pixel      32
+0x1E    4     Compression         3 (BI_BITFIELDS) ← CRITICAL
+0x22    4     Image size          65538 bytes
+0x26    4     X pixels per meter  2834 (72 DPI)
+0x2A    4     Y pixels per meter  2834 (72 DPI)
+0x36    12    Color masks         (see below) ← CRITICAL
+```
+
+**Color Mask Table (at offset 0x36):**
+```
+Mask        Value          Meaning
+----------  -------------  ---------------------------
+Red         0x00FF0000     Red channel (bits 16-23)
+Green       0x0000FF00     Green channel (bits 8-15)
+Blue        0x000000FF     Blue channel (bits 0-7)
+Alpha       0xFF000000     Alpha channel (bits 24-31)
+```
+
+**Why BI_BITFIELDS is required:**
+Windows Credential Providers expect 32-bit BMPs to explicitly define the RGBA bit positions using BI_BITFIELDS compression. Without the color mask table, Windows cannot interpret the pixel format correctly, resulting in a blank/missing tile image on the logon screen.
+
+**Creating a Compatible BMP:**
+
+1. **Use the reference file:** Copy `EIDCredentialProvider\SmartcardCredentialProvider.bmp` as a template
+2. **Modify pixel data only:** Do not change header structure
+3. **Avoid modern image editors:** Many tools (Photoshop, GIMP) save BMPs without BI_BITFIELDS
+4. **Test before deploying:** The bitmap must render correctly on logon screen
+
+**If you need to create a new tile image:**
+- Start with the existing working BMP as a template
+- Use a hex editor or BMP tool that preserves BI_BITFIELDS
+- Or use Python with PIL/Pillow ensuring compression=3 and explicit masks
+
+```python
+# Example: Create compatible BMP with Pillow
+from PIL import Image
+import struct
+
+# Load your design (PNG source)
+img = Image.open("your_design.png").convert("RGBA")
+
+# Save as BMP - NOTE: Pillow may not set BI_BITFIELDS correctly
+# You may need to post-process the file to add the color masks
+img.save("cred_tile_image.bmp", format="BMP")
+
+# Then use a hex editor or script to:
+# 1. Set compression field at 0x1E to 0x03 00 00 00
+# 2. Insert color masks at 0x36
+```
+
+**Current status:** Working BMP exists in repo (restored from original)
+
+---
+
+## Transparency and Rounded Corners
+
+The credential provider tile image supports **alpha channel transparency** (32-bit BGRA format). This allows for:
+
+1. **Transparent backgrounds** - Black/dark corners can be made fully transparent
+2. **Rounded corners** - Anti-aliased rounded corners with smooth transparency gradients
+
+### Available Scripts
+
+Four PowerShell scripts are provided in the `icons/` directory for image processing:
+
+#### 1. `RoundedTransparent.ps1` (Recommended)
+Creates smooth anti-aliased rounded corners with transparency.
+
+```powershell
+cd icons
+.\RoundedTransparent.ps1 -OutputSize 512 -CornerRadius 64
+```
+
+**Parameters:**
+- `-SourceFile` - Input BMP (default: `cred_tile_image.bmp`)
+- `-OutputFile` - Output BMP (default: `cred_tile_image_rounded_transparent.bmp`)
+- `-OutputSize` - Size in pixels (default: 512)
+- `-CornerRadius` - Corner radius in pixels (default: 64)
+
+**Output:** `cred_tile_image_rounded_transparent.bmp` - 512x512 with BI_BITFIELDS format
+
+#### 2. `ConvertBmpToIco.ps1`
+Converts BMP to multi-resolution ICO file for DisplayIcon in installed programs.
+
+```powershell
+cd icons
+.\ConvertBmpToIco.ps1 -SourceBmp "cred_tile_image_rounded_transparent.bmp" -OutputIco "cred_provider.ico"
+```
+
+**Parameters:**
+- `-SourceBmp` - Input BMP file (default: `cred_tile_image_rounded_transparent.bmp`)
+- `-OutputIco` - Output ICO file (default: `cred_provider.ico`)
+
+**Output:** Multi-resolution ICO with 16x16, 32x32, 48x48, and 256x256 sizes
+
+**Use:** Regenerate `cred_provider.ico` when updating the credential provider tile image
+
+### Windows Version Compatibility
+
+| Windows Version | Transparency Support |
+|-----------------|---------------------|
+| Windows 10/11 | **Full support** - corners are properly transparent |
+| Windows 7/8 | **Limited** - may show transparent areas as black/white |
+
+### Current Tile Image Files
+
+| File | Size | Description |
+|------|------|-------------|
+| `cred_tile_image.bmp` | 512x512 | Original source image |
+| `cred_tile_image_rounded_transparent.bmp` | 512x512 | **Active** - Rounded corners with transparency |
+| `cred_provider.ico` | Multi-size (16/32/48/256) | **Installed Programs** Display Icon |
+
+### Applying Transparency to Your Design
+
+1. **Start with your source image** at any size (PNG, BMP, etc.)
+2. **Run the rounded corners script:**
+   ```powershell
+   cd icons
+   .\RoundedTransparent.ps1 -SourceFile "your_source.bmp" -OutputSize 512 -CornerRadius 64
+   ```
+3. **Copy to credential provider:**
+   ```powershell
+   copy cred_tile_image_rounded_transparent.bmp ..\EIDCredentialProvider\SmartcardCredentialProvider.bmp
+   ```
+4. **Rebuild:**
+   ```powershell
+   cd ..
+   .\build.ps1
+   ```
 
 ---
 
@@ -87,12 +236,24 @@ These icons appear on the Windows logon/lock screen.
 - **Used by:** `EIDCredentialProvider.dll`
 - **Resource ID:** `IDB_TILE_IMAGE` (101)
 - **Current file:** `EIDCredentialProvider\SmartcardCredentialProvider.bmp`
-- **Size:** 48x48 pixels (standard tile image size)
+- **Active source:** `icons/cred_tile_image_rounded_transparent.bmp` (512x512 with rounded corners)
+- **Size:** 512x512 pixels (scaled by Windows as needed for logon screen display)
 - **Description:** The icon displayed next to the EID Authentication credential tile on the Windows logon screen, lock screen, and UAC prompts
 - **Design suggestion:** Smart card icon with user silhouette or badge - should be immediately recognizable as a smart card login method
-- **Current status:** Uses existing `SmartcardCredentialProvider.bmp` (from Windows sample)
 - **Important:** This is the PRIMARY user-facing icon - users see this every time they log in!
-- **Format note:** Must be a 32-bit BMP for Windows credential provider compatibility. PNG must be converted.
+- **CRITICAL:** See "Credential Provider Tile Image (.bmp file)" section above for exact format requirements
+- **Format note:** Must be a 32-bit BMP with BI_BITFIELDS compression. Standard PNG/BMP conversions will NOT work - the tile will appear blank on logon screen.
+- **Transparency:** Supports alpha channel - use `RoundedTransparent.ps1` to add rounded corners with transparency
+
+### 8. Installed Programs Display Icon
+- **Filename:** `cred_provider.ico`
+- **Used by:** Windows "Installed Programs" list (Apps & Features in Settings)
+- **Registry:** `HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication\DisplayIcon`
+- **Source:** Generated from `cred_tile_image_rounded_transparent.bmp` via `ConvertBmpToIco.ps1`
+- **Sizes:** 16x16, 32x32, 48x48, 256x256 (multi-resolution ICO)
+- **Description:** Icon displayed next to "EID Authentication" entry in Windows installed programs list, Add/Remove Programs, and uninstaller
+- **Current status:** Implemented (matches credential provider tile branding)
+- **Note:** Created by running `.\icons\ConvertBmpToIco.ps1` - regenerates ICO from current BMP source
 
 ---
 
@@ -100,7 +261,7 @@ These icons appear on the Windows logon/lock screen.
 
 These icons are displayed within the application UI dialogs.
 
-### 8. Shield Icon (UAC/Security)
+### 9. Shield Icon (UAC/Security)
 - **Filename:** `ui_shield.ico`
 - **Used in:**
   - EIDConfigurationWizard pages (IDC_06SHIELD, IDC_07SHIELD)
@@ -114,7 +275,7 @@ These icons are displayed within the application UI dialogs.
 
 ## Branding Icons
 
-### 9. EID Authentication Brand Icon
+### 10. EID Authentication Brand Icon
 - **Filename:** `brand_main.ico`
 - **Used by:**
   - Start Menu folder icon
@@ -150,7 +311,9 @@ The `build.ps1` script **automatically copies icons** from the `icons/` folder t
 
 | Source File (in icons/) | Destination | Project |
 |------------------------|-------------|---------|
-| `cred_tile_image.bmp` | `EIDCredentialProvider\SmartcardCredentialProvider.bmp` | Credential Provider |
+| `cred_tile_image_rounded_transparent.bmp` | `EIDCredentialProvider\SmartcardCredentialProvider.bmp` | Credential Provider (✓ active) |
+| `cred_tile_image.bmp` | `EIDCredentialProvider\SmartcardCredentialProvider.bmp` | Credential Provider (original source) |
+| `cred_provider.ico` | `Installer\cred_provider.ico` | Installed Programs Display Icon |
 | `app_configuration_wizard.ico` | `EIDConfigurationWizard\app.ico` | Config Wizard |
 | `app_log_manager.ico` | `EIDLogManager\EIDLogManager.ico` | Log Manager |
 | `app_migrate_cli.ico` | `EIDMigrate\app.ico` | Migrate CLI |
@@ -252,6 +415,7 @@ To add an icon to a Visual C++ project:
 - **Color Scheme:** Professional blue (#0078D4 Windows blue) as primary
 - **Style:** Flat, modern Windows 11 style
 - **Background:** Transparent for all sizes except 256x256 (can use PNG transparency)
+- **Corners:** Use rounded corners with transparency for tile images - see `RoundedTransparent.ps1`
 - **Contrast:** Ensure visibility at 16x16 scale
 - **Consistency:** All app icons should share visual elements (color, shape language)
 

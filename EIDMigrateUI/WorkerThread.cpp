@@ -82,6 +82,11 @@ DWORD WINAPI ExportWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LP
     options.fIncludeGroups = fIncludeGroups;
     options.wsSourceMachine = GetComputerName();
 
+    // Add selected groups if provided
+    if (pContext->pSelectedGroups) {
+        options.SelectedGroups = *pContext->pSelectedGroups;
+    }
+
     SendProgress(hwnd, uProgressMsg, 40, 100, L"Encrypting and writing export file...");
 
     // Create secure password wrapper
@@ -131,6 +136,11 @@ DWORD WINAPI ImportWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LP
     options.fForce = FALSE;  // Never force overwrite
     options.fCreateUsers = fCreateUsers;
     options.fContinueOnError = fContinueOnError;
+
+    // Add selected groups if provided
+    if (pContext->pSelectedGroups) {
+        options.SelectedGroups = *pContext->pSelectedGroups;
+    }
 
     // Add user passwords from prompts if available
     if (pContext->pUserPasswords) {

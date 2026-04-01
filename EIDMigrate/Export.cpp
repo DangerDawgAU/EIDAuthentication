@@ -41,6 +41,7 @@ HRESULT CommandExport(_In_ const COMMAND_OPTIONS& options)
     opts.fValidateCerts = options.ValidateCerts;
     opts.wsSourceMachine = GetComputerName();
     opts.fIncludeGroups = TRUE;
+    opts.SelectedGroups = options.SelectedGroups;
 
     EXPORT_STATS stats;
     HRESULT hr = ExportCredentials(options.OutputFile, wsPassword, opts, stats);
@@ -83,6 +84,24 @@ HRESULT ExportCredentials(
         hr = EnumerateLocalGroups(groups);
         if (SUCCEEDED(hr))
         {
+            // Filter groups if specific selection provided
+            if (!options.SelectedGroups.empty())
+            {
+                std::vector<LocalGroupInfo> filteredGroups;
+                for (const auto& group : groups)
+                {
+                    for (const auto& wsSelected : options.SelectedGroups)
+                    {
+                        if (_wcsicmp(group.wsName.c_str(), wsSelected.c_str()) == 0)
+                        {
+                            filteredGroups.push_back(group);
+                            break;
+                        }
+                    }
+                }
+                groups = filteredGroups;
+                EIDM_TRACE_INFO(L"Filtered to %u selected groups", static_cast<DWORD>(groups.size()));
+            }
             stats.dwGroupsExported = static_cast<DWORD>(groups.size());
         }
         else

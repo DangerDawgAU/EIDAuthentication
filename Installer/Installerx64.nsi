@@ -2,6 +2,7 @@
 ;Include Modern UI
 
   !include "MUI2.nsh"
+  !include "nsDialogs.nsh"
   !include "X64.nsh"
   !include "WinVer.nsh"
   !include "FileFunc.nsh"
@@ -37,10 +38,13 @@
   !insertmacro MUI_PAGE_LICENSE "License.txt"
   !insertmacro MUI_PAGE_COMPONENTS
   !insertmacro MUI_PAGE_INSTFILES
+  !insertmacro MUI_PAGE_FINISH
+
+  ; Custom uninstall page for certificate/cleanup options
+  UninstPage custom un.ShowUninstallOptions un.LeaveUninstallOptions
 
   !insertmacro MUI_UNPAGE_CONFIRM
   !insertmacro MUI_UNPAGE_INSTFILES
-  !insertmacro MUI_PAGE_FINISH
   !insertmacro MUI_UNPAGE_FINISH
 ;--------------------------------
 ;Languages
@@ -52,6 +56,12 @@
 ;Variables for size calculation
 
   Var /GLOBAL InstallSize
+
+;--------------------------------
+;Uninstaller Variables
+
+  Var /GLOBAL Uninstall_RemoveMappings
+  Var /GLOBAL Uninstall_RemoveCertificates
 
 ;--------------------------------
 ;Installer Sections
@@ -99,6 +109,9 @@ Section "Core" SecCore
   Push "$INSTDIR\EIDMigrateUI.exe"
   Call AddFileSize
 
+  ; Install icon for DisplayIcon (installed programs list)
+  FILE "cred_provider.ico"
+
   ; Copy DLLs to System32 (required for LSA and Credential Provider)
   ${DisableX64FSRedirection}
   ; Use /REBOOTOK to handle locked files (LSA loads DLLs at boot only)
@@ -133,6 +146,7 @@ Section "Core" SecCore
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "UninstallString" "$INSTDIR\EIDUninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "InstallLocation" "$INSTDIR"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "Publisher" "EID Authentication"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "DisplayIcon" "$INSTDIR\cred_provider.ico"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "NoRepair" 1
 
@@ -172,65 +186,58 @@ SectionEnd
 ;--------------------------------
 ;Helper Functions for Certificate Cleanup
 
+Function un.ShowUninstallOptions
+  ; Create custom page with checkboxes for uninstall options
+  nsDialogs::Create /NOUNLOAD 1018
+  Pop $0
+
+  ${NSD_CreateLabel} 0 0 100% 40u "Select additional cleanup options:"
+
+  ; Checkbox for removing EID certificate mappings from users (LSA credentials)
+  ${NSD_CreateCheckbox} 10u 50u 100% 12u "Remove EID certificate mappings from users"
+  Pop $Uninstall_RemoveMappings
+  ${NSD_Check} $Uninstall_RemoveMappings
+
+  ; Checkbox for removing EID root certificates
+  ${NSD_CreateCheckbox} 10u 70u 100% 12u "Remove EID Root Certificate Authority and user certificates (only those with 'EID:' prefix)"
+  Pop $Uninstall_RemoveCertificates
+  ${NSD_Check} $Uninstall_RemoveCertificates
+
+  nsDialogs::Show
+FunctionEnd
+
+Function un.LeaveUninstallOptions
+  ; Get the state of checkboxes when leaving the page
+  ${NSD_GetState} $Uninstall_RemoveMappings $Uninstall_RemoveMappings
+  ${NSD_GetState} $Uninstall_RemoveCertificates $Uninstall_RemoveCertificates
+FunctionEnd
+
 Function un.RemoveEIDCertificates
   ; This function removes certificates created by EID Authentication
-  ; We use certutil.exe which is built into Windows
+  ; Checks for "EID:" prefix in certificate subject names
 
-  DetailPrint "Removing EID Authentication certificates..."
+  DetailPrint "Removing EID certificates (those with 'EID:' prefix)..."
 
-  ; Remove from LocalMachine\Root (self-signed root certificates)
-  ; certutil syntax: certutil -delstore <store> <thumbprint>
-
-  ; Get list of certificates matching our patterns and delete them
-  ; We'll use a batch approach via cmd.exe
-
-  ; Create a temporary batch file with .bat extension to avoid "how to open" popup
-  GetTempFileName $0 "$TEMP"
-  ; Replace .tmp with .bat extension
-  StrCpy $1 "$0.bat"
-  Delete "$0"
-  FileOpen $1 $1 "w"
-  FileWrite $1 "@echo off$\r$\n"
-  FileWrite $1 "setlocal enabledelayedexpansion$\r$\n"
-  FileWrite $1 "echo Removing EID Authentication certificates...$\r$\n"
-  FileWrite $1 "$\r$\n"
-
-  ; Remove from Root store
-  FileWrite $1 "echo Checking Root store...$\r$\n"
-  FileWrite $1 "for /f $\"tokens=* delims=$\" %%a in ('certutil -store Root 2^>nul ^| findstr /i $\"EID Authentication My Smart Logon$\"') do ($\r$\n"
-  FileWrite $1 "  for /f $\"tokens=1$\" %%b in ($\"%%a$\") do ($\r$\n"
-  FileWrite $1 "    certutil -delstore Root %%b ^>nul 2^>^&1 && echo   Removed: %%b$\r$\n"
-  FileWrite $1 "  )$\r$\n"
-  FileWrite $1 ")$\r$\n"
-  FileWrite $1 "$\r$\n"
-
-  ; Remove from MY store (LocalMachine)
-  FileWrite $1 "echo Checking MY store...$\r$\n"
-  FileWrite $1 "for /f $\"tokens=* delims=$\" %%a in ('certutil -store My 2^>nul ^| findstr /i $\"EID Authentication My Smart Logon$\"') do ($\r$\n"
-  FileWrite $1 "  for /f $\"tokens=1$\" %%b in ($\"%%a$\") do ($\r$\n"
-  FileWrite $1 "    certutil -delstore My %%b ^>nul 2^>^&1 && echo   Removed: %%b$\r$\n"
-  FileWrite $1 "  )$\r$\n"
-  FileWrite $1 ")$\r$\n"
-  FileWrite $1 "$\r$\n"
-
-  ; Remove from TrustedPeople store
-  FileWrite $1 "echo Checking TrustedPeople store...$\r$\n"
-  FileWrite $1 "for /f $\"tokens=* delims=$\" %%a in ('certutil -store TrustedPeople 2^>nul ^| findstr /i $\"EID Authentication My Smart Logon$\"') do ($\r$\n"
-  FileWrite $1 "  for /f $\"tokens=1$\" %%b in ($\"%%a$\") do ($\r$\n"
-  FileWrite $1 "    certutil -delstore TrustedPeople %%b ^>nul 2^>^&1 && echo   Removed: %%b$\r$\n"
-  FileWrite $1 "  )$\r$\n"
-  FileWrite $1 ")$\r$\n"
-  FileWrite $1 "$\r$\n"
-
-  FileWrite $1 "echo Certificate cleanup complete.$\r$\n"
-  FileWrite $1 "endlocal$\r$\n"
-  FileClose $1
-
-  ; Execute the batch file - use ExecWait for synchronous execution
-  ExecWait '"cmd.exe" /c "$1"' $2
-
-  ; Delete the temporary file
-  Delete $1
+  ; Use PowerShell inline command to avoid NSIS escaping issues
+  ; Single quotes in PowerShell preserve literal strings
+  nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ' \
+    '$ErrorActionPreference="SilentlyContinue"; ' \
+    '$count=0; ' \
+    '$stores=@(@("My","CurrentUser"),@("TrustedPeople","CurrentUser"),@("Root","CurrentUser"),@("Root","LocalMachine")); ' \
+    'foreach($s in $stores) { ' \
+    '  $store=New-Object System.Security.Cryptography.X509Certificates.X509Store($s[0],$s[1]); ' \
+    '  $store.Open("ReadWrite"); ' \
+    '  foreach($c in $store.Certificates) { ' \
+    '    if($c.Subject -like "*EID:*") { ' \
+    '      Write-Host ("Removing: " + $c.Subject + " - " + $c.Thumbprint); ' \
+    '      $store.Remove($c); ' \
+    '      $count++; ' \
+    '    } ' \
+    '  } ' \
+    '  $store.Close(); ' \
+    '}; ' \
+    'Write-Host ("Total EID certificates removed: $count")' \
+    ''
 
 FunctionEnd
 
@@ -249,18 +256,27 @@ Section "Uninstall"
 
   ${EnableX64FSRedirection}
 
-  ; Remove certificates created by the software
-  Call un.RemoveEIDCertificates
-
-  ; Remove EID credential mappings from LSA Private Data
-  ; This requires calling into the DLL since NSIS cannot directly manipulate LSA
-  DetailPrint "Removing EID credential mappings from LSA..."
-  ${DisableX64FSRedirection}
-  ExecWait 'rundll32.exe "$SYSDIR\EIDAuthenticationPackage.dll",CleanupLsaCredentials' $1
-  ${If} $1 != 0
-    DetailPrint "Note: LSA cleanup returned code $1 (may be expected if not installed)"
+  ; Conditionally remove certificates created by the software (if checkbox was selected)
+  ${If} $Uninstall_RemoveCertificates = 1
+    DetailPrint "Removing EID Root Certificates..."
+    Call un.RemoveEIDCertificates
+  ${Else}
+    DetailPrint "Skipping certificate removal (not selected)"
   ${EndIf}
-  ${EnableX64FSRedirection}
+
+  ; Conditionally remove EID credential mappings from LSA Private Data (if checkbox was selected)
+  ${If} $Uninstall_RemoveMappings = 1
+    ; This requires calling into the DLL since NSIS cannot directly manipulate LSA
+    DetailPrint "Removing EID credential mappings from LSA..."
+    ${DisableX64FSRedirection}
+    ExecWait 'rundll32.exe "$SYSDIR\EIDAuthenticationPackage.dll",CleanupLsaCredentials' $1
+    ${If} $1 != 0
+      DetailPrint "Note: LSA cleanup returned code $1 (may be expected if not installed)"
+    ${EndIf}
+    ${EnableX64FSRedirection}
+  ${Else}
+    DetailPrint "Skipping LSA credential mapping removal (not selected)"
+  ${EndIf}
 
   ; Delete Start Menu shortcuts and folder
   Delete "$SMPROGRAMS\EID Authentication\Configuration Wizard.lnk"
@@ -295,6 +311,7 @@ Section "Uninstall"
   Delete "$INSTDIR\EIDLogManager.exe"
   Delete "$INSTDIR\EIDMigrate.exe"
   Delete "$INSTDIR\EIDMigrateUI.exe"
+  Delete "$INSTDIR\cred_provider.ico"
 
   ; Delete uninstaller
   Delete "$INSTDIR\EIDUninstall.exe"

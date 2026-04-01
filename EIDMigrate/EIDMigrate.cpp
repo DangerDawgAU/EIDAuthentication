@@ -37,6 +37,7 @@ void ShowUsage()
     fwprintf(stderr, L"Export Options:\n");
     fwprintf(stderr, L"  -o, -output <path>       Output file path (.eidm)\n");
     fwprintf(stderr, L"  -p, -password <pass>     Encryption passphrase (prompt if omitted)\n");
+    fwprintf(stderr, L"  -groups <g1,g2,...>      Specific groups to export (comma-separated)\n");
     fwprintf(stderr, L"  -validate                Validate certificates during export\n");
     fwprintf(stderr, L"  -v, -verbose             Verbose output (use -vv for more)\n");
     fwprintf(stderr, L"  -log <path>              Log file path\n");
@@ -44,6 +45,7 @@ void ShowUsage()
     fwprintf(stderr, L"Import Options:\n");
     fwprintf(stderr, L"  -i, -input <path>        Input file path (.eidm)\n");
     fwprintf(stderr, L"  -p, -password <pass>     Decryption passphrase (prompt if omitted)\n");
+    fwprintf(stderr, L"  -groups <g1,g2,...>      Specific groups to import (comma-separated)\n");
     fwprintf(stderr, L"  -dry-run                 Simulate import without changes\n");
     fwprintf(stderr, L"  -force                   Perform actual import (use with caution)\n");
     fwprintf(stderr, L"  -create-users            Create missing user accounts\n");
@@ -206,6 +208,26 @@ BOOL ParseCommandLine(_In_ int argc, _In_ PWSTR argv[], _Out_ COMMAND_OPTIONS& o
         else if (wsArg == L"-continue-on-error")
         {
             options.ContinueOnError = TRUE;
+        }
+        else if (wsArg == L"-groups")
+        {
+            if (i + 1 >= argc)
+            {
+                fwprintf(stderr, L"Error: %ls requires a group list argument\n", wsArg.c_str());
+                return FALSE;
+            }
+            // Parse comma-separated group list
+            std::wstring wsGroupList = argv[++i];
+            size_t pos = 0;
+            while ((pos = wsGroupList.find(L',')) != std::wstring::npos)
+            {
+                std::wstring wsGroup = wsGroupList.substr(0, pos);
+                if (!wsGroup.empty())
+                    options.SelectedGroups.push_back(wsGroup);
+                wsGroupList.erase(0, pos + 1);
+            }
+            if (!wsGroupList.empty())
+                options.SelectedGroups.push_back(wsGroupList);
         }
         else if (wsArg == L"-local")
         {

@@ -3,12 +3,14 @@
 
 #include "EIDMigrateUI.h"
 #include "WorkerThread.h"
+#include "Page14_GroupSelect.h"
 #include "../EIDMigrate/EIDMigrate.h"
 
 // Global application state
 WIZARD_DATA g_wizardData;
 HINSTANCE g_hinst = nullptr;
 HWND g_hwndWizard = nullptr;
+WizardFlow g_currentFlow = FLOW_NONE;  // Tracks current wizard flow (export/import)
 
 // Provide minimal APP_STATE for AuditLogging module
 APP_STATE g_AppState;
@@ -147,61 +149,73 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     psp.pfnDlgProc = WndProc_02_ExportSelect;
     ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
 
-    // Page 03: Export Confirm
+    // Page 03: Export Groups (NEW)
+    psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_GROUP_SELECT);
+    psp.pszTemplate = MAKEINTRESOURCE(IDD_14_GROUP_SELECT);
+    psp.pfnDlgProc = WndProc_14_GroupSelect;
+    ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
+
+    // Page 04: Export Confirm
     psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_EXPORT_CONFIRM);
     psp.pszTemplate = MAKEINTRESOURCE(IDD_03_EXPORT_CONFIRM);
     psp.pfnDlgProc = WndProc_03_ExportConfirm;
     ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
 
-    // Page 04: Export Progress
+    // Page 05: Export Progress
     psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_EXPORT_SELECT);
     psp.pszTemplate = MAKEINTRESOURCE(IDD_04_EXPORT_PROGRESS);
     psp.pfnDlgProc = WndProc_04_ExportProgress;
     ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
 
-    // Page 05: Export Complete
+    // Page 06: Export Complete
     psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_EXPORT_COMPLETE);
     psp.pszTemplate = MAKEINTRESOURCE(IDD_05_EXPORT_COMPLETE);
     psp.pfnDlgProc = WndProc_05_ExportComplete;
     ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
 
-    // Page 06: Import Select
+    // Page 07: Import Select
     psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_IMPORT_SELECT);
     psp.pszTemplate = MAKEINTRESOURCE(IDD_06_IMPORT_SELECT);
     psp.pfnDlgProc = WndProc_06_ImportSelect;
     ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
 
-    // Page 07: Import Options
+    // Page 08: Import Options
     psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_IMPORT_OPTIONS);
     psp.pszTemplate = MAKEINTRESOURCE(IDD_07_IMPORT_OPTIONS);
     psp.pfnDlgProc = WndProc_07_ImportOptions;
     ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
 
-    // Page 08: Import Preview
+    // Page 09: Import Groups (NEW)
+    psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_GROUP_SELECT);
+    psp.pszTemplate = MAKEINTRESOURCE(IDD_14_GROUP_SELECT);
+    psp.pfnDlgProc = WndProc_14_GroupSelect;
+    ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
+
+    // Page 10: Import Preview
     psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_IMPORT_PREVIEW);
     psp.pszTemplate = MAKEINTRESOURCE(IDD_08_IMPORT_PREVIEW);
     psp.pfnDlgProc = WndProc_08_ImportPreview;
     ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
 
-    // Page 09: Import Progress
+    // Page 11: Import Progress
     psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_IMPORT_PREVIEW);
     psp.pszTemplate = MAKEINTRESOURCE(IDD_09_IMPORT_PROGRESS);
     psp.pfnDlgProc = WndProc_09_ImportProgress;
     ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
 
-    // Page 10: Import Complete
+    // Page 12: Import Complete
     psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_IMPORT_COMPLETE);
     psp.pszTemplate = MAKEINTRESOURCE(IDD_10_IMPORT_COMPLETE);
     psp.pfnDlgProc = WndProc_10_ImportComplete;
     ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
 
-    // Page 11: List Credentials
+    // Page 13: List Credentials
     psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_LIST);
     psp.pszTemplate = MAKEINTRESOURCE(IDD_11_LIST_CREDENTIALS);
     psp.pfnDlgProc = WndProc_11_ListCredentials;
     ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
 
-    // Page 12: Validate File
+    // Page 14: Validate File
     psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_VALIDATE);
     psp.pszTemplate = MAKEINTRESOURCE(IDD_12_VALIDATE_FILE);
     psp.pfnDlgProc = WndProc_12_ValidateFile;

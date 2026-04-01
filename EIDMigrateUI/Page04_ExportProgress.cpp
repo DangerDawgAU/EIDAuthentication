@@ -40,6 +40,7 @@ INT_PTR CALLBACK WndProc_04_ExportProgress(HWND hwndDlg, UINT uMsg, WPARAM wPara
                 s_workerContext.pwszPassword = &g_wizardData.wsPassword;
                 s_workerContext.pfValidateCerts = &g_wizardData.fValidateCerts;
                 s_workerContext.pfIncludeGroups = &g_wizardData.fIncludeGroups;
+                s_workerContext.pSelectedGroups = &g_wizardData.SelectedGroups;
 
                 DWORD dwThreadId;
                 s_hWorkerThread = CreateThread(nullptr, 0, ExportWorker,

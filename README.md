@@ -235,10 +235,23 @@ Windows Password Filter API implementation:
 
 **Supported:** Aventura MyEID 4.5 cards via Aventura Minidriver
 
+**Other Compatible Cards:**
+- YubiKey (requires YubiKey Smart Card Minidriver to be installed)
+- PIVKey cards via PIVKey Minidriver
+- Gemalto/eGem 4B cards
+- Any PIV-compliant card with a Windows minidriver
+
 **Minidriver Integration:**
 - Uses `SCardGetCardTypeProviderName()` to locate minidriver DLL
 - Dynamically loads via `CardAcquireContext` (Card Module API)
 - All crypto operations performed on-card (private keys never leave card)
+
+**Important Notes for YubiKey Users:**
+- **YubiKey Smart Card Minidriver must be installed** before using the Configuration Wizard
+- Download from: https://www.yubico.com/support/download/yubikey-minidriver/
+- The YubiKey minidriver has known limitations with on-card key generation. If you encounter "smart card is read only" errors during certificate creation:
+  - Generate keys/certificates externally using YubiKey Manager (`ykman`)
+  - Then use the "Existing Certificate" option in the Configuration Wizard
 
 ---
 

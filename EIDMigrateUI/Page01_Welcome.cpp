@@ -83,6 +83,7 @@ INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
         case IDC_01_EXPORT:
         {
             g_wizardData.selectedFlow = FLOW_EXPORT;
+            g_currentFlow = FLOW_EXPORT;
             // Navigate to Export Select page (page index 1)
             HWND hwndParent = GetParent(hwndDlg);
             if (hwndParent) {
@@ -94,10 +95,11 @@ INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
         case IDC_01_IMPORT:
         {
             g_wizardData.selectedFlow = FLOW_IMPORT;
-            // Navigate to Import Select page (page index 5)
+            g_currentFlow = FLOW_IMPORT;
+            // Navigate to Import Select page (page index 6)
             HWND hwndParent = GetParent(hwndDlg);
             if (hwndParent) {
-                PropSheet_SetCurSel(hwndParent, nullptr, 5);
+                PropSheet_SetCurSel(hwndParent, nullptr, 6);
             }
             return TRUE;
         }
@@ -105,10 +107,10 @@ INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
         case IDC_01_LIST:
         {
             g_wizardData.selectedFlow = FLOW_LIST;
-            // Navigate to List page (page index 10)
+            // Navigate to List page (page index 12)
             HWND hwndParent = GetParent(hwndDlg);
             if (hwndParent) {
-                PropSheet_SetCurSel(hwndParent, nullptr, 10);
+                PropSheet_SetCurSel(hwndParent, nullptr, 12);
             }
             return TRUE;
         }
@@ -116,10 +118,10 @@ INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
         case IDC_01_VALIDATE:
         {
             g_wizardData.selectedFlow = FLOW_VALIDATE;
-            // Navigate to Validate page (page index 11)
+            // Navigate to Validate page (page index 13)
             HWND hwndParent = GetParent(hwndDlg);
             if (hwndParent) {
-                PropSheet_SetCurSel(hwndParent, nullptr, 11);
+                PropSheet_SetCurSel(hwndParent, nullptr, 13);
             }
             return TRUE;
         }

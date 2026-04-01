@@ -1,6 +1,6 @@
 # EIDMigrate - Complete Debugging Session and Solution
 
-**Latest Update:** 2026-03-30 - Session 10: Icon Integration
+**Latest Update:** 2026-04-01 - Session 13: Uninstaller Certificate Cleanup Options
 **Original Sessions:**
 - 2026-03-24 2:00 PM - 5:00 PM (Session 1 - IPC Investigation)
 - 2026-03-24 5:20 PM - 6:00 PM (Session 2 - Crash Fix)
@@ -11,7 +11,10 @@
 - 2026-03-26 (Session 7 - UI Polish and Bug Fixes)
 - 2026-03-26 (Session 8 - EIDLogManager GUI Formatting)
 - 2026-03-30 (Session 10 - Icon Integration)
-**Total Debugging Time:** ~18-20 hours across 10 sessions
+- 2026-03-31 (Session 11 - Credential Provider Tile Icon Fix)
+- 2026-03-31 (Session 12 - Higher Resolution Tile Image)
+- 2026-04-01 (Session 13 - Uninstaller Certificate Cleanup Options)
+**Total Debugging Time:** ~20-22 hours across 13 sessions
 
 **Status:** ✅ FULLY RESOLVED - All credential operations working including export/import/validate/UTC dates
 
@@ -8406,4 +8409,458 @@ After build, verify icons in:
 
 ---
 
-*Document Updated: 2026-03-30 - Session 10: Icon Integration*
+---
+
+## Session 11: Credential Provider Tile Icon Fix (2026-03-31)
+
+### Problem Description
+
+When booting to the Windows login screen, the credential provider tile appeared as a **blank square** instead of showing the tile icon. Users could still log in by clicking the blank square above their username, but there was no visual indication that the EID credential provider was available.
+
+### Root Cause
+
+The credential provider was using the deprecated `LoadBitmap()` API which has known compatibility issues with Windows 10/11 credential providers:
+
+```cpp
+// Old (broken) code in CEIDCredential.cpp and CMessageCredential.cpp
+HBITMAP hbmp = LoadBitmap(HINST_THISDLL, MAKEINTRESOURCE(IDB_TILE_IMAGE));
+```
+
+**Issues with LoadBitmap:**
+1. **Deprecated API** - Superseded by `LoadImage()` in modern Windows
+2. **No DIB Section** - Doesn't create a device-independent bitmap
+3. **Incompatible with LogonUI** - May fail silently or return incompatible bitmap format
+4. **Poor error handling** - `hr` variable was uninitialized in some code paths
+
+### Solution Implemented
+
+Replaced `LoadBitmap()` with `LoadImageW()` using `LR_CREATEDIBSECTION` flag:
+
+```cpp
+// New (fixed) code
+HBITMAP hbmp = static_cast<HBITMAP>(LoadImageW(
+    HINST_THISDLL,
+    MAKEINTRESOURCEW(IDB_TILE_IMAGE),
+    IMAGE_BITMAP,
+    0,  // Use actual width from resource
+    0,  // Use actual height from resource
+    LR_CREATEDIBSECTION | LR_DEFAULTSIZE
+));
+```
+
+### Key Improvements
+
+1. **LoadImageW instead of LoadBitmap** - Modern API with better credential provider support
+2. **LR_CREATEDIBSECTION flag** - Creates a DIB section bitmap compatible with LogonUI
+3. **Fallback mechanism** - If LoadImageW fails, tries LoadBitmap as backup
+4. **Better error logging** - Tracks g_hinst value and error codes for debugging
+5. **Initialize phbmp to nullptr** - Prevents returning garbage handles
+6. **Fixed uninitialized hr variable** - hr now initialized to E_INVALIDARG
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `EIDCredentialProvider/CEIDCredential.cpp` | Updated `GetBitmapValue()` function |
+| `EIDCredentialProvider/CMessageCredential.cpp` | Updated `GetBitmapValue()` function |
+
+### Code Changes
+
+**Before:**
+```cpp
+HRESULT CEIDCredential::GetBitmapValue(DWORD dwFieldID, HBITMAP* phbmp)
+{
+    HRESULT hr;  // UNINITIALIZED!
+    if ((SFI_TILEIMAGE == dwFieldID) && phbmp)
+    {
+        HBITMAP hbmp;
+        hbmp = LoadBitmap(HINST_THISDLL, MAKEINTRESOURCE(IDB_TILE_IMAGE));
+        if (hbmp != nullptr)
+        {
+            hr = S_OK;
+            *phbmp = hbmp;
+        }
+        else
+        {
+            hr = HRESULT_FROM_WIN32(GetLastError());
+        }
+    }
+    else
+    {
+        hr = E_INVALIDARG;
+    }
+    return hr;
+}
+```
+
+**After:**
+```cpp
+HRESULT CEIDCredential::GetBitmapValue(DWORD dwFieldID, HBITMAP* phbmp)
+{
+    HRESULT hr = E_INVALIDARG;  // INITIALIZED
+    if ((SFI_TILEIMAGE == dwFieldID) && phbmp)
+    {
+        *phbmp = nullptr;  // Initialize output
+
+        // Try LoadImageW first (modern API)
+        HBITMAP hbmp = static_cast<HBITMAP>(LoadImageW(
+            HINST_THISDLL,
+            MAKEINTRESOURCEW(IDB_TILE_IMAGE),
+            IMAGE_BITMAP,
+            0, 0,
+            LR_CREATEDIBSECTION | LR_DEFAULTSIZE
+        ));
+
+        if (hbmp != nullptr)
+        {
+            hr = S_OK;
+            *phbmp = hbmp;
+            EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"GetBitmapValue: Bitmap loaded successfully");
+        }
+        else
+        {
+            DWORD dwErr = GetLastError();
+            EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"GetBitmapValue: LoadImageW failed 0x%08x", dwErr);
+
+            // Fallback to LoadBitmap for older systems
+            hbmp = LoadBitmap(HINST_THISDLL, MAKEINTRESOURCE(IDB_TILE_IMAGE));
+            if (hbmp != nullptr)
+            {
+                hr = S_OK;
+                *phbmp = hbmp;
+                EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"GetBitmapValue: Fallback to LoadBitmap succeeded");
+            }
+            else
+            {
+                hr = HRESULT_FROM_WIN32(dwErr);
+            }
+        }
+    }
+    return hr;
+}
+```
+
+### Installation Instructions
+
+After building with `build.ps1`, follow these steps:
+
+1. **Unregister the old credential provider** (as Administrator):
+   ```powershell
+   regsvr32 /u "C:\Windows\System32\EIDCredentialProvider.dll"
+   ```
+
+2. **Reboot** (critical - credential providers require reboot)
+
+3. **Install the new version**:
+   ```powershell
+   .\Installer\EIDInstallx64.exe
+   ```
+
+4. **Reboot again** and test the login screen
+
+### Expected Result
+
+After the fix, the Windows login screen should show:
+- **EID credential provider tile** with visible icon (128x128 bitmap scaled to tile)
+- **Username displayed** below the tile
+- **Clickable tile** that expands to show PIN entry field
+
+### Technical Notes
+
+**Bitmap Resource:**
+- File: `EIDCredentialProvider\SmartcardCredentialProvider.bmp`
+- Size: 128x128 pixels
+- Format: 24-bit RGB BMP
+- Resource ID: `IDB_TILE_IMAGE` (101)
+
+**Credential Provider Tile Requirements:**
+- Windows Vista/7: 96x96 pixels
+- Windows 8/8.1: 124x124 pixels
+- Windows 10/11: 128x128 pixels (scalable)
+
+The 128x128 bitmap is automatically scaled by LogonUI to the appropriate size for each Windows version.
+
+---
+
+## Session 12: Higher Resolution Tile Image (2026-03-31)
+
+### Problem Description
+
+After fixing the tile icon display, the 128x128 bitmap appeared fuzzy/blurry on high-DPI displays. Users wanted a crisper, higher resolution image for better visual quality.
+
+### Investigation
+
+Examined the BMP format structure and discovered:
+- Original working BMP used **pixel data offset: 54 bytes** (not 66 as initially assumed)
+- No separate color mask table - the original uses **BI_RGB (0)** compression
+- Previous conversion attempts incorrectly copied 66 bytes as "header + color masks", causing pixel wrapping
+
+### Solution: GIMP + PowerShell Conversion
+
+Created a proper conversion pipeline:
+1. **Source:** `Gemini Images/TILE.bmp` (768x768, converted from PNG via GIMP)
+2. **Resize:** Using PowerShell with `System.Drawing.Bitmap` and high-quality bicubic interpolation
+3. **BMP Format:** Proper BI_RGB BMP with 54-byte header, bottom-up pixel order
+
+### Conversion Script
+
+Saved as `icons/ConvertGimpBmp.ps1`:
+```powershell
+Add-Type -AssemblyName System.Drawing
+
+# Load GIMP BMP (768x768)
+$gimpBmp = [System.Drawing.Image]::FromFile((Resolve-Path 'Gemini Images/TILE.bmp'))
+
+# Resize to target resolution (256x256 for sharper display)
+$resized = New-Object System.Drawing.Bitmap(256, 256)
+$graphics = [System.Drawing.Graphics]::FromImage($resized)
+$graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+$graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+$graphics.DrawImage($gimpBmp, 0, 0, 256, 256)
+$graphics.Dispose()
+$gimpBmp.Dispose()
+
+# Get raw pixel data
+$rect = New-Object System.Drawing.Rectangle(0, 0, 256, 256)
+$bmpData = $resized.LockBits($rect, [System.Drawing.Imaging.ImageLockMode]::ReadOnly, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+$stride = [Math]::Abs($bmpData.Stride)
+$pixels = [byte[]]::new($stride * 256)
+[System.Runtime.InteropServices.Marshal]::Copy($bmpData.Scan0, $pixels, 0, $pixels.Length)
+$resized.UnlockBits($bmpData)
+$resized.Dispose()
+
+# Create BMP with standard 54-byte header (BI_RGB, no color masks)
+$pixelDataSize = 256 * 256 * 4
+$fileSize = 54 + $pixelDataSize
+$bmp = [byte[]]::new($fileSize)
+
+# File header (14 bytes)
+$bmp[0] = 0x42; $bmp[1] = 0x4D  # "BM"
+# Set file size, pixel offset = 54
+
+# Info header (40 bytes)
+# Set width=256, height=256, bits=32, compression=0 (BI_RGB)
+
+# Copy pixel data (bottom-up format)
+$rowSize = 256 * 4
+for ($y = 0; $y -lt 256; $y++) {
+    $bmpRow = 255 - $y  # Bottom-up
+    $srcOffset = $bmpRow * $stride
+    $dstOffset = 54 + $y * $rowSize
+    # Copy row...
+}
+
+[System.IO.File]::WriteAllBytes('cred_tile_image.bmp', $bmp)
+```
+
+### Key BMP Structure Discovery
+
+**Critical finding:** The original working BMP has:
+- **Pixel data offset: 54** (header says 54, not 66)
+- **Compression: 0 (BI_RGB)** - no color mask table needed
+- **Bottom-up pixel order** (standard BMP format)
+
+Previous attempts copied 66 bytes because they saw data at offset 54 that looked like color masks, but those were actually the **first pixels of the image**.
+
+### Files Created
+
+| Resolution | File | Size |
+|------------|------|------|
+| 128x128 | `cred_tile_image_128x128.bmp` | 64 KB |
+| 256x256 | `cred_tile_image_256x256.bmp` | 262 KB ✓ **ACTIVE** |
+| 384x384 | `cred_tile_image_384x384.bmp` | 590 KB |
+| 512x512 | `cred_tile_image_512x512.bmp` | 1 MB |
+
+### Active Configuration
+
+**Currently using 256x256 resolution:**
+- File: `icons/cred_tile_image.bmp`
+- Copied to: `EIDCredentialProvider/SmartcardCredentialProvider.bmp`
+- Format: 256x256, 32-bit RGB BMP
+- File size: 262 KB
+
+### To Scale Further (After Testing)
+
+If 256x256 is still not sharp enough, try 384x384 or 512x512:
+
+```powershell
+cd C:\Users\user\Documents\EIDAuthentication\icons
+
+# Option 1: Use the pre-generated files
+cp cred_tile_image_384x384.bmp cred_tile_image.bmp
+# OR
+cp cred_tile_image_512x512.bmp cred_tile_image.bmp
+
+# Option 2: Regenerate with different size
+# Edit ConvertGimpBmp.ps1 and change $size = 256 to desired size
+
+# Copy to project
+cp cred_tile_image.bmp ../EIDCredentialProvider/SmartcardCredentialProvider.bmp
+
+# Rebuild
+cd ..
+.\build.ps1
+```
+
+### Test Results
+
+| Resolution | Visual Quality | DLL Size | Notes |
+|------------|----------------|----------|-------|
+| 128x128 | Fuzzy on high-DPI | 1.32 MB | Original |
+| 256x256 | ✓ Good | 1.52 MB | **Current** |
+| 384x384 | Better? | ~1.7 MB | Not tested |
+| 512x512 | Best | ~2.0 MB | Not tested |
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `icons/cred_tile_image.bmp` | Updated to 256x256 |
+| `icons/cred_tile_image_256x256.bmp` | Generated (reference) |
+| `icons/cred_tile_image_384x384.bmp` | Generated (for future testing) |
+| `icons/cred_tile_image_512x512.bmp` | Generated (for future testing) |
+| `EIDCredentialProvider/SmartcardCredentialProvider.bmp` | Updated to 256x256 |
+| `icons/ConvertGimpBmp.ps1` | Created conversion script |
+| `icons/icons.md` | Updated with detailed BMP requirements |
+
+### BMP Format Reference
+
+**Working BMP structure (for Tile Image):**
+```
+Offset  Size  Field                Value
+------  ----  -----               -----
+0x00    2     Magic               "BM"
+0x02    4     File size           (calculated)
+0x0A    4     Pixel data offset   54 (0x36) ← CRITICAL
+0x0E    4     Header size         40
+0x12    4     Width               128/256/384/512
+0x16    4     Height              same as width
+0x1A    2     Planes              1
+0x1C    2     Bits per pixel      32
+0x1E    4     Compression         0 (BI_RGB) ← NOT BI_BITFIELDS!
+0x22    4     Image size           width × height × 4
+0x26    4     X pixels per meter  2834 (72 DPI)
+0x2A    4     Y pixels per meter  2834 (72 DPI)
+0x36    -     Pixel data          BGRA, bottom-up
+```
+
+---
+
+*Document Updated: 2026-03-31 - Session 12: Higher Resolution Tile Image*
+
+---
+
+## Session 13: Uninstaller Certificate Cleanup Options (2026-04-01)
+
+### Overview
+
+Added checkbox options to the uninstaller to optionally remove EID certificates and credential mappings during uninstall. This gives administrators control over what gets cleaned up.
+
+### Changes Made
+
+#### Installer/Installerx64.nsi
+
+**Added:**
+- `nsDialogs.nsh` include for custom page creation
+- Variables `Uninstall_RemoveMappings` and `Uninstall_RemoveCertificates` for checkbox states
+- Custom uninstall options page with two checkboxes
+- PowerShell-based certificate removal function
+
+**Page Flow:**
+1. Confirm uninstall
+2. **Custom options page** (NEW) - Select cleanup options
+3. Progress
+4. Complete
+
+### Checkbox Options
+
+Both options are **checked by default** (preserves existing behavior):
+
+1. **Remove EID certificate mappings from users**
+   - Removes LSA credential mappings via `CleanupLsaCredentials` DLL export
+   - Cleans up `L$_EID__<HEX_RID>` secrets from LSA
+
+2. **Remove EID Root Certificate Authority and user certificates (only those with 'EID:' prefix)**
+   - Targets certificates with "EID:" in subject name (e.g., `CN=EID:PRODUCTION`)
+   - Removes from:
+     - **CurrentUser**: My, TrustedPeople, Root
+     - **LocalMachine**: Root (machine-level CA only)
+
+### Certificate Stores Targeted
+
+| Store | Scope | Purpose |
+|-------|-------|---------|
+| My | CurrentUser | User's personal EID certificates |
+| TrustedPeople | CurrentUser | User's trusted EID certificates |
+| Root | CurrentUser | User's EID root CA trust |
+| Root | LocalMachine | Machine-level EID root CA |
+
+**NOT affected:**
+- LocalMachine My (computer certificates)
+- LocalMachine TrustedPeople
+- Any certificates without "EID:" prefix
+
+### PowerShell Implementation
+
+The certificate removal uses PowerShell with `System.Security.Cryptography.X509Certificates`:
+
+```powershell
+# Simplified version
+$stores = @(
+    @("My", "CurrentUser"),
+    @("TrustedPeople", "CurrentUser"),
+    @("Root", "CurrentUser"),
+    @("Root", "LocalMachine")
+)
+
+foreach ($s in $stores) {
+    $store = New-Object X509Store($s[0], $s[1])
+    $store.Open("ReadWrite")
+    foreach ($c in $store.Certificates) {
+        if ($c.Subject -like "*EID:*") {
+            $store.Remove($c)
+        }
+    }
+    $store.Close()
+}
+```
+
+### Build Command
+
+```powershell
+.\build.ps1
+```
+
+**Output:** `Installer/EIDInstallx64.exe` (~2.3 MB)
+
+### Testing
+
+To test the uninstaller options:
+
+1. Install EID Authentication
+2. Create some EID certificates (via Configuration Wizard)
+3. Run uninstaller from Start Menu or Control Panel
+4. Verify the custom options page appears
+5. Test with checkboxes checked/unchecked
+6. Verify certificate cleanup with:
+   ```powershell
+   # Check remaining EID certificates
+   dir Cert:\CurrentUser\My, Cert:\CurrentUser\Root, Cert:\LocalMachine\Root |
+     Where-Object Subject -like "*EID:*"
+   ```
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `Installer/Installerx64.nsi` | Added nsDialogs include, variables, custom page, PowerShell cert removal |
+
+### Related Files
+
+- `EIDConfigurationWizard/EIDConfigurationWizardPage03.cpp` - Creates certificates with "EID:" prefix
+- `EIDCardLibrary/CertificateUtilities.cpp` - Certificate creation utilities
+- `EIDAuthenticationPackage/EIDRundll32Commands.cpp` - LSA cleanup DLL export
+
+---
+
+*Document Updated: 2026-04-01 - Session 13: Uninstaller Certificate Cleanup Options*

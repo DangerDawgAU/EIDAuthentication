@@ -38,6 +38,7 @@ struct IMPORT_OPTIONS
     BOOL fForce;
     BOOL fCreateUsers;
     BOOL fContinueOnError;
+    std::vector<std::wstring> SelectedGroups;  // Specific groups to import (empty = all)
 
     // Optional: Map of username to password to set for user accounts
     // This allows setting a fallback password for smart card users

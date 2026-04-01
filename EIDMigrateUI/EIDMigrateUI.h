@@ -37,17 +37,19 @@
 #define EIDMIGRATEUI_APP_NAME          L"EID Credential Migration Tool"
 
 // Wizard page count
-#define EIDMIGRATE_PAGE_COUNT          12
+#define EIDMIGRATE_PAGE_COUNT          13
 
 // Page indices (for programmatic navigation)
 enum EIDMigratePage {
     PAGE_WELCOME = 0,
     PAGE_EXPORT_SELECT,
+    PAGE_EXPORT_GROUPS,     // NEW: Group selection for export
     PAGE_EXPORT_CONFIRM,
     PAGE_EXPORT_PROGRESS,
     PAGE_EXPORT_COMPLETE,
     PAGE_IMPORT_SELECT,
     PAGE_IMPORT_OPTIONS,
+    PAGE_IMPORT_GROUPS,     // NEW: Group selection for import
     PAGE_IMPORT_PREVIEW,
     PAGE_IMPORT_PROGRESS,
     PAGE_IMPORT_COMPLETE,
@@ -80,6 +82,7 @@ struct WIZARD_DATA {
     std::wstring wsPassword;
     std::vector<CredentialInfo> credentials;
     std::vector<GroupInfo> groups;
+    std::vector<std::wstring> SelectedGroups;  // Specific groups selected for export/import
 
     // Export options
     BOOL fValidateCerts;
@@ -133,6 +136,7 @@ struct WIZARD_DATA {
         wsPassword.clear();
         credentials.clear();
         groups.clear();
+        SelectedGroups.clear();
         fValidateCerts = FALSE;
         fIncludeGroups = TRUE;
         fDryRun = TRUE;
@@ -150,6 +154,7 @@ struct WIZARD_DATA {
 extern WIZARD_DATA g_wizardData;
 extern HINSTANCE g_hinst;
 extern HWND g_hwndWizard;
+extern WizardFlow g_currentFlow;  // Tracks current wizard flow (export/import)
 
 // Message constants for worker thread communication
 #define WM_USER_PROGRESS        (WM_USER + 100)
@@ -170,6 +175,7 @@ INT_PTR CALLBACK WndProc_09_ImportProgress(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK WndProc_10_ImportComplete(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK WndProc_11_ListCredentials(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK WndProc_12_ValidateFile(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK WndProc_14_GroupSelect(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK WndProc_Progress(HWND, UINT, WPARAM, LPARAM);
 
 // Password prompt dialog

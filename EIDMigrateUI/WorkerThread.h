@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <string>
 #include <functional>
+#include <vector>
 
 // Worker thread context
 struct WORKER_CONTEXT {
@@ -29,6 +30,9 @@ struct WORKER_CONTEXT {
     // User passwords from prompts (username -> password map)
     std::vector<std::pair<std::wstring, std::wstring>>* pUserPasswords;
 
+    // Selected groups for export/import
+    std::vector<std::wstring>* pSelectedGroups;
+
     WORKER_CONTEXT() :
         hwndParent(nullptr),
         uProgressMsg(0),
@@ -44,7 +48,8 @@ struct WORKER_CONTEXT {
         pfContinueOnError(nullptr),
         pdwResultCount(nullptr),
         phrResult(nullptr),
-        pUserPasswords(nullptr)
+        pUserPasswords(nullptr),
+        pSelectedGroups(nullptr)
     {}
 };
 

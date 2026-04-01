@@ -57,6 +57,7 @@ HRESULT CommandImport(_In_ const COMMAND_OPTIONS& options)
     opts.fForce = options.Force;
     opts.fCreateUsers = options.CreateUsers;
     opts.fContinueOnError = options.ContinueOnError;
+    opts.SelectedGroups = options.SelectedGroups;
 
     IMPORT_STATS stats;
     HRESULT hr = ImportCredentials(options.InputFile, wsPassword, opts, stats);
@@ -178,8 +179,27 @@ HRESULT ImportCredentials(
         // Actual import
         EIDM_TRACE_INFO(L"Importing credentials...");
 
+        // Filter groups if specific selection provided
+        std::vector<GroupInfo> filteredGroups = groups;
+        if (!options.SelectedGroups.empty())
+        {
+            filteredGroups.clear();
+            for (const auto& group : groups)
+            {
+                for (const auto& wsSelected : options.SelectedGroups)
+                {
+                    if (_wcsicmp(group.wsName.c_str(), wsSelected.c_str()) == 0)
+                    {
+                        filteredGroups.push_back(group);
+                        break;
+                    }
+                }
+            }
+            EIDM_TRACE_INFO(L"Filtered to %u selected groups", static_cast<DWORD>(filteredGroups.size()));
+        }
+
         // Create groups first
-        for (const auto& group : groups)
+        for (const auto& group : filteredGroups)
         {
             if (group.fBuiltin)
                 continue;
@@ -243,7 +263,7 @@ HRESULT ImportCredentials(
         // Build a map of username -> groups from the export file
         std::map<std::wstring, std::vector<std::wstring>> userGroupMap;
 
-        for (const auto& group : groups)
+        for (const auto& group : filteredGroups)
         {
             for (const auto& member : group.wsMembers)
             {
