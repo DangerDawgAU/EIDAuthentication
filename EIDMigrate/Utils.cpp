@@ -17,6 +17,18 @@
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "version.lib")
 
+// Check if we have a valid console (for GUI compatibility)
+static BOOL HasValidConsole()
+{
+    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
+    HANDLE hStdErr = GetStdHandle(STD_ERROR_HANDLE);
+
+    return (hStdOut != INVALID_HANDLE_VALUE && hStdOut != nullptr &&
+            hStdIn != INVALID_HANDLE_VALUE && hStdIn != nullptr &&
+            hStdErr != INVALID_HANDLE_VALUE && hStdErr != nullptr);
+}
+
 // String conversion utilities
 std::string WideToUtf8(_In_ const std::wstring& ws)
 {
@@ -211,6 +223,10 @@ std::wstring FormatCurrentTimestamp()
 // Prompt user for input
 BOOL PromptYesNo(_In_ PCWSTR pwszPrompt, _In_ BOOL fDefaultYes)
 {
+    // GUI compatibility: return default if no console
+    if (!HasValidConsole())
+        return fDefaultYes;
+
     if (!pwszPrompt)
         return fDefaultYes;
 
@@ -233,6 +249,10 @@ BOOL PromptYesNo(_In_ PCWSTR pwszPrompt, _In_ BOOL fDefaultYes)
 
 std::wstring PromptForString(_In_ PCWSTR pwszPrompt)
 {
+    // GUI compatibility: return empty string if no console
+    if (!HasValidConsole())
+        return std::wstring();
+
     if (!pwszPrompt)
         return std::wstring();
 
@@ -252,6 +272,10 @@ std::wstring PromptForString(_In_ PCWSTR pwszPrompt)
 
 SecureWString PromptForPassphrase(_In_ PCWSTR pwszPrompt, _In_ BOOL fConfirm)
 {
+    // GUI compatibility: return empty string if no console
+    if (!HasValidConsole())
+        return SecureWString();
+
     if (!pwszPrompt)
         pwszPrompt = L"Enter passphrase: ";
 

@@ -6,6 +6,9 @@
 #include "Page14_GroupSelect.h"
 #include "../EIDMigrate/EIDMigrate.h"
 
+// Link with Common Controls v6 for Aero Wizard support
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
+
 // Global application state
 WIZARD_DATA g_wizardData;
 HINSTANCE g_hinst = nullptr;
@@ -14,6 +17,33 @@ WizardFlow g_currentFlow = FLOW_NONE;  // Tracks current wizard flow (export/imp
 
 // Provide minimal APP_STATE for AuditLogging module
 APP_STATE g_AppState;
+
+// Hidden window class for owning the PropertySheet
+static const wchar_t szHiddenWindowClass[] = L"EIDMigrateUI_HiddenWindow";
+
+// Window procedure for hidden owner window
+LRESULT CALLBACK HiddenWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+// Create hidden owner window
+HWND CreateHiddenOwnerWindow(HINSTANCE hInstance)
+{
+    WNDCLASSW wc = {0};
+    wc.lpfnWndProc = HiddenWndProc;
+    wc.hInstance = hInstance;
+    wc.lpszClassName = szHiddenWindowClass;
+
+    if (!RegisterClassW(&wc)) {
+        // Class might already be registered, ignore error
+    }
+
+    HWND hwnd = CreateWindowExW(0, szHiddenWindowClass, L"EIDMigrateUI_Owner",
+        0, 0, 0, 0, 0, nullptr, nullptr, hInstance, nullptr);
+
+    return hwnd;
+}
 
 // Load string resource
 std::wstring LoadStringResource(UINT uID) {
@@ -106,24 +136,33 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(nCmdShow);
 
     // Initialize common controls
-    // Note: InitCommonControlsEx may return FALSE even on success (Windows quirk)
-    // The comctl32.dll is loaded by the linker, so we proceed regardless
     INITCOMMONCONTROLSEX iccex;
     iccex.dwSize = sizeof(INITCOMMONCONTROLSEX);
     iccex.dwICC = ICC_STANDARD_CLASSES | ICC_WIN95_CLASSES;
-    InitCommonControlsEx(&iccex);  // Ignore return value
+    InitCommonControlsEx(&iccex);
 
     g_hinst = hInstance;
 
-    // Check prerequisites
+    // CRITICAL: Create hidden owner window BEFORE any MessageBox or PropertySheet
+    // This window stays alive and owns the wizard, preventing Windows from
+    // suspending the process when creating windows.
+    HWND hwndOwner = CreateHiddenOwnerWindow(hInstance);
+    if (!hwndOwner) {
+        MessageBoxW(nullptr, L"Failed to create owner window", EIDMIGRATEUI_APP_NAME, MB_ICONERROR);
+        return 1;
+    }
+
+    // Use the owner window for MessageBox
     if (!CheckPrerequisites()) {
+        DestroyWindow(hwndOwner);
         return 1;
     }
 
     // Initialize COM for file dialogs
     HRESULT hrInit = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     if (FAILED(hrInit)) {
-        MessageBoxW(nullptr, L"Failed to initialize COM", EIDMIGRATEUI_APP_NAME, MB_ICONERROR);
+        MessageBoxW(hwndOwner, L"Failed to initialize COM", EIDMIGRATEUI_APP_NAME, MB_ICONERROR);
+        DestroyWindow(hwndOwner);
         return 1;
     }
 
@@ -149,7 +188,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     psp.pfnDlgProc = WndProc_02_ExportSelect;
     ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
 
-    // Page 03: Export Groups (NEW)
+    // Page 03: Export Groups
     psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_GROUP_SELECT);
     psp.pszTemplate = MAKEINTRESOURCE(IDD_14_GROUP_SELECT);
     psp.pfnDlgProc = WndProc_14_GroupSelect;
@@ -185,7 +224,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     psp.pfnDlgProc = WndProc_07_ImportOptions;
     ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
 
-    // Page 09: Import Groups (NEW)
+    // Page 09: Import Groups
     psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_GROUP_SELECT);
     psp.pszTemplate = MAKEINTRESOURCE(IDD_14_GROUP_SELECT);
     psp.pfnDlgProc = WndProc_14_GroupSelect;
@@ -224,13 +263,15 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     // Configure property sheet header
     PROPSHEETHEADER psh = {0};
     psh.dwSize = sizeof(PROPSHEETHEADER);
-    psh.dwFlags = PSH_WIZARD | PSH_AEROWIZARD | PSH_USEHICON | PSH_WATERMARK | PSH_HEADER;
+    psh.dwFlags = PSH_WIZARD | PSH_AEROWIZARD | PSH_USEHICON;
     psh.hInstance = hInstance;
-    psh.hwndParent = nullptr;
+    psh.hwndParent = hwndOwner;  // Use hidden owner window
     psh.phpage = ahpsp;
     psh.nPages = pageCount;
     psh.nStartPage = 0;
     psh.pszCaption = MAKEINTRESOURCE(IDS_CAPTION);
+    psh.pszbmWatermark = nullptr;
+    psh.pszbmHeader = nullptr;
 
     // Load icon
     HMODULE hDll = LoadLibraryW(L"imageres.dll");
@@ -244,13 +285,12 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
 
     // Cleanup
     CoUninitialize();
+    DestroyWindow(hwndOwner);
 
-    // Debug: log the return value
     if (rc == -1) {
         MessageBoxW(nullptr, L"PropertySheet failed to create", EIDMIGRATEUI_APP_NAME, MB_ICONERROR);
         return 1;
     } else if (rc == 0) {
-        // User canceled or closed without finishing
         return 0;
     }
 

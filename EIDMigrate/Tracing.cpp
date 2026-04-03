@@ -14,6 +14,18 @@ static const WORD CONSOLE_COLOR_ERROR = 12;   // Red on black
 static const WORD CONSOLE_COLOR_WARNING = 14; // Yellow on black
 static const WORD CONSOLE_COLOR_INFO = 11;    // Cyan on black
 
+// Check if we have a valid console (for GUI compatibility)
+static BOOL HasValidConsole()
+{
+    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
+    HANDLE hStdErr = GetStdHandle(STD_ERROR_HANDLE);
+
+    return (hStdOut != INVALID_HANDLE_VALUE && hStdOut != nullptr &&
+            hStdIn != INVALID_HANDLE_VALUE && hStdIn != nullptr &&
+            hStdErr != INVALID_HANDLE_VALUE && hStdErr != nullptr);
+}
+
 void SetVerbosity(VERBOSITY level)
 {
     g_Verbosity = level;
@@ -26,6 +38,9 @@ VERBOSITY GetVerbosity()
 
 static void SetConsoleColor(WORD wColor)
 {
+    if (!HasValidConsole())
+        return;
+
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hConsole != INVALID_HANDLE_VALUE)
     {
@@ -36,6 +51,10 @@ static void SetConsoleColor(WORD wColor)
 void EIDMigrateTrace(_In_ DWORD dwLevel, _In_ PCWSTR pwszFormat, ...)
 {
     if (!pwszFormat)
+        return;
+
+    // Early return if no console - don't attempt any console I/O
+    if (!HasValidConsole())
         return;
 
     // Check verbosity level
@@ -92,6 +111,10 @@ void ShowProgress(_In_ PCWSTR pwszOperation, _In_ DWORD dwCurrent, _In_ DWORD dw
     if (!pwszOperation)
         return;
 
+    // Early return if no console
+    if (!HasValidConsole())
+        return;
+
     if (g_Verbosity < VERBOSITY::NORMAL)
         return;
 
@@ -100,7 +123,7 @@ void ShowProgress(_In_ PCWSTR pwszOperation, _In_ DWORD dwCurrent, _In_ DWORD dw
 
     // Build progress string
     WCHAR szProgress[256];
-    swprintf_s(szProgress, L"  %s: %u/%u (%u%%)",
+    swprintf_s(szProgress, L"  %ls: %u/%u (%u%%)",
         pwszOperation, dwCurrent, dwTotal, dwPercent);
 
     // Clear previous progress line if needed
@@ -123,6 +146,9 @@ void ShowProgress(_In_ PCWSTR pwszOperation, _In_ DWORD dwCurrent, _In_ DWORD dw
 
 void ClearProgress()
 {
+    if (!HasValidConsole())
+        return;
+
     if (g_dwProgressLastWidth == 0)
         return;
 
