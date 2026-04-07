@@ -78,14 +78,14 @@ namespace EID {
         // Find actual length (null-terminated or max length)
         size_t len = strnlen(src, maxLen);
 
-        // Convert from ANSI to Unicode
-        int wideCharCount = MultiByteToWideChar(CP_ACP, 0, src, (int)len, nullptr, 0);
+        // Convert from UTF-8 to Unicode
+        int wideCharCount = MultiByteToWideChar(CP_UTF8, 0, src, (int)len, nullptr, 0);
         if (wideCharCount <= 0) {
             return std::wstring();
         }
 
         std::wstring result(wideCharCount, L'\0');
-        MultiByteToWideChar(CP_ACP, 0, src, (int)len, &result[0], wideCharCount);
+        MultiByteToWideChar(CP_UTF8, 0, src, (int)len, &result[0], wideCharCount);
         return result;
     }
 
@@ -175,13 +175,13 @@ namespace EID {
             return std::string();
         }
 
-        int charCount = WideCharToMultiByte(CP_ACP, 0, src.c_str(), (int)src.length(), nullptr, 0, nullptr, nullptr);
+        int charCount = WideCharToMultiByte(CP_UTF8, 0, src.c_str(), (int)src.length(), nullptr, 0, nullptr, nullptr);
         if (charCount <= 0) {
             return std::string();
         }
 
         std::string result(charCount, '\0');
-        WideCharToMultiByte(CP_ACP, 0, src.c_str(), (int)src.length(), &result[0], charCount, nullptr, nullptr);
+        WideCharToMultiByte(CP_UTF8, 0, src.c_str(), (int)src.length(), &result[0], charCount, nullptr, nullptr);
         return result;
     }
 }

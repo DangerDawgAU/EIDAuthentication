@@ -529,7 +529,7 @@ extern "C"
 						EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc"); 
 						__leave;
 					}
-					MultiByteToWideChar(CP_ACP, 0, (PSTR) szPassword, -1, szPasswordW, pAuthIdentity->PasswordLength + 1);
+					MultiByteToWideChar(CP_UTF8, 0, (PSTR) szPassword, -1, szPasswordW, pAuthIdentity->PasswordLength + 1);
 				}
 			}
 			else

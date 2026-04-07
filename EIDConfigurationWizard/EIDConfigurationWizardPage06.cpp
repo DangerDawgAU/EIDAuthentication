@@ -57,21 +57,25 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, [[maybe_unused]
 					if (hIcon)
 						DestroyIcon(hIcon);
 				}
-				if (pCredentialList)
-				{
-					delete pCredentialList;
-					pCredentialList = nullptr;
-				}
-				break;
+					// Securely clear the password when wizard completes successfully
+					SecurelyClearPassword();
+					if (pCredentialList)
+					{
+						delete pCredentialList;
+						pCredentialList = nullptr;
+					}
+					break;
 
-			case PSN_RESET:
-				// Clean up the icon handle when wizard is cancelled
-				{
-					HICON hIcon = (HICON)SendDlgItemMessage(hWnd, IDC_06SHIELD, STM_SETIMAGE, IMAGE_ICON, 0);
-					if (hIcon)
-						DestroyIcon(hIcon);
-				}
-				break;
+				case PSN_RESET:
+					// Clean up the icon handle when wizard is cancelled
+					{
+						HICON hIcon = (HICON)SendDlgItemMessage(hWnd, IDC_06SHIELD, STM_SETIMAGE, IMAGE_ICON, 0);
+						if (hIcon)
+							DestroyIcon(hIcon);
+					}
+					// Securely clear the password when wizard is cancelled
+					SecurelyClearPassword();
+					break;
 			default:
 				break;
 			}

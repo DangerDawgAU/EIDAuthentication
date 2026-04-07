@@ -96,6 +96,8 @@ INT_PTR CALLBACK PasswordPromptDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
             if (szPassword[0] == L'\0')
             {
                 pData->fSkip = TRUE;
+                SecureZeroMemory(szPassword, sizeof(szPassword));
+                SecureZeroMemory(szConfirm, sizeof(szConfirm));
                 EndDialog(hwndDlg, IDCANCEL);
                 return TRUE;
             }
@@ -105,6 +107,8 @@ INT_PTR CALLBACK PasswordPromptDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
             {
                 MessageBoxW(hwndDlg, L"The passwords do not match.", L"Password Mismatch",
                     MB_ICONERROR | MB_OK);
+                SecureZeroMemory(szPassword, sizeof(szPassword));
+                SecureZeroMemory(szConfirm, sizeof(szConfirm));
                 return TRUE;
             }
 
@@ -113,11 +117,15 @@ INT_PTR CALLBACK PasswordPromptDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
             {
                 MessageBoxW(hwndDlg, L"Password cannot be empty. Click Skip to continue without setting a password.",
                     L"Invalid Password", MB_ICONERROR | MB_OK);
+                SecureZeroMemory(szPassword, sizeof(szPassword));
+                SecureZeroMemory(szConfirm, sizeof(szConfirm));
                 return TRUE;
             }
 
             pData->wsPassword = szPassword;
             pData->fPasswordSet = TRUE;
+            SecureZeroMemory(szPassword, sizeof(szPassword));
+            SecureZeroMemory(szConfirm, sizeof(szConfirm));
             EndDialog(hwndDlg, IDOK);
             return TRUE;
         }

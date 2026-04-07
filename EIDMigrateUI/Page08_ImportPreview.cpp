@@ -1,5 +1,6 @@
 // Page08_ImportPreview.cpp - Import Preview Page Implementation
 #include "Page08_ImportPreview.h"
+#include "../EIDMigrate/UserManagement.h"
 
 INT_PTR CALLBACK WndProc_08_ImportPreview(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -57,8 +58,18 @@ INT_PTR CALLBACK WndProc_08_ImportPreview(HWND hwndDlg, UINT uMsg, WPARAM wParam
                     ListView_SetItemText(hList, iItem, 2, const_cast<LPWSTR>(pwszEnc)); // Safe: ListView won't modify
 
                     // Check if user exists
-                    std::wstring wsStatus = L"User exists";
-                    // TODO: Check user existence
+                    BOOL fUserExists = FALSE;
+                    HRESULT hrCheck = UserExists(cred.wsUsername, fUserExists);
+                    std::wstring wsStatus;
+                    if (SUCCEEDED(hrCheck)) {
+                        if (fUserExists) {
+                            wsStatus = L"User exists";
+                        } else {
+                            wsStatus = L"User missing";
+                        }
+                    } else {
+                        wsStatus = L"Unknown";
+                    }
                     ListView_SetItemText(hList, iItem, 3, const_cast<LPWSTR>(wsStatus.c_str())); // Safe: ListView won't modify
                 }
             }

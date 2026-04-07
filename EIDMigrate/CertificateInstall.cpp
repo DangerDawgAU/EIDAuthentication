@@ -22,9 +22,14 @@ static HRESULT GetUserSid(_In_ const std::wstring& wsUsername, _Out_ std::wstrin
             return HRESULT_FROM_WIN32(GetLastError());
         }
 
+        // BUG FIX #16: TOCTOU race condition mitigation - use retry loop for SID allocation
+        constexpr DWORD MAX_RETRIES = 3;
+        DWORD dwRetryCount = 0;
         DWORD dwSidSize = 0;
         DWORD dwDomainSize = 0;
         SID_NAME_USE use;
+        std::vector<BYTE> sidBuffer;
+        std::vector<WCHAR> domainBuffer;
 
         // First call to get sizes
         LookupAccountNameW(NULL, szUserName, NULL, &dwSidSize, // NOSONAR - Windows API requires NULL for LPCTSTR parameters
@@ -36,13 +41,47 @@ static HRESULT GetUserSid(_In_ const std::wstring& wsUsername, _Out_ std::wstrin
             return HRESULT_FROM_WIN32(GetLastError());
         }
 
-        std::vector<BYTE> sidBuffer(dwSidSize);
-        std::vector<WCHAR> domainBuffer(dwDomainSize);
-
-        if (!LookupAccountNameW(NULL, szUserName, reinterpret_cast<PSID>(sidBuffer.data()), // NOSONAR - Windows API requires NULL; reinterpret_cast from BYTE* to PSID required for SID structure
-            &dwSidSize, domainBuffer.data(), &dwDomainSize, &use))
+        // Retry loop for SID allocation (handles TOCTOU race condition)
+        BOOL fSuccess = FALSE;
+        for (dwRetryCount = 0; dwRetryCount < MAX_RETRIES; dwRetryCount++)
         {
-            EIDM_TRACE_ERROR(L"LookupAccountNameW failed for current user");
+            // Allocate buffers with current size requirements
+            sidBuffer.resize(dwSidSize);
+            domainBuffer.resize(dwDomainSize);
+
+            // Zero out buffers to avoid uninitialized memory issues
+            SecureZeroMemory(sidBuffer.data(), dwSidSize);
+            SecureZeroMemory(domainBuffer.data(), dwDomainSize * sizeof(WCHAR));
+
+            // Second call to get actual SID
+            fSuccess = LookupAccountNameW(NULL, szUserName, reinterpret_cast<PSID>(sidBuffer.data()), // NOSONAR - Windows API requires NULL; reinterpret_cast from BYTE* to PSID required for SID structure
+                &dwSidSize, domainBuffer.data(), &dwDomainSize, &use);
+
+            if (fSuccess)
+            {
+                break;  // Success - exit retry loop
+            }
+
+            DWORD dwError = GetLastError();
+            if (dwError == ERROR_INSUFFICIENT_BUFFER)
+            {
+                // Buffer size changed between check and use (TOCTOU race condition)
+                EIDM_TRACE_WARN(L"TOCTOU race condition on retry %u for current user: buffer size changed (retrying...)",
+                    dwRetryCount + 1);
+                // Loop will continue with new dwSidSize and dwDomainSize values
+            }
+            else
+            {
+                // Different error - not a TOCTOU issue, don't retry
+                EIDM_TRACE_ERROR(L"LookupAccountNameW failed for current user: error %u", dwError);
+                return HRESULT_FROM_WIN32(dwError);
+            }
+        }
+
+        if (!fSuccess)
+        {
+            EIDM_TRACE_ERROR(L"Exhausted %u retries for SID lookup of current user (possible persistent race condition)",
+                MAX_RETRIES);
             return HRESULT_FROM_WIN32(GetLastError());
         }
 
@@ -58,11 +97,16 @@ static HRESULT GetUserSid(_In_ const std::wstring& wsUsername, _Out_ std::wstrin
         return S_OK;
     }
 
-    // Get SID for specified username
+    // BUG FIX #16: TOCTOU race condition mitigation - use retry loop for SID allocation
+    constexpr DWORD MAX_RETRIES = 3;
+    DWORD dwRetryCount = 0;
     DWORD dwSidSize = 0;
     DWORD dwDomainSize = 0;
     SID_NAME_USE use;
+    std::vector<BYTE> sidBuffer;
+    std::vector<WCHAR> domainBuffer;
 
+    // First call to get sizes
     LookupAccountNameW(NULL, wsUsername.c_str(), NULL, &dwSidSize, // NOSONAR - Windows API requires NULL
         NULL, &dwDomainSize, &use); // NOSONAR - Windows API requires NULL
 
@@ -72,13 +116,47 @@ static HRESULT GetUserSid(_In_ const std::wstring& wsUsername, _Out_ std::wstrin
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-    std::vector<BYTE> sidBuffer(dwSidSize);
-    std::vector<WCHAR> domainBuffer(dwDomainSize);
-
-    if (!LookupAccountNameW(NULL, wsUsername.c_str(), reinterpret_cast<PSID>(sidBuffer.data()), // NOSONAR - Windows API requires NULL; reinterpret_cast from BYTE* to PSID required for SID structure
-        &dwSidSize, domainBuffer.data(), &dwDomainSize, &use))
+    // Retry loop for SID allocation (handles TOCTOU race condition)
+    BOOL fSuccess = FALSE;
+    for (dwRetryCount = 0; dwRetryCount < MAX_RETRIES; dwRetryCount++)
     {
-        EIDM_TRACE_ERROR(L"LookupAccountNameW failed for '%ls'", wsUsername.c_str());
+        // Allocate buffers with current size requirements
+        sidBuffer.resize(dwSidSize);
+        domainBuffer.resize(dwDomainSize);
+
+        // Zero out buffers to avoid uninitialized memory issues
+        SecureZeroMemory(sidBuffer.data(), dwSidSize);
+        SecureZeroMemory(domainBuffer.data(), dwDomainSize * sizeof(WCHAR));
+
+        // Second call to get actual SID
+        fSuccess = LookupAccountNameW(NULL, wsUsername.c_str(), reinterpret_cast<PSID>(sidBuffer.data()), // NOSONAR - Windows API requires NULL; reinterpret_cast from BYTE* to PSID required for SID structure
+            &dwSidSize, domainBuffer.data(), &dwDomainSize, &use);
+
+        if (fSuccess)
+        {
+            break;  // Success - exit retry loop
+        }
+
+        DWORD dwError = GetLastError();
+        if (dwError == ERROR_INSUFFICIENT_BUFFER)
+        {
+            // Buffer size changed between check and use (TOCTOU race condition)
+            EIDM_TRACE_WARN(L"TOCTOU race condition on retry %u for '%ls': buffer size changed (retrying...)",
+                dwRetryCount + 1, wsUsername.c_str());
+            // Loop will continue with new dwSidSize and dwDomainSize values
+        }
+        else
+        {
+            // Different error - not a TOCTOU issue, don't retry
+            EIDM_TRACE_ERROR(L"LookupAccountNameW failed for '%ls': error %u", wsUsername.c_str(), dwError);
+            return HRESULT_FROM_WIN32(dwError);
+        }
+    }
+
+    if (!fSuccess)
+    {
+        EIDM_TRACE_ERROR(L"Exhausted %u retries for SID lookup of '%ls' (possible persistent race condition)",
+            MAX_RETRIES, wsUsername.c_str());
         return HRESULT_FROM_WIN32(GetLastError());
     }
 

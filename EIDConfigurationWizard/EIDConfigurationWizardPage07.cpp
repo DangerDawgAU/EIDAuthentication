@@ -67,12 +67,14 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, [[maybe_unus
 						if (hIcon)
 							DestroyIcon(hIcon);
 					}
-					if (pCredentialList)
-					{
-						delete pCredentialList;
-						pCredentialList = nullptr;
-					}
-					break;
+						// Securely clear the password when wizard completes (error case)
+						SecurelyClearPassword();
+						if (pCredentialList)
+						{
+							delete pCredentialList;
+							pCredentialList = nullptr;
+						}
+						break;
 
 				case PSN_RESET:
 					// Clean up the icon handle when wizard is cancelled
@@ -81,6 +83,8 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, [[maybe_unus
 						if (hIcon)
 							DestroyIcon(hIcon);
 					}
+					// Securely clear the password when wizard is cancelled
+					SecurelyClearPassword();
 					break;
 				default:
 					break;

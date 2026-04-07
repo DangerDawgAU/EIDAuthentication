@@ -1,8 +1,8 @@
 // File: EIDMigrate/Utils.cpp
 // General utility functions implementation
 
-#define _CRT_RAND_S
 #include "Utils.h"
+#include "RateLimiter.h"
 #include <lm.h>
 #include <shlwapi.h>
 #include <chrono>
@@ -69,13 +69,13 @@ std::wstring AnsiToWide(_In_ const std::string& s)
     if (s.empty())
         return std::wstring();
 
-    int cchNeeded = MultiByteToWideChar(CP_ACP, 0, s.c_str(),
+    int cchNeeded = MultiByteToWideChar(CP_UTF8, 0, s.c_str(),
         static_cast<int>(s.length()), nullptr, 0);
     if (cchNeeded <= 0)
         return std::wstring();
 
     std::wstring result(cchNeeded, 0);
-    MultiByteToWideChar(CP_ACP, 0, s.c_str(),
+    MultiByteToWideChar(CP_UTF8, 0, s.c_str(),
         static_cast<int>(s.length()), &result[0], cchNeeded);
 
     return result;
@@ -276,6 +276,17 @@ SecureWString PromptForPassphrase(_In_ PCWSTR pwszPrompt, _In_ BOOL fConfirm)
     if (!HasValidConsole())
         return SecureWString();
 
+    // BUG FIX #20: Rate limiting for passphrase attempts to prevent brute force attacks
+    SecurityRateLimiter& rateLimiter = SecurityRateLimiter::GetInstance();
+
+    // Check if we should rate limit
+    DWORD dwDelayMs = 0;
+    if (rateLimiter.RecordFailedAttempt(L"Passphrase entry", &dwDelayMs))
+    {
+        EIDM_TRACE_WARN(L"Too many failed passphrase attempts. Waiting %u ms before allowing retry.", dwDelayMs);
+        Sleep(dwDelayMs);
+    }
+
     if (!pwszPrompt)
         pwszPrompt = L"Enter passphrase: ";
 
@@ -313,11 +324,15 @@ SecureWString PromptForPassphrase(_In_ PCWSTR pwszPrompt, _In_ BOOL fConfirm)
         {
             fwprintf(stderr, L"Error: Passphrases do not match.\n");
             SecureZeroMemory(szConfirm, sizeof(szConfirm));
+            // Note: Failure already recorded at function entry, will be cleared on next successful entry
             return SecureWString();
         }
 
         SecureZeroMemory(szConfirm, sizeof(szConfirm));
     }
+
+    // Record successful passphrase entry
+    rateLimiter.RecordSuccess();
 
     return wsResult;
 }
@@ -456,11 +471,10 @@ std::wstring GenerateRandomPassword(_In_ DWORD dwLength)
     std::wstring wsPassword;
     wsPassword.reserve(dwLength);
 
-    // Initialize random seed
-    DWORD dwRnd = 0;
     BYTE pbRnd[32];
 
     // Use BCrypt for cryptographically secure random numbers
+    // If BCryptGenRandom fails, return empty string rather than falling back to weak randomness
     if (BCryptGenRandom(nullptr, pbRnd, sizeof(pbRnd), 0) >= 0)
     {
         for (DWORD i = 0; i < dwLength; i++)
@@ -469,24 +483,7 @@ std::wstring GenerateRandomPassword(_In_ DWORD dwLength)
             wsPassword += szChars[dwIndex];
         }
     }
-    else
-    {
-        // Fallback to rand_s
-        for (DWORD i = 0; i < dwLength; i++)
-        {
-            unsigned int uiRnd = 0;
-            if (rand_s(&uiRnd) == 0)
-            {
-                dwRnd = uiRnd;
-                DWORD dwIndex = dwRnd % (wcslen(szChars) - 1); // NOSONAR - szChars is static const array, never NULL
-                wsPassword += szChars[dwIndex];
-            }
-            else
-            {
-                wsPassword += L'a'; // Fallback
-            }
-        }
-    }
+    // If BCryptGenRandom fails, return empty string (SEC-003: no insecure fallback)
 
     return wsPassword;
 }

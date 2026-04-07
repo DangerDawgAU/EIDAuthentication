@@ -92,6 +92,8 @@ INT_PTR CALLBACK FilePasswordDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
             {
                 MessageBoxW(hwndDlg, L"Please enter a password.", L"Export File",
                     MB_ICONERROR | MB_OK);
+                SecureZeroMemory(szPassword, sizeof(szPassword));
+                SecureZeroMemory(szConfirm, sizeof(szConfirm));
                 return TRUE;
             }
 
@@ -100,6 +102,8 @@ INT_PTR CALLBACK FilePasswordDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
             {
                 MessageBoxW(hwndDlg, L"The passwords do not match.", L"Password Mismatch",
                     MB_ICONERROR | MB_OK);
+                SecureZeroMemory(szPassword, sizeof(szPassword));
+                SecureZeroMemory(szConfirm, sizeof(szConfirm));
                 return TRUE;
             }
 
@@ -111,11 +115,17 @@ INT_PTR CALLBACK FilePasswordDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
                     L"Short Password",
                     MB_YESNO | MB_ICONWARNING);
                 if (nResult == IDNO)
+                {
+                    SecureZeroMemory(szPassword, sizeof(szPassword));
+                    SecureZeroMemory(szConfirm, sizeof(szConfirm));
                     return TRUE;
+                }
             }
 
             pData->wsPassword = szPassword;
             pData->fConfirmed = TRUE;
+            SecureZeroMemory(szPassword, sizeof(szPassword));
+            SecureZeroMemory(szConfirm, sizeof(szConfirm));
             EndDialog(hwndDlg, IDOK);
             return TRUE;
         }

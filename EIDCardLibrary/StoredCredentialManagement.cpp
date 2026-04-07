@@ -684,7 +684,7 @@ BOOL CStoredCredentialManager::UpdateCredential(__in PLUID pLuid, __in PUNICODE_
 		// SECURITY FIX: Validate UserName->Length before memcpy to prevent buffer overflow (CWE-120)
 		if (UserName->Buffer && UserName->Length)
 		{
-			if (UserName->Length >= sizeof(szUser))
+			if (UserName->Length > sizeof(szUser) - sizeof(WCHAR))
 			{
 				dwError = ERROR_BUFFER_OVERFLOW;
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"UserName too long: %d bytes (max %d)", UserName->Length, (int)(sizeof(szUser) - sizeof(WCHAR)));
@@ -1173,7 +1173,7 @@ BOOL CStoredCredentialManager::GetResponseFromCryptedChallenge(__in PBYTE pChall
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by EIDAlloc", GetLastError());
 			__leave;
 		}
-		if (!WideCharToMultiByte(CP_ACP, 0, Pin, -1, pbPin, dwPinLen, nullptr, nullptr))
+		if (!WideCharToMultiByte(CP_UTF8, 0, Pin, -1, pbPin, dwPinLen, nullptr, nullptr))
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by WideCharToMultiByte", GetLastError());
@@ -1295,7 +1295,7 @@ BOOL CStoredCredentialManager::GetResponseFromSignatureChallenge(__in PBYTE pbCh
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%x returned by malloc", GetLastError());
 			__leave;
 		}
-		if (!WideCharToMultiByte(CP_ACP, 0, szPin, -1, pbPin, dwPinLen, nullptr, nullptr))
+		if (!WideCharToMultiByte(CP_UTF8, 0, szPin, -1, pbPin, dwPinLen, nullptr, nullptr))
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%x returned by WideCharToMultiByte", GetLastError());
@@ -2616,7 +2616,7 @@ NTSTATUS CStoredCredentialManager::CheckPassword( __in DWORD dwRid, __in PWSTR s
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"LoadSamSrv failed 0x%08x",Status);
 			__leave;
 		}
-		Status = LsaOpenPolicy(nullptr,&connectionAttrib,POLICY_ALL_ACCESS,&handlePolicy);
+		Status = LsaOpenPolicy(nullptr,&connectionAttrib,POLICY_VIEW_LOCAL_INFORMATION,&handlePolicy);
 		if (Status!= STATUS_SUCCESS)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"LsaOpenPolicy failed 0x%08x",Status);

@@ -151,11 +151,11 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 
 		// convert the container name to unicode
 #ifdef UNICODE
-		int wLen = MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, nullptr, 0);
+		int wLen = MultiByteToWideChar(CP_UTF8, 0, szContainerName, -1, nullptr, 0);
 		LPTSTR szWideContainerName = (LPTSTR) EIDAlloc(sizeof(TCHAR)*wLen);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		if (szWideContainerName)
 		{
-			MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, szWideContainerName, wLen);
+			MultiByteToWideChar(CP_UTF8, 0, szContainerName, -1, szWideContainerName, wLen);
 #else
 		LPTSTR szWideContainerName = (LPTSTR) EIDAlloc(sizeof(TCHAR)*(_tcslen(szContainerName)+1));
 		if (szWideContainerName)
@@ -378,11 +378,11 @@ BOOL CContainerHolderFactory<T>::DisconnectNotification(LPCTSTR szReaderName)
 		CContainer* container = item->GetContainer();
 
 #ifndef UNICODE
-		int wLen = MultiByteToWideChar(CP_ACP, 0, szReaderName, -1, nullptr, 0);
+		int wLen = MultiByteToWideChar(CP_UTF8, 0, szReaderName, -1, nullptr, 0);
 		LPWSTR szWideReaderName = (LPWSTR) EIDAlloc(sizeof(WCHAR)*wLen);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		if (szWideReaderName)
 		{
-			MultiByteToWideChar(CP_ACP, 0, szReaderName, -1, szWideReaderName, wLen);
+			MultiByteToWideChar(CP_UTF8, 0, szReaderName, -1, szWideReaderName, wLen);
 #else
 		LPWSTR szWideReaderName = (LPWSTR) EIDAlloc((DWORD)(sizeof(WCHAR)*(_tcslen(szReaderName)+1)));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		if (szWideReaderName)

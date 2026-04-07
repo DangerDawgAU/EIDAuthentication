@@ -1,4 +1,4 @@
-/*
+﻿/*
     EID Authentication - Smart card authentication for Windows
     Copyright (C) 2009 Vincent Le Toux
     Copyright (C) 2026 Contributors
@@ -846,31 +846,85 @@ DWORD GetCurrentRid()
 	return dwRid;
 }
 
-DWORD GetRidFromUsername(LPTSTR szUsername)
-{
-	BOOL bResult;
-	SID_NAME_USE Use;
-	PSID pSid = nullptr;
-	TCHAR checkDomainName[UNCLEN+1];
-	DWORD cchReferencedDomainName = 0;
-	DWORD dwRid = 0;
-
-	DWORD dLengthSid = 0;
-	bResult = LookupAccountName(nullptr,  szUsername, nullptr,&dLengthSid,nullptr, &cchReferencedDomainName, &Use);
-	
-	pSid = EIDAlloc(dLengthSid);
-	cchReferencedDomainName=UNCLEN;
-	bResult = LookupAccountName(nullptr,  szUsername, pSid,&dLengthSid,checkDomainName, &cchReferencedDomainName, &Use);
-	if (!bResult) 
+	// BUG FIX #16: TOCTOU race condition mitigation - use retry loop for SID allocation
+	DWORD GetRidFromUsername(LPTSTR szUsername)
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by LookupAccountName", GetLastError());
+		BOOL bResult;
+		SID_NAME_USE Use;
+		PSID pSid = nullptr;
+		TCHAR checkDomainName[UNCLEN+1];
+		DWORD cchReferencedDomainName = 0;
+		DWORD dwRid = 0;
+		constexpr DWORD MAX_RETRIES = 3;
+		DWORD dwRetryCount = 0;
+
+		DWORD dLengthSid = 0;
+		bResult = LookupAccountName(nullptr,  szUsername, nullptr,&dLengthSid,nullptr, &cchReferencedDomainName, &Use);
+
+		if (!bResult && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by LookupAccountName", GetLastError());
+			return 0;
+		}
+
+		// Retry loop for SID allocation (handles TOCTOU race condition)
+		for (dwRetryCount = 0; dwRetryCount < MAX_RETRIES; dwRetryCount++)
+		{
+			// Clean up from previous retry
+			if (pSid)
+			{
+				EIDFree(pSid);
+				pSid = nullptr;
+			}
+
+			// Allocate SID buffer
+			pSid = (PSID)EIDAlloc(dLengthSid);
+			if (!pSid)
+			{
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to allocate SID buffer");
+				return 0;
+			}
+			SecureZeroMemory(pSid, dLengthSid);
+
+			cchReferencedDomainName=UNCLEN;
+			bResult = LookupAccountName(nullptr,  szUsername, pSid,&dLengthSid,checkDomainName, &cchReferencedDomainName, &Use);
+
+			if (bResult)
+			{
+				dwRid = *GetSidSubAuthority(pSid, *GetSidSubAuthorityCount(pSid) -1);
+				EIDFree(pSid);
+				return dwRid;  // Success - exit retry loop
+			}
+
+			DWORD dwError = GetLastError();
+			if (dwError == ERROR_INSUFFICIENT_BUFFER)
+			{
+				// Buffer size changed between check and use (TOCTOU race condition)
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"TOCTOU race condition on retry %u: buffer size changed (retrying...)",
+					dwRetryCount + 1);
+				// Loop will continue with new dLengthSid value
+			}
+			else
+			{
+				// Different error - not a TOCTOU issue, don't retry
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by LookupAccountName", dwError);
+				if (pSid)
+				{
+					EIDFree(pSid);
+				}
+				return 0;
+			}
+		}
+
+		// Exhausted retries
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Exhausted %u retries for SID lookup (possible persistent race condition)",
+			MAX_RETRIES);
+		if (pSid)
+		{
+			EIDFree(pSid);
+		}
 		return 0;
 	}
-	dwRid = *GetSidSubAuthority(pSid, *GetSidSubAuthorityCount(pSid) -1);
-	EIDFree(pSid);
-	return dwRid;
-}
-
 
 BOOL LsaEIDCreateStoredCredential(__in_opt PWSTR szUsername, __in PWSTR szPassword, __in PCCERT_CONTEXT pContext, __in BOOL fEncryptPassword)
 {

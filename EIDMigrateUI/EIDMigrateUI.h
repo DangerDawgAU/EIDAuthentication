@@ -37,7 +37,7 @@
 #define EIDMIGRATEUI_APP_NAME          L"EID Credential Migration Tool"
 
 // Wizard page count
-#define EIDMIGRATE_PAGE_COUNT          13
+#define EIDMIGRATE_PAGE_COUNT          14
 
 // Page indices (for programmatic navigation)
 enum EIDMigratePage {

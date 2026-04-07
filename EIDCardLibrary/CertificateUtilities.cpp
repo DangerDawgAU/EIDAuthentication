@@ -1220,7 +1220,7 @@ BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName)
 			}
 
 			// Convert the container name to unicode and store it
-			int wLen = MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, nullptr, 0);
+			int wLen = MultiByteToWideChar(CP_UTF8, 0, szContainerName, -1, nullptr, 0);
 			containerNames[dwContainerCount] = (LPWSTR) EIDAlloc(wLen * sizeof(WCHAR));
 			if (!containerNames[dwContainerCount])
 			{
@@ -1228,7 +1228,7 @@ BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName)
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc for container name 0x%08x",dwError);
 				__leave;
 			}
-			MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, containerNames[dwContainerCount], wLen);
+			MultiByteToWideChar(CP_UTF8, 0, szContainerName, -1, containerNames[dwContainerCount], wLen);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Found container: %s", containerNames[dwContainerCount]);
 
 			dwContainerCount++;
@@ -1632,11 +1632,11 @@ PCCERT_CONTEXT FindCertificateFromHashOnCard(PCRYPT_DATA_BLOB pCertInfo, PTSTR s
 		{
 			// convert the container name to unicode
 	#ifdef UNICODE
-			int wLen = MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, nullptr, 0);
+			int wLen = MultiByteToWideChar(CP_UTF8, 0, szContainerName, -1, nullptr, 0);
 			LPTSTR szWideContainerName = (LPTSTR) EIDAlloc(sizeof(TCHAR)*wLen);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			if (szWideContainerName)
 			{
-				MultiByteToWideChar(CP_ACP, 0, szContainerName, -1, szWideContainerName, wLen);
+				MultiByteToWideChar(CP_UTF8, 0, szContainerName, -1, szWideContainerName, wLen);
 	#else
 			LPTSTR szWideContainerName = (LPTSTR) EIDAlloc(sizeof(TCHAR)*(_tcslen(szContainerName)+1));
 			if (szWideContainerName)

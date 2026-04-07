@@ -37,46 +37,52 @@ HRESULT LsaEIDImportCredential(
 // Uses direct LSA access instead of the authentication package IPC
 HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
 {
-    EIDM_TRACE_VERBOSE(L"Enumerating LSA credentials via direct LSA access...");
-
-    NTSTATUS status;
+    // BUG FIX #19: C++ exception handling for LSA operations
+    // Ensures proper cleanup even if C++ exceptions occur
+    HRESULT hr = S_OK;
     HANDLE hLsa = nullptr;
-    LSA_OBJECT_ATTRIBUTES objectAttributes = {};
-    objectAttributes.Length = sizeof(LSA_OBJECT_ATTRIBUTES);
-
-    // Open LSA policy with access to read private data
-    status = LsaOpenPolicy(
-        nullptr,
-        &objectAttributes,
-        POLICY_GET_PRIVATE_INFORMATION | POLICY_VIEW_LOCAL_INFORMATION,
-        &hLsa);
-
-    if (!NT_SUCCESS(status))
-    {
-        EIDM_TRACE_ERROR(L"Failed to open LSA policy: 0x%08X", status);
-        return HRESULT_FROM_NT(status);
-    }
-
-    // Enumerate local users
     LPUSER_INFO_0 pUserInfoArray = nullptr;
-    DWORD dwEntriesRead = 0;
-    DWORD dwTotalEntries = 0;
 
-    DWORD dwNetStatus = NetUserEnum(nullptr, 0, FILTER_NORMAL_ACCOUNT,
-        reinterpret_cast<LPBYTE*>(&pUserInfoArray), // NOSONAR - Windows Net API requires LPBYTE* for output parameter
-        MAX_PREFERRED_LENGTH,
-        &dwEntriesRead,
-        &dwTotalEntries,
-        nullptr);
-
-    if (dwNetStatus != NERR_Success)
+    try
     {
-        EIDM_TRACE_ERROR(L"Failed to enumerate users: %u", dwNetStatus);
-        LsaClose(hLsa);
-        return HRESULT_FROM_WIN32(dwNetStatus);
-    }
+        EIDM_TRACE_VERBOSE(L"Enumerating LSA credentials via direct LSA access...");
 
-    EIDM_TRACE_VERBOSE(L"Found %u local user(s) to check for credentials", dwEntriesRead);
+        NTSTATUS status;
+        LSA_OBJECT_ATTRIBUTES objectAttributes = {};
+        objectAttributes.Length = sizeof(LSA_OBJECT_ATTRIBUTES);
+
+        // Open LSA policy with access to read private data
+        status = LsaOpenPolicy(
+            nullptr,
+            &objectAttributes,
+            POLICY_GET_PRIVATE_INFORMATION | POLICY_VIEW_LOCAL_INFORMATION,
+            &hLsa);
+
+        if (!NT_SUCCESS(status))
+        {
+            EIDM_TRACE_ERROR(L"Failed to open LSA policy: 0x%08X", status);
+            return HRESULT_FROM_NT(status);
+        }
+
+        // Enumerate local users
+        DWORD dwEntriesRead = 0;
+        DWORD dwTotalEntries = 0;
+
+        DWORD dwNetStatus = NetUserEnum(nullptr, 0, FILTER_NORMAL_ACCOUNT,
+            reinterpret_cast<LPBYTE*>(&pUserInfoArray), // NOSONAR - Windows Net API requires LPBYTE* for output parameter
+            MAX_PREFERRED_LENGTH,
+            &dwEntriesRead,
+            &dwTotalEntries,
+            nullptr);
+
+        if (dwNetStatus != NERR_Success)
+        {
+            EIDM_TRACE_ERROR(L"Failed to enumerate users: %u", dwNetStatus);
+            hr = HRESULT_FROM_WIN32(dwNetStatus);
+            goto cleanup;
+        }
+
+        EIDM_TRACE_VERBOSE(L"Found %u local user(s) to check for credentials", dwEntriesRead);
 
     // Check each user for EID credentials
     for (DWORD i = 0; i < dwEntriesRead; i++)
@@ -315,11 +321,27 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
         }
     }
 
-    NetApiBufferFree(pUserInfoArray);
-    LsaClose(hLsa);
+    hr = S_OK;
+    }
+    catch (...)
+    {
+        EIDM_TRACE_ERROR(L"Exception occurred during LSA enumeration");
+        hr = E_FAIL;
+    }
+
+cleanup:
+    // Cleanup: always executed regardless of exception
+    if (pUserInfoArray)
+    {
+        NetApiBufferFree(pUserInfoArray);
+    }
+    if (hLsa)
+    {
+        LsaClose(hLsa);
+    }
 
     EIDM_TRACE_INFO(L"Enumeration complete: %zu credential(s) found", credentials.size());
-    return S_OK;
+    return hr;
 }
 
 // Export a single credential from LSA by RID

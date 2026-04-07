@@ -141,6 +141,8 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPAR
 					hwndInvalidPasswordBalloon = nullptr;
 				}
 				GetWindowText(GetDlgItem(hWnd,IDC_05PASSWORD),szPassword,dwPasswordSize);
+				// Lock the password buffer in memory to prevent paging to disk
+				VirtualLock(szPassword, dwPasswordSize * sizeof(WCHAR));
 				if (!WizardFinishButton(szPassword))
 				{
 					// go to the error page
@@ -192,12 +194,14 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPAR
 				}
 				break;
 			case PSN_RESET:
-				if (pCredentialList)
-				{
-					delete pCredentialList;
-					pCredentialList = nullptr;
-				}
-				break;
+					// Securely clear the password when wizard is cancelled
+					SecurelyClearPassword();
+					if (pCredentialList)
+					{
+						delete pCredentialList;
+						pCredentialList = nullptr;
+					}
+					break;
 
 			case LVN_ITEMCHANGED:
 				if (pnmh->idFrom == IDC_05LIST && pCredentialList)

@@ -285,7 +285,7 @@ HRESULT CMessageCredential::GetBitmapValue(
 // Called when a command link is clicked.
 HRESULT CMessageCredential::CommandLinkClicked(DWORD dwFieldID)
 {
-    HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
+    HRESULT hr = S_OK;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 	if (SMFI_CANCELFORCEPOLICY == dwFieldID)
 	{
 		if (_pCredProvCredentialEvents)
@@ -294,12 +294,16 @@ HRESULT CMessageCredential::CommandLinkClicked(DWORD dwFieldID)
 			_pCredProvCredentialEvents->OnCreatingWindow(&hWnd);
 			ShowCancelForcePolicyWizard(hWnd);
 		}
+		else
+		{
+			hr = E_INVALIDARG;
+		}
 	}
 	else
 	{
 		hr = E_INVALIDARG;
 	}
-    return E_NOTIMPL;
+    return hr;
 }
 
 // Since this credential isn't intended to provide a way for the user to submit their

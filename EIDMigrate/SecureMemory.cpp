@@ -90,6 +90,16 @@ BOOL SecureBuffer::Resize(DWORD cbNewSize)
     if (m_fLocked)
         Unlock();
 
+    // BUG FIX #17: Memory exhaustion protection
+    // Maximum reasonable secure buffer size (prevents exhaustion attacks)
+    constexpr DWORD MAX_SECURE_BUFFER_SIZE = 16 * 1024 * 1024;  // 16 MB
+    if (cbNewSize > MAX_SECURE_BUFFER_SIZE)
+    {
+        EIDM_TRACE_ERROR(L"Requested secure buffer size %u bytes exceeds maximum %u bytes",
+            cbNewSize, MAX_SECURE_BUFFER_SIZE);
+        return FALSE;
+    }
+
     PBYTE pbNewData = static_cast<PBYTE>(realloc(m_pbData, cbNewSize)); // NOSONAR - realloc used for secure memory; preserves data while resizing for SecureZeroMemory compatibility
     if (!pbNewData && cbNewSize > 0)
         return FALSE;
@@ -205,6 +215,16 @@ void SecureFree(_In_ PVOID pvMem, _In_ SIZE_T cbSize) // NOSONAR - PVOID (void*)
 
 PVOID SecureAlloc(_In_ SIZE_T cbSize) // NOSONAR - PVOID (void*) required for Windows API compatibility with secure memory functions
 {
+    // BUG FIX #17: Memory exhaustion protection
+    // Maximum reasonable single allocation (prevents exhaustion attacks)
+    constexpr SIZE_T MAX_SECURE_ALLOC_SIZE = 16 * 1024 * 1024;  // 16 MB
+    if (cbSize > MAX_SECURE_ALLOC_SIZE)
+    {
+        EIDM_TRACE_ERROR(L"Requested secure allocation size %zu bytes exceeds maximum %zu bytes",
+            cbSize, MAX_SECURE_ALLOC_SIZE);
+        return nullptr;
+    }
+
     PVOID pvMem = malloc(cbSize); // NOSONAR - malloc used for secure memory, compatible with SecureZeroMemory
     if (pvMem)
     {

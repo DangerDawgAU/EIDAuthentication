@@ -441,6 +441,52 @@ HRESULT ImportSingleCredential(
         {
             EIDM_TRACE_INFO(L"Installing certificate for user: %ls", info.wsUsername.c_str());
 
+            // BUG FIX #18: Certificate validation before import
+            // Create certificate context for validation
+            PCCERT_CONTEXT pCertContext = CertCreateCertificateContext(
+                X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+                info.Certificate.data(),
+                static_cast<DWORD>(info.Certificate.size()));
+
+            if (pCertContext)
+            {
+                BOOL fTrusted = FALSE;
+                std::vector<std::wstring> warnings;
+                HRESULT hrValidation = ValidateCertificateForImport(pCertContext, fTrusted, warnings);
+
+                // Log all warnings
+                for (const auto& warn : warnings)
+                {
+                    EIDM_TRACE_WARN(L"Certificate validation warning for %ls: %ls",
+                        info.wsUsername.c_str(), warn.c_str());
+                }
+
+                // Check if certificate is not trusted (expired or not yet valid)
+                if (!fTrusted)
+                {
+                    EIDM_TRACE_ERROR(L"Certificate validation failed for %ls. Certificate may be expired or not yet valid.",
+                        info.wsUsername.c_str());
+
+                    // In production mode, fail on invalid certificates
+                    // In dry-run mode, just warn
+                    if (!options.fDryRun)
+                    {
+                        CertFreeCertificateContext(pCertContext);
+                        return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+                    }
+                    else
+                    {
+                        EIDM_TRACE_INFO(L"DRY-RUN: Would reject invalid certificate for %ls", info.wsUsername.c_str());
+                    }
+                }
+
+                CertFreeCertificateContext(pCertContext);
+            }
+            else
+            {
+                EIDM_TRACE_WARN(L"Could not create certificate context for validation (continuing anyway)");
+            }
+
             // If running as admin, we can install to any user's store
             // For now, install to the target user's store
             HRESULT hrCert = InstallCertificateFromDER(info.Certificate, info.wsUsername);

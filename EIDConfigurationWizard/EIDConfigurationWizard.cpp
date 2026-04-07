@@ -6,6 +6,16 @@
 #include "EIDConfigurationWizard.h"
 #include "global.h"
 
+// Securely clear the global password buffer
+// This should be called when the wizard completes or is cancelled
+VOID SecurelyClearPassword()
+{
+	if (szPassword[0] != L'\0')
+	{
+		SecureZeroMemory(szPassword, dwPasswordSize * sizeof(WCHAR));
+	}
+}
+
 #include "../EIDCardLibrary/EIDCardLibrary.h"
 #include "../EIDCardLibrary/Package.h"
 #include "../EIDCardLibrary/Tracing.h"

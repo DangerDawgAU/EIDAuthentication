@@ -387,7 +387,7 @@ MgScCardAuthenticatePin(
         //
 
         if (0 == (cbPin = WideCharToMultiByte(
-            CP_ACP,
+            CP_UTF8,
             0,
             pwszPin,
             -1,
@@ -403,7 +403,7 @@ MgScCardAuthenticatePin(
         CHECK_ALLOC(szPin = (LPSTR) _Alloc(cbPin));
 
         if (0 == (cbPin = WideCharToMultiByte(
-            CP_ACP,
+            CP_UTF8,
             0,
             pwszPin,
             -1,

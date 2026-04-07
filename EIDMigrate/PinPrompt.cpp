@@ -2,10 +2,12 @@
 // Smart card PIN prompt dialog
 
 #include "PinPrompt.h"
+#include "RateLimiter.h"
 #include "resource.h"
 #include "Tracing.h"
 #include "Utils.h"
 #include <Windowsx.h>
+#include <thread>
 
 SecurePinPrompt::SecurePinPrompt() :
     m_hDialog(nullptr),
@@ -141,8 +143,24 @@ void SecurePinPrompt::OnOk(_In_ HWND hDlg)
         return;
     }
 
+    // BUG FIX #17: Integer overflow protection
+    // Maximum reasonable PIN length (prevents overflow and memory exhaustion)
+    constexpr DWORD MAX_PIN_LENGTH = 256;  // Well above any reasonable PIN
+    if (cchPin > MAX_PIN_LENGTH)
+    {
+        EIDM_TRACE_ERROR(L"PIN exceeds maximum allowed length of %u characters", MAX_PIN_LENGTH);
+        EndDialog(hDlg, IDCANCEL);
+        m_result = PIN_PROMPT_RESULT::PIN_ERROR;
+        return;
+    }
+
+    // Check for integer overflow before allocation: (cchPin + 1) * sizeof(WCHAR)
+    // Since cchPin <= MAX_PIN_LENGTH (256), and sizeof(WCHAR) is 2, the max is 257 * 2 = 514 bytes
+    // This cannot overflow even on 32-bit systems (max DWORD is 4,294,967,295)
+    DWORD cbPin = (cchPin + 1) * sizeof(WCHAR);
+
     // Get PIN text
-    PWSTR pwszPin = static_cast<PWSTR>(malloc((cchPin + 1) * sizeof(WCHAR)));
+    PWSTR pwszPin = static_cast<PWSTR>(malloc(cbPin));
     if (!pwszPin)
     {
         EndDialog(hDlg, IDCANCEL);
@@ -156,7 +174,7 @@ void SecurePinPrompt::OnOk(_In_ HWND hDlg)
     m_pin = SecurePin(pwszPin);
 
     // Zero temporary buffer
-    SecureZeroMemory(pwszPin, (cchPin + 1) * sizeof(WCHAR));
+    SecureZeroMemory(pwszPin, cbPin);
     free(pwszPin);
 
     m_result = PIN_PROMPT_RESULT::SUCCESS;
@@ -172,8 +190,27 @@ void SecurePinPrompt::OnCancel(_In_ HWND hDlg)
 // Convenience function
 PIN_PROMPT_RESULT PromptForPIN(_In_opt_ PCWSTR pwszPromptText, _Out_ SecurePin& pin)
 {
+    // BUG FIX #20: Rate limiting for PIN attempts to prevent brute force attacks
+    SecurityRateLimiter& rateLimiter = SecurityRateLimiter::GetInstance();
+
+    // Check if we should rate limit
+    DWORD dwDelayMs = 0;
+    if (rateLimiter.RecordFailedAttempt(L"PIN entry", &dwDelayMs))
+    {
+        EIDM_TRACE_WARN(L"Too many failed PIN attempts. Waiting %u ms before allowing retry.", dwDelayMs);
+        Sleep(dwDelayMs);
+    }
+
     SecurePinPrompt prompt;
-    return prompt.ShowPrompt(pwszPromptText, pin);
+    PIN_PROMPT_RESULT result = prompt.ShowPrompt(pwszPromptText, pin);
+
+    // Record success or failure
+    if (result == PIN_PROMPT_RESULT::SUCCESS)
+    {
+        rateLimiter.RecordSuccess();
+    }
+
+    return result;
 }
 
 // Prompt for passphrase with confirmation

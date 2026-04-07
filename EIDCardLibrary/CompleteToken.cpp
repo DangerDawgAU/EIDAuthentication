@@ -266,26 +266,79 @@ NTSTATUS UserNameToToken(__in PLSA_UNICODE_STRING AccountName,
 	return EID::hr_to_ntstatus(result.error());
 }
 
-
+// BUG FIX #16: TOCTOU race condition mitigation - use retry loop for SID allocation
 BOOL NameToSid(WCHAR* UserName, PSID *pUserSid)
 {
 	BOOL bResult;
 	SID_NAME_USE Use;
 	WCHAR checkDomainName[UNCLEN+1];
 	DWORD cchReferencedDomainName=0;
+	constexpr DWORD MAX_RETRIES = 3;
+	DWORD dwRetryCount = 0;
+	PSID pTempSid = nullptr;
 
 	DWORD dLengthSid = 0;
 	bResult = LookupAccountNameW( nullptr, UserName, nullptr,&dLengthSid,nullptr, &cchReferencedDomainName, &Use);
-	
-	*pUserSid = EIDAlloc(dLengthSid);
-	cchReferencedDomainName=UNCLEN;
-	bResult = LookupAccountNameW( nullptr, UserName, *pUserSid,&dLengthSid,checkDomainName, &cchReferencedDomainName, &Use);
-	if (!bResult) 
+
+	if (!bResult && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to LookupAccountNameW 0x%08x",GetLastError());
 		return FALSE;
 	}
-	return TRUE;
+
+	// Retry loop for SID allocation (handles TOCTOU race condition)
+	for (dwRetryCount = 0; dwRetryCount < MAX_RETRIES; dwRetryCount++)
+	{
+		// Clean up from previous retry
+		if (pTempSid)
+		{
+			EIDFree(pTempSid);
+			pTempSid = nullptr;
+		}
+
+		// Allocate SID buffer
+		pTempSid = (PSID)EIDAlloc(dLengthSid);
+		if (!pTempSid)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to allocate SID buffer");
+			return FALSE;
+		}
+		SecureZeroMemory(pTempSid, dLengthSid);
+
+		cchReferencedDomainName=UNCLEN;
+		bResult = LookupAccountNameW( nullptr, UserName, pTempSid,&dLengthSid,checkDomainName, &cchReferencedDomainName, &Use);
+
+		if (bResult)
+		{
+			*pUserSid = pTempSid;
+			return TRUE;  // Success - exit retry loop
+		}
+
+		DWORD dwError = GetLastError();
+		if (dwError == ERROR_INSUFFICIENT_BUFFER)
+		{
+			// Buffer size changed between check and use (TOCTOU race condition)
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"TOCTOU race condition on retry %u: buffer size changed (retrying...)",
+				dwRetryCount + 1);
+			// Loop will continue with new dLengthSid value
+		}
+		else
+		{
+			// Different error - not a TOCTOU issue, don't retry
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to LookupAccountNameW 0x%08x",dwError);
+			EIDFree(pTempSid);
+			return FALSE;
+		}
+	}
+
+	// Exhausted retries
+	EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Exhausted %u retries for SID lookup (possible persistent race condition)",
+		MAX_RETRIES);
+	if (pTempSid)
+	{
+		EIDFree(pTempSid);
+	}
+	return FALSE;
 }
 
 BOOL GetGroups(WCHAR* UserName,PGROUP_USERS_INFO_1 *lpGroupInfo, LPDWORD pTotalEntries)

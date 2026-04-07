@@ -340,7 +340,7 @@ BOOL CContainer::TriggerRemovePolicy() const
 #ifdef UNICODE
 		wcscpy_s((PWSTR)pbBuffer, wcslen(_szReaderName) + 1, _szReaderName);
 #else
-		MultiByteToWideChar(CP_ACP, 0, _szReaderName, _tcslen(_szReaderName) + 1, pbBuffer, _tcslen(_szReaderName) + 1);
+		MultiByteToWideChar(CP_UTF8, 0, _szReaderName, _tcslen(_szReaderName) + 1, pbBuffer, _tcslen(_szReaderName) + 1);
 #endif
 		*(PUSHORT)(pbBuffer + dwSize - sizeof(USHORT)) = _ActivityCount;
 		*(PUSHORT)(pbBuffer + dwSize - 2*sizeof(USHORT)) = 0;

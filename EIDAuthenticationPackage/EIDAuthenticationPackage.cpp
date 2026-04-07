@@ -1,4 +1,4 @@
-/*
+﻿/*
     EID Authentication - Smart card authentication for Windows
     Copyright (C) 2009 Vincent Le Toux
     Copyright (C) 2026 Contributors
@@ -103,7 +103,13 @@ extern "C"
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"String too long for UNICODE_STRING (%d chars)", Size);
 			return NULL;
 		}
-		PWSTR Buffer = static_cast<PWSTR>(EIDAlloc(static_cast<DWORD>((Size+1) * sizeof(WCHAR))));
+		// BUG-002: Protect against integer overflow in buffer allocation
+		if (Size > (MAXDWORD / sizeof(WCHAR)) - 1)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"String size too large for safe allocation (%d chars)", Size);
+			return NULL;
+		}
+		PWSTR Buffer = static_cast<PWSTR>(EIDAlloc((Size + 1) * sizeof(WCHAR)));
 		if (Buffer == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Buffer");
 			return NULL;
@@ -1258,12 +1264,15 @@ extern "C"
 					if (pCurrent == NULL || pCurrent->usri0_name == NULL)
 						break;
 
-					// Get the SID for this user
+					// BUG FIX #16: TOCTOU race condition mitigation - use retry loop for SID allocation
 					PBYTE pSidBuffer = NULL;
 					DWORD dwSidSize = 0;
 					PWSTR pDomain = NULL;
 					DWORD dwDomainSize = 0;
 					SID_NAME_USE sidUse = SidTypeUnknown;
+					constexpr DWORD MAX_RETRIES = 3;
+					DWORD dwRetryCount = 0;
+					BOOL fSuccess = FALSE;
 
 					// First call to get buffer sizes
 					LookupAccountName(NULL, pCurrent->usri0_name, NULL, &dwSidSize, NULL, &dwDomainSize, &sidUse);
@@ -1273,12 +1282,59 @@ extern "C"
 						continue;
 					}
 
-					pSidBuffer = (PBYTE)EIDAlloc(dwSidSize);
-					pDomain = (PWSTR)EIDAlloc(dwDomainSize * sizeof(WCHAR));
-
-					if (pSidBuffer && pDomain)
+					// Retry loop for SID allocation (handles TOCTOU race condition)
+					for (dwRetryCount = 0; dwRetryCount < MAX_RETRIES; dwRetryCount++)
 					{
-						if (LookupAccountName(NULL, pCurrent->usri0_name, pSidBuffer, &dwSidSize, pDomain, &dwDomainSize, &sidUse))
+						// Clean up from previous retry
+						if (pSidBuffer)
+						{
+							EIDFree(pSidBuffer);
+							pSidBuffer = NULL;
+						}
+						if (pDomain)
+						{
+							EIDFree(pDomain);
+							pDomain = NULL;
+						}
+
+						// Allocate buffers
+						pSidBuffer = (PBYTE)EIDAlloc(dwSidSize);
+						pDomain = (PWSTR)EIDAlloc(dwDomainSize * sizeof(WCHAR));
+
+						if (pSidBuffer && pDomain)
+						{
+							SecureZeroMemory(pSidBuffer, dwSidSize);
+							SecureZeroMemory(pDomain, dwDomainSize * sizeof(WCHAR));
+
+							if (LookupAccountName(NULL, pCurrent->usri0_name, pSidBuffer, &dwSidSize, pDomain, &dwDomainSize, &sidUse))
+							{
+								fSuccess = TRUE;
+								break;  // Success - exit retry loop
+							}
+
+							DWORD dwError = GetLastError();
+							if (dwError == ERROR_INSUFFICIENT_BUFFER)
+							{
+								// Buffer size changed between check and use (TOCTOU race condition)
+								EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"TOCTOU race condition on retry %u for %s: buffer size changed (retrying...)",
+									dwRetryCount + 1, pCurrent->usri0_name);
+								// Loop will continue with new buffer sizes
+							}
+							else
+							{
+								// Different error - not a TOCTOU issue, don't retry
+								EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CleanupLsaCredentials: LookupAccountName failed for %s (0x%08x)", pCurrent->usri0_name, dwError);
+								break;
+							}
+						}
+						else
+						{
+							EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CleanupLsaCredentials: Failed to allocate buffers");
+							break;
+						}
+					}
+
+					if (fSuccess)
 						{
 							// Extract RID from SID
 							if (IsValidSid((PSID)pSidBuffer))
@@ -1337,7 +1393,6 @@ extern "C"
 
 						if (pDomain) EIDFree(pDomain);
 						if (pSidBuffer) EIDFree(pSidBuffer);
-					}
 
 					pCurrent++;
 				}

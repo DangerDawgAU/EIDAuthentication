@@ -3,6 +3,7 @@
 
 #include "UserManagement.h"
 #include "LsaClient.h"
+#include "AuditLogging.h"
 #include "Tracing.h"
 #include <lm.h>
 
@@ -109,6 +110,22 @@ HRESULT CreateLocalUserAccount(
 
     NET_API_STATUS status = NetUserAdd(nullptr, 1,
         reinterpret_cast<LPBYTE>(&ui1), nullptr);
+
+    // BUG FIX #21: Audit logging for user creation
+    if (status == NERR_Success)
+    {
+        WCHAR szDetails[256];
+        swprintf_s(szDetails, ARRAYSIZE(szDetails), L"User account created: %ls (Enabled: %d)",
+            wsUsername.c_str(), fEnabled);
+        LOG_USER_CREATED(wsUsername.c_str(), szDetails);
+    }
+    else
+    {
+        WCHAR szDetails[256];
+        swprintf_s(szDetails, ARRAYSIZE(szDetails), L"User creation failed for %ls: Error %u",
+            wsUsername.c_str(), status);
+        LOG_WARNING(szDetails);
+    }
 
     return HRESULT_FROM_WIN32(status);
 }

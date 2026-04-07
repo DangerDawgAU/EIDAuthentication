@@ -18,6 +18,15 @@ enum class EID_AUDIT_EVENT_TYPE : DWORD
     VALIDATION_SUCCESS = 7,
     VALIDATION_FAILURE = 8,
     WARNING = 9,
+    // BUG FIX #21: Additional audit event types for security monitoring
+    USER_CREATED = 10,
+    GROUP_CREATED = 11,
+    CERTIFICATE_INSTALLED = 12,
+    CERTIFICATE_VALIDATION_FAILED = 13,
+    RATE_LIMIT_EXCEEDED = 14,
+    CREDENTIAL_EXPORT_START = 15,
+    CREDENTIAL_IMPORT_START = 16,
+    LSA_ACCESS = 17,
 };
 
 // Initialize audit logging
@@ -69,3 +78,20 @@ WORD GetEventLogLevel(_In_ EID_AUDIT_EVENT_TYPE eventType);
     LogAuditEventBoth(EID_AUDIT_EVENT_TYPE::ACCESS_DENIED, user, details)
 #define LOG_WARNING(details) \
     LogAuditEventBoth(EID_AUDIT_EVENT_TYPE::WARNING, nullptr, details)
+// BUG FIX #21: Additional audit macros for security monitoring
+#define LOG_USER_CREATED(user, details) \
+    LogAuditEventBoth(EID_AUDIT_EVENT_TYPE::USER_CREATED, user, details)
+#define LOG_GROUP_CREATED(group, details) \
+    LogAuditEventBoth(EID_AUDIT_EVENT_TYPE::GROUP_CREATED, group, details)
+#define LOG_CERTIFICATE_INSTALLED(user, details) \
+    LogAuditEventBoth(EID_AUDIT_EVENT_TYPE::CERTIFICATE_INSTALLED, user, details)
+#define LOG_CERTIFICATE_VALIDATION_FAILED(user, details) \
+    LogAuditEventBoth(EID_AUDIT_EVENT_TYPE::CERTIFICATE_VALIDATION_FAILED, user, details)
+#define LOG_RATE_LIMIT_EXCEEDED(details) \
+    LogAuditEventBoth(EID_AUDIT_EVENT_TYPE::RATE_LIMIT_EXCEEDED, nullptr, details)
+#define LOG_EXPORT_START(details) \
+    LogAuditEventBoth(EID_AUDIT_EVENT_TYPE::CREDENTIAL_EXPORT_START, nullptr, details)
+#define LOG_IMPORT_START(details) \
+    LogAuditEventBoth(EID_AUDIT_EVENT_TYPE::CREDENTIAL_IMPORT_START, nullptr, details)
+#define LOG_LSA_ACCESS(details) \
+    LogAuditEventBoth(EID_AUDIT_EVENT_TYPE::LSA_ACCESS, nullptr, details)

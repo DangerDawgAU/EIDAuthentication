@@ -135,7 +135,7 @@ HRESULT CEIDCredential::Initialize()
 	{
 		EIDLogErrorWithContext("Initialize::SHStrDupW", hr, L"field=certificate");
 	}
-    return S_OK;
+    return hr;
 }
 
 CContainer* CEIDCredential::GetContainer() const
