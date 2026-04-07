@@ -1,4 +1,4 @@
-name: Build on windows.
+name: Build on windows
 on:
   release:
     types: [published]
@@ -16,15 +16,6 @@ jobs:
         with:
           msbuild-architecture: x64
 
-      - name: Download CPDK 
-        run: Invoke-WebRequest https://download.microsoft.com/download/1/7/6/176909b0-50f2-4df3-b29b-830a17ea7e38/CPDK_RELEASE_UPDATE/cpdksetup.exe -OutFile cpdksetup.exe
-
-      - name: Unattened install of CPDK
-        run: Start-Process -FilePath "./cpdksetup.exe" -Wait -NoNewWindow -ArgumentList "/features", "+", "/q", "/log", "./install-log.txt"
-
-      - name: CPDK Check
-        run: type ./install-log.txt; dir 'c:\program files (x86)\windows kits\10\'
-
       - name: Build app for release
         run: msbuild EIDCredentialProvider.sln -t:rebuild -property:Configuration=Release /p:Platform=x64
 
@@ -34,14 +25,21 @@ jobs:
       - name: Copy license for NSIS
         run: Copy-Item LICENSE Installer\License.txt
 
-      - name: Verify build outputs
-        run: Get-ChildItem -Path x64\Release -Recurse
-
       - name: Create nsis installer
         run: '"C:\Program Files (x86)\NSIS\makensis.exe" /V3 "Installer\Installerx64.nsi"'
+
+      - name: Create release archive
+        shell: pwsh
+        run: |
+          $zipDir = New-Item -ItemType Directory -Path "Installer\Zip" -Force
+          Copy-Item "Installer\EIDInstallx64.exe" -Destination $zipDir
+          Copy-Item "Installer\License.txt" -Destination $zipDir
+          Compress-Archive -Path "$($zipDir.FullName)\*" -DestinationPath "Installer\EIDAuthentication-x64.zip" -Force
 
       - name: upload binaries to release
         uses: softprops/action-gh-release@v2
         if: ${{startsWith(github.ref, 'refs/tags/') }}
         with:
-            files: Installer/EIDInstallx64.exe
+            files: |
+              Installer/EIDInstallx64.exe
+              Installer/EIDAuthentication-x64.zip
