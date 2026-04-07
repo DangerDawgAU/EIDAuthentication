@@ -12,6 +12,7 @@
     - EIDLogManager.exe (Log management utility)
     - EIDMigrate.exe (Credential migration CLI utility, x64 only)
     - EIDMigrateUI.exe (Credential migration GUI wizard, x64 only)
+    - EIDManageUsers.exe (User account management tool, x64 only)
     - Installer (NSIS installer for Release builds)
 
 .PARAMETER Configuration
@@ -46,19 +47,45 @@ Write-Host "Configuration: $Configuration" -ForegroundColor White
 Write-Host "Platform: $Platform" -ForegroundColor White
 Write-Host ""
 
-# Find Visual Studio 2025 installation (using VS2022 build tools v143)
-$devEnvPath = "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\devenv.com"
+# Find Visual Studio 2022 installation
+$devEnvPath = $null
 
-if (-not (Test-Path $devEnvPath)) {
-    Write-Host "ERROR: Visual Studio 2025 not found at $devEnvPath" -ForegroundColor Red
+# Try VSWhere first (Microsoft's official VS detection tool)
+$vsWherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+if (Test-Path $vsWherePath) {
+    $vsPath = & $vsWherePath -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>$null
+    if ($vsPath) {
+        $devEnvPath = Join-Path $vsPath "Common7\IDE\devenv.com"
+    }
+}
+
+# Fallback to common paths if VSWhere fails
+if (-not $devEnvPath) {
+    $vsEditions = @("Community", "Professional", "Enterprise", "BuildTools")
+    $vsBasePath = "C:\Program Files\Microsoft Visual Studio\2022"
+
+    foreach ($edition in $vsEditions) {
+        $testPath = Join-Path $vsBasePath "$edition\Common7\IDE\devenv.com"
+        if (Test-Path $testPath) {
+            $devEnvPath = $testPath
+            break
+        }
+    }
+}
+
+if (-not $devEnvPath) {
+    Write-Host "ERROR: Visual Studio 2022 not found" -ForegroundColor Red
     Write-Host ""
-    Write-Host "Please ensure Visual Studio 2025 Community is installed with:" -ForegroundColor Yellow
+    Write-Host "Please ensure Visual Studio 2022 is installed with:" -ForegroundColor Yellow
     Write-Host "  - Desktop development with C++" -ForegroundColor Yellow
     Write-Host "  - Windows SDK 10.0.22621.0 or later" -ForegroundColor Yellow
     Write-Host "  - Platform Toolset v143 (VS 2022 Build Tools)" -ForegroundColor Yellow
     Write-Host ""
+    Write-Host "Download from: https://visualstudio.microsoft.com/downloads/" -ForegroundColor Cyan
     exit 1
 }
+
+Write-Host "Found Visual Studio at: $devEnvPath" -ForegroundColor Gray
 
 # Copy icons to project directories (if they exist)
 Write-Host ""
@@ -78,6 +105,8 @@ $iconMappings = @(
     @{ Source = "app_migrate_cli.ico"; Destination = "EIDMigrate\app.ico" }
     # Migrate UI Icon
     @{ Source = "app_migrate_gui.ico"; Destination = "EIDMigrateUI\app.ico" }
+    # Manage Users Icon
+    @{ Source = "app_migrate_gui.ico"; Destination = "EIDManageUsers\app.ico" }
     # Trace Consumer Icon
     @{ Source = "app_trace_consumer.ico"; Destination = "EIDTraceConsumer\app.ico" }
     # Installer Icon
@@ -204,6 +233,7 @@ $outputFiles | ForEach-Object {
     $color = "Gray"
     if ($_.Name -eq "EIDMigrate.exe") { $color = "Cyan" }
     if ($_.Name -eq "EIDMigrateUI.exe") { $color = "Cyan" }
+    if ($_.Name -eq "EIDManageUsers.exe") { $color = "Cyan" }
     Write-Host "  $($_.Name) - $($_.Length) bytes" -ForegroundColor $color
 }
 
@@ -211,6 +241,7 @@ $outputFiles | ForEach-Object {
 Write-Host ""
 Write-Host "NOTE: EIDMigrate.exe is a CLI credential migration utility (x64 only)." -ForegroundColor Cyan
 Write-Host "      EIDMigrateUI.exe is a GUI wizard for credential migration (x64 only)." -ForegroundColor Cyan
+Write-Host "      EIDManageUsers.exe is a user account management tool (x64 only)." -ForegroundColor Cyan
 Write-Host "      Use with caution in production environments." -ForegroundColor Yellow
 
 # Build installer (Release only)
@@ -332,6 +363,7 @@ if ($Configuration -eq "Release") {
             Write-Host "  - Configuration Wizard" -ForegroundColor Gray
             Write-Host "  - EIDMigrate.exe (CLI credential migration utility)" -ForegroundColor Gray
             Write-Host "  - EIDMigrateUI.exe (GUI credential migration wizard)" -ForegroundColor Gray
+            Write-Host "  - EIDManageUsers.exe (User account management tool)" -ForegroundColor Gray
             Write-Host "  - Start Menu folder with all application shortcuts" -ForegroundColor Gray
             Write-Host "  - Certificate cleanup script (CleanupCertificates.ps1)" -ForegroundColor Gray
             Write-Host "  - Uninstaller with certificate removal" -ForegroundColor Gray
