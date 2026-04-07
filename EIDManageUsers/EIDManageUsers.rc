@@ -1,0 +1,179 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#define APSTUDIO_HIDDEN_SYMBOLS
+#include "windows.h"
+#undef APSTUDIO_HIDDEN_SYMBOLS
+#include "../EIDCardLibrary/EIDAuthenticateVersion.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Neutral resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+IDI_APP_ICON            ICON                    "app.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION EIDAuthenticateVersionNumeric
+ PRODUCTVERSION EIDAuthenticateVersionNumeric
+ FILEFLAGSMASK 0x0L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "000004b0"
+        BEGIN
+            VALUE "CompanyName", "www.mysmartlogon.com"
+            VALUE "FileDescription", "EID User Management Tool"
+            VALUE "FileVersion", EIDAuthenticateVersionText
+            VALUE "InternalName", "EIDManageUsers.exe"
+            VALUE "OriginalFilename", "EIDManageUsers.exe"
+            VALUE "ProductName", "EIDAuthenticate"
+            VALUE "ProductVersion", EIDAuthenticateVersionText
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0, 1200
+    END
+END
+
+#endif    // Neutral resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United States) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_MAIN DIALOGEX 0, 0, 420, 280
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Show:", IDC_STATIC, 10, 10, 30, 10
+    CONTROL         "EID-enabled users", IDC_MAIN_FILTER_EID, "Button",
+                    BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP, 45, 10, 100, 10
+    CONTROL         "All local users", IDC_MAIN_FILTER_ALL, "Button",
+                    BS_AUTORADIOBUTTON | WS_TABSTOP, 150, 10, 80, 10
+    PUSHBUTTON      "Refresh", IDC_MAIN_REFRESH, 350, 8, 60, 14
+
+    CONTROL         "", IDC_MAIN_LIST, "SysListView32",
+                    LVS_REPORT | LVS_SINGLESEL | WS_TABSTOP,
+                    10, 30, 400, 150, WS_EX_CLIENTEDGE
+
+    LTEXT           "Selected:", IDC_STATIC, 10, 190, 40, 10
+    LTEXT           "0 users", IDC_MAIN_SELECTED_COUNT, 55, 190, 100, 10
+
+    PUSHBUTTON      "View Details", IDC_MAIN_DETAILS, 10, 210, 80, 14
+    PUSHBUTTON      "Manage Selected...", IDC_MAIN_MANAGE, 100, 210, 100, 14
+    PUSHBUTTON      "Settings", IDC_MAIN_SETTINGS, 330, 210, 80, 14
+
+    GROUPBOX        "", IDC_STATIC, 5, 235, 410, 5
+END
+
+IDD_SETTINGS DIALOGEX 0, 0, 350, 280
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "EID User Management Settings"
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "EID-Related Groups (for ""Remove from groups"" action):",
+                    IDC_STATIC, 10, 10, 330, 10
+
+    LISTBOX         IDC_SETTINGS_GROUPS_LIST, 10, 25, 200, 120,
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+
+    LTEXT           "Selected:", IDC_STATIC, 10, 150, 40, 10
+    LTEXT           "0 group(s)", IDC_SETTINGS_GROUPS_COUNT, 55, 150, 100, 10
+
+    LTEXT           "Add new group:", IDC_STATIC, 220, 25, 60, 10
+    EDITTEXT        IDC_SETTINGS_GROUP_EDIT, 220, 40, 120, 12, ES_AUTOHSCROLL
+    PUSHBUTTON      "Add", IDC_SETTINGS_GROUP_ADD, 220, 58, 60, 14
+    PUSHBUTTON      "Remove", IDC_SETTINGS_GROUP_REMOVE, 280, 58, 60, 14
+
+    GROUPBOX        "Options", IDC_STATIC, 10, 175, 330, 60
+    CONTROL         "Confirm before destructive actions", IDC_SETTINGS_CONFIRM,
+                    "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 20, 195, 200, 10
+    CONTROL         "Show security warnings", IDC_SETTINGS_WARNINGS,
+                    "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 20, 215, 200, 10
+
+    DEFPUSHBUTTON   "Save", IDOK, 190, 245, 70, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 270, 245, 70, 14
+END
+
+IDD_MANAGE DIALOGEX 0, 0, 350, 280
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Manage Selected Users"
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Select actions to perform:", IDC_STATIC, 10, 10, 200, 10
+
+    GROUPBOX        "Destructive Actions", IDC_STATIC, 10, 25, 330, 120
+    CONTROL         "Remove EID credential (LSA secret)", IDC_MANAGE_REMOVE_CRED,
+                    "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 20, 45, 300, 10
+    CONTROL         "Remove certificates from user store", IDC_MANAGE_REMOVE_CERTS,
+                    "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 20, 65, 300, 10
+    CONTROL         "Remove from EID-related groups", IDC_MANAGE_REMOVE_GROUPS,
+                    "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 20, 85, 300, 10
+    CONTROL         "Delete entire user account (including profile)",
+                    IDC_MANAGE_DELETE_ACCOUNT, "Button", BS_AUTOCHECKBOX | WS_TABSTOP,
+                    20, 105, 300, 10
+
+    LTEXT           "", IDC_MANAGE_WARNING, 20, 125, 310, 20
+
+    CONTROL         "", IDC_STATIC, "Static", SS_ICON, 10, 155, 20, 20
+    LTEXT           "Warning: These actions cannot be undone!",
+                    IDC_STATIC, 35, 160, 300, 10
+
+    DEFPUSHBUTTON   "Confirm", IDOK, 190, 245, 70, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 270, 245, 70, 14
+END
+
+IDD_DETAILS DIALOGEX 0, 0, 400, 320
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "User Details"
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    EDITTEXT        IDC_DETAILS_TEXT, 10, 10, 380, 290,
+                    ES_MULTILINE | ES_READONLY | WS_VSCROLL | WS_HSCROLL
+
+    DEFPUSHBUTTON   "Close", IDOK, 320, 305, 70, 14
+END
+
+#endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
