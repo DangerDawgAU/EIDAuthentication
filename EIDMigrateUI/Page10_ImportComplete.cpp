@@ -81,8 +81,29 @@ INT_PTR CALLBACK WndProc_10_ImportComplete(HWND hwndDlg, UINT uMsg, WPARAM wPara
     case WM_COMMAND:
     {
         if (LOWORD(wParam) == IDC_10_VIEW_LOG) {
-            MessageBoxW(hwndDlg, L"Log file not yet implemented.",
-                L"View Log", MB_ICONINFORMATION);
+            WCHAR szModulePath[MAX_PATH] = { 0 }; // NOSONAR - Windows API GetModuleFileNameW requires WCHAR buffer
+            if (GetModuleFileNameW(nullptr, szModulePath, ARRAYSIZE(szModulePath)) == 0) {
+                MessageBoxW(hwndDlg, L"Unable to locate installation directory.",
+                    L"View Log", MB_ICONWARNING);
+                return TRUE;
+            }
+            std::wstring wsLogManager(szModulePath);
+            size_t pos = wsLogManager.find_last_of(L"\\/");
+            if (pos == std::wstring::npos) {
+                MessageBoxW(hwndDlg, L"Unable to locate installation directory.",
+                    L"View Log", MB_ICONWARNING);
+                return TRUE;
+            }
+            wsLogManager = wsLogManager.substr(0, pos + 1) + L"EIDLogManager.exe";
+
+            HINSTANCE hResult = ShellExecuteW(hwndDlg, L"open", wsLogManager.c_str(),
+                nullptr, nullptr, SW_SHOWNORMAL);
+            if ((INT_PTR)hResult <= 32) {
+                MessageBoxW(hwndDlg,
+                    L"Unable to launch EIDLogManager.exe. Open it manually from the "
+                    L"installation directory or the Start Menu (EID Authentication -> Log Manager).",
+                    L"View Log", MB_ICONWARNING);
+            }
             return TRUE;
         }
         break;

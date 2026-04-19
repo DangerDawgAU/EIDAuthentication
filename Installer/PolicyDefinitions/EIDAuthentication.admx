@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  EID Authentication - Group Policy administrative template
+
+  This ADMX exposes the custom policies introduced by the EID Authentication
+  product. Most of the smart-card credential-provider policies consumed by
+  the product (AllowSignatureOnlyKeys, AllowIntegratedUnblock,
+  CertPropEnabledString, FilterDuplicateCertificates, etc.) are already
+  defined in the Windows-shipped SmartCard.admx and are respected directly
+  from the same registry hive. Only the product-specific policies are
+  defined below.
+
+  Registry location (all values): HKLM\SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider
+-->
+<policyDefinitions revision="1.0" schemaVersion="1.0">
+  <policyNamespaces>
+    <target prefix="eidauth" namespace="EIDAuthentication.Policies" />
+    <using prefix="windows" namespace="Microsoft.Policies.Windows" />
+  </policyNamespaces>
+
+  <resources minRequiredRevision="1.0" />
+
+  <supportedOn>
+    <definitions>
+      <definition name="SUPPORTED_EIDAuth_1_0" displayName="$(string.SUPPORTED_EIDAuth_1_0)" />
+    </definitions>
+  </supportedOn>
+
+  <categories>
+    <category name="EIDAuthentication" displayName="$(string.Cat_EIDAuthentication)">
+      <parentCategory ref="windows:WindowsComponents" />
+    </category>
+  </categories>
+
+  <policies>
+
+    <policy name="EnforceCSPWhitelist"
+            class="Machine"
+            displayName="$(string.EnforceCSPWhitelist)"
+            explainText="$(string.EnforceCSPWhitelist_Help)"
+            key="SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider"
+            valueName="EnforceCSPWhitelist">
+      <parentCategory ref="EIDAuthentication" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+
+  </policies>
+</policyDefinitions>

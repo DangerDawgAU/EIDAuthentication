@@ -131,7 +131,17 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPAR
 				//this is an interior page
 				ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_05LIST));
 				PopulateListViewListData(GetDlgItem(hWnd, IDC_05LIST));
-				// load string from resource
+				// Enforce correct button state based on test checkbox
+				// When test is checked, only allow Next (not Finish) to ensure results page is shown
+				if (IsDlgButtonChecked(hWnd, IDC_05TEST))
+				{
+					PropSheet_SetWizButtons(hWnd, PSWIZB_NEXT | PSWIZB_BACK);
+				}
+				else
+				{
+					// When test is not checked, allow Finish to skip testing
+					PropSheet_SetWizButtons(hWnd, PSWIZB_FINISH | PSWIZB_BACK);
+				}
 				break;
 			case PSN_WIZFINISH :
 			case PSN_WIZNEXT:
@@ -182,15 +192,7 @@ INT_PTR CALLBACK	WndProc_05PASSWORD(HWND hWnd, UINT message, WPARAM wParam, LPAR
 						PropSheet_SetCurSelByID(hWnd, IDD_07TESTRESULTNOTOK);
 						return TRUE;
 					}
-					// Test succeeded - go to the success page
-					if (pnmh->code == PSN_WIZFINISH)
-					{
-						// For PSN_WIZFINISH, explicitly navigate to success page and prevent wizard from closing
-						PropSheet_SetCurSelByID(hWnd, IDD_06TESTRESULTOK);
-						SetWindowLongPtr(hWnd, DWLP_MSGRESULT, TRUE);
-						return TRUE;
-					}
-					// For PSN_WIZNEXT, wizard naturally proceeds to next page (success page)
+					// Test succeeded - wizard proceeds to next page (success page)
 				}
 				break;
 			case PSN_RESET:

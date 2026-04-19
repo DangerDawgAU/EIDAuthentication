@@ -14,8 +14,8 @@
 #include <vector>
 #include <exception>
 
-// Global application state
-APP_STATE g_AppState;
+// Global application state is now defined in Globals.cpp
+// to allow sharing between EIDMigrate and EIDManageUsers
 
 // Print usage information
 void ShowUsage()

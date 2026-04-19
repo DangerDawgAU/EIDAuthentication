@@ -17,6 +17,27 @@ public:
     using pointer = T*;
     using const_pointer = const T*;
     using size_type = size_t;
+    using difference_type = ptrdiff_t;
+
+    // C++17/20 allocator propagation traits
+    using propagate_on_container_copy_assignment = std::true_type;
+    using propagate_on_container_move_assignment = std::true_type;
+    using propagate_on_container_swap = std::true_type;
+    using is_always_equal = std::true_type;
+
+    // Rebind for C++14 and earlier (not needed in C++17+ but kept for compatibility)
+    template<typename U>
+    struct rebind
+    {
+        using other = SecureAllocator<U>;
+    };
+
+    // Default constructor
+    SecureAllocator() = default;
+
+    // Converting constructor (allows allocator<T> to construct allocator<U>)
+    template<typename U>
+    SecureAllocator(const SecureAllocator<U>&) noexcept {}
 
     pointer allocate(size_type n)
     {

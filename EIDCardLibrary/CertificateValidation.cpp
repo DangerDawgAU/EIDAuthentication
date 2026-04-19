@@ -1,6 +1,5 @@
 /*
     EID Authentication - Smart card authentication for Windows
-    Copyright (C) 2009 Vincent Le Toux
     Copyright (C) 2026 Contributors
 
     This program is free software: you can redistribute it and/or modify
@@ -96,15 +95,22 @@ BOOL CheckChainTrustStatus(__in PCCERT_CHAIN_CONTEXT pChainContext, __out DWORD*
 
     DWORD dwStatus = pChainContext->TrustStatus.dwErrorStatus;
 
-    // Soft failures: non-security-critical conditions that allow continuation
-    // Revocation status unknown is a soft failure - this system is locally administered
-    // without access to CRL/OCSP infrastructure
+    // Soft failures: non-security-critical conditions that allow continuation.
+    //   IS_NOT_TIME_NESTED         : a non-root cert expires after its issuer - harmless.
+    //   REVOCATION_STATUS_UNKNOWN  : no CRL/OCSP reachable - expected on air-gapped hosts.
+    //   HAS_NOT_SUPPORTED_NAME_CONSTRAINT, HAS_NOT_DEFINED_NAME_CONSTRAINT:
+    //     constraint types Windows can't evaluate - treat as unknown rather than failure.
+    //
+    // NOT soft-failed (intentional):
+    //   HAS_NOT_PERMITTED_NAME_CONSTRAINT - cert names a subject outside the
+    //     permitted subtree of an issuer above it.
+    //   HAS_EXCLUDED_NAME_CONSTRAINT      - cert names a subject inside the
+    //     excluded subtree of an issuer above it.
+    //   Both indicate an explicit PKI policy violation; honour them.
     constexpr DWORD SOFT_FAILURES = CERT_TRUST_IS_NOT_TIME_NESTED |
                                     CERT_TRUST_REVOCATION_STATUS_UNKNOWN |
                                     CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT |
-                                    CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT |
-                                    CERT_TRUST_HAS_NOT_PERMITTED_NAME_CONSTRAINT |
-                                    CERT_TRUST_HAS_EXCLUDED_NAME_CONSTRAINT;
+                                    CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT;
 
     DWORD dwHardFailures = dwStatus & ~SOFT_FAILURES;
 
@@ -707,13 +713,17 @@ BOOL IsAllowedCSPProvider(__in LPCWSTR pwszProviderName)
 	// Not in whitelist - log security warning
 	EIDSecurityAudit(SECURITY_AUDIT_WARNING, L"Unknown CSP provider '%s' - not in whitelist", pwszProviderName);
 
-	// Check if strict enforcement is enabled via policy
+	// Behaviour is gated by the EnforceCSPWhitelist GPO:
+	//   policy = 1 : block unknown providers (high-assurance)
+	//   policy = 0 : allow unknown providers, audit-only (Windows default behaviour)
+	// The default of 0 preserves interoperability with third-party smart-card
+	// CSPs that legitimately exist but are not on our whitelist. Turn the
+	// policy on in environments where provider substitution is a concern.
 	if (GetPolicyValue(GPOPolicy::EnforceCSPWhitelist))
 	{
 		EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"CSP provider '%s' blocked by EnforceCSPWhitelist policy", pwszProviderName);
 		return FALSE;
 	}
 
-	// Deny by default - unknown CSPs must be explicitly added to whitelist
-	return FALSE;
+	return TRUE;
 }

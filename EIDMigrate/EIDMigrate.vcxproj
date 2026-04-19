@@ -99,6 +99,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="EIDMigrate.cpp" />
+    <ClCompile Include="Globals.cpp" />
     <ClCompile Include="Export.cpp" />
     <ClCompile Include="Import.cpp" />
     <ClCompile Include="List.cpp" />

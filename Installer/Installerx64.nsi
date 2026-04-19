@@ -53,6 +53,18 @@
   !insertmacro MUI_LANGUAGE "French"
 
 ;--------------------------------
+;Install types
+;
+;  1 = Core     - application only (existing behaviour)
+;  2 = Complete - application + bundled smart-card minidrivers
+;                 (MyEID / YubiKey / Idemia IDOne PIV). All minidriver
+;                 packages are embedded in the installer at build time -
+;                 no internet access is required at install time.
+
+  InstType "Core"
+  InstType "Complete"
+
+;--------------------------------
 ;Variables for size calculation
 
   Var /GLOBAL InstallSize
@@ -67,7 +79,7 @@
 ;Installer Sections
 
 Section "Core" SecCore
-  SectionIn RO
+  SectionIn RO 1 2
 
   ; Initialize install size counter
   StrCpy $InstallSize 0
@@ -109,8 +121,36 @@ Section "Core" SecCore
   Push "$INSTDIR\EIDMigrateUI.exe"
   Call AddFileSize
 
+  FILE "..\x64\Release\EIDManageUsers.exe"
+  Push "$INSTDIR\EIDManageUsers.exe"
+  Call AddFileSize
+
+  FILE "..\x64\Release\EIDTraceConsumer.exe"
+  Push "$INSTDIR\EIDTraceConsumer.exe"
+  Call AddFileSize
+
   ; Install icon for DisplayIcon (installed programs list)
   FILE "cred_provider.ico"
+
+  ; Install Group Policy administrative templates (ADMX/ADML) so the
+  ; custom EID Authentication policies appear in gpedit.msc.
+  ; Destination: %WINDIR%\PolicyDefinitions (picked up by Group Policy
+  ; Editor automatically on next launch).
+  DetailPrint "Installing Group Policy templates..."
+  SetOutPath "$WINDIR\PolicyDefinitions"
+  File "PolicyDefinitions\EIDAuthentication.admx"
+  SetOutPath "$WINDIR\PolicyDefinitions\en-US"
+  File "PolicyDefinitions\en-US\EIDAuthentication.adml"
+  SetOutPath "$INSTDIR"
+
+  ; Install manual-run administrator tools. Disable-LsaProtection.ps1 must
+  ; NOT be executed by the installer - the sysadmin has to read the warning
+  ; page and type a confirmation phrase. Ship it under $INSTDIR\tools\ so
+  ; it is always available locally after install.
+  DetailPrint "Installing administrator tools..."
+  SetOutPath "$INSTDIR\tools"
+  File "tools\Disable-LsaProtection.ps1"
+  SetOutPath "$INSTDIR"
 
   ; Copy DLLs to System32 (required for LSA and Credential Provider)
   ${DisableX64FSRedirection}
@@ -129,6 +169,16 @@ Section "Core" SecCore
   CreateShortcut "$SMPROGRAMS\EID Authentication\Log Manager.lnk" "$INSTDIR\EIDLogManager.exe" "" "$INSTDIR\EIDLogManager.exe" 0
   CreateShortcut "$SMPROGRAMS\EID Authentication\Credential Migration (CLI).lnk" "$INSTDIR\EIDMigrate.exe" "" "$INSTDIR\EIDMigrate.exe" 0
   CreateShortcut "$SMPROGRAMS\EID Authentication\Credential Migration (GUI).lnk" "$INSTDIR\EIDMigrateUI.exe" "" "$INSTDIR\EIDMigrateUI.exe" 0
+  CreateShortcut "$SMPROGRAMS\EID Authentication\Manage Users.lnk" "$INSTDIR\EIDManageUsers.exe" "" "$INSTDIR\EIDManageUsers.exe" 0
+  CreateShortcut "$SMPROGRAMS\EID Authentication\Trace Consumer.lnk" "$INSTDIR\EIDTraceConsumer.exe" "" "$INSTDIR\EIDTraceConsumer.exe" 0
+  ; Elevated PowerShell shortcut for the LSA Protection toggle script.
+  ; Uses -NoExit so the warning page and outcome remain visible after the
+  ; script returns; ExecutionPolicy Bypass scoped to this process only.
+  CreateShortcut "$SMPROGRAMS\EID Authentication\Disable LSA Protection (manual).lnk" \
+    "powershell.exe" \
+    '-NoProfile -NoExit -ExecutionPolicy Bypass -File "$INSTDIR\tools\Disable-LsaProtection.ps1"' \
+    "$INSTDIR\cred_provider.ico" 0 SW_SHOWNORMAL "" \
+    "Manually disable Windows LSA Protection so unsigned EID DLLs can load. Reads a warning page and requires confirmation."
   CreateShortcut "$SMPROGRAMS\EID Authentication\Uninstall.lnk" "$INSTDIR\EIDUninstall.exe" "" "$INSTDIR\EIDUninstall.exe" 0
 
   ; Create desktop shortcut pointing to Program Files
@@ -159,10 +209,16 @@ Section "Core" SecCore
   ; Register authentication package (from System32)
   ExecWait 'rundll32.exe "$SYSDIR\EIDAuthenticationPackage.dll",DllRegister'
 
-  ; Enable and start Smart Card services (required for smart card functionality)
-  DetailPrint "Configuring Smart Card services..."
-  nsExec::ExecToLog 'sc config SCardSvr start= demand'
-  nsExec::ExecToLog 'sc config ScDeviceEnum start= demand'
+  ; Configure Smart Card services to start automatically on boot. The
+  ; default state on Windows is "Manual (Trigger Start)" which only
+  ; starts the services when a reader is already attached - if the user
+  ; plugs the reader in after logon, or sign-in needs the service before
+  ; any trigger has fired, the Credential Provider will not see any
+  ; readers. Forcing start= auto ensures SCardSvr and its device
+  ; enumerator are running before the logon UI appears.
+  DetailPrint "Configuring Smart Card services for automatic startup..."
+  nsExec::ExecToLog 'sc config SCardSvr start= auto'
+  nsExec::ExecToLog 'sc config ScDeviceEnum start= auto'
   nsExec::ExecToLog 'net start SCardSvr'
   nsExec::ExecToLog 'net start ScDeviceEnum'
 
@@ -172,15 +228,143 @@ Section "Core" SecCore
 SectionEnd
 
 ;--------------------------------
+;Smart Card Minidrivers  (Complete install type)
+;
+;  These sections install vendor smart-card minidrivers that are
+;  BUNDLED INTO THE INSTALLER at build time. No network access is
+;  required at install time - suitable for isolated / air-gapped
+;  deployments.
+;
+;  Each vendor package is extracted into $PLUGINSDIR (auto-cleaned
+;  on installer exit) and installed with the appropriate tool:
+;    - MyEID  (ZIP containing INF+DLL+CAT)  -> Expand-Archive + pnputil -i -a
+;    - YubiKey (signed MSI)                  -> msiexec /i /qn /norestart
+;    - IDOne PIV (CAB from Windows Update)   -> expand.exe + pnputil -i -a
+;
+;  Failures are logged as warnings and do not abort the Core install.
+;
+;  The bundled files live in Installer\drivers\ and are staged by
+;  build.ps1 (download + SHA-256 verification). See the README.md
+;  in that directory.
+
+SectionGroup /e "Smart Card Minidrivers" SecMinidrivers
+
+Section /o "MyEID Minidriver (Aventra)" SecMyEIDMinidriver
+  SectionIn 2
+
+  InitPluginsDir
+  SetOutPath "$PLUGINSDIR\MyEID"
+  File "drivers\MyEID_Minidriver.zip"
+
+  DetailPrint "Extracting MyEID Minidriver..."
+  nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ' \
+    'try { Expand-Archive -LiteralPath "$PLUGINSDIR\MyEID\MyEID_Minidriver.zip" -DestinationPath "$PLUGINSDIR\MyEID\x" -Force; exit 0 } ' \
+    'catch { Write-Error $_.Exception.Message; exit 1 }' \
+    ''
+  Pop $0
+  ${If} $0 != 0
+    DetailPrint "WARNING: MyEID extraction failed (code $0) - skipping"
+    Goto MyEIDDone
+  ${EndIf}
+
+  DetailPrint "Installing MyEID Minidriver (pnputil)..."
+  nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ' \
+    '$inf = Get-ChildItem -Path "$PLUGINSDIR\MyEID\x" -Recurse -Filter *.inf -ErrorAction SilentlyContinue | Select-Object -First 1; ' \
+    'if (-not $inf) { Write-Error "No INF found in MyEID archive"; exit 2 }; ' \
+    '& pnputil.exe -i -a $inf.FullName | Out-Host; ' \
+    'exit $LASTEXITCODE' \
+    ''
+  Pop $0
+  ${If} $0 = 0
+    DetailPrint "MyEID Minidriver installed successfully"
+  ${Else}
+    DetailPrint "WARNING: MyEID Minidriver install returned code $0"
+  ${EndIf}
+
+MyEIDDone:
+SectionEnd
+
+Section /o "YubiKey Minidriver (Yubico)" SecYubiKeyMinidriver
+  SectionIn 2
+
+  InitPluginsDir
+  SetOutPath "$PLUGINSDIR\YubiKey"
+  File "drivers\YubiKey-Minidriver-5.0.4.273-x64.msi"
+
+  DetailPrint "Installing YubiKey Minidriver (msiexec)..."
+  nsExec::ExecToLog 'msiexec.exe /i "$PLUGINSDIR\YubiKey\YubiKey-Minidriver-5.0.4.273-x64.msi" /qn /norestart'
+  Pop $0
+  ${If} $0 = 0
+    DetailPrint "YubiKey Minidriver installed successfully"
+  ${ElseIf} $0 = 3010
+    DetailPrint "YubiKey Minidriver installed successfully (reboot required)"
+    SetRebootFlag true
+  ${Else}
+    DetailPrint "WARNING: YubiKey Minidriver install returned code $0"
+  ${EndIf}
+SectionEnd
+
+Section /o "IDOne PIV Minidriver (Idemia / Windows Update)" SecWUMinidriver
+  SectionIn 2
+
+  InitPluginsDir
+  SetOutPath "$PLUGINSDIR\WU"
+  File "drivers\WindowsUpdate_Minidriver.cab"
+  CreateDirectory "$PLUGINSDIR\WU\x"
+
+  DetailPrint "Extracting CAB contents..."
+  nsExec::ExecToLog 'expand.exe -F:* "$PLUGINSDIR\WU\WindowsUpdate_Minidriver.cab" "$PLUGINSDIR\WU\x"'
+  Pop $0
+  ${If} $0 != 0
+    DetailPrint "WARNING: CAB extraction failed (code $0) - skipping"
+    Goto WUDone
+  ${EndIf}
+
+  DetailPrint "Adding INF driver(s) to the driver store..."
+  nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ' \
+    '$infs = Get-ChildItem -Path "$PLUGINSDIR\WU\x" -Recurse -Filter *.inf -ErrorAction SilentlyContinue; ' \
+    'if (-not $infs) { Write-Error "No INF found in CAB"; exit 2 }; ' \
+    'foreach ($inf in $infs) { Write-Host ("Installing: " + $inf.FullName); & pnputil.exe -i -a $inf.FullName | Out-Host }; ' \
+    'exit 0' \
+    ''
+  Pop $0
+  ${If} $0 = 0
+    DetailPrint "IDOne PIV Minidriver installed successfully"
+  ${Else}
+    DetailPrint "WARNING: IDOne PIV Minidriver install returned code $0"
+  ${EndIf}
+
+WUDone:
+SectionEnd
+
+SectionGroupEnd
+
+;--------------------------------
 ;Descriptions
 
   ;Language strings
-  LangString DESC_SecCore ${LANG_ENGLISH} "Core"
-  LangString DESC_SecCore ${LANG_FRENCH} "Core"
+  LangString DESC_SecCore ${LANG_ENGLISH} "Core EID Authentication components: LSA Authentication Package, Credential Provider, Configuration Wizard, Log Manager, Migrate CLI/UI, and Manage Users tool. Always installed."
+  LangString DESC_SecCore ${LANG_FRENCH}  "Composants principaux EID Authentication: LSA, Credential Provider, assistant de configuration et outils associes. Toujours installes."
+
+  LangString DESC_SecMinidrivers ${LANG_ENGLISH} "Smart card minidrivers bundled with the installer. No internet access required at install time. Auto-selected for the Complete install type."
+  LangString DESC_SecMinidrivers ${LANG_FRENCH}  "Minidrivers de carte a puce fournis avec l'installateur. Aucun acces Internet requis. Selectionnes automatiquement pour l'installation Complete."
+
+  LangString DESC_SecMyEID ${LANG_ENGLISH} "Aventra MyEID minidriver v3.0.1.2 (Certified). Bundled in the installer; extracts and installs via pnputil."
+  LangString DESC_SecMyEID ${LANG_FRENCH}  "Minidriver Aventra MyEID v3.0.1.2 (Certifie). Inclus dans l'installateur; extrait et installe via pnputil."
+
+  LangString DESC_SecYubiKey ${LANG_ENGLISH} "YubiKey Smart Card Minidriver 5.0.4.273 (x64). Bundled signed MSI installed silently via msiexec."
+  LangString DESC_SecYubiKey ${LANG_FRENCH}  "Minidriver YubiKey 5.0.4.273 (x64). MSI signe inclus, installe silencieusement via msiexec."
+
+  LangString DESC_SecWU ${LANG_ENGLISH} "IDOne PIV minidriver from the Microsoft Update catalog. Bundled signed CAB; extracted and added to the driver store via pnputil."
+  LangString DESC_SecWU ${LANG_FRENCH}  "Minidriver IDOne PIV du catalogue Microsoft Update. CAB signe inclus; extrait et ajoute au magasin de pilotes via pnputil."
 
   ;Assign language strings to sections
   !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-    !insertmacro MUI_DESCRIPTION_TEXT ${SecCore} $(DESC_SecCore)
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecCore}              $(DESC_SecCore)
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecMinidrivers}       $(DESC_SecMinidrivers)
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecMyEIDMinidriver}   $(DESC_SecMyEID)
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecYubiKeyMinidriver} $(DESC_SecYubiKey)
+    !insertmacro MUI_DESCRIPTION_TEXT ${SecWUMinidriver}      $(DESC_SecWU)
   !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ;--------------------------------
@@ -283,6 +467,9 @@ Section "Uninstall"
   Delete "$SMPROGRAMS\EID Authentication\Log Manager.lnk"
   Delete "$SMPROGRAMS\EID Authentication\Credential Migration (CLI).lnk"
   Delete "$SMPROGRAMS\EID Authentication\Credential Migration (GUI).lnk"
+  Delete "$SMPROGRAMS\EID Authentication\Manage Users.lnk"
+  Delete "$SMPROGRAMS\EID Authentication\Trace Consumer.lnk"
+  Delete "$SMPROGRAMS\EID Authentication\Disable LSA Protection (manual).lnk"
   Delete "$SMPROGRAMS\EID Authentication\Uninstall.lnk"
   RMDir "$SMPROGRAMS\EID Authentication"
 
@@ -300,6 +487,10 @@ Section "Uninstall"
 
   ${EnableX64FSRedirection}
 
+  ; Remove Group Policy administrative templates
+  Delete "$WINDIR\PolicyDefinitions\EIDAuthentication.admx"
+  Delete "$WINDIR\PolicyDefinitions\en-US\EIDAuthentication.adml"
+
   ; Delete Program Files installation - DLLs
   Delete "$INSTDIR\EIDAuthenticationPackage.dll"
   Delete "$INSTDIR\EIDCredentialProvider.dll"
@@ -311,7 +502,13 @@ Section "Uninstall"
   Delete "$INSTDIR\EIDLogManager.exe"
   Delete "$INSTDIR\EIDMigrate.exe"
   Delete "$INSTDIR\EIDMigrateUI.exe"
+  Delete "$INSTDIR\EIDManageUsers.exe"
+  Delete "$INSTDIR\EIDTraceConsumer.exe"
   Delete "$INSTDIR\cred_provider.ico"
+
+  ; Delete administrator tools
+  Delete "$INSTDIR\tools\Disable-LsaProtection.ps1"
+  RMDir "$INSTDIR\tools"
 
   ; Delete uninstaller
   Delete "$INSTDIR\EIDUninstall.exe"
@@ -349,6 +546,13 @@ Section "Uninstall"
   DetailPrint "Resetting Smart Card Removal Policy service..."
   nsExec::ExecToLog 'sc config ScPolicySvc start= demand'
   nsExec::ExecToLog 'sc stop ScPolicySvc'
+
+  ; Restore Smart Card services to their Windows default (demand / trigger
+  ; start). The installer forced these to auto-start; leave them stopped
+  ; and revert to demand so Windows' trigger-start behaviour takes over.
+  DetailPrint "Restoring Smart Card services to default startup..."
+  nsExec::ExecToLog 'sc config SCardSvr start= demand'
+  nsExec::ExecToLog 'sc config ScDeviceEnum start= demand'
 
   ; Remove uninstall information
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication"

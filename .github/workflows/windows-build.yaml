@@ -11,22 +11,15 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v2
-        with:
-          msbuild-architecture: x64
-
-      - name: Build app for release
-        run: msbuild EIDCredentialProvider.sln -t:rebuild -property:Configuration=Release /p:Platform=x64
-
       - name: Install NSIS
         run: choco install nsis -y
 
       - name: Copy license for NSIS
         run: Copy-Item LICENSE Installer\License.txt
 
-      - name: Create nsis installer
-        run: '"C:\Program Files (x86)\NSIS\makensis.exe" /V3 "Installer\Installerx64.nsi"'
+      - name: Build (build.ps1 Release x64)
+        shell: pwsh
+        run: .\build.ps1 Release x64
 
       - name: Create release archive
         shell: pwsh
@@ -34,7 +27,19 @@ jobs:
           $zipDir = New-Item -ItemType Directory -Path "Installer\Zip" -Force
           Copy-Item "Installer\EIDInstallx64.exe" -Destination $zipDir
           Copy-Item "Installer\License.txt" -Destination $zipDir
+          if (Test-Path "Installer\SHA256SUMS.txt") {
+              Copy-Item "Installer\SHA256SUMS.txt" -Destination $zipDir
+          }
           Compress-Archive -Path "$($zipDir.FullName)\*" -DestinationPath "Installer\EIDAuthentication-x64.zip" -Force
+
+      - name: Package SBOM (if present)
+        shell: pwsh
+        run: |
+          if (Test-Path "Installer\sbom") {
+              Compress-Archive -Path "Installer\sbom\*" -DestinationPath "Installer\EIDAuthentication-sbom.zip" -Force
+          } else {
+              Write-Host "No SBOM directory to package."
+          }
 
       - name: upload binaries to release
         uses: softprops/action-gh-release@v2
@@ -43,3 +48,5 @@ jobs:
             files: |
               Installer/EIDInstallx64.exe
               Installer/EIDAuthentication-x64.zip
+              Installer/SHA256SUMS.txt
+              Installer/EIDAuthentication-sbom.zip

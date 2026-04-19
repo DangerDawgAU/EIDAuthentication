@@ -461,14 +461,63 @@ HRESULT HasStoredCredential(_In_ DWORD dwRid, _Out_ BOOL& pfHasCredential)
 {
     pfHasCredential = FALSE;
 
-    // Try to retrieve the LSA secret
-    // Format: L$_EID__<RID> (double underscore)
+    if (dwRid == 0)
+    {
+        return E_INVALIDARG;
+    }
+
+    HANDLE hLsa = nullptr;
+    LSA_OBJECT_ATTRIBUTES objectAttributes = {};
+    objectAttributes.Length = sizeof(LSA_OBJECT_ATTRIBUTES);
+
+    NTSTATUS status = LsaOpenPolicy(
+        nullptr,
+        &objectAttributes,
+        POLICY_GET_PRIVATE_INFORMATION,
+        &hLsa);
+
+    if (!NT_SUCCESS(status))
+    {
+        EIDM_TRACE_ERROR(L"HasStoredCredential: LsaOpenPolicy failed: 0x%08X", status);
+        return HRESULT_FROM_NT(status);
+    }
+
+    // Secret name must match StoredCredentialManagement.cpp's format
+    // ("%s_%08X" with CREDENTIAL_LSAPREFIX = L"L$_EID_") -> L$_EID__<RID>.
     WCHAR wszSecretName[256];
     swprintf_s(wszSecretName, ARRAYSIZE(wszSecretName), L"L$_EID__%08X", dwRid);
 
-    // Use the existing LSA retrieval from StoredCredentialManagement
-    // For now, return FALSE - this will be implemented with full credential retrieval
-    return S_OK;
+    LSA_UNICODE_STRING lsaSecretName;
+    lsaSecretName.Buffer = wszSecretName;
+    lsaSecretName.Length = static_cast<USHORT>(wcslen(wszSecretName) * sizeof(WCHAR));
+    lsaSecretName.MaximumLength = lsaSecretName.Length + sizeof(WCHAR);
+
+    PLSA_UNICODE_STRING pSecretData = nullptr;
+    status = LsaRetrievePrivateData(hLsa, &lsaSecretName, &pSecretData);
+
+    HRESULT hr = S_OK;
+    if (NT_SUCCESS(status) && pSecretData && pSecretData->Buffer && pSecretData->Length > 0)
+    {
+        pfHasCredential = TRUE;
+    }
+    else if (status == STATUS_OBJECT_NAME_NOT_FOUND)
+    {
+        // Expected when user has no EID credential - not an error.
+        pfHasCredential = FALSE;
+    }
+    else if (!NT_SUCCESS(status))
+    {
+        EIDM_TRACE_WARN(L"HasStoredCredential: LsaRetrievePrivateData returned 0x%08X for RID %u", status, dwRid);
+        hr = HRESULT_FROM_NT(status);
+    }
+
+    if (pSecretData)
+    {
+        LsaFreeMemory(pSecretData);
+    }
+    LsaClose(hLsa);
+
+    return hr;
 }
 
 std::wstring LookupUsernameByRid(_In_ DWORD dwRid)

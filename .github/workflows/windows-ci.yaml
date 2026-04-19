@@ -1,0 +1,49 @@
+name: CI build
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      - name: Copy license for NSIS
+        run: Copy-Item LICENSE Installer\License.txt
+
+      - name: Build (build.ps1 Release x64)
+        shell: pwsh
+        run: .\build.ps1 Release x64
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EIDInstallx64
+          path: Installer/EIDInstallx64.exe
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload SHA256SUMS
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SHA256SUMS
+          path: Installer/SHA256SUMS.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload build log
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: warn
+          retention-days: 14
