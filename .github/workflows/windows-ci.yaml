@@ -1,49 +1,80 @@
-name: CI build
+name: CI
+
 on:
   push:
-    branches: [main]
+    branches: [main, development]
   pull_request:
-    branches: [main]
+  release:
+    types: [published]
 
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
-      - name: Check out repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      # Cache the bundled minidrivers so we don't re-hit vendor sites every run.
+      # The cache key is derived from build.ps1 because it carries the URL +
+      # SHA-256 manifest for each driver; changing either rotates the cache.
+      - name: Cache bundled minidrivers
+        uses: actions/cache@v4
+        with:
+          path: Installer/drivers
+          key: drivers-${{ hashFiles('build.ps1') }}
 
       - name: Install NSIS
-        run: choco install nsis -y
+        run: choco install nsis -y --no-progress
 
-      - name: Copy license for NSIS
-        run: Copy-Item LICENSE Installer\License.txt
-
-      - name: Build (build.ps1 Release x64)
+      - name: Stage LICENSE for NSIS
         shell: pwsh
-        run: .\build.ps1 Release x64
+        run: Copy-Item LICENSE Installer\License.txt -Force
 
-      - name: Upload installer artifact
+      - name: Build (Release x64)
+        shell: pwsh
+        run: .\build.ps1 -Configuration Release -Platform x64
+
+      - name: Package release zip
+        shell: pwsh
+        run: |
+          $zip = New-Item -ItemType Directory -Path Installer\Zip -Force
+          Copy-Item Installer\EIDInstallx64.exe $zip -Force
+          Copy-Item Installer\License.txt      $zip -Force
+          if (Test-Path Installer\SHA256SUMS.txt) {
+            Copy-Item Installer\SHA256SUMS.txt $zip -Force
+          }
+          Compress-Archive -Path "$($zip.FullName)\*" `
+            -DestinationPath Installer\EIDAuthentication-x64.zip -Force
+
+      # CI / PR runs: store everything as workflow artifacts.
+      - name: Upload workflow artifacts
+        if: github.event_name != 'release'
         uses: actions/upload-artifact@v4
         with:
-          name: EIDInstallx64
-          path: Installer/EIDInstallx64.exe
+          name: EIDAuthentication-${{ github.sha }}
+          path: |
+            Installer/EIDInstallx64.exe
+            Installer/EIDAuthentication-x64.zip
+            Installer/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload SHA256SUMS
-        uses: actions/upload-artifact@v4
-        if: always()
+      # Release runs only: attach to the GitHub Release that triggered us.
+      - name: Upload to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
         with:
-          name: SHA256SUMS
-          path: Installer/SHA256SUMS.txt
-          if-no-files-found: warn
-          retention-days: 14
+          files: |
+            Installer/EIDInstallx64.exe
+            Installer/EIDAuthentication-x64.zip
+            Installer/SHA256SUMS.txt
 
-      - name: Upload build log
-        uses: actions/upload-artifact@v4
+      - name: Upload build log on failure
         if: failure()
+        uses: actions/upload-artifact@v4
         with:
-          name: build-log
+          name: build-log-${{ github.sha }}
           path: build.log
           if-no-files-found: warn
           retention-days: 14
