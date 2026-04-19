@@ -876,7 +876,16 @@ extern "C"
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"MachineName OK");
 
 			// get / decrypt PIN
-
+			// Pin.Length is attacker-influenceable (UNICODE_STRING.Length is USHORT,
+			// up to 65535). The stack buffer pwzPin is UNLEN WCHARs. Reject any
+			// buffer that would overflow on the terminator write below.
+			if (pUnlockLogon->Logon.Pin.Length > (UNLEN - 1) * sizeof(WCHAR))
+			{
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,
+					L"Pin.Length=%u exceeds UNLEN*sizeof(WCHAR); rejecting logon",
+					pUnlockLogon->Logon.Pin.Length);
+				return STATUS_INVALID_PARAMETER;
+			}
 			memcpy_s(pwzPin,UNLEN*sizeof(WCHAR),pUnlockLogon->Logon.Pin.Buffer,pUnlockLogon->Logon.Pin.Length);
 			pwzPin[pUnlockLogon->Logon.Pin.Length/sizeof(WCHAR)] = 0;
 			Status = TryToUnprotecThePin(pwzPin,pwzPinUncrypted, dPinUncrypted, &pPin);

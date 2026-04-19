@@ -334,35 +334,66 @@ Export files use the `.eid` extension with the following security:
 
 ## Code Signing
 
-By default, Windows enforces code signing requirements for LSA Authentication Packages and Credential Providers. To load unsigned DLLs during development or testing, you must disable this protection.
+The beta releases of EID Authentication are **unsigned**. Windows "LSA
+Protection" (a.k.a. `RunAsPPL` / Protected Process Light) will refuse to
+load unsigned plug-ins into LSASS, which blocks the authentication package
+and password-change notification DLL. To test the unsigned beta, LSA
+Protection must be disabled on the target machine.
 
-### Disable Code Signing Enforcement
+### Prefer a signed build
 
-**Registry Key:**
+If you would rather not weaken LSA Protection, request a code-signed
+release by opening an issue at:
+<https://github.com/DangerDawgAU/EIDAuthentication/issues>
+
+### Disable LSA Protection (manual, admin-only)
+
+The installer ships a PowerShell helper that prints a warning page,
+probes the current state, backs up the prior values, and toggles
+`RunAsPPL`:
+
 ```
-HKLM\SYSTEM\CurrentControlSet\Control\Lsa\RestrictBlankPasswordUse
+%ProgramFiles%\EID Authentication\tools\Disable-LsaProtection.ps1
 ```
 
-**Setting:** `0` (Disabled)
+A Start Menu shortcut is also created: **EID Authentication →
+Disable LSA Protection (manual)**. The script requires Administrator
+rights and will self-elevate. It must NEVER be run on production
+workstations, domain controllers, or any host with cached credentials
+you care about — disabling LSA Protection allows tools like Mimikatz
+to dump LSASS memory.
 
-Alternatively, for development builds, use:
-```
-HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\DisableLsaSigning
-```
+### Registry values involved
 
-**Setting:** `1` (Allow unsigned LSA packages)
+| Path | Value | Type | Meaning |
+|------|-------|------|---------|
+| `HKLM\SYSTEM\CurrentControlSet\Control\Lsa` | `RunAsPPL` | DWORD | `0` = off, `1` = on (UEFI lock), `2` = on (no UEFI lock, Win11 22H2+) |
+| `HKLM\SYSTEM\CurrentControlSet\Control\Lsa` | `RunAsPPLBoot` | DWORD | Win11 24H2+ boot-time equivalent |
+| `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\LSASS.exe` | `AuditLevel` | DWORD | `8` = audit (log, don't block) for CodeIntegrity events 3033/3063/3065/3066 |
 
-### Production Deployment
+If LSA Protection was enabled with UEFI lock on a Secure Boot host, a
+registry change alone is not sufficient — the UEFI variable must be
+cleared with Microsoft's `LsaPplConfig.efi` opt-out tool
+(<https://www.microsoft.com/download/details.aspx?id=40897>). The
+PowerShell helper detects this case and prints a warning.
 
-For production deployments, all binaries must be code-signed:
+Authoritative reference:
+<https://learn.microsoft.com/en-us/windows-server/security/credentials-protection-and-management/configuring-additional-lsa-protection>
+
+### Production deployment (signed builds)
+
+For production deployments, all three LSA-loaded binaries must be
+code-signed:
+
 - `EIDAuthenticationPackage.dll` (LSA Authentication Package)
-- `EIDCredentialProvider.dll` (Credential Provider)
-- `EIDPasswordChangeNotification.dll` (Password Filter)
+- `EIDPasswordChangeNotification.dll` (Password Change Notification)
+- `EIDCredentialProvider.dll` (Credential Provider — loaded by LogonUI, not LSASS, but signed by policy)
 
-Code signing ensures:
-- OS verifies binary integrity at load time
-- Users can verify software publisher
-- Tamper detection via digital signatures
+Signing the first two requires enrolment in Microsoft's [LSA file-signing
+service](https://learn.microsoft.com/en-us/windows-hardware/drivers/dashboard/file-signing-manage)
+(not a regular Authenticode certificate — Microsoft-countersigned binaries
+only). Until a signed release is cut, beta users must disable LSA
+Protection.
 
 ---
 

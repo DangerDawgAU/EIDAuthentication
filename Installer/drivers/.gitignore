@@ -1,0 +1,6 @@
+# Bundled driver binaries are not tracked in git.
+# build.ps1 stages them here at build time (download + SHA-256 verify).
+# See README.md in this directory for manifest and upstream URLs.
+*.zip
+*.msi
+*.cab

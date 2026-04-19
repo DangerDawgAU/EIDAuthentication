@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<policyDefinitionResources revision="1.0" schemaVersion="1.0">
+  <displayName>EID Authentication</displayName>
+  <description>Group policy settings for EID Authentication smart card credential provider.</description>
+
+  <resources>
+    <stringTable>
+
+      <string id="SUPPORTED_EIDAuth_1_0">EID Authentication 1.0 or later</string>
+
+      <string id="Cat_EIDAuthentication">EID Authentication</string>
+
+      <string id="EnforceCSPWhitelist">Enforce Cryptographic Service Provider (CSP) whitelist</string>
+      <string id="EnforceCSPWhitelist_Help">When enabled, the EID Authentication credential provider rejects smart-card certificates that are bound to a CSP / KSP provider not present in the built-in whitelist. This blocks attacker-controlled or untrusted cryptographic providers from being used for authentication, even if the certificate chain otherwise validates.
+
+When disabled or not configured, any provider returned by the minidriver is accepted (Windows default behaviour).
+
+Default: Disabled.
+
+Recommended setting for high-assurance environments: Enabled.
+
+This policy is written to:
+HKLM\SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider!EnforceCSPWhitelist (DWORD)
+
+Note: The standard Windows smart-card credential provider policies (AllowSignatureOnlyKeys, AllowCertificatesWithNoEKU, AllowTimeInvalidCertificates, AllowIntegratedUnblock, FilterDuplicateCertificates, ForceReadingAllCertificates, ReverseSubject, X509HintsNeeded, CertPropEnabledString, CertPropRootEnabledString, RootsCleanupOption, and IntegratedUnblockPromptString) are consumed by EID Authentication directly from the same registry hive and can be configured through the Microsoft-supplied SmartCard.admx template that ships with Windows.</string>
+
+    </stringTable>
+  </resources>
+</policyDefinitionResources>

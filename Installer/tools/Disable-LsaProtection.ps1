@@ -1,0 +1,302 @@
+#requires -Version 5.1
+
+<#
+.SYNOPSIS
+    Disables Windows LSA Protection (RunAsPPL) so unsigned LSA plug-ins can load.
+
+.DESCRIPTION
+    EID Authentication ships three DLLs that Windows loads into LSASS:
+      - EIDAuthenticationPackage.dll   (LSA Authentication Package)
+      - EIDCredentialProvider.dll      (Credential Provider)
+      - EIDPasswordChangeNotification.dll (Password Change Notification)
+
+    When Windows "LSA Protection" (a.k.a. RunAsPPL / Protected Process Light)
+    is enabled, LSASS will REFUSE to load any plug-in that is not signed with
+    a Microsoft-issued certificate. The beta builds from this project are
+    currently UNSIGNED, which means they will silently fail to load on any
+    machine where LSA Protection is active.
+
+    This script disables LSA Protection on the local machine so the beta
+    build can be tested. Re-enabling it is a single command (documented in
+    the 'Re-enable' section below) plus a reboot.
+
+    This script is MANUAL-RUN ONLY. It is shipped with the installer but is
+    never executed automatically. It must be run by a system administrator
+    who understands and accepts the security impact.
+
+.NOTES
+    Authoritative Microsoft reference:
+    https://learn.microsoft.com/en-us/windows-server/security/credentials-protection-and-management/configuring-additional-lsa-protection
+
+    If you would prefer signed binaries so you do NOT have to disable LSA
+    Protection, please raise an issue at:
+    https://github.com/DangerDawgAU/EIDAuthentication/issues
+    and request a code-signed release.
+#>
+
+[CmdletBinding()]
+param(
+    [switch] $EnableAuditMode,
+    [switch] $Restore,
+    [switch] $NonInteractive
+)
+
+$ErrorActionPreference = 'Stop'
+
+$currentId = [Security.Principal.WindowsIdentity]::GetCurrent()
+$isAdmin   = (New-Object Security.Principal.WindowsPrincipal $currentId).IsInRole(
+                [Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Host 'This script needs Administrator rights. Re-launching elevated...' -ForegroundColor Yellow
+    $psArgs = @('-NoProfile', '-NoExit', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
+    foreach ($kv in $PSBoundParameters.GetEnumerator()) {
+        if ($kv.Value -is [switch] -and $kv.Value.IsPresent) {
+            $psArgs += "-$($kv.Key)"
+        }
+    }
+    try {
+        Start-Process -FilePath 'powershell.exe' -ArgumentList $psArgs -Verb RunAs | Out-Null
+    } catch {
+        Write-Host 'Elevation was cancelled. No changes made.' -ForegroundColor Red
+    }
+    return
+}
+
+$LsaKey        = 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa'
+$AuditKey      = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\LSASS.exe'
+$BackupDir     = Join-Path $env:ProgramData 'EIDAuthentication\LsaProtectionBackup'
+$BackupFile    = Join-Path $BackupDir 'RunAsPPL.backup.txt'
+
+function Write-Banner {
+    param([string] $Text, [ConsoleColor] $Color = 'Yellow')
+    $line = '=' * 72
+    Write-Host ''
+    Write-Host $line -ForegroundColor $Color
+    Write-Host $Text -ForegroundColor $Color
+    Write-Host $line -ForegroundColor $Color
+    Write-Host ''
+}
+
+function Get-LsaProtectionState {
+    $ppl = $null
+    try {
+        $ppl = (Get-ItemProperty -Path $LsaKey -Name 'RunAsPPL' -ErrorAction Stop).RunAsPPL
+    } catch {
+        $ppl = $null
+    }
+
+    $pplBoot = $null
+    try {
+        $pplBoot = (Get-ItemProperty -Path $LsaKey -Name 'RunAsPPLBoot' -ErrorAction Stop).RunAsPPLBoot
+    } catch {
+        $pplBoot = $null
+    }
+
+    $secureBoot = $false
+    try { $secureBoot = [bool](Confirm-SecureBootUEFI -ErrorAction Stop) } catch { $secureBoot = $false }
+
+    $winver = [System.Environment]::OSVersion.Version
+
+    [pscustomobject]@{
+        RunAsPPL        = $ppl
+        RunAsPPLBoot    = $pplBoot
+        SecureBoot      = $secureBoot
+        OSBuild         = $winver.Build
+        OSVersion       = "$($winver.Major).$($winver.Minor).$($winver.Build)"
+        UefiLockLikely  = ($ppl -eq 1) -and $secureBoot
+    }
+}
+
+function Show-WarningPage {
+    param($State)
+
+    Clear-Host
+    Write-Banner 'WARNING: YOU ARE ABOUT TO WEAKEN A CORE WINDOWS SECURITY BOUNDARY' 'Red'
+
+    Write-Host "This script will disable LSA Protection (RunAsPPL) on this computer." -ForegroundColor White
+    Write-Host ""
+    Write-Host "What LSA Protection does:" -ForegroundColor Cyan
+    Write-Host "  LSA Protection runs LSASS.exe as a Protected Process Light (PPL)." -ForegroundColor Gray
+    Write-Host "  This prevents unsigned code from being injected into LSASS and" -ForegroundColor Gray
+    Write-Host "  blocks credential-theft tools such as Mimikatz from dumping" -ForegroundColor Gray
+    Write-Host "  cached passwords, Kerberos tickets, and NTLM hashes from memory." -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "What this script will change:" -ForegroundColor Cyan
+    Write-Host "  Registry: HKLM\SYSTEM\CurrentControlSet\Control\Lsa" -ForegroundColor Gray
+    Write-Host "    RunAsPPL     (DWORD) -> 0    [currently: $($State.RunAsPPL)]" -ForegroundColor Gray
+    if ($null -ne $State.RunAsPPLBoot) {
+        Write-Host "    RunAsPPLBoot (DWORD) -> 0    [currently: $($State.RunAsPPLBoot)] (Windows 11 24H2+)" -ForegroundColor Gray
+    }
+    Write-Host "  Backup written to:" -ForegroundColor Gray
+    Write-Host "    $BackupFile" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Security impact of disabling LSA Protection:" -ForegroundColor Cyan
+    Write-Host "  * Malware running with admin/SYSTEM privileges can read LSASS memory" -ForegroundColor Gray
+    Write-Host "  * Credential-theft tools (Mimikatz et al.) will work against this host" -ForegroundColor Gray
+    Write-Host "  * Unsigned LSA plug-ins (including the EID Authentication beta) will load" -ForegroundColor Gray
+    Write-Host "  * Credential Guard (if present) continues to provide SOME isolation" -ForegroundColor Gray
+    Write-Host "    but NTLM/Kerberos cache memory is no longer hardened against dumping." -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "When to use this:" -ForegroundColor Cyan
+    Write-Host "  * Beta / dev testing of unsigned EID Authentication builds." -ForegroundColor Gray
+    Write-Host "  * Dedicated lab machines only." -ForegroundColor Gray
+    Write-Host "  * NEVER on production workstations, domain controllers, or shared hosts." -ForegroundColor Gray
+    Write-Host "  * NEVER on machines with domain credentials or cached admin tokens" -ForegroundColor Gray
+    Write-Host "    that you care about." -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Alternative: request a signed release" -ForegroundColor Cyan
+    Write-Host "  If you cannot disable LSA Protection, you can request a code-signed" -ForegroundColor Gray
+    Write-Host "  build by opening an issue at:" -ForegroundColor Gray
+    Write-Host "    https://github.com/DangerDawgAU/EIDAuthentication/issues" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Current state of this machine:" -ForegroundColor Cyan
+    Write-Host "  OS version      : $($State.OSVersion)" -ForegroundColor Gray
+    Write-Host "  Secure Boot     : $($State.SecureBoot)" -ForegroundColor Gray
+    Write-Host "  RunAsPPL        : $(if ($null -eq $State.RunAsPPL)      { '(not set) -> LSA Protection OFF' } else { "$($State.RunAsPPL)" })" -ForegroundColor Gray
+    Write-Host "  RunAsPPLBoot    : $(if ($null -eq $State.RunAsPPLBoot)  { '(not set)' }                      else { "$($State.RunAsPPLBoot)" })" -ForegroundColor Gray
+
+    if ($State.UefiLockLikely) {
+        Write-Host ""
+        Write-Host "CAUTION: Secure Boot is ON and RunAsPPL=1 (UEFI lock variant)." -ForegroundColor Red
+        Write-Host "A UEFI variable may have been stored when LSA Protection was enabled." -ForegroundColor Red
+        Write-Host "If the registry change alone does not take effect after reboot, you" -ForegroundColor Red
+        Write-Host "will need the Microsoft LsaPplConfig.efi Opt-out tool:" -ForegroundColor Red
+        Write-Host "  https://www.microsoft.com/download/details.aspx?id=40897" -ForegroundColor Red
+    }
+
+    if ($null -eq $State.RunAsPPL -or $State.RunAsPPL -eq 0) {
+        Write-Host ""
+        Write-Host "NOTE: LSA Protection is already OFF on this host." -ForegroundColor Green
+        Write-Host "      No changes are required. You can exit safely." -ForegroundColor Green
+    }
+
+    Write-Host ""
+}
+
+function Confirm-Proceed {
+    param([string] $ExpectedPhrase)
+    Write-Host "To proceed, type the phrase in capitals: " -NoNewline -ForegroundColor Yellow
+    Write-Host $ExpectedPhrase -ForegroundColor White -NoNewline
+    Write-Host "  (anything else cancels)" -ForegroundColor Yellow
+    Write-Host ">> " -NoNewline
+    $typed = Read-Host
+    return ($typed -ceq $ExpectedPhrase)
+}
+
+function Save-CurrentState {
+    param($State)
+    if (-not (Test-Path $BackupDir)) {
+        New-Item -Path $BackupDir -ItemType Directory -Force | Out-Null
+    }
+    $lines = @(
+        "# EID Authentication - LSA Protection state backup",
+        "# Created: $(Get-Date -Format 'yyyy-MM-ddTHH:mm:ssZ') UTC",
+        "# Use these values if you want to manually restore the original state.",
+        "",
+        "RunAsPPL         = $(if ($null -eq $State.RunAsPPL)     { '<unset>' } else { $State.RunAsPPL })",
+        "RunAsPPLBoot     = $(if ($null -eq $State.RunAsPPLBoot) { '<unset>' } else { $State.RunAsPPLBoot })",
+        "SecureBoot       = $($State.SecureBoot)",
+        "OSVersion        = $($State.OSVersion)"
+    )
+    Set-Content -Path $BackupFile -Value $lines -Encoding UTF8
+    Write-Host "  Backed up prior state to: $BackupFile" -ForegroundColor Green
+}
+
+function Set-LsaRunAsPPL {
+    param([int] $Value)
+    Set-ItemProperty -Path $LsaKey -Name 'RunAsPPL' -Value $Value -Type DWord
+    Write-Host "  RunAsPPL set to $Value" -ForegroundColor Green
+
+    try {
+        $probe = Get-ItemProperty -Path $LsaKey -Name 'RunAsPPLBoot' -ErrorAction Stop
+        if ($null -ne $probe.RunAsPPLBoot) {
+            Set-ItemProperty -Path $LsaKey -Name 'RunAsPPLBoot' -Value $Value -Type DWord
+            Write-Host "  RunAsPPLBoot set to $Value" -ForegroundColor Green
+        }
+    } catch {
+    }
+}
+
+function Enable-LsaAuditMode {
+    if (-not (Test-Path $AuditKey)) {
+        New-Item -Path $AuditKey -Force | Out-Null
+    }
+    Set-ItemProperty -Path $AuditKey -Name 'AuditLevel' -Value 8 -Type DWord
+    Write-Host "  AuditLevel set to 0x8 at:" -ForegroundColor Green
+    Write-Host "    $AuditKey" -ForegroundColor Gray
+    Write-Host "  CodeIntegrity events 3065/3066 (audit mode) or 3033/3063 (enforcement)" -ForegroundColor Gray
+    Write-Host "  will be logged under:" -ForegroundColor Gray
+    Write-Host "    Event Viewer > Applications and Services Logs > Microsoft >" -ForegroundColor Gray
+    Write-Host "    Windows > CodeIntegrity > Operational" -ForegroundColor Gray
+}
+
+function Invoke-Restore {
+    Write-Banner 'Restore mode: re-enable LSA Protection' 'Cyan'
+    if (-not (Test-Path $BackupFile)) {
+        Write-Host "No backup found at $BackupFile" -ForegroundColor Yellow
+        Write-Host "Will set RunAsPPL = 1 (LSA Protection, with UEFI variable on Secure Boot hosts)." -ForegroundColor Yellow
+    }
+    if (-not $NonInteractive -and -not (Confirm-Proceed 'RESTORE')) {
+        Write-Host 'Cancelled.' -ForegroundColor Red
+        return
+    }
+    Set-LsaRunAsPPL -Value 1
+    Write-Host ''
+    Write-Host 'Reboot required to take effect.' -ForegroundColor Cyan
+}
+
+# ------------------------------ main ---------------------------------------
+
+if ($Restore) {
+    Invoke-Restore
+    return
+}
+
+$state = Get-LsaProtectionState
+Show-WarningPage -State $state
+
+if ($null -eq $state.RunAsPPL -or $state.RunAsPPL -eq 0) {
+    if (-not $EnableAuditMode) {
+        Write-Host 'Nothing to do. Exiting.' -ForegroundColor Green
+        return
+    }
+}
+
+if (-not $NonInteractive) {
+    if (-not (Confirm-Proceed 'DISABLE LSA PROTECTION')) {
+        Write-Host ''
+        Write-Host 'Cancelled. No changes made.' -ForegroundColor Red
+        return
+    }
+}
+
+Write-Banner 'Applying changes' 'Cyan'
+Save-CurrentState -State $state
+Set-LsaRunAsPPL -Value 0
+
+if ($EnableAuditMode) {
+    Write-Host ''
+    Write-Host 'Enabling LSASS audit mode...' -ForegroundColor Cyan
+    Enable-LsaAuditMode
+}
+
+Write-Banner 'Reboot required' 'Yellow'
+Write-Host 'The registry change does NOT take effect until this machine reboots.' -ForegroundColor Yellow
+Write-Host ''
+Write-Host 'After reboot, confirm LSA Protection is OFF:' -ForegroundColor Cyan
+Write-Host '  Event Viewer > Windows Logs > System - look for "WinInit" event 12.' -ForegroundColor Gray
+Write-Host '  If LSASS started WITHOUT a protection level, LSA Protection is OFF.' -ForegroundColor Gray
+Write-Host ''
+Write-Host 'To re-enable LSA Protection later:' -ForegroundColor Cyan
+Write-Host '  powershell -ExecutionPolicy Bypass -File ' -NoNewline -ForegroundColor Gray
+Write-Host "`"$PSCommandPath`" -Restore" -ForegroundColor Gray
+Write-Host '  (then reboot)' -ForegroundColor Gray
+
+if ($state.UefiLockLikely) {
+    Write-Host ''
+    Write-Banner 'Follow-up needed: UEFI lock variable may still be set' 'Red'
+    Write-Host 'Your machine had RunAsPPL=1 with Secure Boot. If after reboot LSASS' -ForegroundColor Yellow
+    Write-Host 'still starts as protected (WinInit event 12 with level 4), you will' -ForegroundColor Yellow
+    Write-Host 'need to clear the UEFI variable using the Microsoft Opt-out tool:' -ForegroundColor Yellow
+    Write-Host '  https://www.microsoft.com/download/details.aspx?id=40897' -ForegroundColor White
+}

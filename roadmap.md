@@ -14,29 +14,21 @@ The following features have been fully implemented:
 - Smart card credential management
 - Group membership during import
 - ETW event logging
+- View Log button launches EIDLogManager.exe
+- ADMX/ADML administrative templates for Group Policy deployment
+- SHA-256 release manifest + optional CycloneDX/SPDX SBOM generation in build.ps1
+- Disable-LsaProtection.ps1 helper shipped in installer for evaluators
+- EnforceCSPWhitelist GPO policy honoured in CSP whitelist check
+- Name-constraint violations now hard-fail certificate chain validation
+- PIN length clamp in LsaApLogonUserEx2 (prevents LSASS stack OOB)
+- CI workflow builds installer on every PR / push to main
+- Release workflow uses build.ps1 and publishes SHA256SUMS.txt + SBOM
 
 ---
 
 ## Outstanding Items
 
-### 1. View Log Button (Low Priority)
-
-**File:** `EIDMigrateUI/Page10_ImportComplete.cpp:84`
-
-**Current Behavior:** Clicking "View Log" shows a placeholder message: *"Log file not yet implemented."*
-
-**Proposed Implementation:**
-1. Determine log file location (ETW log or CSV log)
-2. Open log file in default viewer or display in a dialog
-3. Consider implementing for both Import and Export completion pages
-
-**Impact:** UX convenience only
-
-**Estimated Effort:** 2-4 hours
-
----
-
-### 2. SSP Optional Functions (Conditional)
+### 1. SSP Optional Functions (Conditional)
 
 **Files:**
 - `EIDAuthenticationPackage/EIDSecuritySupportProvider.cpp`
@@ -76,7 +68,7 @@ The following features have been fully implemented:
 
 ---
 
-### 3. Card Module Caching Functions (Performance Optimization)
+### 2. Card Module Caching Functions (Performance Optimization)
 
 **File:** `EIDCardLibrary/smartcardmodule.cpp:153-204`
 
@@ -138,6 +130,7 @@ Below are potential enhancements that are not currently tracked:
 | Version | Date | Notes |
 |---------|------|-------|
 | 1.0 | 2026-04-07 | Initial roadmap created |
+| 1.0.0-beta.1 | 2026-04-19 | Beta-readiness pass: security fixes (PIN clamp, name-constraint hard fail, EnforceCSPWhitelist wired), View Log button implemented, ADMX/ADML + SHA-256 manifest + SBOM shipped, CI + release workflows rebuilt on build.ps1, Disable-LsaProtection.ps1 helper added. See `docs/BETA_RELEASE_NOTES.md`. |
 
 ---
 

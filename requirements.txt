@@ -1,0 +1,149 @@
+# EID Authentication - Build & Runtime Requirements
+# ===================================================
+# This is a native Windows C++ project. "requirements.txt" here lists the
+# software that must be installed on the build host (and on the target
+# machine at runtime) to compile, package, and exercise the solution.
+# It is NOT a Python/pip requirements file.
+#
+# Build entry point: build.ps1  (PowerShell)
+# Solution file:     EIDCredentialProvider.sln
+# Target platform:   x64 (primary); Win32 supported for legacy projects
+# CI reference:      .github/workflows/windows-build.yaml
+
+
+# ---------------------------------------------------------------------------
+# Operating System
+# ---------------------------------------------------------------------------
+Windows 10 (1809+) or Windows 11     # build host
+Windows 7 SP1 or later (x64)         # minimum runtime target
+
+
+# ---------------------------------------------------------------------------
+# Compiler / Toolchain (required)  -- resolved by build.ps1
+# ---------------------------------------------------------------------------
+Visual Studio 2022                   # Community, Professional, Enterprise, or Build Tools
+                                     # build.ps1 locates the install via vswhere.exe and
+                                     # falls back to  C:\Program Files\Microsoft Visual Studio\2022\{edition}
+  Workload:  Desktop development with C++
+  Component: MSVC v143 - VS 2022 C++ x64/x86 build tools (Platform Toolset v143)
+  Component: C++ ATL for latest v143 build tools (x86 & x64)
+  Component: C++ MFC for latest v143 build tools (x86 & x64)
+  Component: Windows Universal CRT SDK
+  Language Standard: C++23 (/std:c++latest, stdcpplatest)
+
+  Required binaries on PATH or in the VS install:
+    devenv.com        # Common7\IDE\devenv.com - invoked by build.ps1 for /Rebuild
+    vswhere.exe       # ProgramFiles(x86)\Microsoft Visual Studio\Installer\vswhere.exe
+    MSBuild.exe       # alternative to devenv; used directly by CI
+
+Windows 10/11 SDK 10.0.22621.0 or later   # Smart Card, LSA, Credential Provider headers,
+                                          # Cryptography Next Generation (CNG), WinCrypt
+
+MSBuild 17.x                         # bundled with VS 2022; also via microsoft/setup-msbuild@v2 in CI
+
+
+# ---------------------------------------------------------------------------
+# Build Scripting
+# ---------------------------------------------------------------------------
+PowerShell 5.1 or later              # to run build.ps1 (Windows PowerShell or PowerShell 7+)
+Git 2.30 or later                    # source checkout
+
+
+# ---------------------------------------------------------------------------
+# Installer (Release builds only)  -- resolved by build.ps1
+# ---------------------------------------------------------------------------
+NSIS 3.08 or later                   # Nullsoft Scriptable Install System - https://nsis.sourceforge.io/
+                                     # Install via: choco install nsis -y
+                                     # build.ps1 searches these paths in order:
+                                     #   C:\Program Files (x86)\NSIS\makensis.exe
+                                     #   C:\Program Files\NSIS\makensis.exe
+                                     #   ${env:ProgramFiles(x86)}\NSIS\makensis.exe
+                                     #   ${env:ProgramFiles}\NSIS\makensis.exe
+                                     #   C:\NSIS\makensis.exe
+                                     #   ${env:ProgramFiles}\Nsis\makensis.exe
+                                     #   makensis.exe on PATH
+                                     # Produces: Installer\EIDInstallx64.exe via Installerx64.nsi
+
+
+# ---------------------------------------------------------------------------
+# Optional Tooling
+# ---------------------------------------------------------------------------
+Chocolatey                           # convenient package manager for NSIS, git, etc. (used in CI)
+signtool.exe                         # Windows SDK - Authenticode signing of DLLs / EXEs / installer
+SonarScanner for MSBuild             # optional static analysis (see get_sonarqube_issues.ps1)
+GitHub CLI (gh) 2.x                  # optional, for PR / release automation
+Windows Driver Kit (WDK) 10          # only if rebuilding/signing smart-card minidrivers locally
+
+
+# ---------------------------------------------------------------------------
+# Smart Card Stack  (runtime & developer testing)
+# ---------------------------------------------------------------------------
+# These are required on any machine that will actually exercise the
+# Credential Provider / LSA package against real smart cards or YubiKeys.
+# They are NOT required to merely compile the solution, but are needed for
+# end-to-end verification of EIDCredentialProvider, EIDAuthenticationPackage,
+# EIDMigrate, and EIDManageUsers.
+
+# --- Windows built-in services (must be running) ---
+Smart Card service                           (SCardSvr)        # Smart Card Resource Manager
+Smart Card Device Enumeration service        (ScDeviceEnum)
+Certificate Propagation service              (CertPropSvc)
+Microsoft Base Smart Card Crypto Provider                      # built-in CSP for minidriver cards
+Microsoft Smart Card Key Storage Provider                      # CNG KSP equivalent
+
+# --- Third-party middleware / minidrivers ---
+OpenSC 0.25 or later                         # https://github.com/OpenSC/OpenSC/releases
+                                             # Provides:
+                                             #   - PKCS#11 module (opensc-pkcs11.dll)
+                                             #   - Windows minidriver (OpenSC.msi installs it)
+                                             #   - pkcs15-tool / pkcs11-tool / opensc-tool CLIs
+                                             # Supports: PIV, OpenPGP, CAC, IDPrime, Gemalto, eID cards
+
+YubiKey Smart Card Minidriver                # https://www.yubico.com/support/download/smart-card-drivers-tools/
+                                             # Official Yubico driver for PIV applet; required on
+                                             # Windows to expose YubiKeys via Smart Card API
+                                             # (Windows Update also ships a generic YubiKey minidriver)
+
+YubiKey Manager (ykman) 5.x                  # https://www.yubico.com/support/download/yubikey-manager/
+                                             # optional - for provisioning PIV certs / PIN / PUK on test tokens
+
+YubiKey PIV Tool (yubico-piv-tool)           # optional - scripting / CI provisioning of PIV slots
+
+# --- Other vendor minidrivers (install the ones matching your cards) ---
+Gemalto / Thales IDPrime Minidriver          # IDPrime 830/930/940 cards
+Identiv uTrust Token Minidriver              # SCM / Identiv readers + tokens
+HID Global ActivClient                       # CAC / PIV deployments (commercial)
+Feitian ePass / FT-JCOS Minidriver           # Feitian PKI tokens
+SafeNet Authentication Client                # SafeNet eToken 5110 etc. (commercial)
+
+# --- PC/SC reader drivers ---
+CCID driver                                  # generic USB smart-card reader driver (Windows ships one;
+                                             #   vendor-specific drivers may be needed for NFC readers)
+
+
+# ---------------------------------------------------------------------------
+# Runtime Dependencies (target machine)
+# ---------------------------------------------------------------------------
+Microsoft Visual C++ 2015-2022 Redistributable (x64)   # installed by NSIS installer
+.NET is NOT required                                   # project is pure native C++
+
+
+# ---------------------------------------------------------------------------
+# Quick Verification
+# ---------------------------------------------------------------------------
+# 1. Confirm VS 2022 + v143 toolset:
+#      & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
+#          -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64
+#
+# 2. Confirm NSIS:
+#      makensis /VERSION
+#
+# 3. Confirm smart-card stack is live:
+#      Get-Service SCardSvr, ScDeviceEnum, CertPropSvc
+#      certutil -scinfo -silent
+#      # with OpenSC installed:
+#      & "C:\Program Files\OpenSC Project\OpenSC\tools\opensc-tool.exe" --list-readers
+#
+# 4. Build:
+#      .\build.ps1                # Release x64 (default)
+#      .\build.ps1 Debug x64      # Debug

@@ -47,6 +47,96 @@ Write-Host "Configuration: $Configuration" -ForegroundColor White
 Write-Host "Platform: $Platform" -ForegroundColor White
 Write-Host ""
 
+# ---------------------------------------------------------------------------
+# Bundled smart-card minidrivers  (Complete install type)
+# ---------------------------------------------------------------------------
+# These vendor packages are staged into Installer\drivers\ so the resulting
+# NSIS installer is self-contained — no internet access required at install
+# time. See Installer\drivers\README.md for the full rationale.
+#
+# To update a driver:
+#   1. Change the Url and re-run this script (it will download).
+#   2. Copy the new hash printed on first success into the manifest below.
+# ---------------------------------------------------------------------------
+$BundledDrivers = @(
+    @{
+        Name   = 'MyEID Minidriver (Aventra)'
+        File   = 'MyEID_Minidriver.zip'
+        Url    = 'https://aventra.fi/wp-content/uploads/2026/03/MyEID_Minidriver_3-0-1-2_Certified.zip'
+        Sha256 = 'E9789B800A1201BC7A7F8B72FB3C9C8B10CAAFD4541C013F1383F5BA2CF3A510'
+        Size   = 616068
+    },
+    @{
+        Name   = 'YubiKey Minidriver (Yubico)'
+        File   = 'YubiKey-Minidriver-5.0.4.273-x64.msi'
+        Url    = 'https://downloads.yubico.com/support/YubiKey-Minidriver-5.0.4.273-x64.msi'
+        Sha256 = '4C657C148C6DA60127094F8A64345317906A49DF25C3AAD0898C0FEFA6E07FB3'
+        Size   = 2994176
+    },
+    @{
+        Name   = 'IDOne PIV 2.4.3 Minidriver (Idemia / Windows Update)'
+        File   = 'WindowsUpdate_Minidriver.cab'
+        Url    = 'https://catalog.s.download.windowsupdate.com/d/msdownload/update/driver/drvs/2025/10/33c66d53-0881-47f8-9714-081138ca4d26_00cfc05dd035d167c8d86691958366fe061faed5.cab'
+        Sha256 = 'F17279C3AA07497874D7DC8E3A4F1F500AA20E9BD273A8DD34BE7A37231356A9'
+        Size   = 7838110
+    }
+)
+
+function Sync-BundledDriver {
+    param(
+        [Parameter(Mandatory = $true)] [hashtable] $Driver,
+        [Parameter(Mandatory = $true)] [string]    $TargetDir
+    )
+
+    $target = Join-Path $TargetDir $Driver.File
+
+    if (Test-Path $target) {
+        $actual = (Get-FileHash -Path $target -Algorithm SHA256).Hash
+        if ($actual -eq $Driver.Sha256) {
+            Write-Host ("  [OK]   {0}  -- verified ({1:N0} bytes)" -f $Driver.File, (Get-Item $target).Length) -ForegroundColor Gray
+            return
+        }
+        Write-Host ("  [!!]   {0}  -- hash mismatch (expected {1}, got {2}); re-downloading" -f $Driver.File, $Driver.Sha256, $actual) -ForegroundColor Yellow
+        Remove-Item -LiteralPath $target -Force
+    }
+
+    Write-Host ("  [DL]   {0}" -f $Driver.File) -ForegroundColor Cyan
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    try {
+        Invoke-WebRequest -Uri $Driver.Url -OutFile $target -UseBasicParsing -TimeoutSec 300
+    } catch {
+        throw ("Could not fetch bundled driver '{0}' from {1}.`n`n" +
+               "If this is an offline build host, pre-stage the file at:`n" +
+               "  {2}`n`n" +
+               "(see Installer\drivers\README.md for the expected SHA-256).`n`n" +
+               "Underlying error: {3}") -f $Driver.Name, $Driver.Url, $target, $_.Exception.Message
+    }
+
+    $actual = (Get-FileHash -Path $target -Algorithm SHA256).Hash
+    if ($actual -ne $Driver.Sha256) {
+        Remove-Item -LiteralPath $target -Force -ErrorAction SilentlyContinue
+        throw ("SHA-256 mismatch for '{0}' after download.`n" +
+               "  expected: {1}`n  got:      {2}`n" +
+               "Aborting build to avoid shipping an unverified driver.") -f $Driver.Name, $Driver.Sha256, $actual
+    }
+
+    Write-Host ("  [OK]   {0}  -- downloaded and verified" -f $Driver.File) -ForegroundColor Green
+}
+
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "Staging bundled minidrivers" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+
+$driversDir = Join-Path $PSScriptRoot 'Installer\drivers'
+if (-not (Test-Path $driversDir)) {
+    New-Item -ItemType Directory -Path $driversDir -Force | Out-Null
+}
+
+foreach ($d in $BundledDrivers) {
+    Sync-BundledDriver -Driver $d -TargetDir $driversDir
+}
+Write-Host ""
+
 # Find Visual Studio 2022 installation
 $devEnvPath = $null
 
@@ -384,6 +474,99 @@ if ($Configuration -eq "Release") {
         Write-Host ""
         Write-Host "To build the installer, install NSIS from https://nsis.sourceforge.io/" -ForegroundColor Cyan
         Write-Host "Make sure NSIS is added to PATH during installation" -ForegroundColor Cyan
+    }
+}
+
+# ---------------------------------------------------------------------------
+# SHA-256 manifest for release artifacts  (supply-chain / SBOM helper)
+# ---------------------------------------------------------------------------
+# Writes Installer\SHA256SUMS.txt listing the installer + every .dll / .exe
+# shipped in x64\$Configuration\. Downstream consumers (and anyone receiving
+# the release over offline media) can verify integrity with:
+#     certutil -hashfile <file> SHA256
+# or, on Linux/macOS:
+#     sha256sum -c SHA256SUMS.txt
+# ---------------------------------------------------------------------------
+if ($Configuration -eq "Release") {
+    Write-Host "============================================================" -ForegroundColor Cyan
+    Write-Host "Generating SHA-256 manifest" -ForegroundColor Cyan
+    Write-Host "============================================================" -ForegroundColor Cyan
+
+    $manifestPath = Join-Path $PSScriptRoot 'Installer\SHA256SUMS.txt'
+    $lines = @()
+    $lines += "# EID Authentication - SHA-256 manifest"
+    $lines += ("# Generated: {0}  (UTC)" -f ([DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')))
+    $lines += ("# Configuration: {0}   Platform: {1}" -f $Configuration, $Platform)
+    $lines += "# Format: <sha256>  <relative-path>"
+    $lines += ""
+
+    $targets = @()
+    $installerExe = Join-Path $PSScriptRoot 'Installer\EIDInstallx64.exe'
+    if (Test-Path $installerExe) { $targets += $installerExe }
+
+    $buildOutDir = Join-Path $PSScriptRoot "$Platform\$Configuration"
+    if (Test-Path $buildOutDir) {
+        $targets += Get-ChildItem -Path $buildOutDir -File -Recurse |
+                    Where-Object { $_.Extension -in '.dll', '.exe' } |
+                    Select-Object -ExpandProperty FullName
+    }
+
+    foreach ($d in $BundledDrivers) {
+        $bundled = Join-Path $driversDir $d.File
+        if (Test-Path $bundled) { $targets += $bundled }
+    }
+
+    $policyDir = Join-Path $PSScriptRoot 'Installer\PolicyDefinitions'
+    if (Test-Path $policyDir) {
+        $targets += Get-ChildItem -Path $policyDir -File -Recurse |
+                    Where-Object { $_.Extension -in '.admx', '.adml' } |
+                    Select-Object -ExpandProperty FullName
+    }
+
+    $rootPrefix = $PSScriptRoot.TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar
+    foreach ($t in ($targets | Sort-Object)) {
+        $hash = (Get-FileHash -Path $t -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($t.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            $rel = $t.Substring($rootPrefix.Length)
+        } else {
+            $rel = $t
+        }
+        $lines += ("{0}  {1}" -f $hash, $rel)
+        Write-Host ("  {0}  {1}" -f $hash.Substring(0, 12), $rel) -ForegroundColor Gray
+    }
+
+    Set-Content -Path $manifestPath -Value $lines -Encoding UTF8
+    Write-Host ""
+    Write-Host ("Manifest written: {0}  ({1} entries)" -f $manifestPath, ($targets.Count)) -ForegroundColor Green
+    Write-Host ""
+
+    # ------------------------------------------------------------------
+    # Optional: generate CycloneDX SBOM if Microsoft.Sbom.Tool is present
+    # ------------------------------------------------------------------
+    $sbomTool = Get-Command sbom-tool.exe -ErrorAction SilentlyContinue
+    if (-not $sbomTool) {
+        Write-Host "sbom-tool not found on PATH - skipping SBOM generation." -ForegroundColor DarkGray
+        Write-Host "  Install with: dotnet tool install --global Microsoft.Sbom.DotNetTool" -ForegroundColor DarkGray
+        Write-Host ""
+    } else {
+        Write-Host "Generating SPDX SBOM via sbom-tool..." -ForegroundColor Cyan
+        $sbomOut = Join-Path $PSScriptRoot 'Installer\sbom'
+        if (Test-Path $sbomOut) { Remove-Item -Recurse -Force $sbomOut }
+        New-Item -ItemType Directory -Path $sbomOut -Force | Out-Null
+        & $sbomTool.Source generate `
+            -b $buildOutDir `
+            -bc $PSScriptRoot `
+            -pn 'EIDAuthentication' `
+            -pv '1.0.0' `
+            -ps 'EID Authentication Contributors' `
+            -nsb 'https://github.com/DangerDawgAU/EIDAuthentication' `
+            -m $sbomOut 2>&1 | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host ("SBOM written under: {0}" -f $sbomOut) -ForegroundColor Green
+        } else {
+            Write-Host ("sbom-tool exited with code {0} - SBOM may be incomplete" -f $LASTEXITCODE) -ForegroundColor Yellow
+        }
+        Write-Host ""
     }
 }
 
