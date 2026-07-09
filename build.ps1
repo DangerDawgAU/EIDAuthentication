@@ -19,7 +19,7 @@
     Build configuration: Debug or Release (default: Release)
 
 .PARAMETER Platform
-    Target platform: x64 or Win32 (default: x64)
+    Target platform: x64 (default: x64). This project is x64 only.
 
 .EXAMPLE
     .\build.ps1
@@ -34,7 +34,7 @@ param(
     [ValidateSet("Debug", "Release")]
     [string]$Configuration = "Release",
 
-    [ValidateSet("x64", "Win32")]
+    [ValidateSet("x64")]
     [string]$Platform = "x64"
 )
 

@@ -411,9 +411,6 @@ Protection.
 
 # Debug build
 .\build.ps1 Debug x64
-
-# Win32 build (32-bit)
-.\build.ps1 Release Win32
 ```
 
 **What Gets Built:**
