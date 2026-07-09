@@ -23,9 +23,6 @@
 
 #include "TraceExport.h"
 
-// Non-const string buffer for EVENT_TRACE_LOGFILE.LoggerName (requires LPWSTR)
-static TCHAR s_szLoggerName[] = TEXT("EIDCredentialProvider");        // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
-
 static HANDLE g_hTraceOutputFile = nullptr;  // NOSONAR - RUNTIME-01: File handle, opened at runtime
 
 static VOID WINAPI ProcessEvents(PEVENT_TRACE pEvent)
@@ -59,7 +56,8 @@ void ExportOneTraceFile(HANDLE hOutputFile, PTSTR szTraceFile)
 	TRACEHANDLE handle = NULL;
 	EVENT_TRACE_LOGFILE trace;
 	memset(&trace,0, sizeof(EVENT_TRACE_LOGFILE));
-	trace.LoggerName = s_szLoggerName;
+	// File-mode consumer: set only LogFileName and leave LoggerName NULL. Setting both is
+	// contradictory for OpenTrace (a session is identified by one or the other, not both).
 	trace.LogFileName = szTraceFile;
 	trace.EventCallback = reinterpret_cast<PEVENT_CALLBACK>(ProcessEvents);
 	handle = OpenTrace(&trace);

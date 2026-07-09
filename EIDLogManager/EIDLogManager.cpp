@@ -481,6 +481,8 @@ void LoadCSVSettings(HWND hDlg)
 		IsCategoryEnabled(config.dwCategoryFilter, EID_EVENT_CATEGORY::CERTIFICATE) ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(hDlg, IDC_CSV_FILTER_SMARTCARD,
 		IsCategoryEnabled(config.dwCategoryFilter, EID_EVENT_CATEGORY::SMARTCARD) ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(hDlg, IDC_CSV_FILTER_LSA,
+		IsCategoryEnabled(config.dwCategoryFilter, EID_EVENT_CATEGORY::LSA) ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(hDlg, IDC_CSV_FILTER_CONFIG,
 		IsCategoryEnabled(config.dwCategoryFilter, EID_EVENT_CATEGORY::CONFIG) ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(hDlg, IDC_CSV_FILTER_AUDIT,
@@ -554,6 +556,8 @@ void SaveCSVSettings(HWND hDlg)
 		config.dwCategoryFilter = EnableCategory(config.dwCategoryFilter, EID_EVENT_CATEGORY::CERTIFICATE);
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_FILTER_SMARTCARD) == BST_CHECKED)
 		config.dwCategoryFilter = EnableCategory(config.dwCategoryFilter, EID_EVENT_CATEGORY::SMARTCARD);
+	if (IsDlgButtonChecked(hDlg, IDC_CSV_FILTER_LSA) == BST_CHECKED)
+		config.dwCategoryFilter = EnableCategory(config.dwCategoryFilter, EID_EVENT_CATEGORY::LSA);
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_FILTER_CONFIG) == BST_CHECKED)
 		config.dwCategoryFilter = EnableCategory(config.dwCategoryFilter, EID_EVENT_CATEGORY::CONFIG);
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_FILTER_AUDIT) == BST_CHECKED)

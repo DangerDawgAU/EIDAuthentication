@@ -43,8 +43,14 @@ static const GUID EID_PROVIDER_GUID =
 SERVICE_STATUS_HANDLE g_StatusHandle = nullptr;
 SERVICE_STATUS g_ServiceStatus = {0};
 
-// Event trace session handle
+// Name of the real-time ETW session this service creates and consumes from.
+#define EID_SESSION_NAME          L"EIDTraceConsumer"
+
+// Event trace consumer handle (OpenTrace) and the real-time session handle (StartTrace).
+// The consumer must create its own session and enable the EID provider on it - otherwise
+// OpenTrace(EID_SESSION_NAME) has no session to attach to and the CSV stays empty.
 TRACEHANDLE gTraceHandle = 0;
+TRACEHANDLE g_hSession = 0;
 BOOL g_ServiceRunning = TRUE;
 HANDLE g_StopEvent = nullptr;
 
@@ -73,6 +79,10 @@ BOOL InstallService();
 BOOL UninstallService();
 BOOL StartServiceWrapper();
 BOOL StopServiceWrapper();
+
+// Real-time ETW session lifecycle (the session the consumer reads from)
+BOOL CreateRealtimeSession();
+void StopRealtimeSession();
 
 // Configuration and CSV management
 BOOL LoadCsvConfiguration();
@@ -430,6 +440,80 @@ VOID WINAPI EventCallback(PEVENT_RECORD pEvent)
 // ================================================================
 // Trace Session Management
 // ================================================================
+// Stop and delete the real-time session we created (safe to call if not started).
+void StopRealtimeSession()
+{
+    if (g_hSession != 0)
+    {
+        EnableTraceEx2(g_hSession, &EID_PROVIDER_GUID,
+            EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
+
+        struct
+        {
+            EVENT_TRACE_PROPERTIES Props;
+            WCHAR LoggerName[128];
+        } sp;
+        ZeroMemory(&sp, sizeof(sp));
+        sp.Props.Wnode.BufferSize = sizeof(sp);
+        sp.Props.LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES);
+        ControlTraceW(g_hSession, nullptr, &sp.Props, EVENT_TRACE_CONTROL_STOP);
+        g_hSession = 0;
+    }
+}
+
+// Create the real-time ETW session and enable the EID provider on it. StartTrace copies the
+// session name into the properties buffer at LoggerNameOffset, so the buffer must be large
+// enough to hold EVENT_TRACE_PROPERTIES followed by the name.
+BOOL CreateRealtimeSession()
+{
+    struct
+    {
+        EVENT_TRACE_PROPERTIES Props;
+        WCHAR LoggerName[128];
+    } sp;
+
+    auto initProps = [&sp]()
+    {
+        ZeroMemory(&sp, sizeof(sp));
+        sp.Props.Wnode.BufferSize = sizeof(sp);
+        sp.Props.Wnode.Flags = WNODE_FLAG_TRACED_GUID;
+        sp.Props.Wnode.ClientContext = 1; // QPC timestamps
+        sp.Props.LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
+        sp.Props.LogFileNameOffset = 0; // real-time: no backing file
+        sp.Props.LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES);
+    };
+
+    initProps();
+    ULONG status = StartTraceW(&g_hSession, EID_SESSION_NAME, &sp.Props);
+    if (status == ERROR_ALREADY_EXISTS)
+    {
+        // A stale session from a previous run is still up - stop it and recreate.
+        initProps();
+        ControlTraceW(0, EID_SESSION_NAME, &sp.Props, EVENT_TRACE_CONTROL_STOP);
+        initProps();
+        status = StartTraceW(&g_hSession, EID_SESSION_NAME, &sp.Props);
+    }
+    if (status != ERROR_SUCCESS)
+    {
+        wprintf(L"StartTrace failed: %u\n", status);
+        g_hSession = 0;
+        return FALSE;
+    }
+
+    // Enable the EID credential-provider ETW provider on our session at VERBOSE so that
+    // INFO-level events (e.g. the tile disconnect/revive traces) are captured.
+    status = EnableTraceEx2(g_hSession, &EID_PROVIDER_GUID,
+        EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_VERBOSE, 0, 0, 0, nullptr);
+    if (status != ERROR_SUCCESS)
+    {
+        wprintf(L"EnableTraceEx2 failed: %u\n", status);
+        StopRealtimeSession();
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 BOOL StartTraceSession()
 {
     // Reload configuration to check if CSV logging is enabled
@@ -441,10 +525,18 @@ BOOL StartTraceSession()
         return TRUE; // Not an error - just disabled
     }
 
+    // Create our own real-time session (and enable the provider on it) before consuming.
+    // Without this, OpenTrace has no session to attach to and no events ever arrive.
+    if (!CreateRealtimeSession())
+    {
+        return FALSE;
+    }
+
     EVENT_TRACE_LOGFILE logfile = {0};
-    logfile.LogFileName = nullptr;
-    logfile.LoggerName = const_cast<LPWSTR>(L"EIDTraceConsumer");
-    logfile.LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
+    logfile.LoggerName = const_cast<LPWSTR>(EID_SESSION_NAME);
+    // EventRecordCallback (PEVENT_RECORD) requires PROCESS_TRACE_MODE_EVENT_RECORD; without it
+    // ETW would invoke the legacy PEVENT_TRACE callback against our record-style handler.
+    logfile.ProcessTraceMode = PROCESS_TRACE_MODE_REAL_TIME | PROCESS_TRACE_MODE_EVENT_RECORD;
     logfile.EventRecordCallback = EventCallback;
     logfile.Context = nullptr;
 
@@ -452,6 +544,7 @@ BOOL StartTraceSession()
     if (gTraceHandle == INVALID_PROCESSTRACE_HANDLE)
     {
         wprintf(L"OpenTrace failed: %d\n", GetLastError());
+        StopRealtimeSession();
         return FALSE;
     }
 
@@ -461,11 +554,14 @@ BOOL StartTraceSession()
 
 BOOL StopTraceSession()
 {
-    if (gTraceHandle != INVALID_PROCESSTRACE_HANDLE)
+    if (gTraceHandle != 0 && gTraceHandle != INVALID_PROCESSTRACE_HANDLE)
     {
         CloseTrace(gTraceHandle);
-        gTraceHandle = INVALID_PROCESSTRACE_HANDLE;
+        gTraceHandle = 0;
     }
+
+    // Stop the real-time session we created so it does not linger after the service exits.
+    StopRealtimeSession();
 
     CloseCsvFile();
     wprintf(L"Trace session stopped\n");

@@ -222,6 +222,13 @@ Section "Core" SecCore
   nsExec::ExecToLog 'net start SCardSvr'
   nsExec::ExecToLog 'net start ScDeviceEnum'
 
+  ; Install and start the ETW trace consumer service. Without this the CSV
+  ; logging configured in EIDLogManager has no consumer and never produces
+  ; files. The executable self-registers as an auto-start service via -install.
+  DetailPrint "Installing EID Trace Consumer service..."
+  nsExec::ExecToLog '"$INSTDIR\EIDTraceConsumer.exe" -install'
+  nsExec::ExecToLog '"$INSTDIR\EIDTraceConsumer.exe" -start'
+
   SetPluginUnload manual
   SetRebootFlag true
 
@@ -503,6 +510,11 @@ Section "Uninstall"
   Delete "$INSTDIR\EIDMigrate.exe"
   Delete "$INSTDIR\EIDMigrateUI.exe"
   Delete "$INSTDIR\EIDManageUsers.exe"
+
+  ; Stop and remove the ETW trace consumer service before deleting its binary,
+  ; otherwise the running service holds the file open and leaves a stale service.
+  nsExec::ExecToLog '"$INSTDIR\EIDTraceConsumer.exe" -stop'
+  nsExec::ExecToLog '"$INSTDIR\EIDTraceConsumer.exe" -uninstall'
   Delete "$INSTDIR\EIDTraceConsumer.exe"
   Delete "$INSTDIR\cred_provider.ico"
 
