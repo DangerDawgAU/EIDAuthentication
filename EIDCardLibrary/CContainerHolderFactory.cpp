@@ -28,12 +28,19 @@
 #include <wincred.h>
 
 
-template <typename T> 
+template <typename T>
 CContainerHolderFactory<T>::CContainerHolderFactory()
 {
 	_cpus = CPUS_INVALID;
 	_dwFlags = 0;
+	_fReviveOnReconnect = FALSE;
 	InitializeCriticalSection(&CriticalSection);
+}
+
+template <typename T>
+void CContainerHolderFactory<T>::SetReviveOnReconnect(BOOL fRevive)
+{
+	_fReviveOnReconnect = fRevive;
 }
 
 template <typename T> 
@@ -66,10 +73,17 @@ HRESULT CContainerHolderFactory<T>::SetUsageScenario(
 	return S_OK;
 }
 
-template <typename T> 
+template <typename T>
 BOOL CContainerHolderFactory<T>::ConnectNotification(__in LPCTSTR szReaderName,__in LPCTSTR szCardName, __in USHORT ActivityCount)
 {
-	return ConnectNotificationGeneric(szReaderName,szCardName, ActivityCount);
+	BOOL fReturn = ConnectNotificationGeneric(szReaderName,szCardName, ActivityCount);
+	// Any tile still flagged disconnected on this reader belongs to a card that is no
+	// longer here (a different card was inserted); drop it so it cannot linger.
+	if (_fReviveOnReconnect)
+	{
+		PurgeStaleDisconnected(szReaderName);
+	}
+	return fReturn;
 }
 
 // called to enumerate the credential built with a CContainer
@@ -260,6 +274,38 @@ BOOL CContainerHolderFactory<T>::CreateItemFromCertificateBlob(__in HCRYPTPROV h
 	BOOL fSuccess;
 	PTSTR szUsername = nullptr;
 	DWORD dwError = 0;
+
+	// Revive-in-place: if this exact container/key is already present as a tile that was
+	// flagged disconnected (its card was removed while selected), just clear the flag so the
+	// existing, on-screen tile comes back to life. This avoids creating a duplicate tile and
+	// lets LogonUI's currently selected tile switch back from "please reconnect" to the PIN box.
+	if (_fReviveOnReconnect)
+	{
+		T* reviveItem = nullptr;
+		this->Lock();
+		for (T* item : _CredentialList)
+		{
+			CContainer* container = item->GetContainer();
+			if (item->IsDisconnected() &&
+				container->IsOnReader(szReaderName) &&
+				container->GetKeySpec() == KeySpec &&
+				_tcscmp(container->GetContainerName(), szWideContainerName) == 0)
+			{
+				reviveItem = item;
+				break;
+			}
+		}
+		this->Unlock();
+		if (reviveItem)
+		{
+			// Clear the flag (and restore the PIN prompt) outside the lock; this runs before the
+			// post-connect PurgeStaleDisconnected, so the revived tile will not be purged.
+			reviveItem->SetDisconnected(FALSE);
+			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Revived disconnected tile %s", szWideContainerName);
+			return TRUE;
+		}
+	}
+
 	__try
 	{
 		pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, Data, DataSize);
@@ -369,6 +415,9 @@ BOOL CContainerHolderFactory<T>::CreateItemFromCertificateBlob(__in HCRYPTPROV h
 template <typename T>
 BOOL CContainerHolderFactory<T>::DisconnectNotification(LPCTSTR szReaderName)
 {
+	// Tiles kept alive to be morphed to "please reconnect" after the lock is released
+	// (SetDisconnected calls into LogonUI, which must not happen under our critical section).
+	std::list<T*> morphItems;
 	this->Lock();
 	auto l_iter = _CredentialList.begin();
 	while(l_iter!=_CredentialList.end())
@@ -391,8 +440,22 @@ BOOL CContainerHolderFactory<T>::DisconnectNotification(LPCTSTR szReaderName)
 #endif
 			if(container->IsOnReader(szWideReaderName))
 			{
-				l_iter = _CredentialList.erase(l_iter);
-				item->Release();
+				EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: Disconnect match tile=%p revive=%d selected=%d",(void*)item,_fReviveOnReconnect,item->IsSelected());
+				// Keep the currently selected tile alive but flagged disconnected, so it can
+				// morph to "please reconnect" in place (LogonUI will not swap a selected tile)
+				// and be revived when the card returns. All other tiles are removed as before.
+				if (_fReviveOnReconnect && item->IsSelected())
+				{
+					EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: Disconnect -> MORPH tile=%p",(void*)item);
+					morphItems.push_back(item);
+					++l_iter;
+				}
+				else
+				{
+					EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: Disconnect -> ERASE tile=%p",(void*)item);
+					l_iter = _CredentialList.erase(l_iter);
+					item->Release();
+				}
 			}
 			else
 			{
@@ -402,7 +465,36 @@ BOOL CContainerHolderFactory<T>::DisconnectNotification(LPCTSTR szReaderName)
 		}
 	}
 	this->Unlock();
+
+	// The kept tiles stay owned by _CredentialList and card events are delivered serially,
+	// so they cannot be erased from under us here.
+	for (T* item : morphItems)
+	{
+		item->SetDisconnected(TRUE);
+	}
 	return TRUE;
+}
+
+template <typename T>
+void CContainerHolderFactory<T>::PurgeStaleDisconnected(LPCTSTR szReaderName)
+{
+	this->Lock();
+	auto l_iter = _CredentialList.begin();
+	while(l_iter!=_CredentialList.end())
+	{
+		T* item = (T *)*l_iter;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
+		CContainer* container = item->GetContainer();
+		if (item->IsDisconnected() && container->IsOnReader(szReaderName))
+		{
+			l_iter = _CredentialList.erase(l_iter);
+			item->Release();
+		}
+		else
+		{
+			++l_iter;
+		}
+	}
+	this->Unlock();
 }
 
 template <typename T>

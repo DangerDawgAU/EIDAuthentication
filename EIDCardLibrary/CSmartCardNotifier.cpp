@@ -37,6 +37,7 @@ CSmartCardConnectionNotifier::CSmartCardConnectionNotifier(ISmartCardConnectionN
 	_CallBack = CallBack;
 	_hAccessStartedEvent = nullptr;
 	_hThread = nullptr;
+	_hSCardContext = NULL;
 	if (fImmediateStart)
 	{
 		Start();
@@ -69,13 +70,21 @@ HRESULT CSmartCardConnectionNotifier::Start()
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Thread already launched");
 		return E_FAIL;
 	}
+	// create the stop event before the thread : the thread reads it as soon as it starts
+	_hAccessStartedEvent = CreateEvent(nullptr,TRUE,FALSE,nullptr);
+	if (_hAccessStartedEvent == nullptr)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to create the stop event : %d",GetLastError());
+		return E_FAIL;
+	}
 	_hThread = CreateThread(nullptr, 0, CSmartCardConnectionNotifier::_ThreadProc, (LPVOID) this, 0, nullptr);
     if (_hThread == nullptr)
     {
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Unable to launch the thread : %d",GetLastError());
+		CloseHandle(_hAccessStartedEvent);
+		_hAccessStartedEvent = nullptr;
 		return E_FAIL;
     }
-	_hAccessStartedEvent = CreateEvent(nullptr,TRUE,FALSE,nullptr);
 
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Leave");
 	return S_OK;
@@ -137,65 +146,91 @@ DWORD WINAPI CSmartCardConnectionNotifier::_ThreadProc(LPVOID lpParameter)
 
 
 
+// Statuses after which the monitoring loop must re-establish its context and resume,
+// instead of terminating the thread (issue #33):
+// - SCARD_E_SYSTEM_CANCELLED : the system cancelled the context when logonui is launched
+//   cf http://blogs.msdn.com/shivaram/archive/2007/02/26/smart-card-logon-on-windows-vista.aspx
+// - SCARD_E_SERVICE_STOPPED / SCARD_E_NO_SERVICE : on Windows 8+ SCardSvr is trigger-managed
+//   and stops when the last reader is removed (e.g. an unplugged Yubikey); it restarts on replug
+// - SCARD_E_INVALID_HANDLE : the context died with the service
+// - SCARD_E_UNKNOWN_READER : a watched reader disappeared while waiting
+static BOOL IsRecoverableStatus(LONG Status)
+{
+	return Status == SCARD_E_SYSTEM_CANCELLED
+		|| Status == SCARD_E_SERVICE_STOPPED
+		|| Status == SCARD_E_NO_SERVICE
+		|| Status == SCARD_E_INVALID_HANDLE
+		|| Status == SCARD_E_UNKNOWN_READER;
+}
+
 // try to know if there are an existing card or wait for this card
 // then call ValidateCard
 LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 {
 
 	LONG					Status;
+	LONG					lReturn;
 
 	SCARD_READERSTATE 		rgscState[MAXIMUM_SMARTCARD_READERS];
 	DWORD             		dwI;
 	DWORD             		dwRdrCount;
 	HANDLE					hAccessStartedEvent[2];
+	BOOL					fFirstAttempt = TRUE;
 
 
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 	do {
+		// backoff so a flapping resource manager cannot make the recovery loop spin
+		if (!fFirstAttempt)
+		{
+			Sleep(250);
+		}
+		fFirstAttempt = FALSE;
+
 		// Establish the Resource Manager Context.
 		Status = SCardEstablishContext(SCARD_SCOPE_USER,nullptr,nullptr,&_hSCardContext);
-		if(Status == SCARD_E_NO_SERVICE) 
+		if(Status == SCARD_E_NO_SERVICE)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardEstablishContext : SCARD_E_NO_SERVICE");
-			// Wait for the launch of the Resource Manager
+			// Wait for the (re)start of the Resource Manager
 			hAccessStartedEvent[0] = SCardAccessStartedEvent();
-			if (_hAccessStartedEvent == nullptr)
+			if (hAccessStartedEvent[0] == nullptr)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardAccessStartedEvent : %d",GetLastError());
-				return SCARD_E_NO_SERVICE;
+				Status = SCARD_E_NO_SERVICE;
+				break;
 			}
 			hAccessStartedEvent[1] = _hAccessStartedEvent;
 			Status = WaitForMultipleObjects(2,hAccessStartedEvent,FALSE,INFINITE);
 			SCardReleaseStartedEvent();
-			if (Status == WAIT_TIMEOUT) 
+			if (Status == (WAIT_OBJECT_0 + 1))
 			{
-				// canceled
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardAccessStartedEvent Cancelled");
-				return SCARD_E_NO_SERVICE;
-			}
-			else if (Status == (WAIT_OBJECT_0 + 1))
-			{
+				// stop requested by Stop()
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardAccessStartedEvent-Cancelled");
-				return SCARD_E_NO_SERVICE;
+				Status = SCARD_E_CANCELLED;
+				break;
 			}
-			else if (Status != WAIT_OBJECT_0) 
+			else if (Status != WAIT_OBJECT_0)
 			{
 				// error
-				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardAccessStartedEvent-WaitForSingleObject :%X",Status);
-				return SCARD_E_NO_SERVICE;
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardAccessStartedEvent-WaitForMultipleObjects :%X",Status);
+				Status = SCARD_E_NO_SERVICE;
+				break;
 			}
 			// no error and manager available
 			Status = SCardEstablishContext(SCARD_SCOPE_USER,nullptr,nullptr,&_hSCardContext);
 			if(Status != SCARD_S_SUCCESS)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardEstablishContext2 :%X",Status);
-				return Status;
+				// retried or aborted by the while() condition below (issue #33)
+				continue;
 			}
 		}
 		else if(Status != SCARD_S_SUCCESS)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardEstablishContext :%X",Status);
-			return Status;
+			// retried or aborted by the while() condition below (issue #33)
+			continue;
 		}
 
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Main loop started");
@@ -207,13 +242,15 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 		if(Status != SCARD_S_SUCCESS)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetReaderStates :%X",Status);
-			SCardReleaseContext(_hSCardContext);
-			return Status;
+			// fall through to the shared cleanup below, which decides whether to retry (issue #33)
 		}
-		
+
 		// Call the SCardGetStatusChange to detect configuration changes on all the detected
 		// readers.
-		Status = SCardGetStatusChange(_hSCardContext, (DWORD) 2000 ,rgscState,dwRdrCount);
+		if (Status == SCARD_S_SUCCESS)
+		{
+			Status = SCardGetStatusChange(_hSCardContext, (DWORD) 2000 ,rgscState,dwRdrCount);
+		}
 		while((Status == SCARD_S_SUCCESS) || (Status == SCARD_E_TIMEOUT))
 		{ 
 			for (dwI = 0; dwI < dwRdrCount; dwI++)
@@ -274,12 +311,14 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 			if(Status != SCARD_S_SUCCESS)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetReaderStates :%X",Status);
-				SCardReleaseContext(_hSCardContext);
-				return Status;
+				// shared cleanup below decides whether to retry (issue #33)
+				break;
 			}
-			if( WaitForSingleObject(_hAccessStartedEvent,0) != WAIT_TIMEOUT) 
+			if( WaitForSingleObject(_hAccessStartedEvent,0) != WAIT_TIMEOUT)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Event signaled _hAccessStartedEvent");
+				// stop requested by Stop()
+				Status = SCARD_E_CANCELLED;
 				break;
 			}
 			Status = SCardGetStatusChange(_hSCardContext, INFINITE ,rgscState,dwRdrCount);
@@ -288,10 +327,10 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 		// free memory
 		for ( dwI=0; dwI < dwRdrCount; dwI++)
 		{
-			// if the system cancelled our notification, we need to notify
-			// that a card has been removed
-			// so it can be added again
-			if (Status == SCARD_E_SYSTEM_CANCELLED &&
+			// if the monitoring was interrupted (logonui launched, smart card service
+			// stopped after the reader was unplugged, ...), notify that the card has
+			// been removed so it can be added again when monitoring resumes
+			if (IsRecoverableStatus(Status) &&
 				(SCARD_STATE_PRESENT & rgscState[dwI].dwEventState))
 			{
 				Callback(EID_CREDENTIAL_PROVIDER_READER_STATE::EIDCPRSDisconnected,rgscState[dwI].szReader, nullptr, 0);
@@ -299,16 +338,20 @@ LONG CSmartCardConnectionNotifier::WaitForSmartCardInsertion()
 			EIDFree((PVOID)rgscState[dwI].szReader);
 		}
 		// Resource Manager Context: Release
-		Status = SCardReleaseContext(_hSCardContext);
+		// do not store the result into Status : it drives the retry decision below
+		lReturn = SCardReleaseContext(_hSCardContext);
+		if (lReturn != SCARD_S_SUCCESS)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardReleaseContext :%X",lReturn);
+		}
 		_hSCardContext = NULL;
 
-		// cf http://blogs.msdn.com/shivaram/archive/2007/02/26/smart-card-logon-on-windows-vista.aspx
-		// SCARD_E_SYSTEM_CANCELLED is received when logonui is launched
-	} while (Status == SCARD_E_SYSTEM_CANCELLED);
+		// keep monitoring across recoverable interruptions, unless a stop was requested (issue #33)
+	} while (IsRecoverableStatus(Status) && WaitForSingleObject(_hAccessStartedEvent,0) == WAIT_TIMEOUT);
 
 	if (Status != SCARD_E_CANCELLED)
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardGetStatusChange cancelled :%X",Status);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SCardGetStatusChange stopped :%X",Status);
 	}
 	// synchronization event
 	CloseHandle(_hAccessStartedEvent);
@@ -433,6 +476,12 @@ LONG CSmartCardConnectionNotifier::GetReaderStates(SCARD_READERSTATE rgscState[M
 				}
 				// redo the work on this item
 				dwI--;
+			}
+			else
+			{
+				// last entry : nothing to move, but its name still has to be freed
+				EIDFree((PVOID)rgscState[dwI].szReader);
+				rgscState[dwI].szReader = nullptr;
 			}
 			dwPreviousRdrCount--;
 		}

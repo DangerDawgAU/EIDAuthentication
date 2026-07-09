@@ -85,7 +85,17 @@ public:
 	void SetUsageScenario(__in CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,__in DWORD dwFlags);
     virtual ~CEIDCredential();
 	CContainer* GetContainer() const;
+
+	// Used by CContainerHolderFactory to keep the selected tile alive across a card
+	// removal/re-insertion. IsSelected() reports whether LogonUI has this tile zoomed;
+	// SetDisconnected() morphs the tile between the PIN prompt and a "please reconnect
+	// your smart card" message.
+	BOOL IsSelected() const;
+	BOOL IsDisconnected() const;
+	void SetDisconnected(__in BOOL fDisconnected);
   private:
+	void SecureClearPin();
+
     LONG                                  _cRef;
 
     CREDENTIAL_PROVIDER_USAGE_SCENARIO    _cpus; // The usage scenario for which we were enumerated.
@@ -103,7 +113,9 @@ public:
                                                                                         // different from the name of 
                                                                                         // the field held in 
                                                                                         // _rgCredProvFieldDescriptors.
-    ICredentialProviderCredentialEvents* _pCredProvCredentialEvents;           
+    ICredentialProviderCredentialEvents* _pCredProvCredentialEvents;
 	CContainer* _pContainer;
+	BOOL        _fSelected;      // TRUE while LogonUI has this tile zoomed (between SetSelected/SetDeselected).
+	BOOL        _fDisconnected;  // TRUE while the card is absent and the tile shows the reconnect prompt.
 
 };

@@ -118,14 +118,17 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 		}
 		if (_pcpe != nullptr)
 		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: Disconnect CredentialsChanged (pre-DisconnectNotification)");
 			_pcpe->CredentialsChanged(_upAdviseContext);
 			Sleep(100);
 		}
+		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: Disconnect calling DisconnectNotification");
 		_CredentialList.DisconnectNotification(szReader);
 		if (_pMessageCredential) _pMessageCredential->SetStatus(CMessageCredentialStatus::EndReading);
 
 		if (_pcpe != nullptr)
 		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: Disconnect CredentialsChanged (post-DisconnectNotification)");
 			_pcpe->CredentialsChanged(_upAdviseContext);
 		}
 
@@ -161,6 +164,9 @@ HRESULT CEIDProvider::Initialize()
 	HRESULT hr = _pMessageCredential->Initialize(s_rgMessageCredProvFieldDescriptors, s_rgMessageFieldStatePairs, L"Please connect");
 	_CredentialList.Lock();
 	_CredentialList.SetUsageScenario(_cpus,_dwFlags);
+	// Keep a selected tile alive across card removal so it can show "please reconnect"
+	// in place and be revived when the card returns (LogonUI won't swap a selected tile).
+	_CredentialList.SetReviveOnReconnect(TRUE);
 	_CredentialList.Unlock();
 	_pMessageCredential->SetUsageScenario(_cpus,_dwFlags);
 	_pSmartCardConnectionNotifier = new CSmartCardConnectionNotifier(this);  // NOSONAR - COM-01: Event notifier requires heap allocation

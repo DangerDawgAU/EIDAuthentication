@@ -54,6 +54,11 @@ public:
 	PTSTR GetSolveDescription(DWORD dwCheckNum) const;
 	BOOL Solve(DWORD dwCheckNum);
 	HRESULT SetUsageScenario(__in CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,__in DWORD dwFlags);
+	// Required by CContainerHolderFactory's revive-on-reconnect path. The wizard rebuilds its
+	// view on every card change and never enables that path, so these are inert here.
+	BOOL IsSelected() const { return FALSE; }
+	BOOL IsDisconnected() const { return FALSE; }
+	void SetDisconnected(__in BOOL fDisconnected) { UNREFERENCED_PARAMETER(fDisconnected); }
 private:
 	CContainer* _pContainer;
 	BOOL _IsTrusted;

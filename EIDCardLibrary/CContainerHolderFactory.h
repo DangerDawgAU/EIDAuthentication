@@ -45,15 +45,24 @@ public:
 	BOOL HasContainerHolder() const;
 	DWORD ContainerHolderCount() const;
 	T* GetContainerHolderAt(DWORD dwIndex);
+	// When enabled (used by the credential provider), a card removal that hits the
+	// currently selected tile keeps that tile alive in a "disconnected" state instead
+	// of erasing it, so it can be revived in place when the card is re-inserted. Callers
+	// that just rebuild their view on every change (e.g. the config wizard) leave this off.
+	void SetReviveOnReconnect(__in BOOL fRevive);
 private:
 	BOOL ConnectNotificationGeneric(__in LPCTSTR szReaderName,__in LPCTSTR szCardName, __in USHORT ActivityCount);
 	BOOL ConnectNotificationBeid(__in LPCTSTR szReaderName,__in LPCTSTR szCardName, __in USHORT ActivityCount);
+	// Remove any items on the reader that are still flagged disconnected after a connect
+	// (their container was not present on the re-inserted card - i.e. a different card).
+	void PurgeStaleDisconnected(__in LPCTSTR szReaderName);
 	BOOL CleanList();
 	CREDENTIAL_PROVIDER_USAGE_SCENARIO _cpus;
     DWORD _dwFlags;
 	std::list<T*> _CredentialList;
 	CRITICAL_SECTION CriticalSection;
-	
+	BOOL _fReviveOnReconnect;
+
 };
 
 

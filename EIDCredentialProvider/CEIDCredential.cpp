@@ -40,6 +40,9 @@
 // Static buffer for PWSTR* assignment (C++23 /Zc:strictStrings compatibility)
 static wchar_t s_wszUnknownError[] = L"Unknow Error";  // NOSONAR - GLOBAL-01: Non-const for Windows API PWSTR compatibility
 
+// Message shown in place of the PIN box once the card is removed while this tile is selected.
+static const wchar_t s_szReconnectCard[] = L"Please reconnect your smart card";
+
 // CEIDCredential ////////////////////////////////////////////////////////
 
 CEIDCredential::CEIDCredential(CContainer* container):
@@ -52,6 +55,8 @@ CEIDCredential::CEIDCredential(CContainer* container):
     ZeroMemory(_rgFieldStatePairs, sizeof(_rgFieldStatePairs));
     ZeroMemory(_rgFieldStrings, sizeof(_rgFieldStrings));
 	_pContainer = container;
+	_fSelected = FALSE;
+	_fDisconnected = FALSE;
 	Initialize();
 }
 
@@ -141,6 +146,79 @@ CContainer* CEIDCredential::GetContainer() const
 {
 	return _pContainer;
 }
+
+BOOL CEIDCredential::IsSelected() const
+{
+	return _fSelected;
+}
+
+BOOL CEIDCredential::IsDisconnected() const
+{
+	return _fDisconnected;
+}
+
+// Securely wipe and reset the PIN edit buffer (mirrors SetDeselected's handling).
+void CEIDCredential::SecureClearPin()
+{
+	if (_rgFieldStrings[SFI_PIN])
+	{
+		size_t lenPin;
+		if (SUCCEEDED(StringCchLengthW(_rgFieldStrings[SFI_PIN], 128, &lenPin)))
+		{
+			SecureZeroMemory(_rgFieldStrings[SFI_PIN], lenPin * sizeof(*_rgFieldStrings[SFI_PIN]));
+		}
+		else
+		{
+			SecureZeroMemory(_rgFieldStrings[SFI_PIN], 128 * sizeof(*_rgFieldStrings[SFI_PIN]));
+		}
+		CoTaskMemFree(_rgFieldStrings[SFI_PIN]);
+		_rgFieldStrings[SFI_PIN] = nullptr;
+		SHStrDupW(L"", &_rgFieldStrings[SFI_PIN]);
+	}
+}
+
+// Morph the tile between the PIN prompt and a "please reconnect your smart card" message.
+// LogonUI will not swap a tile that the user has selected, so when the card is pulled we
+// update this tile's own fields in place (fDisconnected==TRUE); when the card returns we
+// restore the PIN prompt (fDisconnected==FALSE). GetFieldState/GetStringValue mirror this
+// state so LogonUI stays consistent even if it re-queries the tile.
+void CEIDCredential::SetDisconnected(BOOL fDisconnected)
+{
+	if (_fDisconnected == fDisconnected)
+	{
+		return;
+	}
+	_fDisconnected = fDisconnected;
+	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: SetDisconnected tile=%p fDisconnected=%d advised=%d",(void*)this,fDisconnected,_pCredProvCredentialEvents!=nullptr);
+
+	// Never keep a typed PIN across a card removal.
+	SecureClearPin();
+
+	if (!_pCredProvCredentialEvents)
+	{
+		// Not currently advised by LogonUI; the state above is enough for the next query.
+		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: SetDisconnected tile=%p SKIPPED field updates (not advised)",(void*)this);
+		return;
+	}
+
+	if (fDisconnected)
+	{
+		_pCredProvCredentialEvents->SetFieldState(this, SFI_PIN, CPFS_HIDDEN);
+		_pCredProvCredentialEvents->SetFieldState(this, SFI_SUBMIT_BUTTON, CPFS_HIDDEN);
+		_pCredProvCredentialEvents->SetFieldState(this, SFI_CERTIFICATE, CPFS_HIDDEN);
+		_pCredProvCredentialEvents->SetFieldString(this, SFI_PIN, L"");
+		_pCredProvCredentialEvents->SetFieldString(this, SFI_MESSAGE, s_szReconnectCard);
+	}
+	else
+	{
+		_pCredProvCredentialEvents->SetFieldState(this, SFI_PIN, _rgFieldStatePairs[SFI_PIN].cpfs);
+		_pCredProvCredentialEvents->SetFieldState(this, SFI_SUBMIT_BUTTON, _rgFieldStatePairs[SFI_SUBMIT_BUTTON].cpfs);
+		_pCredProvCredentialEvents->SetFieldState(this, SFI_CERTIFICATE, _rgFieldStatePairs[SFI_CERTIFICATE].cpfs);
+		_pCredProvCredentialEvents->SetFieldString(this, SFI_PIN, L"");
+		_pCredProvCredentialEvents->SetFieldString(this, SFI_MESSAGE, _rgFieldStrings[SFI_MESSAGE]);
+		_pCredProvCredentialEvents->SetFieldInteractiveState(this, SFI_PIN, CPFIS_FOCUSED);
+	}
+}
 // LogonUI calls this in order to give us a callback in case we need to notify it of anything.
 HRESULT CEIDCredential::Advise(
     ICredentialProviderCredentialEvents* pcpce
@@ -152,6 +230,7 @@ HRESULT CEIDCredential::Advise(
     }
     _pCredProvCredentialEvents = pcpce;
     _pCredProvCredentialEvents->AddRef();
+	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: Advise tile=%p",(void*)this);
 
     return S_OK;
 }
@@ -170,6 +249,7 @@ HRESULT CEIDCredential::UnAdvise()
         _pCredProvCredentialEvents->Release();
     }
     _pCredProvCredentialEvents = nullptr;
+	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: UnAdvise tile=%p",(void*)this);
     return S_OK;
 }
 
@@ -182,6 +262,8 @@ HRESULT CEIDCredential::UnAdvise()
 HRESULT CEIDCredential::SetSelected(BOOL* pbAutoLogon)
 {
 	*pbAutoLogon = FALSE;
+	_fSelected = TRUE;
+	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: SetSelected tile=%p",(void*)this);
     return S_OK;
 }
 
@@ -191,6 +273,8 @@ HRESULT CEIDCredential::SetSelected(BOOL* pbAutoLogon)
 HRESULT CEIDCredential::SetDeselected()
 {
     HRESULT hr = S_OK;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
+	_fSelected = FALSE;
+	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: SetDeselected tile=%p",(void*)this);
 	if (_rgFieldStrings[SFI_PIN])
     {
         // CoTaskMemFree (below) deals with NULL, but StringCchLength does not.
@@ -231,6 +315,13 @@ HRESULT CEIDCredential::GetFieldState(
     {
         *pcpfis = _rgFieldStatePairs[dwFieldID].cpfis;
         *pcpfs = _rgFieldStatePairs[dwFieldID].cpfs;
+        // While the card is absent, hide the PIN entry, submit button and certificate link so
+        // only the "please reconnect" message remains. Keeps LogonUI consistent if it re-queries.
+        if (_fDisconnected &&
+            (dwFieldID == SFI_PIN || dwFieldID == SFI_SUBMIT_BUTTON || dwFieldID == SFI_CERTIFICATE))
+        {
+            *pcpfs = CPFS_HIDDEN;
+        }
         hr = S_OK;
     }
     else
@@ -253,11 +344,18 @@ HRESULT CEIDCredential::GetStringValue(
 {
     HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
     // Check to make sure dwFieldID is a legitimate index.
-    if (dwFieldID < ARRAYSIZE(_rgCredProvFieldDescriptors) && ppwsz) 
+    if (dwFieldID < ARRAYSIZE(_rgCredProvFieldDescriptors) && ppwsz)
     {
         // Make a copy of the string and return that. The caller
         // is responsible for freeing it.
-        hr = SHStrDupW(_rgFieldStrings[dwFieldID], ppwsz);
+        if (_fDisconnected && dwFieldID == SFI_MESSAGE)
+        {
+            hr = SHStrDupW(s_szReconnectCard, ppwsz);
+        }
+        else
+        {
+            hr = SHStrDupW(_rgFieldStrings[dwFieldID], ppwsz);
+        }
     }
     else
     {
