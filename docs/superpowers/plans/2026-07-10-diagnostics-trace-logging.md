@@ -179,9 +179,10 @@ At the very end of `LoadCsvConfiguration`, before `return g_fCsvEnabled;`, deriv
 
 Note: `LoadCsvConfiguration` currently `return g_fCsvEnabled;` — leave that return as-is; callers are updated in Step 4.
 
-- [ ] **Step 3: Add the diagnostics file writer functions**
+- [ ] **Step 3: Add the diagnostics file writer functions (replacing the events.csv writers)**
 
-Add after `CloseCsvFile()` (~line 327):
+These **replace** the events.csv file-writer functions, which Step 5 removes. Place them
+in the same "CSV File Management" region of the file (~line 159-327):
 
 ```cpp
 BOOL EnsureDiagFileOpen()
@@ -294,7 +295,7 @@ with:
     }
 ```
 
-In `StopTraceSession` (~line 566), after `CloseCsvFile();` add:
+In `StopTraceSession` (~line 566), **replace** `CloseCsvFile();` with:
 
 ```cpp
     CloseDiagFile();
@@ -335,7 +336,18 @@ Then replace the tail of the function — the `ParseEventIdFromMessage` / `GetEv
                         szMessage[0] ? szMessage : L"(no message)");
 ```
 
-(The `eventId` / `szCategory` locals and `ParseEventIdFromMessage`/`GetEventCategory` calls are no longer used in `EventCallback`; remove those two locals and two calls to avoid unused-variable churn. `GetEventCategory`/`ParseEventIdFromMessage`/`WriteCsvEvent`/`EnsureCsvFileOpen`/`WriteCsvHeader`/`RotateCsvFile`/`CloseCsvFile` remain defined but unused — they are non-static file-scope functions, so this produces no warning; leave them to minimize churn.)
+Then **remove the now-dead events.csv code** (the consumer no longer writes events.csv):
+
+- Delete the functions `EnsureCsvFileOpen`, `WriteCsvHeader`, `WriteCsvEvent`,
+  `RotateCsvFile`, `CloseCsvFile`, `ParseEventIdFromMessage`, and `GetEventCategory`,
+  and their forward declarations.
+- Delete the globals used only by those functions: `g_hCsvFile`, `g_dwCsvFileSize`,
+  `g_fCsvHeaderWritten`.
+- In `EventCallback`, remove the now-unused `eventId` and `szCategory` locals.
+- **Keep** `g_szCsvPath` (Step 2 derives the diagnostics path from it) and
+  `g_fCsvEnabled` (still read from the registry in `LoadCsvConfiguration`).
+
+Verify with a search that no references to the deleted symbols remain before building.
 
 - [ ] **Step 6: Build and verify**
 
