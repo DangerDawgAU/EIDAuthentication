@@ -425,6 +425,11 @@ HRESULT EID_CSV_SaveConfig(const EID_CSV_CONFIG& config)
     HRESULT hrJson = EID_CSV_SaveConfigToFile(EID_CSV_CONFIG_PATH, config);
     HRESULT hrReg = EID_CSV_SaveConfigToRegistry(config);
 
-    // Return success if at least one succeeded
-    return SUCCEEDED(hrJson) ? hrJson : hrReg;
+    // Both stores must succeed: the JSON file feeds EID_CSV_LoadConfig (the in-process
+    // logger and the log manager UI), while the registry feeds the EIDTraceConsumer
+    // service. If either write fails the config is only partly applied, so report the
+    // first failure instead of a false success.
+    if (FAILED(hrJson)) return hrJson;
+    if (FAILED(hrReg)) return hrReg;
+    return S_OK;
 }

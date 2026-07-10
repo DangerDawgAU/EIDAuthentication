@@ -27,7 +27,7 @@ void BrowseForLogPath(HWND hDlg);
 
 // CSV configuration functions
 void LoadCSVSettings(HWND hDlg);
-void SaveCSVSettings(HWND hDlg);
+HRESULT SaveCSVSettings(HWND hDlg);
 void BrowseForCSVPath(HWND hDlg);
 void ApplyColumnPreset(HWND hDlg, EID_CSV_COLUMN preset);
 void EnableDisableCSVControls(HWND hDlg, BOOL fEnabled);
@@ -112,12 +112,17 @@ INT_PTR CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 					return (INT_PTR)TRUE;
 
 				case IDC_LOG_APPLY:
+				{
 					SaveSettings(hDlg);
-					SaveCSVSettings(hDlg);
+					// SaveCSVSettings shows its own error dialog on failure; only claim
+					// success here when the config actually persisted (both JSON + registry).
+					HRESULT hrCsv = SaveCSVSettings(hDlg);
 					RestartTraceConsumer();
-					MessageBox(hDlg, L"Settings saved. Enable tracing to apply changes.", L"Settings Saved", MB_OK | MB_ICONINFORMATION);
 					UpdateStatus(hDlg);
+					if (SUCCEEDED(hrCsv))
+						MessageBox(hDlg, L"Settings saved.", L"Settings Saved", MB_OK | MB_ICONINFORMATION);
 					return (INT_PTR)TRUE;
+				}
 
 				case IDC_ENABLELOG:
 					SaveSettings(hDlg);
@@ -519,7 +524,7 @@ void LoadCSVSettings(HWND hDlg)
 	EnableDisableCSVControls(hDlg, config.fEnabled);
 }
 
-void SaveCSVSettings(HWND hDlg)
+HRESULT SaveCSVSettings(HWND hDlg)
 {
 	EID_CSV_CONFIG config;
 
@@ -601,6 +606,7 @@ void SaveCSVSettings(HWND hDlg)
 	{
 		MessageBoxWin32Ex(hr, hDlg);
 	}
+	return hr;
 }
 
 // Worker thread body for RestartTraceConsumer(). Talks to the Service Control
