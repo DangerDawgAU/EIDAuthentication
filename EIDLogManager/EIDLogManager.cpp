@@ -87,6 +87,100 @@ void ShowHideLogButtons(HWND hDlg)
 	}
 }
 
+// Pixels scrolled per scrollbar-arrow click / mouse-wheel line. Roughly one
+// text line at the dialog's 9pt font so wheel scrolling feels natural.
+constexpr int EID_SCROLL_LINE_PX = 20;
+
+// The dialog resource (IDD_EIDLOGMANAGER_DIALOG) is a tall, fixed-size layout.
+// On screens whose work area is shorter than the dialog (low resolution or,
+// more commonly, high DPI where every dialog unit maps to more pixels) the
+// bottom controls would be clipped off-screen. This shrinks the window to the
+// monitor work area and turns the overflow into a standard vertical scrollbar.
+// No-op when the dialog already fits, so normal-sized screens are unaffected.
+static void FitDialogToWorkArea(HWND hDlg)
+{
+	RECT rcWin;
+	GetWindowRect(hDlg, &rcWin);
+	const int winW = rcWin.right - rcWin.left;
+	const int winH = rcWin.bottom - rcWin.top;
+
+	RECT rcClient;
+	GetClientRect(hDlg, &rcClient);
+	const int clientH = rcClient.bottom - rcClient.top;   // full content height
+	const int ncH = winH - clientH;                       // caption + borders
+
+	HMONITOR hMon = MonitorFromWindow(hDlg, MONITOR_DEFAULTTONEAREST);
+	MONITORINFO mi = { sizeof(mi) };
+	if (!GetMonitorInfo(hMon, &mi))
+	{
+		return;
+	}
+	const int workW = mi.rcWork.right - mi.rcWork.left;
+	const int workH = mi.rcWork.bottom - mi.rcWork.top;
+
+	// Already fits on this monitor - leave the dialog exactly as designed.
+	if (winH <= workH)
+	{
+		return;
+	}
+
+	const int newWinH = workH;
+	const int newClientH = newWinH - ncH;
+
+	// Widen the window by the scrollbar width so the new scrollbar sits beside
+	// the controls rather than covering the right-hand column of buttons.
+	const int scrollbarW = GetSystemMetrics(SM_CXVSCROLL);
+	int newWinW = winW + scrollbarW;
+	if (newWinW > workW)
+	{
+		newWinW = workW;
+	}
+
+	LONG_PTR style = GetWindowLongPtr(hDlg, GWL_STYLE);
+	SetWindowLongPtr(hDlg, GWL_STYLE, style | WS_VSCROLL);
+
+	int newLeft = mi.rcWork.left + (workW - newWinW) / 2;
+	if (newLeft < mi.rcWork.left)
+	{
+		newLeft = mi.rcWork.left;
+	}
+	SetWindowPos(hDlg, nullptr, newLeft, mi.rcWork.top, newWinW, newWinH,
+		SWP_NOZORDER | SWP_FRAMECHANGED);
+
+	SCROLLINFO si = { sizeof(si) };
+	si.fMask = SIF_RANGE | SIF_PAGE | SIF_POS;
+	si.nMin = 0;
+	si.nMax = clientH - 1;      // scroll range spans the full content height
+	si.nPage = newClientH;      // ...of which this much is visible at once
+	si.nPos = 0;
+	SetScrollInfo(hDlg, SB_VERT, &si, TRUE);
+}
+
+// Apply a new absolute vertical scroll position, clamped to the valid range,
+// and slide all child controls to match. Shared by WM_VSCROLL and the wheel.
+static void ScrollDialogTo(HWND hDlg, int newPos)
+{
+	SCROLLINFO si = { sizeof(si) };
+	si.fMask = SIF_ALL;
+	GetScrollInfo(hDlg, SB_VERT, &si);
+
+	const int maxPos = si.nMax - (int)si.nPage + 1;
+	if (newPos < si.nMin) newPos = si.nMin;
+	if (newPos > maxPos)  newPos = maxPos;
+
+	const int delta = si.nPos - newPos;   // >0 moves content down, <0 up
+	if (delta == 0)
+	{
+		return;
+	}
+
+	si.fMask = SIF_POS;
+	si.nPos = newPos;
+	SetScrollInfo(hDlg, SB_VERT, &si, TRUE);
+	ScrollWindow(hDlg, 0, delta, nullptr, nullptr);
+	UpdateWindow(hDlg);
+}
+
 // Dialog procedure for the main EID Log Manager window
 INT_PTR CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -102,7 +196,43 @@ INT_PTR CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			LoadSettings(hDlg);
 			LoadCSVSettings(hDlg);
 			UpdateStatus(hDlg);
+			// Shrink to the monitor work area with a scrollbar if the fixed
+			// dialog layout is taller than the screen.
+			FitDialogToWorkArea(hDlg);
 			return (INT_PTR)TRUE;
+
+		case WM_VSCROLL:
+		{
+			SCROLLINFO si = { sizeof(si) };
+			si.fMask = SIF_ALL;
+			GetScrollInfo(hDlg, SB_VERT, &si);
+			int pos = si.nPos;
+			switch (LOWORD(wParam))
+			{
+				case SB_LINEUP:        pos -= EID_SCROLL_LINE_PX; break;
+				case SB_LINEDOWN:      pos += EID_SCROLL_LINE_PX; break;
+				case SB_PAGEUP:        pos -= (int)si.nPage; break;
+				case SB_PAGEDOWN:      pos += (int)si.nPage; break;
+				case SB_THUMBTRACK:
+				case SB_THUMBPOSITION: pos = si.nTrackPos; break;
+				case SB_TOP:           pos = si.nMin; break;
+				case SB_BOTTOM:        pos = si.nMax; break;
+				default: break;
+			}
+			ScrollDialogTo(hDlg, pos);
+			return (INT_PTR)TRUE;
+		}
+
+		case WM_MOUSEWHEEL:
+		{
+			SCROLLINFO si = { sizeof(si) };
+			si.fMask = SIF_POS;
+			GetScrollInfo(hDlg, SB_VERT, &si);
+			const int notches = GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA;
+			// Scroll ~3 lines per wheel notch; positive notches scroll up.
+			ScrollDialogTo(hDlg, si.nPos - notches * 3 * EID_SCROLL_LINE_PX);
+			return (INT_PTR)TRUE;
+		}
 
 		case WM_COMMAND:
 			switch (LOWORD(wParam))
