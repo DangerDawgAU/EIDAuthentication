@@ -43,7 +43,7 @@ static VOID WINAPI ProcessEvents(PEVENT_TRACE pEvent)
 		WriteFile ( g_hTraceOutputFile, TEXT(";"), 1 * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
 		WriteFile ( g_hTraceOutputFile, szLocalTime, (DWORD)_tcslen(szLocalTime) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
 		WriteFile ( g_hTraceOutputFile, TEXT(";"), 1 * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
-		WriteFile ( g_hTraceOutputFile, pEvent->MofData, (DWORD)_tcslen((PTSTR) pEvent->MofData) * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
+		WriteFile ( g_hTraceOutputFile, pEvent->MofData, pEvent->MofLength, &dwWritten, nullptr);
 		WriteFile ( g_hTraceOutputFile, TEXT("\r\n"), 2 * (DWORD)sizeof(TCHAR), &dwWritten, nullptr);
 	  }
   }

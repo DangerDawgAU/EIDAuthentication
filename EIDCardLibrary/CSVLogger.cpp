@@ -207,11 +207,13 @@ void EIDCSVLogger::RotateLogFile()
         DeleteFileW(szRotatedPath);
 
         // Rename remaining files
-        for (DWORD i = s_config.dwFileCount - 1; i >= 1; i--)
+        // Count down from dwFileCount so dwFileCount == 0 can't underflow the loop
+        // counter into a ~4-billion-iteration hang. Shifts .00(i-1) -> .00i.
+        for (DWORD i = s_config.dwFileCount; i > 1; i--)
         {
             WCHAR szOldPath[MAX_PATH];
-            swprintf_s(szOldPath, L"%s.%03u", s_szCurrentLogPath, i);
-            swprintf_s(szRotatedPath, L"%s.%03u", s_szCurrentLogPath, i + 1);
+            swprintf_s(szOldPath, L"%s.%03u", s_szCurrentLogPath, i - 1);
+            swprintf_s(szRotatedPath, L"%s.%03u", s_szCurrentLogPath, i);
             MoveFileExW(szOldPath, szRotatedPath, MOVEFILE_REPLACE_EXISTING);
         }
         dwRotation = 1;
@@ -455,8 +457,8 @@ void EIDCSVLogger::LogEvent(
             __leave;
 
         // Check file rotation
-        DWORD dwMaxBytes = s_config.dwMaxFileSizeMB * 1024 * 1024;
-        if (s_dwCurrentFileSize >= dwMaxBytes)
+        ULONGLONG ullMaxBytes = static_cast<ULONGLONG>(s_config.dwMaxFileSizeMB) * 1024 * 1024;
+        if (s_dwCurrentFileSize >= ullMaxBytes)
         {
             RotateLogFile();
             if (!EnsureLogFileOpen())

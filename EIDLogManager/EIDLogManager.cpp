@@ -181,7 +181,7 @@ INT_PTR CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return (INT_PTR)FALSE;
 }
 
-HANDLE hFile = nullptr;  // NOSONAR - RUNTIME-01: File handle, opened at runtime
+HANDLE hFile = INVALID_HANDLE_VALUE;  // NOSONAR - RUNTIME-01: File handle, opened at runtime
 
 void SaveLog(HWND hDlg)
 {

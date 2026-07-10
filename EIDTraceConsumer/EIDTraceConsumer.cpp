@@ -216,9 +216,20 @@ void RotateDiagFile()
         g_hDiagFile = INVALID_HANDLE_VALUE;
     }
 
-    WCHAR szRotated[MAX_PATH];
-    swprintf_s(szRotated, L"%s.001", g_szDiagPath);
-    MoveFileExW(g_szDiagPath, szRotated, MOVEFILE_REPLACE_EXISTING);
+    // Keep up to g_dwFileCount rotated generations (mirrors CSVLogger's rotation).
+    // The i > 1 count-down cannot underflow when g_dwFileCount is 0 or 1.
+    DWORD dwCount = g_dwFileCount ? g_dwFileCount : 1;
+    WCHAR szOld[MAX_PATH], szNew[MAX_PATH];
+    swprintf_s(szOld, L"%s.%03u", g_szDiagPath, dwCount);
+    DeleteFileW(szOld); // drop the oldest generation
+    for (DWORD i = dwCount; i > 1; i--)
+    {
+        swprintf_s(szOld, L"%s.%03u", g_szDiagPath, i - 1);
+        swprintf_s(szNew, L"%s.%03u", g_szDiagPath, i);
+        MoveFileExW(szOld, szNew, MOVEFILE_REPLACE_EXISTING);
+    }
+    swprintf_s(szNew, L"%s.001", g_szDiagPath);
+    MoveFileExW(g_szDiagPath, szNew, MOVEFILE_REPLACE_EXISTING);
     g_dwDiagFileSize = 0;
 }
 
@@ -311,8 +322,9 @@ VOID WINAPI EventCallback(PEVENT_RECORD pEvent)
         ULONG cchData = pEvent->UserDataLength / sizeof(WCHAR);
         if (cchData > 0 && cchData < ARRAYSIZE(szMessage))
         {
-            wcsncpy_s(szMessage, ARRAYSIZE(szMessage),
-                     static_cast<WCHAR*>(pEvent->UserData), _TRUNCATE);
+            // Copy by the known length; do not rely on the raw ETW payload being
+            // null-terminated within UserDataLength.
+            memcpy(szMessage, pEvent->UserData, cchData * sizeof(WCHAR));
             szMessage[cchData] = L'\0';
         }
     }
@@ -321,7 +333,7 @@ VOID WINAPI EventCallback(PEVENT_RECORD pEvent)
     if (szMessage[0] == L'\0')
     {
         swprintf_s(szMessage, ARRAYSIZE(szMessage),
-            L"Event 0x%X from provider", pEvent->EventHeader.ProviderId.Data1);
+            L"Event 0x%X from provider", pEvent->EventHeader.EventDescriptor.Id);
     }
 
     // Structured audit events carry an "[EID:NNNN]" prefix and are written to events.csv

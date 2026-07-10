@@ -234,6 +234,13 @@ HRESULT EID_CSV_LoadConfigFromRegistry(EID_CSV_CONFIG& config)
         {
             wcscpy_s(config.szLogPath, EID_CSV_DEFAULT_LOG_PATH);
         }
+        else
+        {
+            // REG_SZ is not guaranteed null-terminated; terminate within the buffer.
+            DWORD cchPath = dwSize / sizeof(WCHAR);
+            if (cchPath >= MAX_PATH) cchPath = MAX_PATH - 1;
+            config.szLogPath[cchPath] = L'\0';
+        }
 
         // Read CSVMaxFileSize
         dwSize = sizeof(DWORD);

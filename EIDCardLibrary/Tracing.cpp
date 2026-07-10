@@ -307,26 +307,36 @@ void EIDCardLibraryDumpMemoryEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, 
  *  Display a messagebox giving an error code
  */
 void MessageBoxWin32Ex2(DWORD status, HWND hWnd, LPCSTR szFile, DWORD dwLine) {
-	LPVOID Error;
+	LPVOID Error = nullptr;
 	wchar_t szMessage[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	wchar_t szTitle[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	DWORD dwFmtLen;
 	swprintf_s(szTitle,ARRAYSIZE(szTitle),L"%hs(%d)",szFile, dwLine);
 	if (status >= WINHTTP_ERROR_BASE && status <= WINHTTP_ERROR_LAST)
 	{
 		// winhttp error message
-		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER| FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_HMODULE,
+		dwFmtLen = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER| FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_HMODULE,
 			GetModuleHandle(_T("winhttp.dll")),status,0,(LPTSTR)&Error,0,nullptr);
 	}
 	else
 	{
 		// system error message
-		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
+		dwFmtLen = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,
 			nullptr,status,0,(LPTSTR)&Error,0,nullptr);
 	}
-	swprintf_s(szMessage,ARRAYSIZE(szMessage),L"0x%08X - %s",status,(wchar_t *) Error);
+	// FormatMessage only allocates Error on success; without this guard an unmapped
+	// status code would leave Error uninitialized and be dereferenced and freed.
+	if (dwFmtLen != 0 && Error != nullptr)
+	{
+		swprintf_s(szMessage,ARRAYSIZE(szMessage),L"0x%08X - %s",status,(wchar_t *) Error);
+		LocalFree(Error);
+	}
+	else
+	{
+		swprintf_s(szMessage,ARRAYSIZE(szMessage),L"0x%08X - (no message available)",status);
+	}
 	EIDCardLibraryTraceEx(szFile, dwLine, "MessageBoxWin32Ex2", WINEVENT_LEVEL_INFO, L"%s", szMessage);
 	MessageBox(hWnd,szMessage, szTitle ,MB_ICONASTERISK);
-	LocalFree(Error);
 }
 
 BOOL StartLogging()
@@ -349,7 +359,7 @@ BOOL StartLogging()
 		Properties.TraceProperties.Wnode.ClientContext = 1;
 		Properties.TraceProperties.LogFileMode = 4864; 
 		Properties.TraceProperties.LogFileNameOffset = sizeof(EVENT_TRACE_PROPERTIES);
-		Properties.TraceProperties.LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES) + 1024;
+		Properties.TraceProperties.LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES) + 1024 * sizeof(TCHAR);
 		Properties.TraceProperties.MaximumFileSize = 8;
 		wcscpy_s(Properties.LogFileName,1024,L"c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl");
 		DeleteFile(Properties.LogFileName);
