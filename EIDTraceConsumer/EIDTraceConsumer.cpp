@@ -58,11 +58,15 @@ HANDLE g_StopEvent = nullptr;
 #define EID_CSV_CONFIG_KEY L"SOFTWARE\\EIDAuthentication\\LogManager"
 
 // CSV log file handle and state
-HANDLE g_hCsvFile = INVALID_HANDLE_VALUE;
 WCHAR g_szCsvPath[MAX_PATH] = {0};
-DWORD g_dwCsvFileSize = 0;
-BOOL g_fCsvHeaderWritten = FALSE;
 BOOL g_fCsvEnabled = FALSE;
+
+// Diagnostics (free-text provider traces) capture
+HANDLE g_hDiagFile = INVALID_HANDLE_VALUE;
+WCHAR  g_szDiagPath[MAX_PATH] = {0};
+DWORD  g_dwDiagFileSize = 0;
+BOOL   g_fDiagnosticsEnabled = FALSE;
+DWORD  g_dwDiagnosticsLevel = 4; // WINEVENT_LEVEL_INFO
 
 // Configuration
 DWORD g_dwMaxFileSizeMB = 64;
@@ -84,14 +88,12 @@ BOOL StopServiceWrapper();
 BOOL CreateRealtimeSession();
 void StopRealtimeSession();
 
-// Configuration and CSV management
+// Configuration and diagnostics file management
 BOOL LoadCsvConfiguration();
-BOOL EnsureCsvFileOpen();
-void WriteCsvHeader();
-void WriteCsvEvent(const WCHAR* timestamp, DWORD eventId, const WCHAR* severity,
-                   const WCHAR* message, const WCHAR* category);
-void RotateCsvFile();
-void CloseCsvFile();
+BOOL EnsureDiagFileOpen();
+void WriteDiagnosticLine(const WCHAR* timestamp, const WCHAR* severity, const WCHAR* message);
+void RotateDiagFile();
+void CloseDiagFile();
 
 // ================================================================
 // Configuration Loading
@@ -144,226 +146,126 @@ BOOL LoadCsvConfiguration()
         g_dwFileCount = 5;
     }
 
+    // Read diagnostics settings
+    DWORD dwDiag = 0;
+    dwSize = sizeof(dwDiag);
+    if (RegQueryValueExW(hKey, L"DiagnosticsEnabled", nullptr, nullptr,
+            reinterpret_cast<LPBYTE>(&dwDiag), &dwSize) == ERROR_SUCCESS)
+        g_fDiagnosticsEnabled = (dwDiag != 0);
+
+    dwSize = sizeof(g_dwDiagnosticsLevel);
+    if (RegQueryValueExW(hKey, L"DiagnosticsLevel", nullptr, nullptr,
+            reinterpret_cast<LPBYTE>(&g_dwDiagnosticsLevel), &dwSize) != ERROR_SUCCESS)
+        g_dwDiagnosticsLevel = 4;
+
     RegCloseKey(hKey);
 
     wprintf(L"CSV logging: %s, Path: %s, MaxSize: %u MB, Files: %u\n",
             g_fCsvEnabled ? L"Enabled" : L"Disabled",
             g_szCsvPath, g_dwMaxFileSizeMB, g_dwFileCount);
 
+    // diagnostics.log lives in the same directory as the CSV log
+    wcscpy_s(g_szDiagPath, g_szCsvPath);
+    WCHAR* pSlash = wcsrchr(g_szDiagPath, L'\\');
+    if (pSlash) { *(pSlash + 1) = L'\0'; wcscat_s(g_szDiagPath, L"diagnostics.log"); }
+    else        { wcscpy_s(g_szDiagPath, L"C:\\ProgramData\\EIDAuthentication\\logs\\diagnostics.log"); }
+
     return g_fCsvEnabled;
 }
 
 // ================================================================
-// CSV File Management
+// Diagnostics File Management
 // ================================================================
-BOOL EnsureCsvFileOpen()
+BOOL EnsureDiagFileOpen()
 {
-    if (g_hCsvFile != INVALID_HANDLE_VALUE)
+    if (g_hDiagFile != INVALID_HANDLE_VALUE)
         return TRUE;
 
-    // Create directory if needed
     WCHAR szDir[MAX_PATH];
-    wcscpy_s(szDir, g_szCsvPath);
+    wcscpy_s(szDir, g_szDiagPath);
     WCHAR* pLastSlash = wcsrchr(szDir, L'\\');
-    if (pLastSlash)
-    {
-        *pLastSlash = L'\0';
-        CreateDirectoryW(szDir, nullptr);
-    }
+    if (pLastSlash) { *pLastSlash = L'\0'; CreateDirectoryW(szDir, nullptr); }
 
-    // Open file for append (UTF-8 encoding)
-    g_hCsvFile = CreateFileW(
-        g_szCsvPath,
-        GENERIC_WRITE,
-        FILE_SHARE_READ,
-        nullptr,
-        OPEN_ALWAYS,
-        FILE_ATTRIBUTE_NORMAL,
-        nullptr
-    );
-
-    if (g_hCsvFile == INVALID_HANDLE_VALUE)
+    g_hDiagFile = CreateFileW(g_szDiagPath, GENERIC_WRITE, FILE_SHARE_READ,
+        nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (g_hDiagFile == INVALID_HANDLE_VALUE)
         return FALSE;
 
-    // Get current file size
     LARGE_INTEGER liSize;
-    if (GetFileSizeEx(g_hCsvFile, &liSize))
-    {
-        g_dwCsvFileSize = static_cast<DWORD>(liSize.QuadPart);
-    }
+    if (GetFileSizeEx(g_hDiagFile, &liSize))
+        g_dwDiagFileSize = static_cast<DWORD>(liSize.QuadPart);
 
-    // Seek to end for append
-    SetFilePointer(g_hCsvFile, 0, nullptr, FILE_END);
+    SetFilePointer(g_hDiagFile, 0, nullptr, FILE_END);
 
-    // Write header if file is empty
-    if (g_dwCsvFileSize == 0)
+    if (g_dwDiagFileSize == 0)
     {
-        // Write UTF-8 BOM
         DWORD dwWritten = 0;
         const BYTE bom[] = {0xEF, 0xBB, 0xBF};
-        WriteFile(g_hCsvFile, bom, 3, &dwWritten, nullptr);
-        g_dwCsvFileSize += dwWritten;
-
-        WriteCsvHeader();
+        WriteFile(g_hDiagFile, bom, 3, &dwWritten, nullptr);
+        g_dwDiagFileSize += dwWritten;
     }
-
     return TRUE;
 }
 
-void WriteCsvHeader()
+void RotateDiagFile()
 {
-    if (g_fCsvHeaderWritten)
-        return;
+    if (g_hDiagFile != INVALID_HANDLE_VALUE)
+    {
+        FlushFileBuffers(g_hDiagFile);
+        CloseHandle(g_hDiagFile);
+        g_hDiagFile = INVALID_HANDLE_VALUE;
+    }
 
-    const char header[] =
-        "Timestamp,EventID,Severity,Category,Message\r\n";
-
-    DWORD dwWritten = 0;
-    WriteFile(g_hCsvFile, header, static_cast<DWORD>(strlen(header)), &dwWritten, nullptr);
-    g_dwCsvFileSize += dwWritten;
-    g_fCsvHeaderWritten = TRUE;
+    WCHAR szRotated[MAX_PATH];
+    swprintf_s(szRotated, L"%s.001", g_szDiagPath);
+    MoveFileExW(g_szDiagPath, szRotated, MOVEFILE_REPLACE_EXISTING);
+    g_dwDiagFileSize = 0;
 }
 
-void WriteCsvEvent(const WCHAR* timestamp, DWORD eventId, const WCHAR* severity,
-                   const WCHAR* message, const WCHAR* category)
+void WriteDiagnosticLine(const WCHAR* timestamp, const WCHAR* severity, const WCHAR* message)
 {
-    if (!g_fCsvEnabled || !EnsureCsvFileOpen())
+    if (!g_fDiagnosticsEnabled || !EnsureDiagFileOpen())
         return;
 
-    // Check file rotation
     DWORD dwMaxBytes = g_dwMaxFileSizeMB * 1024 * 1024;
-    if (g_dwCsvFileSize >= dwMaxBytes)
+    if (g_dwDiagFileSize >= dwMaxBytes)
     {
-        RotateCsvFile();
-        if (!EnsureCsvFileOpen())
+        RotateDiagFile();
+        if (!EnsureDiagFileOpen())
             return;
     }
 
-    // Convert strings to UTF-8
-    char szTimestamp[64] = {0};
-    char szMessage[2048] = {0};
-    char szCategory[64] = {0};
-    char szSeverity[32] = {0};
+    char szTs[64] = {0};
+    char szSev[32] = {0};
+    char szMsg[3072] = {0};
+    WideCharToMultiByte(CP_UTF8, 0, timestamp, -1, szTs, sizeof(szTs), nullptr, nullptr);
+    WideCharToMultiByte(CP_UTF8, 0, severity, -1, szSev, sizeof(szSev), nullptr, nullptr);
+    WideCharToMultiByte(CP_UTF8, 0, message, -1, szMsg, sizeof(szMsg), nullptr, nullptr);
 
-    WideCharToMultiByte(CP_UTF8, 0, timestamp, -1, szTimestamp, sizeof(szTimestamp), nullptr, nullptr);
-    WideCharToMultiByte(CP_UTF8, 0, message, -1, szMessage, sizeof(szMessage), nullptr, nullptr);
-    WideCharToMultiByte(CP_UTF8, 0, category, -1, szCategory, sizeof(szCategory), nullptr, nullptr);
-    WideCharToMultiByte(CP_UTF8, 0, severity, -1, szSeverity, sizeof(szSeverity), nullptr, nullptr);
-
-    // Build CSV line (with escaping)
     char szLine[4096];
-    int len = sprintf_s(szLine, sizeof(szLine),
-        "%s,%u,%s,\"%s\",\"%s\"\r\n",
-        szTimestamp, eventId, szSeverity, szCategory, szMessage);
-
+    int len = sprintf_s(szLine, sizeof(szLine), "%s %s %s\r\n", szTs, szSev, szMsg);
     if (len > 0)
     {
         DWORD dwWritten = 0;
-        WriteFile(g_hCsvFile, szLine, len, &dwWritten, nullptr);
-        g_dwCsvFileSize += dwWritten;
+        WriteFile(g_hDiagFile, szLine, len, &dwWritten, nullptr);
+        g_dwDiagFileSize += dwWritten;
     }
 }
 
-void RotateCsvFile()
+void CloseDiagFile()
 {
-    if (g_hCsvFile != INVALID_HANDLE_VALUE)
+    if (g_hDiagFile != INVALID_HANDLE_VALUE)
     {
-        FlushFileBuffers(g_hCsvFile);
-        CloseHandle(g_hCsvFile);
-        g_hCsvFile = INVALID_HANDLE_VALUE;
+        FlushFileBuffers(g_hDiagFile);
+        CloseHandle(g_hDiagFile);
+        g_hDiagFile = INVALID_HANDLE_VALUE;
     }
-
-    // Determine rotation number
-    DWORD dwRotation = 1;
-    WCHAR szRotatedPath[MAX_PATH];
-
-    for (DWORD i = 1; i <= g_dwFileCount; i++)
-    {
-        swprintf_s(szRotatedPath, L"%s.%03u", g_szCsvPath, i);
-        if (GetFileAttributesW(szRotatedPath) == INVALID_FILE_ATTRIBUTES)
-        {
-            dwRotation = i;
-            break;
-        }
-    }
-
-    // If all slots filled, rotate all files
-    if (dwRotation > g_dwFileCount)
-    {
-        // Delete oldest file
-        swprintf_s(szRotatedPath, L"%s.%03u", g_szCsvPath, g_dwFileCount);
-        DeleteFileW(szRotatedPath);
-
-        // Rename remaining files
-        for (DWORD i = g_dwFileCount - 1; i >= 1; i--)
-        {
-            WCHAR szOldPath[MAX_PATH];
-            swprintf_s(szOldPath, L"%s.%03u", g_szCsvPath, i);
-            swprintf_s(szRotatedPath, L"%s.%03u", g_szCsvPath, i + 1);
-            MoveFileExW(szOldPath, szRotatedPath, MOVEFILE_REPLACE_EXISTING);
-        }
-        dwRotation = 1;
-    }
-
-    // Rename current file
-    swprintf_s(szRotatedPath, L"%s.%03u", g_szCsvPath, dwRotation);
-    MoveFileExW(g_szCsvPath, szRotatedPath, MOVEFILE_REPLACE_EXISTING);
-
-    // Reset state
-    g_dwCsvFileSize = 0;
-    g_fCsvHeaderWritten = FALSE;
-}
-
-void CloseCsvFile()
-{
-    if (g_hCsvFile != INVALID_HANDLE_VALUE)
-    {
-        FlushFileBuffers(g_hCsvFile);
-        CloseHandle(g_hCsvFile);
-        g_hCsvFile = INVALID_HANDLE_VALUE;
-    }
-    g_dwCsvFileSize = 0;
-    g_fCsvHeaderWritten = FALSE;
+    g_dwDiagFileSize = 0;
 }
 
 // ================================================================
 // ETW Event Parsing
 // ================================================================
-
-// Parse event ID from message format: "[EID:XXXX] Message"
-void ParseEventIdFromMessage(const WCHAR* message, DWORD* eventId)
-{
-    *eventId = 0;
-    const WCHAR* p = wcsstr(message, L"[EID:");
-    if (p)
-    {
-        p += 5; // Skip "[EID:"
-        *eventId = static_cast<DWORD>(wcstoul(p, nullptr, 10));
-    }
-}
-
-// Get category name from event ID
-void GetEventCategory(DWORD eventId, WCHAR* category, size_t cchCategory)
-{
-    if (eventId >= 1001 && eventId <= 1999)
-        wcscpy_s(category, cchCategory, L"AUTHENTICATION");
-    else if (eventId >= 2001 && eventId <= 2999)
-        wcscpy_s(category, cchCategory, L"AUTHORIZATION");
-    else if (eventId >= 3001 && eventId <= 3999)
-        wcscpy_s(category, cchCategory, L"SESSION");
-    else if (eventId >= 4001 && eventId <= 4999)
-        wcscpy_s(category, cchCategory, L"CERTIFICATE");
-    else if (eventId >= 5001 && eventId <= 5999)
-        wcscpy_s(category, cchCategory, L"SMARTCARD");
-    else if (eventId >= 6001 && eventId <= 6999)
-        wcscpy_s(category, cchCategory, L"LSA");
-    else if (eventId >= 7001 && eventId <= 7999)
-        wcscpy_s(category, cchCategory, L"CONFIG");
-    else if (eventId >= 8001 && eventId <= 8999)
-        wcscpy_s(category, cchCategory, L"AUDIT");
-    else
-        wcscpy_s(category, cchCategory, L"GENERAL");
-}
 
 // Get severity name from level
 const WCHAR* GetSeverityName(UCHAR level)
@@ -384,13 +286,11 @@ const WCHAR* GetSeverityName(UCHAR level)
 // ================================================================
 VOID WINAPI EventCallback(PEVENT_RECORD pEvent)
 {
-    if (!pEvent || !g_fCsvEnabled)
+    if (!pEvent || !g_fDiagnosticsEnabled)
         return;
 
     WCHAR szTimestamp[64] = {0};
     WCHAR szMessage[1024] = {0};
-    DWORD eventId = 0;
-    WCHAR szCategory[64] = {0};
 
     // Format timestamp - convert FILETIME to SYSTEMTIME
     FILETIME ft;
@@ -424,17 +324,20 @@ VOID WINAPI EventCallback(PEVENT_RECORD pEvent)
             L"Event 0x%X from provider", pEvent->EventHeader.ProviderId.Data1);
     }
 
-    // Parse event ID from message
-    ParseEventIdFromMessage(szMessage, &eventId);
+    // Structured audit events carry an "[EID:NNNN]" prefix and are written to events.csv
+    // by the in-process LSA logger. The consumer must NOT touch events.csv (its column
+    // schema differs and would corrupt the file). Only free-text diagnostic traces are ours.
+    if (wcsstr(szMessage, L"[EID:") != nullptr)
+        return;
 
-    // Get category
-    GetEventCategory(eventId, szCategory, ARRAYSIZE(szCategory));
+    UCHAR level = pEvent->EventHeader.EventDescriptor.Level;
+    if (level == 0)
+        level = 4; // EventWriteString with level 0 -> treat as INFO
+    if (level > static_cast<UCHAR>(g_dwDiagnosticsLevel))
+        return; // more verbose than the configured ceiling
 
-    // Write to CSV
-    WriteCsvEvent(szTimestamp, eventId,
-                  GetSeverityName(pEvent->EventHeader.EventDescriptor.Level),
-                  szMessage[0] ? szMessage : L"(no message)",
-                  szCategory);
+    WriteDiagnosticLine(szTimestamp, GetSeverityName(level),
+                        szMessage[0] ? szMessage : L"(no message)");
 }
 
 // ================================================================
@@ -519,9 +422,9 @@ BOOL StartTraceSession()
     // Reload configuration to check if CSV logging is enabled
     LoadCsvConfiguration();
 
-    if (!g_fCsvEnabled)
+    if (!g_fDiagnosticsEnabled)
     {
-        wprintf(L"CSV logging disabled, skipping trace session start\n");
+        wprintf(L"Diagnostics capture disabled, skipping trace session start\n");
         return TRUE; // Not an error - just disabled
     }
 
@@ -563,7 +466,7 @@ BOOL StopTraceSession()
     // Stop the real-time session we created so it does not linger after the service exits.
     StopRealtimeSession();
 
-    CloseCsvFile();
+    CloseDiagFile();
     wprintf(L"Trace session stopped\n");
     return TRUE;
 }
