@@ -21,6 +21,7 @@
 
 
 #include "CEIDCredential.h"
+#include "CEIDProvider.h"
 #include "EIDCredentialProvider.h"
 
 
@@ -57,6 +58,7 @@ CEIDCredential::CEIDCredential(CContainer* container):
 	_pContainer = container;
 	_fSelected = FALSE;
 	_fDisconnected = FALSE;
+	_pProvider = nullptr;
 	Initialize();
 }
 
@@ -155,6 +157,11 @@ BOOL CEIDCredential::IsSelected() const
 BOOL CEIDCredential::IsDisconnected() const
 {
 	return _fDisconnected;
+}
+
+void CEIDCredential::SetProvider(CEIDProvider* pProvider)
+{
+	_pProvider = pProvider;
 }
 
 // Securely wipe and reset the PIN edit buffer (mirrors SetDeselected's handling).
@@ -297,6 +304,19 @@ HRESULT CEIDCredential::SetDeselected()
 	if (!SUCCEEDED(hr))
 	{
 		EIDLogErrorWithContext("SetDeselected", hr, L"field=SFI_PIN");
+	}
+
+	// If the card is gone and this tile was only being kept alive because LogonUI had it
+	// selected (the "please reconnect" morph), deselection is our cue to finally drop it:
+	// LogonUI will not remove a selected tile, but now that it is deselected the provider can
+	// erase it and re-enumerate so it disappears. This runs LAST - RemoveDisconnectedTile
+	// re-enters LogonUI via CredentialsChanged and releases the list's reference to us, so we
+	// must not touch any member after it (LogonUI's own reference keeps `this` alive until the
+	// call returns).
+	if (_fDisconnected && _pProvider)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: SetDeselected while disconnected -> request purge tile=%p",(void*)this);
+		_pProvider->RemoveDisconnectedTile(this);
 	}
 
     return hr;

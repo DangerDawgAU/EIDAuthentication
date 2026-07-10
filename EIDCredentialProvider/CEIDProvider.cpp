@@ -136,6 +136,32 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 	}
 }
 
+// A morphed ("please reconnect") tile stays alive only because LogonUI had it selected.
+// Once LogonUI deselects it (the user moved to another tile), it is safe - and required -
+// to drop it: erase it from the list outside any re-entrant callback, then ask LogonUI to
+// re-enumerate so the tile is gone. Matches the locking discipline in Callback().
+void CEIDProvider::RemoveDisconnectedTile(__in CEIDCredential* pCred)
+{
+	EnterCriticalSection(&_csCallback);
+	if (_fShuttingDown)
+	{
+		LeaveCriticalSection(&_csCallback);
+		return;
+	}
+	LeaveCriticalSection(&_csCallback);
+
+	// RemoveContainerHolder takes the list lock internally and releases the list's reference
+	// to pCred. LogonUI still holds its own reference for the duration of the SetDeselected
+	// call that triggered us, so pCred stays alive here.
+	BOOL fRemoved = _CredentialList.RemoveContainerHolder(pCred);
+
+	if (fRemoved && _pcpe != nullptr)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: Deselect purge -> CredentialsChanged tile=%p",(void*)pCred);
+		_pcpe->CredentialsChanged(_upAdviseContext);
+	}
+}
+
 HRESULT CEIDProvider::Initialize()
 {
 	// Guard clause: already initialized
@@ -414,14 +440,13 @@ HRESULT CEIDProvider::GetCredentialCount(
 		if (_CredentialList.HasContainerHolder())
 		{
 			*pdwCount = _CredentialList.ContainerHolderCount();
-			if (*pdwCount > 1)
-			{
-				*pdwDefault = CREDENTIAL_PROVIDER_NO_DEFAULT;
-			}
-			else
-			{
-				*pdwDefault = 0;
-			}
+			// Never claim a default tile. If we mark the smart-card tile as the default,
+			// LogonUI auto-selects it on every (re-)enumeration - including the one that
+			// fires as the card is being removed - so it is "selected" without the user ever
+			// clicking it and therefore morphs to "please reconnect" instead of disappearing.
+			// Leaving it unselected means an untouched tile is simply erased on card removal,
+			// while a tile the user actually clicked still morphs (and is purged on deselect).
+			*pdwDefault = CREDENTIAL_PROVIDER_NO_DEFAULT;
 		}
 		else
 		{
@@ -463,6 +488,9 @@ HRESULT CEIDProvider::GetCredentialAt(
 			CEIDCredential* EIDCredential = _CredentialList.GetContainerHolderAt(dwIndex);
 			if (EIDCredential != nullptr)
 			{
+				// Give the tile a way back to us so it can ask to be dropped when LogonUI
+				// deselects it in the disconnected state (see RemoveDisconnectedTile).
+				EIDCredential->SetProvider(this);
 				hr = EIDCredential->QueryInterface(IID_ICredentialProviderCredential, reinterpret_cast<void**>(ppcpc));  // NOSONAR - CAST-01: COM QueryInterface requires void**
 			}
 			else

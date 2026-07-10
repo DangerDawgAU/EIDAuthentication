@@ -45,6 +45,10 @@ public:
 	BOOL HasContainerHolder() const;
 	DWORD ContainerHolderCount() const;
 	T* GetContainerHolderAt(DWORD dwIndex);
+	// Remove a single holder by identity (used when a morphed/disconnected tile is
+	// deselected in LogonUI so it can finally leave the tile list). Returns TRUE if the
+	// holder was found and erased. The caller re-enumerates afterwards.
+	BOOL RemoveContainerHolder(T* holder);
 	// When enabled (used by the credential provider), a card removal that hits the
 	// currently selected tile keeps that tile alive in a "disconnected" state instead
 	// of erasing it, so it can be revived in place when the card is re-inserted. Callers

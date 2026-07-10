@@ -36,6 +36,8 @@
 #include "../EIDCardLibrary/Tracing.h"
 #include "../EIDCardLibrary/CContainer.h"
 
+class CEIDProvider;
+
 /**
   * Used to represent a credential
   */
@@ -93,6 +95,9 @@ public:
 	BOOL IsSelected() const;
 	BOOL IsDisconnected() const;
 	void SetDisconnected(__in BOOL fDisconnected);
+	// Back-reference to the owning provider so the tile can ask to be removed from the tile
+	// list once LogonUI deselects it in the disconnected ("please reconnect") state.
+	void SetProvider(__in CEIDProvider* pProvider);
   private:
 	void SecureClearPin();
 
@@ -117,5 +122,6 @@ public:
 	CContainer* _pContainer;
 	BOOL        _fSelected;      // TRUE while LogonUI has this tile zoomed (between SetSelected/SetDeselected).
 	BOOL        _fDisconnected;  // TRUE while the card is absent and the tile shows the reconnect prompt.
+	CEIDProvider* _pProvider;   // Owning provider; used to drop this tile when deselected while disconnected.
 
 };

@@ -498,6 +498,27 @@ void CContainerHolderFactory<T>::PurgeStaleDisconnected(LPCTSTR szReaderName)
 }
 
 template <typename T>
+BOOL CContainerHolderFactory<T>::RemoveContainerHolder(T* holder)
+{
+	BOOL fFound = FALSE;
+	this->Lock();
+	auto l_iter = _CredentialList.begin();
+	while(l_iter!=_CredentialList.end())
+	{
+		if ((T*)*l_iter == holder)  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
+		{
+			l_iter = _CredentialList.erase(l_iter);
+			holder->Release();
+			fFound = TRUE;
+			break;
+		}
+		++l_iter;
+	}
+	this->Unlock();
+	return fFound;
+}
+
+template <typename T>
 BOOL CContainerHolderFactory<T>::CleanList()
 {
 	this->Lock();

@@ -76,6 +76,12 @@ public:
 
     void Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in LPCTSTR szReader, __in_opt LPCTSTR szCardName, __in_opt USHORT ActivityCount) override;
 
+    // Called by a CEIDCredential when LogonUI deselects it while it is in the disconnected
+    // ("please reconnect") state. LogonUI keeps a selected tile on screen even after its card
+    // is gone, so the tile can only actually leave the list once it is no longer selected:
+    // here we erase it and re-enumerate so it disappears.
+    void RemoveDisconnectedTile(__in CEIDCredential* pCred);
+
   protected:
     CEIDProvider();
     __override ~CEIDProvider();
