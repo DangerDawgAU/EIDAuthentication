@@ -29,6 +29,7 @@ void SaveCSVSettings(HWND hDlg);
 void BrowseForCSVPath(HWND hDlg);
 void ApplyColumnPreset(HWND hDlg, EID_CSV_COLUMN preset);
 void EnableDisableCSVControls(HWND hDlg, BOOL fEnabled);
+void RestartTraceConsumer();
 
 #pragma comment(lib,"comctl32")
 #pragma comment(lib,"Shell32")
@@ -111,6 +112,7 @@ INT_PTR CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 				case IDC_LOG_APPLY:
 					SaveSettings(hDlg);
 					SaveCSVSettings(hDlg);
+					RestartTraceConsumer();
 					MessageBox(hDlg, L"Settings saved. Enable tracing to apply changes.", L"Settings Saved", MB_OK | MB_ICONINFORMATION);
 					UpdateStatus(hDlg);
 					return (INT_PTR)TRUE;
@@ -163,6 +165,14 @@ INT_PTR CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 				case IDC_CSV_COLUMN_PRESET_MINIMAL:
 					ApplyColumnPreset(hDlg, EID_CSV_PRESETS::MINIMAL);
 					return (INT_PTR)TRUE;
+
+				case IDC_DIAG_ENABLE_CHECK:
+				{
+					BOOL fOn = IsDlgButtonChecked(hDlg, IDC_DIAG_ENABLE_CHECK) == BST_CHECKED;
+					EnableWindow(GetDlgItem(hDlg, IDC_DIAG_LEVEL), fOn);
+					EnableWindow(GetDlgItem(hDlg, IDC_DIAG_LEVEL_LABEL), fOn);
+					return (INT_PTR)TRUE;
+				}
 			}
 			break;
 	}
@@ -491,6 +501,18 @@ void LoadCSVSettings(HWND hDlg)
 	CheckDlgButton(hDlg, IDC_CSV_VERBOSE_CHECK,
 		config.fVerboseEvents ? BST_CHECKED : BST_UNCHECKED);
 
+	// Diagnostics capture
+	CheckDlgButton(hDlg, IDC_DIAG_ENABLE_CHECK,
+		config.fDiagnosticsEnabled ? BST_CHECKED : BST_UNCHECKED);
+
+	HWND hDiagLevel = GetDlgItem(hDlg, IDC_DIAG_LEVEL);
+	SendMessage(hDiagLevel, CB_RESETCONTENT, 0, 0);
+	SendMessage(hDiagLevel, CB_ADDSTRING, 0, (LPARAM)L"Info");     // index 0 -> level 4
+	SendMessage(hDiagLevel, CB_ADDSTRING, 0, (LPARAM)L"Verbose");  // index 1 -> level 5
+	SendMessage(hDiagLevel, CB_SETCURSEL, (config.dwDiagnosticsLevel >= 5) ? 1 : 0, 0);
+	EnableWindow(hDiagLevel, config.fDiagnosticsEnabled);
+	EnableWindow(GetDlgItem(hDlg, IDC_DIAG_LEVEL_LABEL), config.fDiagnosticsEnabled);
+
 	// Enable/disable controls based on enabled state
 	EnableDisableCSVControls(hDlg, config.fEnabled);
 }
@@ -565,12 +587,45 @@ void SaveCSVSettings(HWND hDlg)
 
 	config.fVerboseEvents = IsDlgButtonChecked(hDlg, IDC_CSV_VERBOSE_CHECK) == BST_CHECKED;
 
+	config.fDiagnosticsEnabled = IsDlgButtonChecked(hDlg, IDC_DIAG_ENABLE_CHECK) == BST_CHECKED;
+	{
+		LRESULT sel = SendMessage(GetDlgItem(hDlg, IDC_DIAG_LEVEL), CB_GETCURSEL, 0, 0);
+		config.dwDiagnosticsLevel = (sel == 1) ? 5 : 4; // Verbose=5, Info=4
+	}
+
 	// Save configuration
 	HRESULT hr = EID_CSV_SaveConfig(config);
 	if (FAILED(hr))
 	{
 		MessageBoxWin32Ex(hr, hDlg);
 	}
+}
+
+// Restart the EIDTraceConsumer service so it re-reads the diagnostics config.
+// Uses sc.exe (always in System32, no path lookup needed). Non-fatal on failure -
+// the new settings apply on the service's next start regardless. The log manager
+// already runs elevated (it writes HKLM), so these calls succeed without a prompt.
+void RestartTraceConsumer()
+{
+	auto runSc = [](LPCWSTR args)
+	{
+		WCHAR szCmd[128];
+		swprintf_s(szCmd, L"sc.exe %s", args);
+		STARTUPINFOW si = { sizeof(si) };
+		si.dwFlags = STARTF_USESHOWWINDOW;
+		si.wShowWindow = SW_HIDE;
+		PROCESS_INFORMATION pi = {0};
+		if (CreateProcessW(nullptr, szCmd, nullptr, nullptr, FALSE,
+				CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi))
+		{
+			WaitForSingleObject(pi.hProcess, 5000);
+			CloseHandle(pi.hProcess);
+			CloseHandle(pi.hThread);
+		}
+	};
+	runSc(L"stop EIDTraceConsumer");
+	Sleep(1500); // let the service reach STOPPED before starting again
+	runSc(L"start EIDTraceConsumer");
 }
 
 void BrowseForCSVPath(HWND hDlg)

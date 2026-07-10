@@ -67,6 +67,12 @@
 #define IDC_CSV_COLUMNS_GROUP2            250     // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_CSV_OPTIONS_GROUP             251     // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 
+// Diagnostics capture controls (252-255)
+#define IDC_DIAG_GROUP                    252     // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_DIAG_ENABLE_CHECK             253     // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_DIAG_LEVEL_LABEL              254     // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_DIAG_LEVEL                    255     // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
@@ -74,7 +80,7 @@
 #define _APS_NO_MFC                      1
 #define _APS_NEXT_RESOURCE_VALUE         129
 #define _APS_NEXT_COMMAND_VALUE          32771
-#define _APS_NEXT_CONTROL_VALUE          252
+#define _APS_NEXT_CONTROL_VALUE          256
 #define _APS_NEXT_SYMED_VALUE            110
 #endif
 #endif
