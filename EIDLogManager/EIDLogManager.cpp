@@ -6,10 +6,12 @@
 #include <tchar.h>
 #include <ShObjIdl.h>
 #include <ShlObj.h>
+#include <winsvc.h>
 #include "../EIDCardLibrary/Registration.h"
 #include "../EIDCardLibrary/Tracing.h"
 #include "../EIDCardLibrary/TraceExport.h"
 #include "../EIDCardLibrary/CSVConfig.h"
+#include "../EIDCardLibrary/TraceConsumerService.h"
 
 // Trace level constants
 constexpr UCHAR TRACE_LEVEL_ERROR    = 2;
@@ -601,31 +603,68 @@ void SaveCSVSettings(HWND hDlg)
 	}
 }
 
+// Worker thread body for RestartTraceConsumer(). Talks to the Service Control
+// Manager directly - no process is spawned, so there is no exe-search/binary-
+// planting surface (CWE-427) the way there was with shelling out to sc.exe.
+// Runs off the UI thread; entirely best-effort/non-fatal so any failure (service
+// not installed, access denied, etc.) is simply swallowed and never surfaces as
+// a crash, an unbounded hang, or an error dialog from this thread.
+static DWORD WINAPI RestartTraceConsumerThreadProc(LPVOID)
+{
+	SC_HANDLE hSCManager = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
+	if (!hSCManager)
+	{
+		return 0;
+	}
+
+	SC_HANDLE hService = OpenServiceW(hSCManager, EID_TRACE_CONSUMER_SERVICE_NAME,
+		SERVICE_STOP | SERVICE_START | SERVICE_QUERY_STATUS);
+	if (!hService)
+	{
+		CloseServiceHandle(hSCManager);
+		return 0;
+	}
+
+	SERVICE_STATUS status = { 0 };
+	if (QueryServiceStatus(hService, &status) && status.dwCurrentState != SERVICE_STOPPED)
+	{
+		ControlService(hService, SERVICE_CONTROL_STOP, &status);
+
+		// Bounded poll for the stop to complete - capped at ~5s total so a
+		// wedged service can never hang this worker thread indefinitely.
+		const DWORD dwPollIntervalMs = 250;
+		const DWORD dwMaxWaitMs = 5000;
+		DWORD dwWaitedMs = 0;
+		while (status.dwCurrentState != SERVICE_STOPPED && dwWaitedMs < dwMaxWaitMs)
+		{
+			Sleep(dwPollIntervalMs);
+			dwWaitedMs += dwPollIntervalMs;
+			if (!QueryServiceStatus(hService, &status))
+			{
+				break;
+			}
+		}
+	}
+
+	StartServiceW(hService, 0, nullptr);
+
+	CloseServiceHandle(hService);
+	CloseServiceHandle(hSCManager);
+	return 0;
+}
+
 // Restart the EIDTraceConsumer service so it re-reads the diagnostics config.
-// Uses sc.exe (always in System32, no path lookup needed). Non-fatal on failure -
-// the new settings apply on the service's next start regardless. The log manager
-// already runs elevated (it writes HKLM), so these calls succeed without a prompt.
+// Kicks off the stop/start sequence on a detached background thread and returns
+// immediately, so the IDC_LOG_APPLY handler never blocks the dialog's UI thread.
+// Non-fatal: the new settings are already persisted, so a failed/skipped restart
+// just means they take effect the next time the service starts on its own.
 void RestartTraceConsumer()
 {
-	auto runSc = [](LPCWSTR args)
+	HANDLE hThread = CreateThread(nullptr, 0, RestartTraceConsumerThreadProc, nullptr, 0, nullptr);
+	if (hThread)
 	{
-		WCHAR szCmd[128];
-		swprintf_s(szCmd, L"sc.exe %s", args);
-		STARTUPINFOW si = { sizeof(si) };
-		si.dwFlags = STARTF_USESHOWWINDOW;
-		si.wShowWindow = SW_HIDE;
-		PROCESS_INFORMATION pi = {0};
-		if (CreateProcessW(nullptr, szCmd, nullptr, nullptr, FALSE,
-				CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi))
-		{
-			WaitForSingleObject(pi.hProcess, 5000);
-			CloseHandle(pi.hProcess);
-			CloseHandle(pi.hThread);
-		}
-	};
-	runSc(L"stop EIDTraceConsumer");
-	Sleep(1500); // let the service reach STOPPED before starting again
-	runSc(L"start EIDTraceConsumer");
+		CloseHandle(hThread);
+	}
 }
 
 void BrowseForCSVPath(HWND hDlg)
