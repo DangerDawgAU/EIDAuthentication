@@ -191,6 +191,8 @@ struct EID_CSV_CONFIG
     DWORD                 dwFileCount;      // Number of rotated files to keep
     DWORD                 dwCategoryFilter; // Category filter bitmask (bit N = category N enabled)
     BOOL                  fVerboseEvents;   // Include verbose-level events
+    BOOL                  fDiagnosticsEnabled; // Capture free-text provider diagnostic traces
+    DWORD                 dwDiagnosticsLevel;  // WINEVENT level ceiling for diagnostics (4=INFO, 5=VERBOSE)
 
     // Default constructor
     EID_CSV_CONFIG()
@@ -202,6 +204,8 @@ struct EID_CSV_CONFIG
         dwFileCount = 5;
         dwCategoryFilter = 0x0000FFFF;  // All categories enabled (bits 0-15)
         fVerboseEvents = FALSE;
+        fDiagnosticsEnabled = FALSE;
+        dwDiagnosticsLevel = 4; // WINEVENT_LEVEL_INFO
     }
 };
 

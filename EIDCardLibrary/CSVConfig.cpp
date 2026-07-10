@@ -54,6 +54,9 @@ std::string EID_CSV_ConfigToJson(const EID_CSV_CONFIG& config)
 
     builder.add("verboseEvents", config.fVerboseEvents != FALSE);
 
+    builder.add("diagnosticsEnabled", config.fDiagnosticsEnabled != FALSE);
+    builder.add("diagnosticsLevel", static_cast<int>(config.dwDiagnosticsLevel));
+
     return builder.build();
 }
 
@@ -107,6 +110,12 @@ HRESULT EID_CSV_JsonToConfig(const std::string& json, EID_CSV_CONFIG& config)
     // Read verbose events flag
     if (root.has("verboseEvents"))
         config.fVerboseEvents = root["verboseEvents"]->asBool() ? TRUE : FALSE;
+
+    // Read diagnostics flags
+    if (root.has("diagnosticsEnabled"))
+        config.fDiagnosticsEnabled = root["diagnosticsEnabled"]->asBool() ? TRUE : FALSE;
+    if (root.has("diagnosticsLevel"))
+        config.dwDiagnosticsLevel = static_cast<DWORD>(root["diagnosticsLevel"]->asNumber());
 
     return S_OK;
 }
@@ -260,6 +269,20 @@ HRESULT EID_CSV_LoadConfigFromRegistry(EID_CSV_CONFIG& config)
             reinterpret_cast<LPBYTE>(&dwValue), &dwSize);
         if (err == ERROR_SUCCESS && dwType == REG_DWORD)
             config.fVerboseEvents = dwValue ? TRUE : FALSE;
+
+        // Read DiagnosticsEnabled
+        dwSize = sizeof(DWORD);
+        err = RegQueryValueExW(hKey, L"DiagnosticsEnabled", nullptr, &dwType,
+            reinterpret_cast<LPBYTE>(&dwValue), &dwSize);
+        if (err == ERROR_SUCCESS && dwType == REG_DWORD)
+            config.fDiagnosticsEnabled = dwValue ? TRUE : FALSE;
+
+        // Read DiagnosticsLevel
+        dwSize = sizeof(DWORD);
+        err = RegQueryValueExW(hKey, L"DiagnosticsLevel", nullptr, &dwType,
+            reinterpret_cast<LPBYTE>(&config.dwDiagnosticsLevel), &dwSize);
+        if (err != ERROR_SUCCESS || dwType != REG_DWORD)
+            config.dwDiagnosticsLevel = 4; // WINEVENT_LEVEL_INFO
     }
     __finally
     {
@@ -347,6 +370,15 @@ HRESULT EID_CSV_SaveConfigToRegistry(const EID_CSV_CONFIG& config)
             hr = HRESULT_FROM_WIN32(err);
             __leave;
         }
+
+        dwValue = config.fDiagnosticsEnabled ? 1 : 0;
+        err = RegSetValueExW(hKey, L"DiagnosticsEnabled", 0, REG_DWORD,
+            reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));
+        if (err != ERROR_SUCCESS) { hr = HRESULT_FROM_WIN32(err); __leave; }
+
+        err = RegSetValueExW(hKey, L"DiagnosticsLevel", 0, REG_DWORD,
+            reinterpret_cast<const BYTE*>(&config.dwDiagnosticsLevel), sizeof(DWORD));
+        if (err != ERROR_SUCCESS) { hr = HRESULT_FROM_WIN32(err); __leave; }
     }
     __finally
     {
