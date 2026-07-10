@@ -227,8 +227,8 @@ void WriteDiagnosticLine(const WCHAR* timestamp, const WCHAR* severity, const WC
     if (!g_fDiagnosticsEnabled || !EnsureDiagFileOpen())
         return;
 
-    DWORD dwMaxBytes = g_dwMaxFileSizeMB * 1024 * 1024;
-    if (g_dwDiagFileSize >= dwMaxBytes)
+    ULONGLONG ullMaxBytes = static_cast<ULONGLONG>(g_dwMaxFileSizeMB) * 1024 * 1024;
+    if (g_dwDiagFileSize >= ullMaxBytes)
     {
         RotateDiagFile();
         if (!EnsureDiagFileOpen())
