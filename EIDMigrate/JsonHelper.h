@@ -45,18 +45,18 @@ public:
 class JsonObject // NOSONAR - noexcept move constructor not required; class is not performance-critical and std::map provides move semantics
 {
 private:
-    std::map<std::string, std::shared_ptr<JsonValue>> m_members;
+    std::map<std::string, std::shared_ptr<JsonValue>, std::less<>> m_members;
 
 public:
     JsonObject() = default;
     size_t size() const { return m_members.size(); }
     bool empty() const { return m_members.empty(); }
 
-    bool has(const std::string& key) const { return m_members.find(key) != m_members.end(); }
+    bool has(const std::string& key) const { return m_members.contains(key); }
     std::shared_ptr<JsonValue>& operator[](const std::string& key) { return m_members[key]; }
     const std::shared_ptr<JsonValue>& operator[](const std::string& key) const { return m_members.at(key); }
 
-    const std::map<std::string, std::shared_ptr<JsonValue>>& members() const { return m_members; }
+    const std::map<std::string, std::shared_ptr<JsonValue>, std::less<>>& members() const { return m_members; }
 };
 
 // JSON Value
@@ -113,7 +113,7 @@ private:
 public:
     JsonBuilder() = default;
 
-    void startObject(const std::string& key = "") const
+    void startObject([[maybe_unused]] std::string_view key = "") const
     {
         // For nested objects, we'd need a stack (not implemented for simple case)
         // The key parameter is ignored for the root object
@@ -168,7 +168,7 @@ class JsonParser
 {
 private:
     const std::string& m_json;
-    size_t m_pos;
+    size_t m_pos = 0;
 
     void skipWhitespace()
     {
@@ -187,7 +187,7 @@ private:
     JsonObject parseObject();
 
 public:
-    explicit JsonParser(const std::string& json) : m_json(json), m_pos(0) {}
+    explicit JsonParser(const std::string& json) : m_json(json) {}
 
     std::shared_ptr<JsonValue> parse()
     {

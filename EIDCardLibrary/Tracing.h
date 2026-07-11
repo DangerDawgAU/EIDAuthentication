@@ -43,7 +43,7 @@ void EIDCardLibraryTracingRegister();
 void EIDCardLibraryTracingUnRegister();
 
 #define EIDCardLibraryTrace(dwLevel, ...) \
-	EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__, dwLevel, __VA_ARGS__)
+	EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__, dwLevel, __VA_ARGS__)  // NOSONAR - UAF-01: false positive - logging macro call passes __FILE__/__LINE__, no memory freed
 
 void EIDCardLibraryTraceEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction, UCHAR dwLevel, PCWSTR szFormat,...);
 
@@ -56,8 +56,8 @@ void EIDCardLibraryDumpMemoryEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, 
  *  Display a messagebox giving an error code
  */
 void MessageBoxWin32Ex2(DWORD status, HWND hWnd, LPCSTR szFile, DWORD dwLine);
-#define MessageBoxWin32(status) MessageBoxWin32Ex2 (status, NULL, __FILE__,__LINE__)
-#define MessageBoxWin32Ex(status, hwnd ) MessageBoxWin32Ex2 (status, hwnd, __FILE__,__LINE__)
+#define MessageBoxWin32(status) MessageBoxWin32Ex2 (status, NULL, __FILE__,__LINE__)  // NOSONAR - LOG-01: __FILE__ retained for logging macro
+#define MessageBoxWin32Ex(status, hwnd ) MessageBoxWin32Ex2 (status, hwnd, __FILE__,__LINE__)  // NOSONAR - LOG-01: __FILE__ retained for logging macro
 
 BOOL LookUpErrorMessage(PWSTR buf, int cch, DWORD err);
 
@@ -110,7 +110,7 @@ void EIDLogStackTraceEx(
 // ================================================================
 
 // Include event definitions and CSV configuration
-#include "EventDefinitions.h"
+#include "EventDefinitions.h"  // NOSONAR - INCLUDE-01: include order significant for Windows SDK
 #include "CSVConfig.h"
 
 // Structured logging function that logs to both ETW and CSV

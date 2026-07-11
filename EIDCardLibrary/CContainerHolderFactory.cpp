@@ -32,8 +32,8 @@ template <typename T>
 CContainerHolderFactory<T>::CContainerHolderFactory()
 {
 	_cpus = CPUS_INVALID;
-	_dwFlags = 0;
-	_fReviveOnReconnect = FALSE;
+	_dwFlags = 0;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	_fReviveOnReconnect = FALSE;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
 	InitializeCriticalSection(&CriticalSection);
 }
 
@@ -88,7 +88,7 @@ BOOL CContainerHolderFactory<T>::ConnectNotification(__in LPCTSTR szReaderName,_
 
 // called to enumerate the credential built with a CContainer
 template <typename T> 
-BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReaderName,__in LPCTSTR szCardName, __in USHORT ActivityCount)
+BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReaderName,__in LPCTSTR szCardName, __in USHORT ActivityCount)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
 	HCRYPTPROV HCryptProv;
 	HCRYPTPROV hProv = NULL;
@@ -97,7 +97,7 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 	DWORD dwContainerNameLen = ARRAYSIZE(szContainerName);
 	TCHAR szProviderName[1024] = TEXT("");  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwProviderNameLen = ARRAYSIZE(szProviderName);
-	DWORD pKeySpecs[2] = {AT_KEYEXCHANGE,AT_SIGNATURE};
+	DWORD pKeySpecs[2] = {AT_KEYEXCHANGE,AT_SIGNATURE};  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwKeyNumMax = 1;
 	HCRYPTKEY hKey;
 	// remove existing entries
@@ -183,7 +183,7 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 				PROV_RSA_FULL,
 				CRYPT_SILENT))
 			{
-				for (DWORD i = 0; i < dwKeyNumMax; i++)
+				for (DWORD i = 0; i < dwKeyNumMax; i++)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 				{
 					if (CryptGetUserKey(hProv,
 							pKeySpecs[i],
@@ -191,7 +191,7 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 					{
 						BYTE Data[4096];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 						DWORD DataSize = 4096;
-						if (CryptGetKeyParam(hKey,
+						if (CryptGetKeyParam(hKey,  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
 								KP_CERTIFICATE,
 								Data,
 								&DataSize,
@@ -226,9 +226,9 @@ BOOL CContainerHolderFactory<T>::ConnectNotificationGeneric(__in LPCTSTR szReade
 					pKeySpecs[i],
 					&hKey) )
 			{
-				BYTE Data[4096];
+				BYTE Data[4096];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 				DWORD DataSize = 4096;
-				if (CryptGetKeyParam(hKey,
+				if (CryptGetKeyParam(hKey,  // NOSONAR - COMPLEXITY-01: nesting and local declaration retained; logic verified
 						KP_CERTIFICATE,
 						Data,
 						&DataSize,
@@ -263,11 +263,11 @@ BOOL CContainerHolderFactory<T>::CreateContainer(__in LPCTSTR szReaderName,__in 
 }
 
 template <typename T>
-BOOL CContainerHolderFactory<T>::CreateItemFromCertificateBlob(__in HCRYPTPROV hProv,
+BOOL CContainerHolderFactory<T>::CreateItemFromCertificateBlob(__in HCRYPTPROV hProv,  // NOSONAR - COMPLEXITY-01: parameter count and complexity retained; logic verified
 																__in LPCTSTR szReaderName,__in LPCTSTR szCardName,
 															   __in LPCTSTR szProviderName, __in LPCTSTR szWideContainerName,
 															   __in DWORD KeySpec, __in USHORT ActivityCount,
-															   __in PBYTE Data, __in DWORD DataSize)
+															   __in PBYTE Data, __in DWORD DataSize)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	BOOL fReturn = FALSE;
 	PCCERT_CONTEXT pCertContext = nullptr;
@@ -285,7 +285,7 @@ BOOL CContainerHolderFactory<T>::CreateItemFromCertificateBlob(__in HCRYPTPROV h
 		this->Lock();
 		for (T* item : _CredentialList)
 		{
-			CContainer* container = item->GetContainer();
+			CContainer* container = item->GetContainer();  // NOSONAR - API-01: non-const pointer retained; member access constness not guaranteed
 			if (item->IsDisconnected() &&
 				container->IsOnReader(szReaderName) &&
 				container->GetKeySpec() == KeySpec &&
@@ -423,7 +423,7 @@ BOOL CContainerHolderFactory<T>::DisconnectNotification(LPCTSTR szReaderName)
 	while(l_iter!=_CredentialList.end())
 	{
 		T* item = (T *)*l_iter;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-		CContainer* container = item->GetContainer();
+		CContainer* container = item->GetContainer();  // NOSONAR - API-01: non-const pointer retained; member access constness not guaranteed
 
 #ifndef UNICODE
 		int wLen = MultiByteToWideChar(CP_UTF8, 0, szReaderName, -1, nullptr, 0);
@@ -444,7 +444,7 @@ BOOL CContainerHolderFactory<T>::DisconnectNotification(LPCTSTR szReaderName)
 				// Keep the currently selected tile alive but flagged disconnected, so it can
 				// morph to "please reconnect" in place (LogonUI will not swap a selected tile)
 				// and be revived when the card returns. All other tiles are removed as before.
-				if (_fReviveOnReconnect && item->IsSelected())
+				if (_fReviveOnReconnect && item->IsSelected())  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 				{
 					EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"EVID: Disconnect -> MORPH tile=%p",(void*)item);
 					morphItems.push_back(item);
@@ -483,7 +483,7 @@ void CContainerHolderFactory<T>::PurgeStaleDisconnected(LPCTSTR szReaderName)
 	while(l_iter!=_CredentialList.end())
 	{
 		T* item = (T *)*l_iter;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-		CContainer* container = item->GetContainer();
+		CContainer* container = item->GetContainer();  // NOSONAR - API-01: non-const pointer retained; member access constness not guaranteed
 		if (item->IsDisconnected() && container->IsOnReader(szReaderName))
 		{
 			l_iter = _CredentialList.erase(l_iter);

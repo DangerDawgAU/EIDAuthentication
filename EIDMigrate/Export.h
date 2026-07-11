@@ -22,11 +22,11 @@ struct EXPORT_STATS
     DWORD dwGroupsExported;
 
     EXPORT_STATS() :
-        dwTotalCredentials(0),
-        dwCertificateEncrypted(0),
-        dwDpapiEncrypted(0),
-        dwSkipped(0),
-        dwGroupsExported(0)
+        dwTotalCredentials(0),  // NOSONAR - INIT-01: member initialized in ctor init list for clarity
+        dwCertificateEncrypted(0),  // NOSONAR - INIT-01: member initialized in ctor init list for clarity
+        dwDpapiEncrypted(0),  // NOSONAR - INIT-01: member initialized in ctor init list for clarity
+        dwSkipped(0),  // NOSONAR - INIT-01: member initialized in ctor init list for clarity
+        dwGroupsExported(0)  // NOSONAR - INIT-01: member initialized in ctor init list for clarity
     {}
 };
 
@@ -39,8 +39,8 @@ struct EXPORT_OPTIONS
     std::wstring wsSourceMachine;
 
     EXPORT_OPTIONS() :
-        fValidateCerts(FALSE),
-        fIncludeGroups(TRUE)
+        fValidateCerts(FALSE),  // NOSONAR - INIT-01: member initialized in ctor init list for clarity
+        fIncludeGroups(TRUE)  // NOSONAR - INIT-01: member initialized in ctor init list for clarity
     {}
 };
 

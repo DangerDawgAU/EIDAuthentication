@@ -470,7 +470,7 @@ BOOL SetTraceConfig(DWORD dwLevel, LPCWSTR szLogPath, DWORD dwMaxSizeMB, DWORD d
 	return fReturn;
 }
 
-BOOL GetTraceConfig(DWORD* pdwLevel, LPWSTR szLogPath, DWORD cchPath, DWORD* pdwMaxSizeMB, DWORD* pdwFileCounter, BOOL* pfAutoStart)
+BOOL GetTraceConfig(DWORD* pdwLevel, LPWSTR szLogPath, DWORD cchPath, DWORD* pdwMaxSizeMB, DWORD* pdwFileCounter, BOOL* pfAutoStart)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
 	HKEY hKey = nullptr;
 	LONG err = 0;
@@ -596,7 +596,7 @@ BOOL EnableLogging()
 	DWORD dwConfigMaxSize;
 	DWORD dwConfigFileCounter;
 	BOOL fConfigAutoStart;
-	WCHAR szConfigPath[MAX_PATH];
+	WCHAR szConfigPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 
 	GetTraceConfig(&dwConfigLevel, szConfigPath, MAX_PATH, &dwConfigMaxSize, &dwConfigFileCounter, &fConfigAutoStart);
 
@@ -615,8 +615,8 @@ BOOL EnableLogging()
 	DWORD dwFileMax = dwConfigFileCounter + 3;  // Add buffer for FileMax
 
 	// Use static array instead of vector to avoid C++ unwinding in SEH
-	RegEntry entries[19];
-	DWORD dwPathSize = (DWORD)((wcslen(szConfigPath) + 1) * sizeof(WCHAR));
+	RegEntry entries[19];  // NOSONAR - LSASS-01: C-style array avoids C++ unwinding in SEH __try block
+	DWORD dwPathSize = (DWORD)((wcslen(szConfigPath) + 1) * sizeof(WCHAR));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 
 	// Build registry entries dynamically based on configuration
 	entries[0]  = { szBaseKey, L"Guid",            REG_SZ,    szGuidValue,   (DWORD)sizeof(szGuidValue) };
@@ -643,7 +643,7 @@ BOOL EnableLogging()
 	BOOL fReturn = FALSE;
 	__try
 	{
-		for (int i = 0; i < 19; i++)
+		for (int i = 0; i < 19; i++)  // NOSONAR - COMPLEXITY-01: raw index loop retained; SEH __leave semantics verified
 		{
 			err = RegSetKeyValue(HKEY_LOCAL_MACHINE, entries[i].szSubKey,
 				entries[i].szValueName, entries[i].dwType, entries[i].pData, entries[i].cbData);
@@ -707,10 +707,10 @@ BOOL Is64BitOS()
    // We check if the OS is 64 Bit
    using LPFN_ISWOW64PROCESS = BOOL (WINAPI*)(HANDLE, PBOOL);
 
-   LPFN_ISWOW64PROCESS
+   LPFN_ISWOW64PROCESS  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
       fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(GetModuleHandle(L"kernel32"),"IsWow64Process");  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
  
-   if (fnIsWow64Process && !fnIsWow64Process(GetCurrentProcess(),&bIs64BitOS))
+   if (fnIsWow64Process && !fnIsWow64Process(GetCurrentProcess(),&bIs64BitOS))  // NOSONAR - SCOPE-01: function-pointer declaration kept separate for explicit typing
    {
       //error
    }

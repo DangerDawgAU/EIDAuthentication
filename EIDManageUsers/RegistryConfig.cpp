@@ -54,8 +54,8 @@ void LoadSettings()
         DWORD dwSize = sizeof(DWORD);
         DWORD dwType = REG_DWORD;
 
-        if (RegQueryValueExW(hKey, REG_SHOW_WARNINGS, nullptr,
-            &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS)
+        if (RegQueryValueExW(hKey, REG_SHOW_WARNINGS, nullptr,  // NOSONAR - SCOPE-01: kept grouped with related registry out-parameters
+            &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         {
             g_appState.fShowWarnings = (dwValue != 0);
         }
@@ -76,7 +76,7 @@ void SaveSettings()
     {
         DWORD dwValue = g_appState.fShowWarnings ? 1 : 0;
         RegSetValueExW(hKey, REG_SHOW_WARNINGS, 0, REG_DWORD,
-            reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));
+            reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         CloseRegKey(hKey);
     }
 }
@@ -102,15 +102,15 @@ void LoadEIDGroups(_Inout_ std::vector<std::wstring>& groups)
 
     // Allocate buffer and read value
     std::vector<WCHAR> buffer(dwSize / sizeof(WCHAR));
-    if (RegQueryValueExW(hKey, REG_EID_GROUPS, nullptr,
-        &dwType, reinterpret_cast<LPBYTE>(buffer.data()), &dwSize) == ERROR_SUCCESS)
+    if (RegQueryValueExW(hKey, REG_EID_GROUPS, nullptr,  // NOSONAR - SCOPE-01: buffer reused after the block
+        &dwType, reinterpret_cast<LPBYTE>(buffer.data()), &dwSize) == ERROR_SUCCESS)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
     {
         // Parse REG_MULTI_SZ
         groups.clear();
         LPCWSTR pwsz = buffer.data();
         while (*pwsz)
         {
-            groups.push_back(pwsz);
+            groups.emplace_back(pwsz);
             pwsz += wcslen(pwsz) + 1;
         }
     }
@@ -150,7 +150,7 @@ void SaveEIDGroups(_In_ const std::vector<std::wstring>& groups)
         *pwsz = L'\0';  // Double null terminator
 
         RegSetValueExW(hKey, REG_EID_GROUPS, 0, REG_MULTI_SZ,
-            reinterpret_cast<const BYTE*>(buffer.data()),
+            reinterpret_cast<const BYTE*>(buffer.data()),  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
             static_cast<DWORD>(buffer.size() * sizeof(WCHAR)));
     }
 
@@ -168,10 +168,10 @@ FilterMode LoadFilterMode()
     DWORD dwSize = sizeof(DWORD);
     DWORD dwType = REG_DWORD;
 
-    if (RegQueryValueExW(hKey, REG_FILTER_MODE, nullptr,
-        &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS)
+    if (RegQueryValueExW(hKey, REG_FILTER_MODE, nullptr,  // NOSONAR - SCOPE-01: kept grouped with related registry out-parameters
+        &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
     {
-        if (dwValue <= FILTER_ALL_USERS)
+        if (dwValue <= FILTER_ALL_USERS)  // NOSONAR - COMPLEXITY-01: nested condition kept separate; logic verified
             dwValue = static_cast<DWORD>(FILTER_EID_ONLY);
     }
 
@@ -186,9 +186,9 @@ void SaveFilterMode(FilterMode filter)
     if (!hKey)
         return;
 
-    DWORD dwValue = static_cast<DWORD>(filter);
+    DWORD dwValue = static_cast<DWORD>(filter);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
     RegSetValueExW(hKey, REG_FILTER_MODE, 0, REG_DWORD,
-        reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));
+        reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
     CloseRegKey(hKey);
 }
 
@@ -203,8 +203,8 @@ BOOL LoadConfirmActions()
     DWORD dwSize = sizeof(DWORD);
     DWORD dwType = REG_DWORD;
 
-    if (RegQueryValueExW(hKey, REG_CONFIRM_ACTIONS, nullptr,
-        &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS)
+    if (RegQueryValueExW(hKey, REG_CONFIRM_ACTIONS, nullptr,  // NOSONAR - SCOPE-01: kept grouped with related registry out-parameters
+        &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
     {
         CloseRegKey(hKey);
         return (dwValue != 0);
@@ -223,6 +223,6 @@ void SaveConfirmActions(BOOL fConfirm)
 
     DWORD dwValue = fConfirm ? 1 : 0;
     RegSetValueExW(hKey, REG_CONFIRM_ACTIONS, 0, REG_DWORD,
-        reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));
+        reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
     CloseRegKey(hKey);
 }

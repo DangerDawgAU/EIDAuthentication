@@ -77,10 +77,10 @@
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NO_MFC                      1
-#define _APS_NEXT_RESOURCE_VALUE         129
-#define _APS_NEXT_COMMAND_VALUE          32771
-#define _APS_NEXT_CONTROL_VALUE          256
-#define _APS_NEXT_SYMED_VALUE            110
+#define _APS_NO_MFC                      1    // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define _APS_NEXT_RESOURCE_VALUE         129    // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define _APS_NEXT_COMMAND_VALUE          32771    // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define _APS_NEXT_CONTROL_VALUE          256    // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define _APS_NEXT_SYMED_VALUE            110    // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #endif
 #endif

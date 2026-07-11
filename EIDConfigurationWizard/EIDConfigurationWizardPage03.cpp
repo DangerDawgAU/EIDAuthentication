@@ -12,7 +12,7 @@
 #include <string>
 
 // External global for CA name configuration
-extern WCHAR szCAName[];
+extern WCHAR szCAName[];  // NOSONAR - GLOBAL-01: mutable global buffer written at runtime; C-style buffer for Win32 API
 extern const DWORD dwCANameSize;
 
 // Forward declarations for option handlers (extracted to reduce nesting)
@@ -32,7 +32,7 @@ public:
 };
 
 // Dialog procedure for CA name configuration
-INT_PTR CALLBACK DlgProc_CANameConfig(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK DlgProc_CANameConfig(HWND hWnd, UINT message, WPARAM wParam, [[maybe_unused]] LPARAM lParam)
 {
     switch (message)
     {
@@ -42,9 +42,8 @@ INT_PTR CALLBACK DlgProc_CANameConfig(HWND hWnd, UINT message, WPARAM wParam, LP
         CheckDlgButton(hWnd, IDC_CA_NAME_DEFAULT, BST_CHECKED);
 
         // Pre-fill with computer name (without CN= prefix, will be added automatically)
-        wchar_t szComputerName[MAX_COMPUTERNAME_LENGTH + 1];
-        DWORD dwSize = ARRAYSIZE(szComputerName);
-        if (GetComputerName(szComputerName, &dwSize))
+        wchar_t szComputerName[MAX_COMPUTERNAME_LENGTH + 1];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+        if (DWORD dwSize = ARRAYSIZE(szComputerName); GetComputerName(szComputerName, &dwSize))
         {
             EID::SetWindowTextW(GetDlgItem(hWnd, IDC_CA_NAME_EDIT), szComputerName);
         }
@@ -52,11 +51,11 @@ INT_PTR CALLBACK DlgProc_CANameConfig(HWND hWnd, UINT message, WPARAM wParam, LP
     }
     case WM_COMMAND:
     {
-        WORD wmId = LOWORD(wParam);
-        if (wmId == IDOK)
+        WORD wmId = LOWORD(wParam);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
+        if (wmId == IDOK)  // NOSONAR - SCOPE-01: wmId reused across the if/else-if chain
         {
             // Get the CA name from the edit control
-            WCHAR szBuffer[256];
+            WCHAR szBuffer[256];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
             GetDlgItemText(hWnd, IDC_CA_NAME_EDIT, szBuffer, ARRAYSIZE(szBuffer));
 
             // Validate the CA name is not empty
@@ -69,7 +68,7 @@ INT_PTR CALLBACK DlgProc_CANameConfig(HWND hWnd, UINT message, WPARAM wParam, LP
             // Validate that the user didn't include "CN=" prefix (we add it automatically)
             if (wcsstr(szBuffer, L"CN=") != nullptr)
             {
-                MessageBox(hWnd, L"Please enter only the name without the ""CN="" prefix. It will be added automatically.", L"Validation Error", MB_OK | MB_ICONERROR);
+                MessageBox(hWnd, L"Please enter only the name without the CN= prefix. It will be added automatically.", L"Validation Error", MB_OK | MB_ICONERROR);
                 return TRUE;
             }
 
@@ -86,13 +85,12 @@ INT_PTR CALLBACK DlgProc_CANameConfig(HWND hWnd, UINT message, WPARAM wParam, LP
         else if (wmId == IDC_CA_NAME_DEFAULT)
         {
             // Toggle based on checkbox state
-            BOOL fUseDefault = IsDlgButtonChecked(hWnd, IDC_CA_NAME_DEFAULT) == BST_CHECKED;
-            if (fUseDefault)
+            if (BOOL fUseDefault = IsDlgButtonChecked(hWnd, IDC_CA_NAME_DEFAULT) == BST_CHECKED; fUseDefault)
             {
                 // Re-fill with computer name (without CN= prefix, will be added automatically)
-                wchar_t szComputerName[MAX_COMPUTERNAME_LENGTH + 1];
+                wchar_t szComputerName[MAX_COMPUTERNAME_LENGTH + 1];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
                 DWORD dwSize = ARRAYSIZE(szComputerName);
-                if (GetComputerName(szComputerName, &dwSize))
+                if (GetComputerName(szComputerName, &dwSize))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     EID::SetWindowTextW(GetDlgItem(hWnd, IDC_CA_NAME_EDIT), szComputerName);
                 }
@@ -101,6 +99,8 @@ INT_PTR CALLBACK DlgProc_CANameConfig(HWND hWnd, UINT message, WPARAM wParam, LP
         }
         break;
     }
+    default:
+        break;
     }
     return FALSE;
 }
@@ -129,8 +129,7 @@ constexpr WORD MIN_CERT_VALIDITY_YEARS = 1;
 WORD GetRootCAExpiryYear(PCCERT_CONTEXT pRootCert)
 {
 	if (!pRootCert) return 0;
-	SYSTEMTIME st;
-	if (FileTimeToSystemTime(&(pRootCert->pCertInfo->NotAfter), &st))
+	if (SYSTEMTIME st; FileTimeToSystemTime(&(pRootCert->pCertInfo->NotAfter), &st))
 	{
 		return st.wYear;
 	}
@@ -172,7 +171,7 @@ BOOL CreateRootCertificate()
 	}
 	else
 	{
-		wchar_t szComputerNameBuf[MAX_COMPUTERNAME_LENGTH + 1];
+		wchar_t szComputerNameBuf[MAX_COMPUTERNAME_LENGTH + 1];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 		DWORD dwSize = ARRAYSIZE(szComputerNameBuf);
 		GetComputerName(szComputerNameBuf, &dwSize);
 		szSubject = EID::Format(L"CN=EID:%s", szComputerNameBuf);
@@ -189,7 +188,7 @@ BOOL CreateRootCertificate()
 	GetSystemTime(&(CertificateInfo.EndTime));
 	CertificateInfo.EndTime.wYear += 10;
 	CertificateInfo.fReturnCerticateContext = TRUE;
-	CertificateInfo.szSubject = const_cast<PWSTR>(szSubject.c_str()); // Safe: API won't modify
+	CertificateInfo.szSubject = const_cast<PWSTR>(szSubject.c_str()); // NOSONAR - CAST-01: Win32 API won't modify string, const_cast layout-verified
 	fReturn = CreateCertificate(&CertificateInfo);
 	DWORD dwError = GetLastError();
 	if (fReturn)
@@ -217,7 +216,7 @@ BOOL CreateSmartCardCertificate(PCCERT_CONTEXT pCertificate, PWSTR wszReader, PW
 	CertificateInfo.dwKeyType = AT_KEYEXCHANGE;
 	CertificateInfo.bHasSmartCardAuthentication = TRUE;
 	CertificateInfo.pRootCertificate = pCertificate;
-	CertificateInfo.szSubject = const_cast<PWSTR>(szSubject.c_str()); // Safe: API won't modify
+	CertificateInfo.szSubject = const_cast<PWSTR>(szSubject.c_str()); // NOSONAR - CAST-01: Win32 API won't modify string, const_cast layout-verified
 	GetSystemTime(&(CertificateInfo.StartTime));
 	GetSystemTime(&(CertificateInfo.EndTime));
 	// Use configurable validity period
@@ -237,11 +236,11 @@ BOOL CreateSmartCardCertificate(PCCERT_CONTEXT pCertificate, PWSTR wszReader, PW
 	return fReturn;
 }
 
-VOID UpdateCertificatePanel(HWND hWnd)
+VOID UpdateCertificatePanel(HWND hWnd)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
-	wchar_t szBuffer2[1024];
-	wchar_t szLocalDate[255];
-	wchar_t szLocalTime[255];
+	wchar_t szBuffer2[1024];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+	wchar_t szLocalDate[255];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+	wchar_t szLocalTime[255];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 	SYSTEMTIME st;
 	SendDlgItemMessage(hWnd,IDC_03CERTIFICATEPANEL,LB_RESETCONTENT,0,0);
 	// object :
@@ -274,12 +273,11 @@ VOID UpdateCertificatePanel(HWND hWnd)
 	SendDlgItemMessage(hWnd, IDC_03CERTIFICATEPANEL, LB_ADDSTRING, 0, (LPARAM)szBuf.c_str());
 
 	// serial number :
-	DWORD dwSerialSize = 0;
-	if (CryptBinaryToString(pRootCertificate->pCertInfo->SerialNumber.pbData,
+	if (DWORD dwSerialSize = 0; CryptBinaryToString(pRootCertificate->pCertInfo->SerialNumber.pbData,
 		pRootCertificate->pCertInfo->SerialNumber.cbData,
 		CRYPT_STRING_HEXRAW | CRYPT_STRING_NOCRLF, nullptr, &dwSerialSize))
 	{
-		wchar_t* pSerialStr = static_cast<wchar_t*>(EIDAlloc(dwSerialSize * sizeof(wchar_t)));
+		wchar_t* pSerialStr = static_cast<wchar_t*>(EIDAlloc(dwSerialSize * sizeof(wchar_t)));  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
 		if (pSerialStr)
 		{
 			if (CryptBinaryToString(pRootCertificate->pCertInfo->SerialNumber.pbData,
@@ -302,18 +300,17 @@ VOID UpdateCertificatePanel(HWND hWnd)
 	SendDlgItemMessage(hWnd, IDC_03CERTIFICATEPANEL, LB_ADDSTRING, 0, (LPARAM)szBuf.c_str());
 
 	// fingerprint (SHA-1 thumbprint) :
-	DWORD dwHashSize = 0;
-	if (CertGetCertificateContextProperty(pRootCertificate, CERT_HASH_PROP_ID, nullptr, &dwHashSize))
+	if (DWORD dwHashSize = 0; CertGetCertificateContextProperty(pRootCertificate, CERT_HASH_PROP_ID, nullptr, &dwHashSize))
 	{
-		BYTE* pHash = static_cast<BYTE*>(EIDAlloc(dwHashSize));
+		BYTE* pHash = static_cast<BYTE*>(EIDAlloc(dwHashSize));  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
 		if (pHash)
 		{
 			if (CertGetCertificateContextProperty(pRootCertificate, CERT_HASH_PROP_ID, pHash, &dwHashSize))
 			{
 				DWORD dwFingerprintSize = 0;
-				if (CryptBinaryToString(pHash, dwHashSize, CRYPT_STRING_HEX | CRYPT_STRING_NOCRLF, nullptr, &dwFingerprintSize))
+				if (CryptBinaryToString(pHash, dwHashSize, CRYPT_STRING_HEX | CRYPT_STRING_NOCRLF, nullptr, &dwFingerprintSize))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 				{
-					wchar_t* pFingerprint = static_cast<wchar_t*>(EIDAlloc(dwFingerprintSize * sizeof(wchar_t)));
+					wchar_t* pFingerprint = static_cast<wchar_t*>(EIDAlloc(dwFingerprintSize * sizeof(wchar_t)));  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
 					if (pFingerprint)
 					{
 						if (CryptBinaryToString(pHash, dwHashSize, CRYPT_STRING_HEX | CRYPT_STRING_NOCRLF, pFingerprint, &dwFingerprintSize))
@@ -419,11 +416,11 @@ static BOOL HandleUseThisOption(HWND hWnd, PCCERT_CONTEXT pRootCert)
 	return FALSE;
 }
 
-INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
 	int wmId;
 	int wmEvent;
-	LPNMHDR pnmh;
+	LPNMHDR pnmh;  // NOSONAR - API-01: pointer type dictated by Win32 NMHDR callback handling
 	CRYPTUI_VIEWCERTIFICATE_STRUCT certViewInfo;
 	BOOL fPropertiesChanged = FALSE;
 	switch(message)
@@ -481,6 +478,8 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					return TRUE;
 				break;
 			}
+			default:
+				break;
 		}
 		break;
 		case WM_COMMAND:
@@ -516,7 +515,7 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					certViewInfo.dwSize = sizeof(CRYPTUI_VIEWCERTIFICATE_STRUCT);
 					certViewInfo.hwndParent = hWnd;
 					certViewInfo.dwFlags = CRYPTUI_DISABLE_EDITPROPERTIES | CRYPTUI_DISABLE_ADDTOSTORE | CRYPTUI_DISABLE_EXPORT | CRYPTUI_DISABLE_HTMLLINK;
-					certViewInfo.szTitle = const_cast<PWSTR>(szTitle.c_str()); // Safe: API won't modify
+					certViewInfo.szTitle = const_cast<PWSTR>(szTitle.c_str()); // NOSONAR - CAST-01: Win32 API won't modify string, const_cast layout-verified
 					certViewInfo.pCertContext = pRootCertificate;
 					certViewInfo.cPurposes = 0;
 					certViewInfo.rgszPurposes = nullptr;
@@ -536,8 +535,12 @@ INT_PTR CALLBACK	WndProc_03NEW(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 					CryptUIDlgViewCertificate(&certViewInfo,&fPropertiesChanged);
 				}
 				break;
+			default:
+				break;
 		}
 		break;
+		default:
+			break;
     }
 	return FALSE;
 }

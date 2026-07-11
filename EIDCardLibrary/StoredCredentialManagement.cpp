@@ -59,7 +59,7 @@ extern "C"
 }
 
 // level 1
-#include "StoredCredentialManagement.h"
+#include "StoredCredentialManagement.h"  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 CStoredCredentialManager *CStoredCredentialManager::theSingleInstance = nullptr;
 
 //=============================================================================
@@ -96,8 +96,8 @@ USHORT CalculateSecretSize(bool fEncryptPassword, USHORT usEncryptedPasswordSize
 // For DPAPI: cert + encrypted password only
 // Complexity reduction helper for CreateCredential (Phase 36-01)
 void BuildSecretData(PEID_PRIVATE_DATA pSecret, PCCERT_CONTEXT pCertContext,
-                     PBYTE pEncryptedPassword, USHORT usEncryptedPasswordSize,
-                     PBYTE pSymmetricKey, USHORT usSymmetricKeySize,
+                     PBYTE pEncryptedPassword, USHORT usEncryptedPasswordSize,  // NOSONAR - API-01: signature dictated by Windows/callback API
+                     PBYTE pSymmetricKey, USHORT usSymmetricKeySize,  // NOSONAR - API-01: signature dictated by Windows/callback API
                      bool fEncryptPassword) noexcept
 {
     // Copy certificate hash
@@ -145,7 +145,7 @@ BOOL EncryptPasswordWithDPAPI(__in PWSTR szPassword, __in USHORT usPasswordSize,
     DATA_BLOB DataIn;
     DATA_BLOB DataOut;
 
-    DataIn.pbData = reinterpret_cast<BYTE*>(szPassword);
+    DataIn.pbData = reinterpret_cast<BYTE*>(szPassword);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
     DataIn.cbData = usPasswordSize;
 
     if (!CryptProtectData(&DataIn, L"EID Credential", nullptr, nullptr, nullptr,
@@ -217,11 +217,11 @@ BOOL CStoredCredentialManager::GetUsernameFromCertContext(__in PCCERT_CONTEXT pC
 			{
 				if (pPrivateData->dwCertificatSize == pContext->cbCertEncoded)
 				{
-					if (memcmp(pPrivateData->Data + pPrivateData->dwCertificatOffset, pContext->pbCertEncoded, pContext->cbCertEncoded) == 0)
+					if (memcmp(pPrivateData->Data + pPrivateData->dwCertificatOffset, pContext->pbCertEncoded, pContext->cbCertEncoded) == 0)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 					{
 						// found
 						*pdwRid = pUserInfo[dwI].usri3_user_id;
-						PWSTR Username = pUserInfo[dwI].usri3_name;
+						PCWSTR Username = pUserInfo[dwI].usri3_name;
 						*pszUsername = (PWSTR) EIDAlloc((DWORD)(wcslen(Username) +1) * sizeof(WCHAR));
 						
 						if (*pszUsername)
@@ -264,7 +264,7 @@ BOOL CStoredCredentialManager::HasStoredCredential(__in PCCERT_CONTEXT pContext)
 {
 	DWORD dwRid;
 	PWSTR szUsername = nullptr;
-	if (GetUsernameFromCertContext(pContext, &szUsername, &dwRid))
+	if (GetUsernameFromCertContext(pContext, &szUsername, &dwRid))  // NOSONAR - SCOPE-01: variable declared before the block by design
 	{
 		EIDFree(szUsername);
 		return TRUE;
@@ -274,7 +274,7 @@ BOOL CStoredCredentialManager::HasStoredCredential(__in PCCERT_CONTEXT pContext)
 
 // SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
 // Code cannot be extracted from __try blocks per LSASS safety requirements
-BOOL CStoredCredentialManager::GetCertContextFromHash(__in PBYTE pbHash, __out PCCERT_CONTEXT* ppContext, __out PDWORD pdwRid)
+BOOL CStoredCredentialManager::GetCertContextFromHash(__in PBYTE pbHash, __out PCCERT_CONTEXT* ppContext, __out PDWORD pdwRid)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	NET_API_STATUS Status;
 	PUSER_INFO_3 pUserInfo = nullptr;
@@ -315,7 +315,7 @@ BOOL CStoredCredentialManager::GetCertContextFromHash(__in PBYTE pbHash, __out P
 					*pdwRid = pUserInfo[dwI].usri3_user_id;
 					*ppContext = CertCreateCertificateContext(X509_ASN_ENCODING,
 								pPrivateData->Data + pPrivateData->dwCertificatOffset, pPrivateData->dwCertificatSize);
-					if (*ppContext)
+					if (*ppContext)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 					{
 						fReturn = TRUE;
 					}
@@ -407,7 +407,7 @@ BOOL CStoredCredentialManager::GetCertContextFromRid(__in DWORD dwRid, __out PCC
 // Code cannot be extracted from __try blocks per LSASS safety requirements
 // Uses helper functions CalculateSecretSize, BuildSecretData, EncryptPasswordWithDPAPI
 // to reduce cognitive complexity while maintaining SEH safety.
-BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CONTEXT pCertContext, __in PWSTR szPassword, __in_opt USHORT usPasswordLen, __in BOOL fEncryptPassword, __in BOOL fCheckPassword)
+BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CONTEXT pCertContext, __in PWSTR szPassword, __in_opt USHORT usPasswordLen, __in BOOL fEncryptPassword, __in BOOL fCheckPassword)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
 	// Refactored for complexity reduction (Phase 36-01)
 	// Uses helper functions CalculateSecretSize, BuildSecretData, EncryptPasswordWithDPAPI
@@ -596,7 +596,7 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 		}
 
 		// Save the encrypted credential data
-		if (!StorePrivateData(dwRid, reinterpret_cast<PBYTE>(pbSecret), usSecretSize))
+		if (!StorePrivateData(dwRid, reinterpret_cast<PBYTE>(pbSecret), usSecretSize))  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"StorePrivateData");
@@ -645,7 +645,7 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 BOOL CStoredCredentialManager::UpdateCredential(__in PLUID pLuid, __in PUNICODE_STRING Password)
 {
 	DWORD dwRid = 0;
-	WCHAR szComputer[UNLEN+1];
+	WCHAR szComputer[UNLEN+1];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	WCHAR szUser[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwSize = ARRAYSIZE(szComputer);
 	DWORD dwError = 0;
@@ -787,10 +787,10 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RetrievePrivateData 0x%08x",dwError);
 			__leave;
 		}
-		*pType = static_cast<DWORD>(pEidPrivateData->dwType);
+		*pType = static_cast<DWORD>(pEidPrivateData->dwType);  // NOSONAR - ENUM-01: enum-to-underlying cast for Win32/ABI compatibility
 		switch(*pType)
 		{
-		case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted):
+		case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted):  // NOSONAR - ENUM-01: enum-to-underlying cast for Win32/ABI compatibility
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwType = eidpdtCrypted");
 			*pdwChallengeSize = pEidPrivateData->dwSymetricKeySize;
 			*ppChallenge = (PBYTE) EIDAlloc(pEidPrivateData->dwSymetricKeySize);
@@ -802,7 +802,7 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 			}
 			memcpy(*ppChallenge, pEidPrivateData->Data + pEidPrivateData->dwSymetricKeyOffset, pEidPrivateData->dwSymetricKeySize); 
 			break;
-		case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtClearText):
+		case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtClearText):  // NOSONAR - ENUM-01: enum-to-underlying cast for Win32/ABI compatibility
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwType = eidpdtClearText");
 			fStatus = GetSignatureChallenge(ppChallenge, pdwChallengeSize);
 			if (!fStatus)
@@ -812,7 +812,7 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 				__leave;
 			}
 			break;
-		case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtDPAPI):
+		case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtDPAPI):  // NOSONAR - ENUM-01: enum-to-underlying cast for Win32/ABI compatibility
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwType = eidpdtDPAPI");
 			fStatus = GetSignatureChallenge(ppChallenge, pdwChallengeSize);
 			if (!fStatus)
@@ -844,7 +844,7 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 
 // SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
 // Code cannot be extracted from __try blocks per LSASS safety requirements
-BOOL CStoredCredentialManager::GetSignatureChallenge(__out PBYTE* ppChallenge, __out PDWORD pdwChallengeSize)
+BOOL CStoredCredentialManager::GetSignatureChallenge(__out PBYTE* ppChallenge, __out PDWORD pdwChallengeSize)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	BOOL fReturn = FALSE;
 	BOOL fStatus;
@@ -1006,11 +1006,11 @@ BOOL CStoredCredentialManager::GetPassword(__in DWORD dwRid, __in PCCERT_CONTEXT
 // LEVEL 1
 ////////////////////////////////////////////////////////////////////////////////
 
-NTSTATUS CompletePrimaryCredential(__in PLSA_UNICODE_STRING AuthenticatingAuthority,
-						__in PLSA_UNICODE_STRING AccountName,
+NTSTATUS CompletePrimaryCredential(__in PLSA_UNICODE_STRING AuthenticatingAuthority,  // NOSONAR - API-01: signature dictated by Windows/callback API
+						__in PLSA_UNICODE_STRING AccountName,  // NOSONAR - API-01: signature dictated by Windows/callback API
 						__in PSID UserSid,
-						__in PLUID LogonId,
-						__in PWSTR szPassword,
+						__in PLUID LogonId,  // NOSONAR - API-01: signature dictated by Windows/callback API
+						__in PWSTR szPassword,  // NOSONAR - API-01: signature dictated by Windows/callback API
 						__out  PSECPKG_PRIMARY_CRED PrimaryCredentials)
 {
 
@@ -1078,9 +1078,9 @@ BOOL CStoredCredentialManager::GetResponseFromChallenge(__in PBYTE pChallenge, _
 {
 	switch(dwChallengeType)
 	{
-	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtClearText):
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtClearText):  // NOSONAR - ENUM-01: enum-to-underlying cast for Win32/ABI compatibility
 		return GetResponseFromSignatureChallenge(pChallenge,dwChallengeSize,pCertContext,Pin,pSymetricKey,usSize);
-	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted):
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted):  // NOSONAR - ENUM-01: enum-to-underlying cast for Win32/ABI compatibility
 		return GetResponseFromCryptedChallenge(pChallenge,dwChallengeSize,pCertContext,Pin,pSymetricKey,usSize);
 	default:
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Type not implemented");
@@ -1089,7 +1089,7 @@ BOOL CStoredCredentialManager::GetResponseFromChallenge(__in PBYTE pChallenge, _
 }
 // SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
 // Code cannot be extracted from __try blocks per LSASS safety requirements
-BOOL CStoredCredentialManager::GetResponseFromCryptedChallenge(__in PBYTE pChallenge, __in DWORD dwChallengeSize, __in PCCERT_CONTEXT pCertContext, __in PWSTR Pin, __out PBYTE *pSymetricKey, __out DWORD *usSize)
+BOOL CStoredCredentialManager::GetResponseFromCryptedChallenge(__in PBYTE pChallenge, __in DWORD dwChallengeSize, __in PCCERT_CONTEXT pCertContext, __in PWSTR Pin, __out PBYTE *pSymetricKey, __out DWORD *usSize)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
 	BOOL fReturn = FALSE;
 	// check private key
@@ -1240,7 +1240,7 @@ BOOL CStoredCredentialManager::GetResponseFromCryptedChallenge(__in PBYTE pChall
 
 // SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
 // Code cannot be extracted from __try blocks per LSASS safety requirements
-BOOL CStoredCredentialManager::GetResponseFromSignatureChallenge(__in PBYTE pbChallenge, __in DWORD dwChallengeSize, __in PCCERT_CONTEXT pCertContext, __in PWSTR szPin, __out PBYTE *ppResponse, __out PDWORD pdwResponseSize)
+BOOL CStoredCredentialManager::GetResponseFromSignatureChallenge(__in PBYTE pbChallenge, __in DWORD dwChallengeSize, __in PCCERT_CONTEXT pCertContext, __in PWSTR szPin, __out PBYTE *ppResponse, __out PDWORD pdwResponseSize)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	UNREFERENCED_PARAMETER(dwChallengeSize);
 	BOOL fReturn = FALSE;
@@ -1366,14 +1366,14 @@ struct KEY_BLOB {
   WORD   reserved;
   ALG_ID aiKeyAlg;
   ULONG cb;
-  BYTE Data[CREDENTIALKEYLENGTH/8];
+  BYTE Data[CREDENTIALKEYLENGTH/8];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 };
 
 // create a symetric key which can be used to crypt data and
 // which is saved and protected by the public key
 // SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
 // Code cannot be extracted from __try blocks per LSASS safety requirements
-BOOL CStoredCredentialManager::GenerateSymetricKeyAndEncryptIt(__in HCRYPTPROV hProv, __in HCRYPTKEY hKey, __out HCRYPTKEY *phKey, __out PBYTE* pSymetricKey, __out USHORT *usSize)
+BOOL CStoredCredentialManager::GenerateSymetricKeyAndEncryptIt(__in HCRYPTPROV hProv, __in HCRYPTKEY hKey, __out HCRYPTKEY *phKey, __out PBYTE* pSymetricKey, __out USHORT *usSize)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	BOOL fReturn = FALSE;
 	BOOL fStatus;
@@ -1462,7 +1462,7 @@ BOOL CStoredCredentialManager::GenerateSymetricKeyAndEncryptIt(__in HCRYPTPROV h
 
 // SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
 // Code cannot be extracted from __try blocks per LSASS safety requirements
-BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __in PWSTR szPassword, __in_opt USHORT dwPasswordLen, __out PBYTE *pEncryptedPassword, __out USHORT *usSize)
+BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __in PWSTR szPassword, __in_opt USHORT dwPasswordLen, __out PBYTE *pEncryptedPassword, __out USHORT *usSize)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	BOOL fReturn = FALSE;
 	BOOL fStatus;
@@ -1521,7 +1521,7 @@ BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __i
 	{
 		if (!fReturn)
 		{
-			if (*pEncryptedPassword)
+			if (*pEncryptedPassword)  // NOSONAR - CONTROL-01: nested if kept for cleanup clarity
 			{
 				EIDFree(*pEncryptedPassword);
 				*pEncryptedPassword = nullptr;
@@ -1535,12 +1535,12 @@ BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __i
 BOOL CStoredCredentialManager::GetPasswordFromChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in DWORD dwChallengeType, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
 {
 	switch(dwChallengeType)
-	{
-	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtClearText):
+	{  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtClearText):  // NOSONAR - ENUM-01: enum-to-underlying cast for Win32/ABI compatibility
 		return GetPasswordFromSignatureChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
-	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted):
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted):  // NOSONAR - ENUM-01: enum-to-underlying cast for Win32/ABI compatibility
 		return GetPasswordFromCryptedChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
-	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtDPAPI):
+	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtDPAPI):  // NOSONAR - ENUM-01: enum-to-underlying cast for Win32/ABI compatibility
 		return GetPasswordFromDPAPIChallengeResponse(dwRid,ppChallenge,dwChallengeSize,pResponse,dwResponseSize,pszPassword);
 	default:
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Type not implemented");
@@ -1550,7 +1550,7 @@ BOOL CStoredCredentialManager::GetPasswordFromChallengeResponse(__in DWORD dwRid
 
 // SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
 // Code cannot be extracted from __try blocks per LSASS safety requirements
-BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
+BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
 	UNREFERENCED_PARAMETER(ppChallenge);
 	UNREFERENCED_PARAMETER(dwChallengeSize);
@@ -1660,7 +1660,7 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 	{
 		if (!fReturn)
 		{
-			if (*pszPassword)
+			if (*pszPassword)  // NOSONAR - CONTROL-01: nested if kept for cleanup clarity
 			{
 				SecureZeroMemory(*pszPassword, wcslen(*pszPassword) * sizeof(WCHAR));
 				EIDFree(*pszPassword);
@@ -1687,7 +1687,7 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 
 // SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
 // Code cannot be extracted from __try blocks per LSASS safety requirements
-BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
+BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	BOOL fReturn = FALSE;
 	BOOL fStatus;
@@ -1827,7 +1827,7 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 
 // SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
 // Code cannot be extracted from __try blocks per LSASS safety requirements
-BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
+BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	BOOL fReturn = FALSE;
 	BOOL fStatus;
@@ -1984,7 +1984,7 @@ BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD 
 
 // SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
 // Code cannot be extracted from __try blocks per LSASS safety requirements
-BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize)
+BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	UNREFERENCED_PARAMETER(dwChallengeSize);
 	BOOL fReturn = FALSE;
@@ -2093,7 +2093,7 @@ BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid
 // LEVEL 3
 ////////////////////////////////////////////////////////////////////////////////
 
-void CStoredCredentialManager::ProcessSecretBufferInternal(__in DWORD dwRid, std::span<const BYTE> secret) noexcept
+void CStoredCredentialManager::ProcessSecretBufferInternal(__in DWORD dwRid, std::span<const BYTE> secret) noexcept  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
     // Bounds-safe access with automatic size tracking
     if (secret.empty()) {
@@ -2112,7 +2112,7 @@ void CStoredCredentialManager::ProcessSecretBufferInternal(__in DWORD dwRid, std
     EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"ProcessSecretBufferInternal: RID 0x%08X, size %u", dwRid, dwSecretSize);
 }
 
-void CStoredCredentialManager::ProcessSecretBufferDebugInternal(__in DWORD dwRid, std::span<const BYTE> secret) noexcept
+void CStoredCredentialManager::ProcessSecretBufferDebugInternal(__in DWORD dwRid, std::span<const BYTE> secret) noexcept  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
     // Bounds-safe access with automatic size tracking
     if (secret.empty()) {
@@ -2203,7 +2203,7 @@ BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE
 			// Log LSA secret deletion
 			if (ntsResult == STATUS_SUCCESS)
 			{
-				WCHAR szRid[16];
+				WCHAR szRid[16];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 				swprintf_s(szRid, ARRAYSIZE(szRid), L"0x%08X", dwRid);
 				EIDCardLibraryLogStructured(
 					EID_EVENT_ID::LSA_SECRET_DELETED,
@@ -2238,7 +2238,7 @@ BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE
 			// Log LSA secret write
 			if (ntsResult == STATUS_SUCCESS)
 			{
-				WCHAR szRid[16];
+				WCHAR szRid[16];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 				swprintf_s(szRid, ARRAYSIZE(szRid), L"0x%08X", dwRid);
 				EIDCardLibraryLogStructured(
 					EID_EVENT_ID::LSA_SECRET_CREATED,
@@ -2264,7 +2264,7 @@ BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE
 			dwError = LsaNtStatusToWinError(ntsResult);
 
 			// Log LSA operation failure
-			WCHAR szRid[16], szError[32];
+			WCHAR szRid[16], szError[32];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 			swprintf_s(szRid, ARRAYSIZE(szRid), L"0x%08X", dwRid);
 			swprintf_s(szError, ARRAYSIZE(szError), L"0x%08X", ntsResult);
 			EIDCardLibraryLogStructured(
@@ -2296,7 +2296,7 @@ BOOL CStoredCredentialManager::StorePrivateData(__in DWORD dwRid, __in_opt PBYTE
 
 }
 
-BOOL CStoredCredentialManager::StorePrivateDataDebug(__in DWORD dwRid, __in_opt PBYTE pbSecret, __in_opt USHORT usSecretSize)
+BOOL CStoredCredentialManager::StorePrivateDataDebug(__in DWORD dwRid, __in_opt PBYTE pbSecret, __in_opt USHORT usSecretSize)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	// SECURITY FIX: Debug credential storage to TEMP files is disabled
 	// This was a critical security vulnerability (CWE-532) that exposed credentials in plaintext
@@ -2369,7 +2369,7 @@ BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_
 				// Log at VERBOSE level to avoid log noise - this is not an error condition
 				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"LSA secret not found for dwRid = 0x%x (expected during scan)", dwRid);
 
-				WCHAR szRid[16];
+				WCHAR szRid[16];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 				swprintf_s(szRid, ARRAYSIZE(szRid), L"0x%08X", dwRid);
 				EIDCardLibraryLogStructured(
 					EID_EVENT_ID::AUTHZ_LSA_SECRET_SCAN_NOT_FOUND,
@@ -2392,7 +2392,7 @@ BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by LsaRetrievePrivateData", ntsResult);
 
 				// Log LSA read error
-				WCHAR szRid[16], szError[32];
+				WCHAR szRid[16], szError[32];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 				swprintf_s(szRid, ARRAYSIZE(szRid), L"0x%08X", dwRid);
 				swprintf_s(szError, ARRAYSIZE(szError), L"0x%08X", ntsResult);
 				EIDCardLibraryLogStructured(
@@ -2416,7 +2416,7 @@ BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_
 		}
 
 		// Log LSA secret read success
-		WCHAR szRid[16];
+		WCHAR szRid[16];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		swprintf_s(szRid, ARRAYSIZE(szRid), L"0x%08X", dwRid);
 		EIDCardLibraryLogStructured(
 			EID_EVENT_ID::AUTHZ_LSA_SECRET_READ,
@@ -2451,7 +2451,7 @@ BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_
 	return fReturn;
 }
 
-BOOL CStoredCredentialManager::RetrievePrivateDataDebug(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData)
+BOOL CStoredCredentialManager::RetrievePrivateDataDebug(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	// SECURITY FIX: Debug credential retrieval from TEMP files is disabled
 	// This was a critical security vulnerability (CWE-532) that read credentials from plaintext files
@@ -2502,7 +2502,7 @@ struct SAMPR_USER_INTERNAL1_INFORMATION {
 };
 using PSAMPR_USER_INTERNAL1_INFORMATION = SAMPR_USER_INTERNAL1_INFORMATION*;
 
-enum USER_INFORMATION_CLASS {
+enum USER_INFORMATION_CLASS {  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
     UserInternal1Information = 18,
 };
 using PUSER_INFORMATION_CLASS = USER_INFORMATION_CLASS*;

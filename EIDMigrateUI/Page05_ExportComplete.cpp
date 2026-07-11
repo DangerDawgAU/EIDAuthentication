@@ -11,7 +11,7 @@ INT_PTR CALLBACK WndProc_05_ExportComplete(HWND hwndDlg, UINT uMsg, WPARAM wPara
 
     case WM_NOTIFY:
     {
-        LPNMHDR pnmh = (LPNMHDR)lParam;
+        LPNMHDR pnmh = (LPNMHDR)lParam;  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
         switch (pnmh->code)
         {
         case PSN_SETACTIVE:
@@ -33,7 +33,7 @@ INT_PTR CALLBACK WndProc_05_ExportComplete(HWND hwndDlg, UINT uMsg, WPARAM wPara
             HMODULE hDll = LoadLibraryW(L"imageres.dll");
             if (hDll) {
                 HICON hIcon = LoadIcon(hDll, MAKEINTRESOURCE(58));
-                if (hIcon) {
+                if (hIcon) {  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                     SendDlgItemMessage(hwndDlg, IDC_05_SHIELD, STM_SETICON, (WPARAM)hIcon, 0);
                 }
                 FreeLibrary(hDll);

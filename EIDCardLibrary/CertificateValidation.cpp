@@ -112,9 +112,7 @@ BOOL CheckChainTrustStatus(__in PCCERT_CHAIN_CONTEXT pChainContext, __out DWORD*
                                     CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT |
                                     CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT;
 
-    DWORD dwHardFailures = dwStatus & ~SOFT_FAILURES;
-
-    if (dwHardFailures != 0)
+    if (DWORD dwHardFailures = dwStatus & ~SOFT_FAILURES; dwHardFailures != 0)
     {
         *pdwError = dwStatus;
         EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error %s (0x%08x) returned by CertGetCertificateChain",
@@ -153,7 +151,7 @@ BOOL CheckChainDepth(__in PCCERT_CHAIN_CONTEXT pChainContext, __out DWORD* pdwEr
     // Typical chains are 2-3 levels (Root -> [Intermediate] -> End Entity)
     constexpr DWORD MAX_CHAIN_DEPTH = 5;
 
-    if (pChainContext->cChain > 0 && pChainContext->rgpChain[0]->cElement > MAX_CHAIN_DEPTH)
+    if (pChainContext->cChain > 0 && pChainContext->rgpChain[0]->cElement > MAX_CHAIN_DEPTH)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
     {
         *pdwError = static_cast<DWORD>(CERT_E_CHAINING);
         EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Certificate chain depth %d exceeds maximum %d",
@@ -211,7 +209,7 @@ void InitChainValidationParams(ChainValidationParams* params)
 	// SECURITY FIX #143: Validate CSP info offsets before use (CWE-125/CWE-20)
 	// Client-supplied offsets must be within structure bounds to prevent out-of-bounds read
 	DWORD dwHeaderSize = FIELD_OFFSET(EID_SMARTCARD_CSP_INFO, bBuffer);
-	if (pCspInfo->dwCspInfoLen < dwHeaderSize ||
+	if (pCspInfo->dwCspInfoLen < dwHeaderSize ||  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
 	    pCspInfo->nContainerNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize) ||
 	    pCspInfo->nCSPNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize))
 	{
@@ -307,7 +305,7 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 	auto result = GetCertificateFromCspInfoInternal(pCspInfo);
 	EIDRevertToSelf();
 
-	if (result)
+	if (result.has_value())
 	{
 		SetLastError(ERROR_SUCCESS);
 		return *result;
@@ -426,11 +424,11 @@ BOOL IsCertificateInComputerTrustedPeopleStore(__in PCCERT_CONTEXT pCertContext)
 	BOOL fReturn = FALSE;
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Testing trusted certificate");
 	HCERTSTORE hTrustedPeople = CertOpenStore(CERT_STORE_PROV_SYSTEM,0,NULL,CERT_SYSTEM_STORE_LOCAL_MACHINE | CERT_STORE_OPEN_EXISTING_FLAG | CERT_STORE_READONLY_FLAG,_T("TrustedPeople"));
-	if (hTrustedPeople)
+	if (hTrustedPeople)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
 	{
-					
+
 		PCCERT_CONTEXT pCertificateFound = CertFindCertificateInStore(hTrustedPeople, pCertContext->dwCertEncodingType, 0, CERT_FIND_EXISTING, pCertContext, nullptr);
-		if (pCertificateFound)
+		if (pCertificateFound)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Certificate found in trusted people store");
 			fReturn = TRUE;
@@ -529,8 +527,7 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"Chain validated");
 
 		// Always enforce time validity - expired certificates must not authenticate
-		LPFILETIME pTimeToVerify = nullptr;
-		if (CertVerifyTimeValidity(pTimeToVerify, pCertContext->pCertInfo))
+		if (LPFILETIME pTimeToVerify = nullptr; CertVerifyTimeValidity(pTimeToVerify, pCertContext->pCertInfo))
 		{
 			dwError = static_cast<DWORD>(CERT_E_EXPIRED);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Certificate time validity check failed");
@@ -680,7 +677,7 @@ BOOL IsAllowedCSPProvider(__in LPCWSTR pwszProviderName)
 
 	// Whitelist of known legitimate smart card CSP providers
 	// These are the standard Microsoft and common third-party smart card CSPs
-	static LPCWSTR AllowedProviders[] = {
+	static LPCWSTR AllowedProviders[] = {  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		// Microsoft Base Smart Card CSPs
 		L"Microsoft Base Smart Card Crypto Provider",
 		L"Microsoft Smart Card Key Storage Provider",

@@ -15,5 +15,5 @@
 // C RunTime header files
 #include <stdlib.h>
 #include <malloc.h>
-#include <memory.h>
+#include <memory.h>  // NOSONAR - INCLUDE-01: <memory.h> provides C mem* functions, not <memory> smart pointers
 #include <tchar.h>

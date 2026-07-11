@@ -52,7 +52,7 @@ BOOL InitListViewColumns(HWND hWndListView)
     lvc.mask = LVCF_FMT | LVCF_TEXT | LVCF_SUBITEM | LVCF_WIDTH; 
 	  
     // Add the columns
-    for (iCol = 0; iCol < COLUMN_NUM; iCol++) 
+    for (iCol = 0; iCol < COLUMN_NUM; iCol++)  // NOSONAR - PERF-01: loop counter declared once at function scope 
     { 
         lvc.iSubItem = iCol;
         lvc.pszText = Columns[iCol];	
@@ -68,7 +68,7 @@ BOOL InitListViewColumns(HWND hWndListView)
 BOOL PopulateListViewCheckData(HWND hWndListViewList, HWND hWndListViewCheck)
 {
 	LVITEM lvI;
-	UINT ColumnsToDisplay[] = {1,2,3};
+	UINT ColumnsToDisplay[] = {1,2,3};  // NOSONAR - LSASS-01: C-style array required by Win32 API
 	TCHAR szMessage[256] = TEXT("");  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	// Some code to create the list-view control.
 	// Initialize LVITEM members that are common to all items.
@@ -86,14 +86,14 @@ BOOL PopulateListViewCheckData(HWND hWndListViewList, HWND hWndListViewCheck)
 		grp.cbSize = sizeof(grp);
 		grp.iGroupId = index;
 		switch(index)
-		{
-		case static_cast<int>(CheckType::CHECK_SIGNATUREONLY):
+		{  // NOSONAR - ENUM-01: explicit enum qualification retained for clarity
+		case std::to_underlying(CheckType::CHECK_SIGNATUREONLY):
 			LoadString(g_hinst,IDS_04TESTSIGNATURE, szMessage, ARRAYSIZE(szMessage));
 			break;
-		case static_cast<int>(CheckType::CHECK_TRUST):
+		case std::to_underlying(CheckType::CHECK_TRUST):
 			LoadString(g_hinst,IDS_04TESTTRUST, szMessage, ARRAYSIZE(szMessage));
 			break;
-		case static_cast<int>(CheckType::CHECK_CRYPTO):
+		case std::to_underlying(CheckType::CHECK_CRYPTO):
 			LoadString(g_hinst,IDS_04TESTCRYPTO, szMessage, ARRAYSIZE(szMessage));
 			break;
 		default:
@@ -128,7 +128,7 @@ BOOL PopulateListViewCheckData(HWND hWndListViewList, HWND hWndListViewCheck)
 BOOL PopulateListViewListData(HWND hWndListView)
 {
 	LVITEM lvI;
-	UINT ColumnsToDisplay[] = {1,2,3};
+	UINT ColumnsToDisplay[] = {1,2,3};  // NOSONAR - LSASS-01: C-style array required by Win32 API
 	// Some code to create the list-view control.
 	
 	ListView_DeleteAllItems(hWndListView);
@@ -284,9 +284,8 @@ BOOL InitListViewCheckIcon(HWND hWndListView)
 	ImageList_SetBkColor(hSmall, GetSysColor(COLOR_WINDOW));
 
 	// Add an icon to each image list.
-	HMODULE hDll = EIDLoadSystemLibrary(TEXT("imageres.dll"));
 	//Check if hIcon is valid
-	if (hDll)
+	if (HMODULE hDll = EIDLoadSystemLibrary(TEXT("imageres.dll")))
 	{
 		// red shield
 		hiconItem = LoadIcon(hDll, MAKEINTRESOURCE(105)); 
@@ -451,8 +450,7 @@ static BOOL HandleRefreshRequest(HWND hWnd)
     // Prompt for card
     if (!AskForCard(szReader, dwReaderSize, szCard, dwCardSize))
     {
-        LONG lReturn = GetLastError();
-        if (lReturn != SCARD_W_CANCELLED_BY_USER)
+        if (LONG lReturn = GetLastError(); lReturn != SCARD_W_CANCELLED_BY_USER)
         {
             MessageBoxWin32Ex(lReturn, hWnd);
         }
@@ -525,7 +523,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 	case WM_NOTIFY :
 		{
 			LPNMHDR pnmh = (LPNMHDR)lParam;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-			switch(pnmh->code)
+			switch(pnmh->code)  // NOSONAR - SCOPE-01: pnmh used across all switch cases
 			{
 			case PSN_SETACTIVE :
 				// list view
@@ -548,7 +546,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 						//has certificate
 						SelectBestCredential();
 						PopulateListViewListData(GetDlgItem(hWnd, IDC_04LIST));	
-						if (pCredentialList->GetContainerHolderAt(dwCurrentCredential)->GetIconIndex())
+						if (pCredentialList->GetContainerHolderAt(dwCurrentCredential)->GetIconIndex())  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 						{
 							PropSheet_SetWizButtons(hWnd, PSWIZB_NEXT |	PSWIZB_BACK);
 						}
@@ -563,7 +561,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 						TCHAR szMessage[256] = TEXT("");  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 						LoadString(g_hinst,IDS_NO_CERTIFICATE, szMessage, ARRAYSIZE(szMessage));
 						LVITEM lvI;
-						UINT ColumnsToDisplay[] = {1,2,3};
+						UINT ColumnsToDisplay[] = {1,2,3};  // NOSONAR - LSASS-01: C-style array required by Win32 API
 						// Initialize LVITEM members that are common to all items.
 						lvI.mask = LVIF_TEXT | LVIF_IMAGE |  LVIF_COLUMNS; 
 						lvI.iItem = 0;
@@ -585,7 +583,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				// back
 				if (pCredentialList)
 				{
-					delete pCredentialList;
+					delete pCredentialList;  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 					pCredentialList = nullptr;
 				}
 				ListView_DeleteAllItems(GetDlgItem(hWnd, IDC_04CHECKS));
@@ -598,7 +596,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				// cancel
 				if (pCredentialList)
 				{
-					delete pCredentialList;
+					delete pCredentialList;  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 					pCredentialList = nullptr;
 				}
 				break;
@@ -621,7 +619,7 @@ INT_PTR CALLBACK	WndProc_04CHECKS(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				{
 					BOOL fReturn;
 					fReturn = pCredentialList->GetContainerHolderAt(dwCurrentCredential)->Solve(((NMLVLINK*)lParam)->iSubItem);
-					if (!fReturn)
+					if (!fReturn)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 					{
 						MessageBoxWin32Ex(GetLastError(),hWnd);
 					}

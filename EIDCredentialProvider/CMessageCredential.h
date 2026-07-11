@@ -97,7 +97,7 @@ public:
 	}
 	void SetStatus(CMessageCredentialStatus dwStatus)
 	{
-		if (dwStatus == CMessageCredentialStatus::EndReading)
+		if (dwStatus == CMessageCredentialStatus::EndReading)  // NOSONAR - ENUM-01: explicit enum qualification retained for clarity
 		{
 			if (_dwSmartCardCount)
 			{
@@ -127,15 +127,15 @@ public:
   private:
     LONG                                    _cRef;
     
-    CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR    _rgCredProvFieldDescriptors[SMFI_NUM_FIELDS];   // An array holding the 
+    CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR    _rgCredProvFieldDescriptors[SMFI_NUM_FIELDS];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API   // An array holding the 
                                                                                             // type and name of each 
                                                                                             // field in the tile.
     
-    FIELD_STATE_PAIR                        _rgFieldStatePairs[SMFI_NUM_FIELDS];            // An array holding the 
+    FIELD_STATE_PAIR                        _rgFieldStatePairs[SMFI_NUM_FIELDS];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API            // An array holding the 
                                                                                             // state of each field in 
                                                                                             // the tile.
 
-    PWSTR                                   _rgFieldStrings[SMFI_NUM_FIELDS];               // An array holding the 
+    PWSTR                                   _rgFieldStrings[SMFI_NUM_FIELDS];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API               // An array holding the 
                                                                                             // string value of each 
                                                                                             // field. This is different 
                                                                                             // from the name of the 

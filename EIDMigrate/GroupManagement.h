@@ -28,13 +28,11 @@ struct LocalGroupInfo
     std::wstring wsName;
     std::wstring wsComment;
     std::vector<std::wstring> wsMembers;  // Username strings
-    SID_NAME_USE sidUse;
+    SID_NAME_USE sidUse = SidTypeInvalid;
     std::vector<BYTE> sidBytes;
-    BOOL fBuiltin;
+    BOOL fBuiltin = FALSE;
 
-    LocalGroupInfo() :
-        sidUse(SidTypeInvalid),
-        fBuiltin(FALSE)
+    LocalGroupInfo()
     {}
 };
 

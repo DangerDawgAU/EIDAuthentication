@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <windows.h>
+#include <windows.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 #include <wincrypt.h>
 #include <vector>
 #include <string>

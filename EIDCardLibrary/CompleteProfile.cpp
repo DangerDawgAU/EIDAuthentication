@@ -41,8 +41,8 @@ LARGE_INTEGER SecondsSince1970ToTime( const DWORD Seconds )
 	return Time;
 }
 
-NTSTATUS UserNameToProfile(__in PLSA_UNICODE_STRING AccountName,
-						__in PLSA_DISPATCH_TABLE FunctionTable,
+NTSTATUS UserNameToProfile(__in PLSA_UNICODE_STRING AccountName,  // NOSONAR - API-01: signature dictated by Windows/callback API
+						__in PLSA_DISPATCH_TABLE FunctionTable,  // NOSONAR - API-01: signature dictated by Windows/callback API
 						__in PLSA_CLIENT_REQUEST ClientRequest,
 						__out PEID_INTERACTIVE_PROFILE *ProfileBuffer,
 						__out PULONG ProfileBufferLength
@@ -57,8 +57,8 @@ NTSTATUS UserNameToProfile(__in PLSA_UNICODE_STRING AccountName,
 	}
 
 	// copy unicode_string into LPWSTR
-	WCHAR UserName[UNLEN+1];
-	WCHAR DomainName[UNLEN+1];
+	WCHAR UserName[UNLEN+1];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	WCHAR DomainName[UNLEN+1];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	ULONG Length;
 	PBYTE Offset;
 	DWORD dwSize;

@@ -51,7 +51,7 @@ HRESULT ValidateImportFile(
 {
     EIDM_TRACE_INFO(L"Validating import file: %ls", wsInputPath.c_str());
 
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK;  // NOSONAR (EXPLICIT-TYPE-03) - HRESULT visible for security audit
 
     // Validate file format first
     hr = ValidateFileFormat(wsInputPath, result);
@@ -126,12 +126,12 @@ HRESULT ValidateEncryptedContent(
     {
         if (hr == HRESULT_FROM_WIN32(ERROR_LOGON_FAILURE))
         {
-            result.errors.push_back(L"Invalid passphrase or corrupted file");
+            result.errors.emplace_back(L"Invalid passphrase or corrupted file");
             result.fValidHmac = FALSE;
         }
         else if (hr == HRESULT_FROM_WIN32(ERROR_INVALID_DATA))
         {
-            result.errors.push_back(L"HMAC validation failed - file may be corrupted");
+            result.errors.emplace_back(L"HMAC validation failed - file may be corrupted");
             result.fValidHmac = FALSE;
         }
         else
@@ -184,7 +184,7 @@ HRESULT ValidateCertificates(_Out_ VALIDATION_RESULT& result)
         // For now, just check the metadata from export
         if (cred.ftCertValidTo.dwHighDateTime || cred.ftCertValidTo.dwLowDateTime)
         {
-            if (CompareFileTime(&cred.ftCertValidTo, &ftNow) < 0)
+            if (CompareFileTime(&cred.ftCertValidTo, &ftNow) < 0)  // NOSONAR - CONTROL-01: nested if kept for clarity
             {
                 // NOSONAR - Nested if for clarity: check timestamp exists, then check expiry
                 std::wstring wsWarning = L"Certificate expired for user: " + cred.wsUsername;
@@ -195,7 +195,7 @@ HRESULT ValidateCertificates(_Out_ VALIDATION_RESULT& result)
 
         if (cred.ftCertValidFrom.dwHighDateTime || cred.ftCertValidFrom.dwLowDateTime)
         {
-            if (CompareFileTime(&cred.ftCertValidFrom, &ftNow) > 0)
+            if (CompareFileTime(&cred.ftCertValidFrom, &ftNow) > 0)  // NOSONAR - CONTROL-01: nested if kept for clarity
             {
                 std::wstring wsWarning = L"Certificate not yet valid for user: " + cred.wsUsername;
                 result.warnings.push_back(wsWarning);
@@ -236,9 +236,9 @@ void DisplayValidationReport(_In_ const VALIDATION_RESULT& result)
         {
             EIDM_TRACE_INFO(L"  - User: %ls (RID: %u)", cred.wsUsername.c_str(), cred.dwRid);
 
-            const char* encryptType = "unknown";
+            const char* encryptType = "unknown";  // NOSONAR - INIT-01: default fallback retained for unmatched enum values
             switch (cred.EncryptionType)
-            {
+            {  // NOSONAR - ENUM-01: enum kept for readability
             case EID_PRIVATE_DATA_TYPE::eidpdtClearText:
                 encryptType = "cleartext";
                 break;

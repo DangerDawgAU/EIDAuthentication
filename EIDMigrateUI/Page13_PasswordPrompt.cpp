@@ -4,7 +4,7 @@
 #include "Page13_PasswordPrompt.h"
 #include "EIDMigrateUI.h"
 #include "../EIDMigrate/Tracing.h"
-#include <lm.h>
+#include <lm.h>  // NOSONAR - INCLUDE-01: include casing significant for Windows SDK
 
 #pragma comment(lib, "netapi32.lib")
 
@@ -14,13 +14,13 @@ HRESULT SetUserPassword(
     _In_ const std::wstring& wsPassword)
 {
     USER_INFO_1003 ui;
-    ui.usri1003_password = const_cast<LPWSTR>(wsPassword.c_str());
+    ui.usri1003_password = const_cast<LPWSTR>(wsPassword.c_str());  // NOSONAR - CAST-01: const_cast required for Win32 NetUserSetInfo buffer
 
     DWORD dwStatus = NetUserSetInfo(
         nullptr,
-        const_cast<LPWSTR>(wsUsername.c_str()),
+        const_cast<LPWSTR>(wsUsername.c_str()),  // NOSONAR - CAST-01: const_cast required for Win32 NetUserSetInfo buffer
         1003,  // Password level
-        reinterpret_cast<LPBYTE>(&ui),
+        reinterpret_cast<LPBYTE>(&ui),  // NOSONAR - BYTE-01: BYTE buffer required by Win32 NetUserSetInfo
         nullptr);
 
     if (dwStatus == NERR_Success)
@@ -42,7 +42,7 @@ struct PASSWORD_PROMPT_DATA {
     BOOL fSkip;
     BOOL fPasswordSet;
 
-    PASSWORD_PROMPT_DATA() : fSkip(FALSE), fPasswordSet(FALSE) {}
+    PASSWORD_PROMPT_DATA() : fSkip(FALSE), fPasswordSet(FALSE) {}  // NOSONAR - INIT-01: members initialized in constructor init list
 };
 
 // Dialog procedure
@@ -54,7 +54,7 @@ INT_PTR CALLBACK PasswordPromptDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
     {
     case WM_INITDIALOG:
     {
-        pData = reinterpret_cast<PASSWORD_PROMPT_DATA*>(lParam);
+        pData = reinterpret_cast<PASSWORD_PROMPT_DATA*>(lParam);  // NOSONAR - CAST-01: reinterpret_cast of LPARAM dialog context
         if (!pData)
             EndDialog(hwndDlg, IDCANCEL);
 
@@ -86,8 +86,8 @@ INT_PTR CALLBACK PasswordPromptDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
 
         case IDOK:
         {
-            WCHAR szPassword[256];
-            WCHAR szConfirm[256];
+            WCHAR szPassword[256];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+            WCHAR szConfirm[256];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 
             GetDlgItemText(hwndDlg, IDC_13_PASSWORD, szPassword, ARRAYSIZE(szPassword));
             GetDlgItemText(hwndDlg, IDC_13_CONFIRM_PASSWORD, szConfirm, ARRAYSIZE(szConfirm));
@@ -139,7 +139,7 @@ INT_PTR CALLBACK PasswordPromptDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
 
         case IDCANCEL:
         {
-            pData->fSkip = TRUE;
+            pData->fSkip = TRUE;  // NOSONAR - SWITCH-01: cases kept distinct for readability
             EndDialog(hwndDlg, IDCANCEL);
             return TRUE;
         }

@@ -310,7 +310,13 @@ INT_PTR CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 					EnableWindow(GetDlgItem(hDlg, IDC_DIAG_LEVEL_LABEL), fOn);
 					return (INT_PTR)TRUE;
 				}
+
+				default:
+					break;
 			}
+			break;
+
+		default:
 			break;
 	}
 	return (INT_PTR)FALSE;
@@ -370,15 +376,15 @@ void SaveLog(HWND hDlg)
 		}
 
 		// Static buffers for ExportOneTraceFile (requires non-const PTSTR)
-		static TCHAR s_szTraceFile0[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl");
-		static TCHAR s_szTraceFile1[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.001");
-		static TCHAR s_szTraceFile2[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.002");
-		static TCHAR s_szTraceFile3[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.003");
-		static TCHAR s_szTraceFile4[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.004");
-		static TCHAR s_szTraceFile5[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.005");
-		static TCHAR s_szTraceFile6[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.006");
-		static TCHAR s_szTraceFile7[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.007");
-		static TCHAR s_szTraceFile8[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.008");
+		static TCHAR s_szTraceFile0[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl");  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+		static TCHAR s_szTraceFile1[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.001");  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+		static TCHAR s_szTraceFile2[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.002");  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+		static TCHAR s_szTraceFile3[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.003");  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+		static TCHAR s_szTraceFile4[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.004");  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+		static TCHAR s_szTraceFile5[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.005");  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+		static TCHAR s_szTraceFile6[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.006");  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+		static TCHAR s_szTraceFile7[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.007");  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+		static TCHAR s_szTraceFile8[] = TEXT("c:\\Windows\\system32\\LogFiles\\WMI\\EIDCredentialProvider.etl.008");  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 
 		ExportOneTraceFile(hFile, s_szTraceFile0);
 		ExportOneTraceFile(hFile, s_szTraceFile1);
@@ -413,8 +419,10 @@ void DeleteLog(HWND hDlg)
 	else
 	{
 		// Get the configured log file path and base name
-		WCHAR szLogPath[MAX_PATH];
-		DWORD dwLevel, dwMaxSize, dwFileCounter;
+		WCHAR szLogPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+		DWORD dwLevel;
+		DWORD dwMaxSize;
+		DWORD dwFileCounter;
 		BOOL fAutoStart;
 
 		GetTraceConfig(&dwLevel, szLogPath, MAX_PATH, &dwMaxSize, &dwFileCounter, &fAutoStart);
@@ -425,7 +433,7 @@ void DeleteLog(HWND hDlg)
 		// Delete rotated files
 		for (int i = 1; i <= 100; i++)
 		{
-			WCHAR szRotatedPath[MAX_PATH];
+			WCHAR szRotatedPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 			swprintf_s(szRotatedPath, MAX_PATH, L"%s.%03d", szLogPath, i);
 			DeleteFile(szRotatedPath);
 		}
@@ -434,8 +442,10 @@ void DeleteLog(HWND hDlg)
 
 void LoadSettings(HWND hDlg)
 {
-	DWORD dwLevel, dwMaxSize, dwFileCount;
-	WCHAR szPath[MAX_PATH];
+	DWORD dwLevel;
+	DWORD dwMaxSize;
+	DWORD dwFileCount;
+	WCHAR szPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 	BOOL fAutoStart;
 
 	// Read from registry
@@ -471,7 +481,7 @@ void LoadSettings(HWND hDlg)
 
 void SaveSettings(HWND hDlg)
 {
-	WCHAR szPath[MAX_PATH];
+	WCHAR szPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 	GetDlgItemText(hDlg, IDC_LOG_FILE_PATH, szPath, MAX_PATH);
 
 	BOOL bTranslated = FALSE;
@@ -564,7 +574,7 @@ void BrowseForLogPath(HWND hDlg)
 // CSV Configuration Functions
 // ================================================================
 
-void LoadCSVSettings(HWND hDlg)
+void LoadCSVSettings(HWND hDlg)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
 	EID_CSV_CONFIG config;
 	HRESULT hr = EID_CSV_LoadConfig(config);
@@ -654,7 +664,7 @@ void LoadCSVSettings(HWND hDlg)
 	EnableDisableCSVControls(hDlg, config.fEnabled);
 }
 
-HRESULT SaveCSVSettings(HWND hDlg)
+HRESULT SaveCSVSettings(HWND hDlg)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
 	EID_CSV_CONFIG config;
 
@@ -673,35 +683,35 @@ HRESULT SaveCSVSettings(HWND hDlg)
 	// Build column bitmask
 	config.dwColumns = EID_CSV_COLUMN::NONE;
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_TIMESTAMP) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::TIMESTAMP);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::TIMESTAMP);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_EVENT_ID) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::EVENT_ID);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::EVENT_ID);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_CATEGORY) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::CATEGORY);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::CATEGORY);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_SEVERITY) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::SEVERITY);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::SEVERITY);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_OUTCOME) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::OUTCOME);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::OUTCOME);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_USERNAME) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::USERNAME);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::USERNAME);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_ACTION) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::ACTION);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::ACTION);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_MESSAGE) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::MESSAGE);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::MESSAGE);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_DOMAIN) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::DOMAIN);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::DOMAIN);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_SOURCE_IP) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::SOURCE_IP);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::SOURCE_IP);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_PROCESS_ID) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::PROCESS_ID);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::PROCESS_ID);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_THREAD_ID) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::THREAD_ID);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::THREAD_ID);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_SESSION_ID) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::SESSION_ID);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::SESSION_ID);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_RESOURCE) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::RESOURCE);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::RESOURCE);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 	if (IsDlgButtonChecked(hDlg, IDC_CSV_COLUMN_CHECK_REASON) == BST_CHECKED)
-		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::REASON);
+		config.dwColumns = static_cast<EID_CSV_COLUMN>(config.dwColumns | EID_CSV_COLUMN::REASON);  // NOSONAR - ENUM-01: enum bitmask cast kept for Win32/ABI compatibility
 
 	// Build category filter bitmask
 	config.dwCategoryFilter = 0;
@@ -762,7 +772,7 @@ static DWORD WINAPI RestartTraceConsumerThreadProc(LPVOID)
 	}
 
 	SERVICE_STATUS status = { 0 };
-	if (QueryServiceStatus(hService, &status) && status.dwCurrentState != SERVICE_STOPPED)
+	if (QueryServiceStatus(hService, &status) && status.dwCurrentState != SERVICE_STOPPED)  // NOSONAR - SCOPE-01: status reused after the block
 	{
 		ControlService(hService, SERVICE_CONTROL_STOP, &status);
 

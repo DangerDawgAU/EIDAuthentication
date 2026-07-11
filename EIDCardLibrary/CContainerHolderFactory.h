@@ -24,7 +24,7 @@
 
 template <typename T> 
 
-class CContainerHolderFactory
+class CContainerHolderFactory  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 {
 public:	
 	CContainerHolderFactory();

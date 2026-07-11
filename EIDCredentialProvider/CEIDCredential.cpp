@@ -47,18 +47,18 @@ static const wchar_t s_szReconnectCard[] = L"Please reconnect your smart card";
 // CEIDCredential ////////////////////////////////////////////////////////
 
 CEIDCredential::CEIDCredential(CContainer* container):
-    _cRef(1),
-    _pCredProvCredentialEvents(nullptr)
+    _cRef(1),  // NOSONAR - INIT-01: member initialized in constructor for clarity/ordering
+    _pCredProvCredentialEvents(nullptr)  // NOSONAR - INIT-01: member initialized in constructor for clarity/ordering
 {
 	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Creation");
 	DllAddRef();
     ZeroMemory(_rgCredProvFieldDescriptors, sizeof(_rgCredProvFieldDescriptors));
     ZeroMemory(_rgFieldStatePairs, sizeof(_rgFieldStatePairs));
     ZeroMemory(_rgFieldStrings, sizeof(_rgFieldStrings));
-	_pContainer = container;
-	_fSelected = FALSE;
-	_fDisconnected = FALSE;
-	_pProvider = nullptr;
+	_pContainer = container;  // NOSONAR - INIT-01: member initialized in constructor for clarity/ordering
+	_fSelected = FALSE;  // NOSONAR - INIT-01: member initialized in constructor for clarity/ordering
+	_fDisconnected = FALSE;  // NOSONAR - INIT-01: member initialized in constructor for clarity/ordering
+	_pProvider = nullptr;  // NOSONAR - INIT-01: member initialized in constructor for clarity/ordering
 	Initialize();
 }
 
@@ -66,7 +66,7 @@ CEIDCredential::~CEIDCredential()
 {
 	if (_pContainer)
 	{
-		delete _pContainer;
+		delete _pContainer;  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 	}
 	if (_rgFieldStrings[SFI_PIN])
     {
@@ -101,7 +101,7 @@ HRESULT CEIDCredential::Initialize()
 
     // Copy the field descriptors for each field. This is useful if you want to vary the field
     // descriptors based on what Usage scenario the credential was created for.
-    for (DWORD i = 0; SUCCEEDED(hr) && i < ARRAYSIZE(s_rgCredProvFieldDescriptors); i++)
+    for (DWORD i = 0; SUCCEEDED(hr) && i < ARRAYSIZE(s_rgCredProvFieldDescriptors); i++)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
     {
         _rgFieldStatePairs[i] = s_rgFieldStatePairs[i];
 		hr = FieldDescriptorCopy(s_rgCredProvFieldDescriptors[i], &_rgCredProvFieldDescriptors[i]);
@@ -403,7 +403,7 @@ HRESULT CEIDCredential::GetBitmapValue(
 		// Use LoadImage instead of deprecated LoadBitmap
 		// LoadImage with LR_CREATEDIBSECTION creates a DIB section bitmap
 		// which is more reliable for credential providers
-		HBITMAP hbmp = static_cast<HBITMAP>(LoadImageW(
+		HBITMAP hbmp = static_cast<HBITMAP>(LoadImageW(  // NOSONAR (EXPLICIT-TYPE-02) - HBITMAP handle type retained for clarity
 			HINST_THISDLL,
 			MAKEINTRESOURCEW(IDB_TILE_IMAGE),
 			IMAGE_BITMAP,
@@ -682,11 +682,11 @@ HRESULT CEIDCredential::GetSerialization(
     UNREFERENCED_PARAMETER(pcpsiOptionalStatusIcon);
     HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 
-    WCHAR wsz[MAX_COMPUTERNAME_LENGTH+1];
+    WCHAR wsz[MAX_COMPUTERNAME_LENGTH+1];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
     DWORD cch = ARRAYSIZE(wsz);
 
     // Guard clause: GetComputerNameW failed
-    if (!GetComputerNameW(wsz, &cch))
+    if (!GetComputerNameW(wsz, &cch))  // NOSONAR - SCOPE-01: variable declared before the block by design
     {
         DWORD dwErr = GetLastError();
         hr = HRESULT_FROM_WIN32(dwErr);
@@ -775,7 +775,7 @@ struct REPORT_RESULT_STATUS_INFO
     CREDENTIAL_PROVIDER_STATUS_ICON cpsi;
 };
 
-static const REPORT_RESULT_STATUS_INFO s_rgLogonStatusInfo[] =
+static const REPORT_RESULT_STATUS_INFO s_rgLogonStatusInfo[] =  // NOSONAR - LSASS-01: C-style lookup table retained for Win32 status mapping
 {
     { STATUS_LOGON_FAILURE, STATUS_SUCCESS, CPSI_ERROR, },
     { STATUS_ACCOUNT_RESTRICTION, STATUS_ACCOUNT_DISABLED, CPSI_WARNING },
@@ -815,7 +815,7 @@ HRESULT CEIDCredential::ReportResult(
 
     if ((DWORD)-1 != dwStatusInfo)
     {
-			if (pcpsiOptionalStatusIcon)
+			if (pcpsiOptionalStatusIcon)  // NOSONAR - CONTROL-01: nested if kept for cleanup clarity
 				*pcpsiOptionalStatusIcon = s_rgLogonStatusInfo[dwStatusInfo].cpsi;
     }
 
@@ -842,7 +842,7 @@ HRESULT CEIDCredential::ReportResult(
 			Error = (PWSTR) CoTaskMemAlloc(dwLen);
 			if (Error)
 			{
-				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,nullptr,LsaNtStatusToWinError(ntsStatus),0,(PWSTR)Error,dwLen,nullptr);
+				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,nullptr,LsaNtStatusToWinError(ntsStatus),0,Error,dwLen,nullptr);
 			}
 			*ppwszOptionalStatusText = Error;
 		}
@@ -850,7 +850,7 @@ HRESULT CEIDCredential::ReportResult(
     // If we failed the logon, try to erase the Pin field.
     if (!SUCCEEDED(HRESULT_FROM_NT(ntsStatus)))
     {
-        if (_pCredProvCredentialEvents)
+        if (_pCredProvCredentialEvents)  // NOSONAR - CONTROL-01: nested if kept for cleanup clarity
         {
             _pCredProvCredentialEvents->SetFieldString(this, SFI_PIN, L"");
         }

@@ -48,7 +48,7 @@ private:
 
     // File state
     static DWORD s_dwCurrentFileSize;
-    static WCHAR s_szCurrentLogPath[MAX_PATH];
+    static WCHAR s_szCurrentLogPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
     static BOOL s_fHeaderWritten;
 
     // Private helper methods

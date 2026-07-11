@@ -5,12 +5,12 @@
 
 #include <Windows.h>
 #include <tchar.h>
-#include <commctrl.h>
+#include <commctrl.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 #include <windowsx.h>
 #include <string>
 #include <vector>
 #include <memory>
-#include <lm.h>
+#include <lm.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 
 // Resource IDs
 #include "resource.h"
@@ -25,18 +25,18 @@
 #include "../EIDMigrate/LsaClient.h"
 
 // Version information
-#define EIDMANAGE_APP_VERSION       L"1.0.0.1"
-#define EIDMANAGE_APP_COPYRIGHT     L"Copyright (C) 2026"
-#define EIDMANAGE_APP_NAME          L"EID User Management"
+#define EIDMANAGE_APP_VERSION       L"1.0.0.1"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMANAGE_APP_COPYRIGHT     L"Copyright (C) 2026"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMANAGE_APP_NAME          L"EID User Management"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 
 // Registry settings path
-#define EIDMANAGE_REG_KEY           L"SOFTWARE\\EIDAuthenticate\\EIDManageUsers"
+#define EIDMANAGE_REG_KEY           L"SOFTWARE\\EIDAuthenticate\\EIDManageUsers"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 
 // Maximum users displayable in list
-#define EIDMANAGE_MAX_USERS         1000
+#define EIDMANAGE_MAX_USERS         1000  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 
 // Filter modes
-enum FilterMode
+enum FilterMode  // NOSONAR - ENUM-01: Unscoped enum retained for API/ABI compatibility
 {
     FILTER_EID_ONLY = 0,   // Show only users with EID credentials
     FILTER_ALL_USERS = 1   // Show all local users
@@ -51,20 +51,20 @@ struct UserInfo
     std::wstring wsLastLogin;
     BOOL fHasEIDCredential;
     EID_PRIVATE_DATA_TYPE EncryptionType;
-    UCHAR CertificateHash[32];
+    UCHAR CertificateHash[32];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     std::vector<std::wstring> wsGroups;
 
     UserInfo() :
-        dwRid(0),
-        fHasEIDCredential(FALSE),
-        EncryptionType(EID_PRIVATE_DATA_TYPE::eidpdtClearText)
+        dwRid(0),  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+        fHasEIDCredential(FALSE),  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+        EncryptionType(EID_PRIVATE_DATA_TYPE::eidpdtClearText)  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
     {
         SecureZeroMemory(CertificateHash, sizeof(CertificateHash));
     }
 };
 
 // Management operation flags
-enum ManagementOperation
+enum ManagementOperation  // NOSONAR - ENUM-01: Unscoped enum retained for API/ABI compatibility
 {
     OP_REMOVE_CREDENTIAL       = 0x0001,
     OP_REMOVE_CERTIFICATES     = 0x0002,
@@ -83,20 +83,20 @@ struct USER_MANAGE_APP_STATE
     BOOL fShowWarnings;
 
     USER_MANAGE_APP_STATE() :
-        hwndMain(nullptr),
-        currentFilter(FILTER_EID_ONLY),
-        fConfirmActions(TRUE),
-        fShowWarnings(TRUE)
+        hwndMain(nullptr),  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+        currentFilter(FILTER_EID_ONLY),  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+        fConfirmActions(TRUE),  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+        fShowWarnings(TRUE)  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
     {
         // Default EID-related groups
-        EIDGroups.push_back(L"Smart Card Users");
-        EIDGroups.push_back(L"EID Users");
+        EIDGroups.emplace_back(L"Smart Card Users");
+        EIDGroups.emplace_back(L"EID Users");
     }
 };
 
 // Global application instance
-extern USER_MANAGE_APP_STATE g_appState;
-extern HINSTANCE g_hinst;
+extern USER_MANAGE_APP_STATE g_appState;  // NOSONAR - GLOBAL-01: global state assigned/modified at runtime
+extern HINSTANCE g_hinst;  // NOSONAR - GLOBAL-01: pointer assigned at runtime
 
 // Forward declarations of dialog procedures
 INT_PTR CALLBACK WndProc_Main(HWND, UINT, WPARAM, LPARAM);

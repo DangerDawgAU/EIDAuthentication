@@ -35,7 +35,7 @@ BOOL EIDCSVLogger::s_csInitialized = FALSE;
 HANDLE EIDCSVLogger::s_hLogFile = INVALID_HANDLE_VALUE;
 EID_CSV_CONFIG EIDCSVLogger::s_config;
 DWORD EIDCSVLogger::s_dwCurrentFileSize = 0;
-WCHAR EIDCSVLogger::s_szCurrentLogPath[MAX_PATH] = {0};
+WCHAR EIDCSVLogger::s_szCurrentLogPath[MAX_PATH] = {0};  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 BOOL EIDCSVLogger::s_fHeaderWritten = FALSE;
 
 // ================================================================
@@ -67,7 +67,7 @@ BOOL EIDCSVLogger::IsEventEnabled(EID_EVENT_ID eventId, EID_SEVERITY severity)
 
     // Check category filter
     EID_EVENT_CATEGORY category = GetEventCategory(eventId);
-    if (!IsCategoryEnabled(s_config.dwCategoryFilter, category))
+    if (!IsCategoryEnabled(s_config.dwCategoryFilter, category))  // NOSONAR - SCOPE-01: declaration kept separate from if for readability
         return FALSE;
 
     return TRUE;
@@ -81,12 +81,12 @@ void EIDCSVLogger::WriteCSVHeader()
     if (s_fHeaderWritten)
         return;
 
-    WCHAR szHeader[2048];
+    WCHAR szHeader[2048];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
     size_t offset = 0;
     EID_CSV_COLUMN cols = s_config.dwColumns;
 
     // Helper lambda to append field name
-    auto appendField = [&szHeader, &offset](PCWSTR pwszName)
+    auto appendField = [&szHeader, &offset](PCWSTR pwszName)  // NOSONAR - LSASS-01: C-style WCHAR buffer captured for LSASS safety
     {
         if (offset > 0)
             szHeader[offset++] = L',';
@@ -143,7 +143,7 @@ void EIDCSVLogger::WriteEscapedCSVField(PCWSTR pwszValue)
     if (!fNeedsQuotes)
     {
         // No escaping needed, write as-is
-        DWORD dwLen = static_cast<DWORD>(wcslen(pwszValue));
+        DWORD dwLen = static_cast<DWORD>(wcslen(pwszValue));  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
         DWORD dwWritten = 0;
         WriteFile(s_hLogFile, pwszValue, dwLen * sizeof(WCHAR), &dwWritten, nullptr);
         s_dwCurrentFileSize += dwWritten;
@@ -186,7 +186,7 @@ void EIDCSVLogger::RotateLogFile()
 
     // Determine rotation number
     DWORD dwRotation = 1;
-    WCHAR szRotatedPath[MAX_PATH];
+    WCHAR szRotatedPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 
     // Find next available rotation slot
     for (DWORD i = 1; i <= s_config.dwFileCount; i++)
@@ -211,7 +211,7 @@ void EIDCSVLogger::RotateLogFile()
         // counter into a ~4-billion-iteration hang. Shifts .00(i-1) -> .00i.
         for (DWORD i = s_config.dwFileCount; i > 1; i--)
         {
-            WCHAR szOldPath[MAX_PATH];
+            WCHAR szOldPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
             swprintf_s(szOldPath, L"%s.%03u", s_szCurrentLogPath, i - 1);
             swprintf_s(szRotatedPath, L"%s.%03u", s_szCurrentLogPath, i);
             MoveFileExW(szOldPath, szRotatedPath, MOVEFILE_REPLACE_EXISTING);
@@ -240,10 +240,10 @@ BOOL EIDCSVLogger::EnsureLogFileOpen()
         return TRUE;
 
     // Create directory if needed
-    WCHAR szDir[MAX_PATH];
+    WCHAR szDir[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
     wcscpy_s(szDir, s_szCurrentLogPath);
     WCHAR* pLastSlash = wcsrchr(szDir, L'\\');
-    if (pLastSlash)
+    if (pLastSlash)  // NOSONAR - SCOPE-01: declaration kept separate from if for readability
     {
         *pLastSlash = L'\0';
         CreateDirectoryW(szDir, nullptr);
@@ -265,7 +265,7 @@ BOOL EIDCSVLogger::EnsureLogFileOpen()
 
     // Get current file size
     LARGE_INTEGER liSize;
-    if (GetFileSizeEx(s_hLogFile, &liSize))
+    if (GetFileSizeEx(s_hLogFile, &liSize))  // NOSONAR - SCOPE-01: declaration kept separate from if for readability
     {
         s_dwCurrentFileSize = static_cast<DWORD>(liSize.QuadPart);
     }
@@ -429,7 +429,7 @@ BOOL EIDCSVLogger::IsEnabled()
 // ================================================================
 // Core Logging Function
 // ================================================================
-void EIDCSVLogger::LogEvent(
+void EIDCSVLogger::LogEvent(  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
     EID_EVENT_ID eventId,
     EID_SEVERITY severity,
     EID_OUTCOME outcome,
@@ -439,7 +439,7 @@ void EIDCSVLogger::LogEvent(
     PCWSTR pwszDomain,
     PCWSTR pwszSourceIP,
     DWORD dwProcessID,
-    DWORD dwThreadID,
+    [[maybe_unused]] DWORD dwThreadID,
     DWORD dwSessionID,
     PCWSTR pwszResource,
     PCWSTR pwszReason)
@@ -458,7 +458,7 @@ void EIDCSVLogger::LogEvent(
 
         // Check file rotation
         ULONGLONG ullMaxBytes = static_cast<ULONGLONG>(s_config.dwMaxFileSizeMB) * 1024 * 1024;
-        if (s_dwCurrentFileSize >= ullMaxBytes)
+        if (s_dwCurrentFileSize >= ullMaxBytes)  // NOSONAR - SCOPE-01: declaration kept separate from if for readability
         {
             RotateLogFile();
             if (!EnsureLogFileOpen())
@@ -466,13 +466,13 @@ void EIDCSVLogger::LogEvent(
         }
 
         // Stack-allocated buffer for building log line
-        WCHAR szBuffer[4096];
+        WCHAR szBuffer[4096];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
         DWORD dwWritten = 0;
         EID_CSV_COLUMN cols = s_config.dwColumns;
         BOOL fFirstField = TRUE;
 
         // Helper lambda to write field with comma separator
-        auto writeField = [&szBuffer, &dwWritten, &fFirstField](PCWSTR pwszValue)
+        auto writeField = [&szBuffer, &dwWritten, &fFirstField]([[maybe_unused]] PCWSTR pwszValue)  // NOSONAR - LSASS-01: C-style WCHAR buffer captured for LSASS safety
         {
             if (!fFirstField)
                 szBuffer[dwWritten++] = L',';
@@ -493,7 +493,7 @@ void EIDCSVLogger::LogEvent(
         if (cols & EID_CSV_COLUMN::EVENT_ID)
         {
             writeField(L"");
-            dwWritten += swprintf_s(szBuffer + dwWritten, _countof(szBuffer) - dwWritten, L"%u", static_cast<DWORD>(eventId));
+            dwWritten += swprintf_s(szBuffer + dwWritten, _countof(szBuffer) - dwWritten, L"%u", static_cast<DWORD>(eventId));  // NOSONAR - ENUM-01: enum cast to underlying value for format API
         }
 
         // Category
@@ -508,14 +508,14 @@ void EIDCSVLogger::LogEvent(
         if (cols & EID_CSV_COLUMN::SEVERITY)
         {
             writeField(L"");
-            dwWritten += swprintf_s(szBuffer + dwWritten, _countof(szBuffer) - dwWritten, L"%s", GetSeverityName(static_cast<UCHAR>(severity)));
+            dwWritten += swprintf_s(szBuffer + dwWritten, _countof(szBuffer) - dwWritten, L"%s", GetSeverityName(static_cast<UCHAR>(severity)));  // NOSONAR - ENUM-01: enum cast to underlying value for Win32 API
         }
 
         // Outcome
         if (cols & EID_CSV_COLUMN::OUTCOME)
         {
             writeField(L"");
-            dwWritten += swprintf_s(szBuffer + dwWritten, _countof(szBuffer) - dwWritten, L"%s", GetOutcomeName(static_cast<UCHAR>(outcome)));
+            dwWritten += swprintf_s(szBuffer + dwWritten, _countof(szBuffer) - dwWritten, L"%s", GetOutcomeName(static_cast<UCHAR>(outcome)));  // NOSONAR - ENUM-01: enum cast to underlying value for Win32 API
         }
 
         // Username

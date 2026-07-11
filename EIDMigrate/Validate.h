@@ -17,8 +17,8 @@ struct VALIDATE_OPTIONS
     BOOL fVerbose;
 
     VALIDATE_OPTIONS() :
-        fRequireSmartCard(FALSE),
-        fVerbose(FALSE)
+        fRequireSmartCard(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        fVerbose(FALSE)  // NOSONAR - INIT-01: constructor initializer list retained for clarity
     {}
 };
 
@@ -45,14 +45,14 @@ struct VALIDATION_RESULT
     std::wstring wsExportedBy;
 
     VALIDATION_RESULT() :
-        fValidFormat(FALSE),
-        fValidHeader(FALSE),
-        fValidHmac(FALSE),
-        fValidJson(FALSE),
-        fAllCertsTrusted(TRUE),
-        dwCredentialCount(0),
-        dwWarningCount(0),
-        dwErrorCount(0)
+        fValidFormat(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        fValidHeader(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        fValidHmac(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        fValidJson(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        fAllCertsTrusted(TRUE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        dwCredentialCount(0),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        dwWarningCount(0),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        dwErrorCount(0)  // NOSONAR - INIT-01: constructor initializer list retained for clarity
     {}
 
     BOOL IsValid() const

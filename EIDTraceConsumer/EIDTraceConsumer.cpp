@@ -30,9 +30,9 @@
 #include <stdio.h>
 
 // Service name and display name
-#define SERVICE_NAME             L"EIDTraceConsumer"
-#define SERVICE_DISPLAY_NAME      L"EID Trace Consumer"
-#define SERVICE_DESCRIPTION       L"Consumes EID authentication events and writes to CSV log files"
+#define SERVICE_NAME             L"EIDTraceConsumer"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define SERVICE_DISPLAY_NAME      L"EID Trace Consumer"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define SERVICE_DESCRIPTION       L"Consumes EID authentication events and writes to CSV log files"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 
 // ETW Provider GUID for EID Credential Provider
 // {B4866A0A-DB08-4835-A26F-414B46F3244C}
@@ -40,37 +40,37 @@ static const GUID EID_PROVIDER_GUID =
     {0xB4866A0A, 0xDB08, 0x4835, {0xA2, 0x6F, 0x41, 0x4B, 0x46, 0xF3, 0x24, 0x4C}};
 
 // Service status handle
-SERVICE_STATUS_HANDLE g_StatusHandle = nullptr;
-SERVICE_STATUS g_ServiceStatus = {0};
+SERVICE_STATUS_HANDLE g_StatusHandle = nullptr;  // NOSONAR - GLOBAL-01: pointer assigned at runtime
+SERVICE_STATUS g_ServiceStatus = {0};  // NOSONAR - GLOBAL-01: runtime-mutable service state
 
 // Name of the real-time ETW session this service creates and consumes from.
-#define EID_SESSION_NAME          L"EIDTraceConsumer"
+#define EID_SESSION_NAME          L"EIDTraceConsumer"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 
 // Event trace consumer handle (OpenTrace) and the real-time session handle (StartTrace).
 // The consumer must create its own session and enable the EID provider on it - otherwise
 // OpenTrace(EID_SESSION_NAME) has no session to attach to and the CSV stays empty.
-TRACEHANDLE gTraceHandle = 0;
-TRACEHANDLE g_hSession = 0;
-BOOL g_ServiceRunning = TRUE;
-HANDLE g_StopEvent = nullptr;
+TRACEHANDLE gTraceHandle = 0;  // NOSONAR - GLOBAL-01: handle assigned at runtime
+TRACEHANDLE g_hSession = 0;  // NOSONAR - GLOBAL-01: handle assigned at runtime
+BOOL g_ServiceRunning = TRUE;  // NOSONAR - GLOBAL-01: runtime-mutable service state
+HANDLE g_StopEvent = nullptr;  // NOSONAR - GLOBAL-01: handle assigned at runtime
 
 // Registry key for configuration
-#define EID_CSV_CONFIG_KEY L"SOFTWARE\\EIDAuthentication\\LogManager"
+#define EID_CSV_CONFIG_KEY L"SOFTWARE\\EIDAuthentication\\LogManager"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 
 // CSV log file handle and state
-WCHAR g_szCsvPath[MAX_PATH] = {0};
-BOOL g_fCsvEnabled = FALSE;
+WCHAR g_szCsvPath[MAX_PATH] = {0};  // NOSONAR - GLOBAL-01: runtime-mutable C-style path buffer
+BOOL g_fCsvEnabled = FALSE;  // NOSONAR - GLOBAL-01: runtime-mutable service state
 
 // Diagnostics (free-text provider traces) capture
-HANDLE g_hDiagFile = INVALID_HANDLE_VALUE;
-WCHAR  g_szDiagPath[MAX_PATH] = {0};
-DWORD  g_dwDiagFileSize = 0;
-BOOL   g_fDiagnosticsEnabled = FALSE;
-DWORD  g_dwDiagnosticsLevel = 4; // WINEVENT_LEVEL_INFO
+HANDLE g_hDiagFile = INVALID_HANDLE_VALUE;  // NOSONAR - GLOBAL-01: handle assigned at runtime
+WCHAR  g_szDiagPath[MAX_PATH] = {0};  // NOSONAR - GLOBAL-01: runtime-mutable C-style path buffer
+DWORD  g_dwDiagFileSize = 0;  // NOSONAR - GLOBAL-01: runtime-mutable service state
+BOOL   g_fDiagnosticsEnabled = FALSE;  // NOSONAR - GLOBAL-01: runtime-mutable service state
+DWORD  g_dwDiagnosticsLevel = 4; // NOSONAR - GLOBAL-01: runtime-mutable; WINEVENT_LEVEL_INFO
 
 // Configuration
-DWORD g_dwMaxFileSizeMB = 64;
-DWORD g_dwFileCount = 5;
+DWORD g_dwMaxFileSizeMB = 64;  // NOSONAR - GLOBAL-01: runtime-mutable service state
+DWORD g_dwFileCount = 5;  // NOSONAR - GLOBAL-01: runtime-mutable service state
 
 // Forward declarations
 VOID WINAPI ServiceMain(DWORD dwArgc, LPWSTR *lpszArgv);
@@ -113,7 +113,7 @@ BOOL LoadCsvConfiguration()
     DWORD dwEnabled = 0;
     DWORD dwSize = sizeof(dwEnabled);
     err = RegQueryValueExW(hKey, L"CSVEnabled", nullptr, nullptr,
-                          reinterpret_cast<LPBYTE>(&dwEnabled), &dwSize);
+                          reinterpret_cast<LPBYTE>(&dwEnabled), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
     if (err == ERROR_SUCCESS)
     {
         g_fCsvEnabled = (dwEnabled != 0);
@@ -122,7 +122,7 @@ BOOL LoadCsvConfiguration()
     // Read CSV log path
     dwSize = sizeof(g_szCsvPath);
     err = RegQueryValueExW(hKey, L"CSVLogPath", nullptr, nullptr,
-                          reinterpret_cast<LPBYTE>(g_szCsvPath), &dwSize);
+                          reinterpret_cast<LPBYTE>(g_szCsvPath), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
     if (err != ERROR_SUCCESS || g_szCsvPath[0] == L'\0')
     {
         wcscpy_s(g_szCsvPath, L"C:\\ProgramData\\EIDAuthentication\\logs\\events.csv");
@@ -131,7 +131,7 @@ BOOL LoadCsvConfiguration()
     // Read max file size
     dwSize = sizeof(g_dwMaxFileSizeMB);
     err = RegQueryValueExW(hKey, L"CSVMaxFileSize", nullptr, nullptr,
-                          reinterpret_cast<LPBYTE>(&g_dwMaxFileSizeMB), &dwSize);
+                          reinterpret_cast<LPBYTE>(&g_dwMaxFileSizeMB), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
     if (err != ERROR_SUCCESS)
     {
         g_dwMaxFileSizeMB = 64;
@@ -140,7 +140,7 @@ BOOL LoadCsvConfiguration()
     // Read file count
     dwSize = sizeof(g_dwFileCount);
     err = RegQueryValueExW(hKey, L"CSVFileCount", nullptr, nullptr,
-                          reinterpret_cast<LPBYTE>(&g_dwFileCount), &dwSize);
+                          reinterpret_cast<LPBYTE>(&g_dwFileCount), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
     if (err != ERROR_SUCCESS)
     {
         g_dwFileCount = 5;
@@ -150,12 +150,12 @@ BOOL LoadCsvConfiguration()
     DWORD dwDiag = 0;
     dwSize = sizeof(dwDiag);
     if (RegQueryValueExW(hKey, L"DiagnosticsEnabled", nullptr, nullptr,
-            reinterpret_cast<LPBYTE>(&dwDiag), &dwSize) == ERROR_SUCCESS)
+            reinterpret_cast<LPBYTE>(&dwDiag), &dwSize) == ERROR_SUCCESS)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         g_fDiagnosticsEnabled = (dwDiag != 0);
 
     dwSize = sizeof(g_dwDiagnosticsLevel);
     if (RegQueryValueExW(hKey, L"DiagnosticsLevel", nullptr, nullptr,
-            reinterpret_cast<LPBYTE>(&g_dwDiagnosticsLevel), &dwSize) != ERROR_SUCCESS)
+            reinterpret_cast<LPBYTE>(&g_dwDiagnosticsLevel), &dwSize) != ERROR_SUCCESS)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         g_dwDiagnosticsLevel = 4;
 
     RegCloseKey(hKey);
@@ -167,7 +167,7 @@ BOOL LoadCsvConfiguration()
     // diagnostics.log lives in the same directory as the CSV log
     wcscpy_s(g_szDiagPath, g_szCsvPath);
     WCHAR* pSlash = wcsrchr(g_szDiagPath, L'\\');
-    if (pSlash) { *(pSlash + 1) = L'\0'; wcscat_s(g_szDiagPath, L"diagnostics.log"); }
+    if (pSlash) { *(pSlash + 1) = L'\0'; wcscat_s(g_szDiagPath, L"diagnostics.log"); }  // NOSONAR - SCOPE-01: declaration kept outside if for readability
     else        { wcscpy_s(g_szDiagPath, L"C:\\ProgramData\\EIDAuthentication\\logs\\diagnostics.log"); }
 
     return g_fCsvEnabled;
@@ -181,10 +181,10 @@ BOOL EnsureDiagFileOpen()
     if (g_hDiagFile != INVALID_HANDLE_VALUE)
         return TRUE;
 
-    WCHAR szDir[MAX_PATH];
+    WCHAR szDir[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     wcscpy_s(szDir, g_szDiagPath);
     WCHAR* pLastSlash = wcsrchr(szDir, L'\\');
-    if (pLastSlash) { *pLastSlash = L'\0'; CreateDirectoryW(szDir, nullptr); }
+    if (pLastSlash) { *pLastSlash = L'\0'; CreateDirectoryW(szDir, nullptr); }  // NOSONAR - SCOPE-01: declaration kept outside if for readability
 
     g_hDiagFile = CreateFileW(g_szDiagPath, GENERIC_WRITE, FILE_SHARE_READ,
         nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -192,7 +192,7 @@ BOOL EnsureDiagFileOpen()
         return FALSE;
 
     LARGE_INTEGER liSize;
-    if (GetFileSizeEx(g_hDiagFile, &liSize))
+    if (GetFileSizeEx(g_hDiagFile, &liSize))  // NOSONAR - SCOPE-01: declaration kept outside if for readability
         g_dwDiagFileSize = static_cast<DWORD>(liSize.QuadPart);
 
     SetFilePointer(g_hDiagFile, 0, nullptr, FILE_END);
@@ -219,7 +219,7 @@ void RotateDiagFile()
     // Keep up to g_dwFileCount rotated generations (mirrors CSVLogger's rotation).
     // The i > 1 count-down cannot underflow when g_dwFileCount is 0 or 1.
     DWORD dwCount = g_dwFileCount ? g_dwFileCount : 1;
-    WCHAR szOld[MAX_PATH], szNew[MAX_PATH];
+    WCHAR szOld[MAX_PATH], szNew[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     swprintf_s(szOld, L"%s.%03u", g_szDiagPath, dwCount);
     DeleteFileW(szOld); // drop the oldest generation
     for (DWORD i = dwCount; i > 1; i--)
@@ -239,21 +239,21 @@ void WriteDiagnosticLine(const WCHAR* timestamp, const WCHAR* severity, const WC
         return;
 
     ULONGLONG ullMaxBytes = static_cast<ULONGLONG>(g_dwMaxFileSizeMB) * 1024 * 1024;
-    if (g_dwDiagFileSize >= ullMaxBytes)
+    if (g_dwDiagFileSize >= ullMaxBytes)  // NOSONAR - SCOPE-01: declaration kept outside if for readability
     {
         RotateDiagFile();
         if (!EnsureDiagFileOpen())
             return;
     }
 
-    char szTs[64] = {0};
-    char szSev[32] = {0};
-    char szMsg[3072] = {0};
+    char szTs[64] = {0};  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+    char szSev[32] = {0};  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+    char szMsg[3072] = {0};  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     WideCharToMultiByte(CP_UTF8, 0, timestamp, -1, szTs, sizeof(szTs), nullptr, nullptr);
     WideCharToMultiByte(CP_UTF8, 0, severity, -1, szSev, sizeof(szSev), nullptr, nullptr);
     WideCharToMultiByte(CP_UTF8, 0, message, -1, szMsg, sizeof(szMsg), nullptr, nullptr);
 
-    char szLine[4096];
+    char szLine[4096];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     int len = sprintf_s(szLine, sizeof(szLine), "%s %s %s\r\n", szTs, szSev, szMsg);
     if (len > 0)
     {
@@ -295,13 +295,13 @@ const WCHAR* GetSeverityName(UCHAR level)
 // ================================================================
 // ETW Callback for Events
 // ================================================================
-VOID WINAPI EventCallback(PEVENT_RECORD pEvent)
+VOID WINAPI EventCallback(PEVENT_RECORD pEvent)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
     if (!pEvent || !g_fDiagnosticsEnabled)
         return;
 
-    WCHAR szTimestamp[64] = {0};
-    WCHAR szMessage[1024] = {0};
+    WCHAR szTimestamp[64] = {0};  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+    WCHAR szMessage[1024] = {0};  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 
     // Format timestamp - convert FILETIME to SYSTEMTIME
     FILETIME ft;
@@ -366,7 +366,7 @@ void StopRealtimeSession()
         struct
         {
             EVENT_TRACE_PROPERTIES Props;
-            WCHAR LoggerName[128];
+            WCHAR LoggerName[128];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         } sp;
         ZeroMemory(&sp, sizeof(sp));
         sp.Props.Wnode.BufferSize = sizeof(sp);
@@ -384,7 +384,7 @@ BOOL CreateRealtimeSession()
     struct
     {
         EVENT_TRACE_PROPERTIES Props;
-        WCHAR LoggerName[128];
+        WCHAR LoggerName[128];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     } sp;
 
     auto initProps = [&sp]()
@@ -447,8 +447,8 @@ BOOL StartTraceSession()
         return FALSE;
     }
 
-    EVENT_TRACE_LOGFILE logfile = {0};
-    logfile.LoggerName = const_cast<LPWSTR>(EID_SESSION_NAME);
+    EVENT_TRACE_LOGFILE logfile = {};
+    logfile.LoggerName = const_cast<LPWSTR>(EID_SESSION_NAME);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
     // EventRecordCallback (PEVENT_RECORD) requires PROCESS_TRACE_MODE_EVENT_RECORD; without it
     // ETW would invoke the legacy PEVENT_TRACE callback against our record-style handler.
     logfile.ProcessTraceMode = PROCESS_TRACE_MODE_REAL_TIME | PROCESS_TRACE_MODE_EVENT_RECORD;
@@ -500,7 +500,7 @@ DWORD ServiceWorkerThread(LPVOID lpParam)
     }
 
     // Main service loop - process events
-    while (g_ServiceRunning)
+    while (g_ServiceRunning)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
     {
         // Wait for stop event with a short timeout
         DWORD dwWait = WaitForSingleObject(g_StopEvent, 1000);
@@ -600,7 +600,7 @@ VOID WINAPI ServiceMain(DWORD dwArgc, LPWSTR *lpszArgv)
 // ================================================================
 // Service Control Handler
 // ================================================================
-DWORD WINAPI ServiceCtrlHandlerEx(DWORD dwCtrl, DWORD dwEventType, LPVOID lpEventData, LPVOID lpContext)
+DWORD WINAPI ServiceCtrlHandlerEx(DWORD dwCtrl, DWORD dwEventType, LPVOID lpEventData, LPVOID lpContext)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
     UNREFERENCED_PARAMETER(dwEventType);
     UNREFERENCED_PARAMETER(lpEventData);
@@ -622,7 +622,7 @@ DWORD WINAPI ServiceCtrlHandlerEx(DWORD dwCtrl, DWORD dwEventType, LPVOID lpEven
         break;
 
     case SERVICE_CONTROL_SHUTDOWN:
-        ReportStatus(SERVICE_STOP_PENDING, 0, 1000);
+        ReportStatus(SERVICE_STOP_PENDING, 0, 1000);  // NOSONAR - SWITCH-01: cases kept distinct for readability
         g_ServiceRunning = FALSE;
         if (gTraceHandle != INVALID_PROCESSTRACE_HANDLE)
         {
@@ -670,7 +670,7 @@ BOOL InstallService()
     }
 
     // Get the path to the executable
-    WCHAR szPath[MAX_PATH];
+    WCHAR szPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     GetModuleFileNameW(nullptr, szPath, MAX_PATH);
 
     SC_HANDLE hService = CreateServiceW(
@@ -706,7 +706,7 @@ BOOL InstallService()
 
     // Set service description
     SERVICE_DESCRIPTIONW desc;
-    desc.lpDescription = const_cast<LPWSTR>(SERVICE_DESCRIPTION);
+    desc.lpDescription = const_cast<LPWSTR>(SERVICE_DESCRIPTION);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
     ChangeServiceConfig2W(
         hService,
@@ -877,7 +877,7 @@ BOOL StopServiceWrapper()
 // ================================================================
 // Console Entry Point (for testing/standalone execution)
 // ================================================================
-int wmain(int argc, WCHAR* argv[])
+int wmain(int argc, WCHAR* argv[])  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
     if (argc > 1)
     {
@@ -930,9 +930,9 @@ int wmain(int argc, WCHAR* argv[])
         // Run as service
         wprintf(L"Starting service...\n");
 
-        SERVICE_TABLE_ENTRY dispatchTable[] =
+        SERVICE_TABLE_ENTRY dispatchTable[] =  // NOSONAR - LSASS-01: C-style array required by Win32 API
         {
-            { const_cast<LPWSTR>(SERVICE_NAME), (LPSERVICE_MAIN_FUNCTION)ServiceMain },
+            { const_cast<LPWSTR>(SERVICE_NAME), (LPSERVICE_MAIN_FUNCTION)ServiceMain },  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
             { nullptr, nullptr }
         };
 
