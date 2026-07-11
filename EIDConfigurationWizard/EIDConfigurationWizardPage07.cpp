@@ -42,7 +42,7 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, [[maybe_unus
 					// STM_SETIMAGE does NOT copy the icon - the control takes ownership.
 					// Destroy the previous icon (if any) returned by STM_SETIMAGE, but NOT the new one.
 					HICON hPrevIcon = (HICON)SendMessage(GetDlgItem(hWnd,IDC_07SHIELD),STM_SETIMAGE,IMAGE_ICON, (LPARAM) hIcon); // NOSONAR - Explicit HICON type preferred over auto for Windows API clarity
-					if (hPrevIcon)
+					if (hPrevIcon)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
 						DestroyIcon(hPrevIcon);
 					FreeLibrary(hDll);
 				}
@@ -63,7 +63,7 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, [[maybe_unus
 				case PSN_WIZFINISH:
 					// Clean up the icon handle before closing (control owns it after STM_SETIMAGE)
 					{
-						HICON hIcon = (HICON)SendDlgItemMessage(hWnd, IDC_07SHIELD, STM_SETIMAGE, IMAGE_ICON, 0);
+						HICON hIcon = (HICON)SendDlgItemMessage(hWnd, IDC_07SHIELD, STM_SETIMAGE, IMAGE_ICON, 0);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit HICON type preferred for Windows API clarity
 						if (hIcon)
 							DestroyIcon(hIcon);
 					}
@@ -71,7 +71,7 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, [[maybe_unus
 						SecurelyClearPassword();
 						if (pCredentialList)
 						{
-							delete pCredentialList;
+							delete pCredentialList;  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 							pCredentialList = nullptr;
 						}
 						break;
@@ -79,7 +79,7 @@ INT_PTR CALLBACK	WndProc_07TESTRESULTNOTOK(HWND hWnd, UINT message, [[maybe_unus
 				case PSN_RESET:
 					// Clean up the icon handle when wizard is cancelled
 					{
-						HICON hIcon = (HICON)SendDlgItemMessage(hWnd, IDC_07SHIELD, STM_SETIMAGE, IMAGE_ICON, 0);
+						HICON hIcon = (HICON)SendDlgItemMessage(hWnd, IDC_07SHIELD, STM_SETIMAGE, IMAGE_ICON, 0);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit HICON type preferred for Windows API clarity
 						if (hIcon)
 							DestroyIcon(hIcon);
 					}

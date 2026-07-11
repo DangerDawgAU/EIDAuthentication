@@ -57,9 +57,9 @@ system must return TRUE for the password change to take effect.
 */
 
 BOOL WINAPI PasswordFilter(
-	PUNICODE_STRING AccountName,
-	PUNICODE_STRING FullName,
-	PUNICODE_STRING Password,
+	PUNICODE_STRING AccountName,  // NOSONAR - API-01: signature dictated by Windows/callback API
+	PUNICODE_STRING FullName,  // NOSONAR - API-01: signature dictated by Windows/callback API
+	PUNICODE_STRING Password,  // NOSONAR - API-01: signature dictated by Windows/callback API
 	BOOLEAN SetOperation
 )
 {

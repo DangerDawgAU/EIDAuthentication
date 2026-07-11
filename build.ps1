@@ -335,7 +335,7 @@ if ($Configuration -eq "Release") {
                 Write-Host "============================================================" -ForegroundColor Red
                 Write-Host "Check the NSIS output above for errors" -ForegroundColor Yellow
                 # Restore NSI file before exiting
-                if ($nsiBackup -ne $null) {
+                if ($null -ne $nsiBackup) {
                     Set-Content -Path $nsiFile -Value $nsiBackup -NoNewline
                 }
                 Pop-Location
@@ -349,7 +349,7 @@ if ($Configuration -eq "Release") {
             Write-Host "============================================================" -ForegroundColor Red
             Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Yellow
             # Restore NSI file before exiting
-            if ($nsiBackup -ne $null) {
+            if ($null -ne $nsiBackup) {
                 Set-Content -Path $nsiFile -Value $nsiBackup -NoNewline
             }
             Pop-Location
@@ -358,7 +358,7 @@ if ($Configuration -eq "Release") {
         finally {
             Pop-Location
             # Restore NSI file if it was modified
-            if ($nsiBackup -ne $null) {
+            if ($null -ne $nsiBackup) {
                 Set-Content -Path $nsiFile -Value $nsiBackup -NoNewline
             }
         }

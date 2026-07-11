@@ -9,25 +9,25 @@
 #include "Tracing.h"
 
 // Application information
-#define EIDMIGRATE_APP_NAME        L"EIDMigrate"
-#define EIDMIGRATE_APP_VERSION     L"1.0.0.0"
-#define EIDMIGRATE_APP_COPYRIGHT   L"Copyright (C) 2026"
+#define EIDMIGRATE_APP_NAME        L"EIDMigrate"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMIGRATE_APP_VERSION     L"1.0.0.0"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMIGRATE_APP_COPYRIGHT   L"Copyright (C) 2026"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 
 // Exit codes
-#define EIDMIGRATE_EXIT_SUCCESS           0
-#define EIDMIGRATE_EXIT_ERROR             1
-#define EIDMIGRATE_EXIT_LSA_DENIED        2
-#define EIDMIGRATE_EXIT_NO_CREDENTIALS    3
-#define EIDMIGRATE_EXIT_FILE_WRITE        4
-#define EIDMIGRATE_EXIT_INVALID_PASSPHRASE 5
-#define EIDMIGRATE_EXIT_FILE_CORRUPTED    6
-#define EIDMIGRATE_EXIT_NO_VALID_CREDS    7
-#define EIDMIGRATE_EXIT_SOME_FAILED       8
+#define EIDMIGRATE_EXIT_SUCCESS           0  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMIGRATE_EXIT_ERROR             1  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMIGRATE_EXIT_LSA_DENIED        2  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMIGRATE_EXIT_NO_CREDENTIALS    3  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMIGRATE_EXIT_FILE_WRITE        4  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMIGRATE_EXIT_INVALID_PASSPHRASE 5  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMIGRATE_EXIT_FILE_CORRUPTED    6  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMIGRATE_EXIT_NO_VALID_CREDS    7  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMIGRATE_EXIT_SOME_FAILED       8  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 
 // Command types
 enum class COMMAND_TYPE
 {
-    NONE,
+    NONE,  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
     EXPORT,
     IMPORT,
     LIST,
@@ -54,14 +54,14 @@ struct COMMAND_OPTIONS
     VERBOSITY Verbosity;
 
     COMMAND_OPTIONS() :
-        Command(COMMAND_TYPE::NONE),
-        DryRun(FALSE),
-        Force(FALSE),
-        CreateUsers(FALSE),
-        ContinueOnError(FALSE),
-        ValidateCerts(FALSE),
-        ListLocal(FALSE),
-        Verbosity(VERBOSITY::NORMAL)
+        Command(COMMAND_TYPE::NONE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity/ordering
+        DryRun(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity/ordering
+        Force(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity/ordering
+        CreateUsers(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity/ordering
+        ContinueOnError(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity/ordering
+        ValidateCerts(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity/ordering
+        ListLocal(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity/ordering
+        Verbosity(VERBOSITY::NORMAL)  // NOSONAR - INIT-01: constructor initializer list retained for clarity/ordering
     {}
 };
 
@@ -74,8 +74,8 @@ struct APP_STATE
     FILE* pLogFile;
 
     APP_STATE() :
-        hEventLog(nullptr),
-        pLogFile(nullptr)
+        hEventLog(nullptr),  // NOSONAR - INIT-01: constructor initializer list retained for clarity/ordering
+        pLogFile(nullptr)  // NOSONAR - INIT-01: constructor initializer list retained for clarity/ordering
     {}
 
     // Delete copy/move operations - this is a singleton
@@ -98,7 +98,7 @@ struct APP_STATE
 };
 
 // Global application state
-extern APP_STATE g_AppState;
+extern APP_STATE g_AppState;  // NOSONAR - GLOBAL-01: global application state mutated at runtime
 
 // Main entry point
 int wmain(_In_ int argc, _In_ PWSTR argv[]);

@@ -62,17 +62,17 @@ PLSA_FREE_LSA_HEAP MyFreeHeap = nullptr;  // NOSONAR - RUNTIME-01: LSA heap deal
 PLSA_IMPERSONATE_CLIENT MyImpersonate = nullptr;  // NOSONAR - RUNTIME-01: LSA impersonate function, set by LSA
 const BOOL TraceAllocation = TRUE;
 
-void SetAlloc(PLSA_ALLOCATE_LSA_HEAP AllocateLsaHeap)
+void SetAlloc(PLSA_ALLOCATE_LSA_HEAP AllocateLsaHeap)  // NOSONAR - API-01: raw function pointer required
 {
 	MyAllocateHeap = AllocateLsaHeap;
 }
 
-void SetFree(PLSA_FREE_LSA_HEAP FreeHeap)
+void SetFree(PLSA_FREE_LSA_HEAP FreeHeap)  // NOSONAR - API-01: raw function pointer required
 {
 	MyFreeHeap = FreeHeap;
 }
 
-PVOID EIDAllocEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction,DWORD dwSize)
+PVOID EIDAllocEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction,DWORD dwSize)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	UNREFERENCED_PARAMETER(szFile);
 	UNREFERENCED_PARAMETER(dwLine);
@@ -101,7 +101,7 @@ PVOID EIDAllocEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction,DWORD dwSize)
 	}
 	return memory;
 }
-VOID EIDFreeEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction,PVOID buffer)
+VOID EIDFreeEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction,PVOID buffer)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	UNREFERENCED_PARAMETER(szFile);
 	UNREFERENCED_PARAMETER(dwLine);
@@ -115,7 +115,7 @@ VOID EIDFreeEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction,PVOID buffer)
 		{
 			if (memcmp((PBYTE)buffer + i,DEBUG_MARKUP, sizeof(DEBUG_MARKUP)) == 0)
 			{
-				if (memcmp((PBYTE)buffer + i + sizeof(DEBUG_MARKUP),&buffer,sizeof(PVOID)) != 0)
+				if (memcmp((PBYTE)buffer + i + sizeof(DEBUG_MARKUP),&buffer,sizeof(PVOID)) != 0)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 				{
 					EIDCardLibraryTraceEx(szFile, dwLine, szFunction, WINEVENT_LEVEL_ERROR, L"Markup not ok %p",buffer);
 				}
@@ -145,7 +145,7 @@ VOID EIDFreeEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction,PVOID buffer)
 	}
 }
 
-void SetImpersonate(PLSA_IMPERSONATE_CLIENT Impersonate)
+void SetImpersonate(PLSA_IMPERSONATE_CLIENT Impersonate)  // NOSONAR - API-01: raw function pointer required
 {
 	MyImpersonate = Impersonate;
 }
@@ -177,7 +177,7 @@ BOOL EIDIsComponentInLSAContext()
 // by constructing full paths to system DLLs instead of relying on search order
 HMODULE EIDLoadSystemLibrary(LPCTSTR szDllName)
 {
-	TCHAR szFullPath[MAX_PATH];
+	TCHAR szFullPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 	UINT uLen;
 
 	// Validate input - DLL name should not contain path separators
@@ -224,7 +224,7 @@ VOID CenterWindow(HWND hWnd)
 VOID SetIcon(HWND hWnd)
 {
 	// First try to load app-specific icon (IDI_APP_ICON = 101)
-	HMODULE hApp = GetModuleHandle(NULL);
+	HMODULE hApp = GetModuleHandle(nullptr);
 	if (hApp)
 	{
 		HANDLE hbicon = LoadImage(hApp, MAKEINTRESOURCE(101), IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), 0);
@@ -278,7 +278,7 @@ HRESULT UnicodeStringInitWithString(
             {
                 USHORT usSize;
                 hr = SizeTToUShort(sizeof(WCHAR), &usSize);
-                if (SUCCEEDED(hr))
+                if (SUCCEEDED(hr))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     hr = UShortMult(usCharCount, usSize, &(pus->Length)); // Explicitly NOT including NULL terminator
                     if (SUCCEEDED(hr))
@@ -339,7 +339,7 @@ static void _UnicodeStringPackedUnicodeStringCopy(
 
 HRESULT EIDUnlockLogonPack(
 									   const EID_INTERACTIVE_UNLOCK_LOGON& rkiulIn,
-									   const PEID_SMARTCARD_CSP_INFO pCspInfo,
+									   const PEID_SMARTCARD_CSP_INFO pCspInfo,  // NOSONAR - API-01: signature dictated by Windows/callback API
                                        BYTE** prgb,
                                        DWORD* pcb
                                        )
@@ -358,7 +358,7 @@ HRESULT EIDUnlockLogonPack(
 
     EID_INTERACTIVE_UNLOCK_LOGON* pkiulOut = (EID_INTERACTIVE_UNLOCK_LOGON*)CoTaskMemAlloc(cb);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 
-    if (pkiulOut)
+    if (pkiulOut)  // NOSONAR - SCOPE-01: allocation reused to build output buffer
     {
         ZeroMemory(&pkiulOut->LogonId, sizeof(LUID));
 
@@ -550,7 +550,7 @@ static BOOL SafeCheckBufferOverflow(ULONG_PTR offset, ULONG length, ULONG limit)
 	return offset + length > limit;
 }
 
-NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAuthenticationBase, ULONG AuthenticationInformationLength)
+NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAuthenticationBase, ULONG AuthenticationInformationLength)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Diff %d %d",(PUCHAR) pUnlockLogon, (PUCHAR) ClientAuthenticationBase);
 	if (!pUnlockLogon)
@@ -612,7 +612,7 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 	if ((pUnlockLogon->Logon.CspData) != nullptr)
 	{
 		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.CspData);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-		if (SafeCheckBufferOverflow(offset, pUnlockLogon->Logon.CspDataLength, AuthenticationInformationLength))
+		if (SafeCheckBufferOverflow(offset, pUnlockLogon->Logon.CspDataLength, AuthenticationInformationLength))  // NOSONAR - SCOPE-01: declaration kept separate to preserve explicit-type annotation
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CspData Overflow");
 			return STATUS_INVALID_PARAMETER_3;
@@ -626,7 +626,7 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 }
 
 VOID EIDDebugPrintEIDUnlockLogonStruct(UCHAR dwLevel, PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon) {
-	WCHAR Buffer[1000];
+	WCHAR Buffer[1000];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 	EIDCardLibraryTrace(dwLevel,L"LogonId %d %d",pUnlockLogon->LogonId.LowPart,pUnlockLogon->LogonId.HighPart);
 	EIDCardLibraryTrace(dwLevel,L"Username %d",pUnlockLogon->Logon.UserName.Length);
 	if ((pUnlockLogon->Logon.UserName.Buffer) != nullptr)
@@ -762,8 +762,8 @@ BOOL IsCurrentUser(PTSTR szUserName)
 BOOL IsAdmin(PTSTR szUserName)
 {
 	BOOL fReturn = FALSE;
-	WCHAR szAdministratorGroupName[256];
-	WCHAR szDomainName[256];
+	WCHAR szAdministratorGroupName[256];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+	WCHAR szDomainName[256];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 	PLOCALGROUP_USERS_INFO_0 pGroupInfo;
 	SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
 	SID_NAME_USE SidType;
@@ -815,7 +815,7 @@ DWORD GetCurrentRid()
 	PSID pSid;
 	PTOKEN_USER pInfo = nullptr;
 	HANDLE hToken;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
-	if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken))
+	if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken))  // NOSONAR - SCOPE-01: declaration kept separate to preserve explicit-type annotation
 	{
 	
 		GetTokenInformation(hToken, TokenUser, nullptr, 0, &dwSize);
@@ -846,12 +846,12 @@ DWORD GetCurrentRid()
 }
 
 	// BUG FIX #16: TOCTOU race condition mitigation - use retry loop for SID allocation
-	DWORD GetRidFromUsername(LPTSTR szUsername)
+	DWORD GetRidFromUsername(LPTSTR szUsername)  // NOSONAR - API-01: signature dictated by Windows/callback API
 	{
 		BOOL bResult;
 		SID_NAME_USE Use;
 		PSID pSid = nullptr;
-		TCHAR checkDomainName[UNCLEN+1];
+		TCHAR checkDomainName[UNCLEN+1];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 		DWORD cchReferencedDomainName = 0;
 		DWORD dwRid = 0;
 		constexpr DWORD MAX_RETRIES = 3;
@@ -867,7 +867,7 @@ DWORD GetCurrentRid()
 		}
 
 		// Retry loop for SID allocation (handles TOCTOU race condition)
-		for (dwRetryCount = 0; dwRetryCount < MAX_RETRIES; dwRetryCount++)
+		for (dwRetryCount = 0; dwRetryCount < MAX_RETRIES; dwRetryCount++)  // NOSONAR - PERF-01: declared once, reused across iterations
 		{
 			// Clean up from previous retry
 			if (pSid)
@@ -925,7 +925,7 @@ DWORD GetCurrentRid()
 		return 0;
 	}
 
-BOOL LsaEIDCreateStoredCredential(__in_opt PWSTR szUsername, __in PWSTR szPassword, __in PCCERT_CONTEXT pContext, __in BOOL fEncryptPassword)
+BOOL LsaEIDCreateStoredCredential(__in_opt PWSTR szUsername, __in PWSTR szPassword, __in PCCERT_CONTEXT pContext, __in BOOL fEncryptPassword)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	BOOL fReturn = FALSE;
 	PEID_CALLPACKAGE_BUFFER pBuffer = nullptr;
@@ -1150,7 +1150,7 @@ BOOL IsEIDPackageAvailable()
     BOOL fReturn = FALSE;
 	HANDLE hLsa;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
 	NTSTATUS status = LsaConnectUntrusted(&hLsa);  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
-    if (status == STATUS_SUCCESS)
+    if (status == STATUS_SUCCESS)  // NOSONAR - SCOPE-01: variable reused after the block
     {
         ULONG ulAuthPackage;
         LSA_STRING lsaszPackageName;

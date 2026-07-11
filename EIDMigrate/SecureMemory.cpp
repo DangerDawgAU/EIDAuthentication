@@ -6,7 +6,7 @@
 #include <algorithm>
 
 // SecureBuffer implementation
-SecureBuffer::SecureBuffer() : m_pbData(nullptr), m_cbSize(0), m_fLocked(FALSE)
+SecureBuffer::SecureBuffer() : m_pbData(nullptr), m_cbSize(0), m_fLocked(FALSE)  // NOSONAR - INIT-01: constructor initializer list retained for clarity
 {
 }
 
@@ -93,7 +93,7 @@ BOOL SecureBuffer::Resize(DWORD cbNewSize)
     // BUG FIX #17: Memory exhaustion protection
     // Maximum reasonable secure buffer size (prevents exhaustion attacks)
     constexpr DWORD MAX_SECURE_BUFFER_SIZE = 16 * 1024 * 1024;  // 16 MB
-    if (cbNewSize > MAX_SECURE_BUFFER_SIZE)
+    if (cbNewSize > MAX_SECURE_BUFFER_SIZE)  // NOSONAR - SCOPE-01: constant kept in function scope for clarity
     {
         EIDM_TRACE_ERROR(L"Requested secure buffer size %u bytes exceeds maximum %u bytes",
             cbNewSize, MAX_SECURE_BUFFER_SIZE);
@@ -125,11 +125,11 @@ void SecureBuffer::Clear()
 }
 
 // SecurePin implementation
-SecurePin::SecurePin() : m_wsPin()
+SecurePin::SecurePin() : m_wsPin()  // NOSONAR - INIT-01: constructor initializer list retained for clarity
 {
 }
 
-SecurePin::SecurePin(PCWSTR pwszPin) : m_wsPin()
+SecurePin::SecurePin(PCWSTR pwszPin) : m_wsPin()  // NOSONAR - INIT-01: constructor initializer list retained for clarity
 {
     if (pwszPin && *pwszPin)
     {
@@ -194,7 +194,7 @@ PWSTR CryptoOperationScope::AllocateString(size_t cchChars)
 {
     m_sensitiveStrings.emplace_back();
     m_sensitiveStrings.back().reserve(cchChars);
-    return const_cast<PWSTR>(m_sensitiveStrings.back().c_str());
+    return const_cast<PWSTR>(m_sensitiveStrings.back().c_str());  // NOSONAR - CAST-01: const_cast exposes writable buffer of owned secure string
 }
 
 void CryptoOperationScope::Clear()
@@ -218,7 +218,7 @@ PVOID SecureAlloc(_In_ SIZE_T cbSize) // NOSONAR - PVOID (void*) required for Wi
     // BUG FIX #17: Memory exhaustion protection
     // Maximum reasonable single allocation (prevents exhaustion attacks)
     constexpr SIZE_T MAX_SECURE_ALLOC_SIZE = 16 * 1024 * 1024;  // 16 MB
-    if (cbSize > MAX_SECURE_ALLOC_SIZE)
+    if (cbSize > MAX_SECURE_ALLOC_SIZE)  // NOSONAR - SCOPE-01: constant kept in function scope for clarity
     {
         EIDM_TRACE_ERROR(L"Requested secure allocation size %zu bytes exceeds maximum %zu bytes",
             cbSize, MAX_SECURE_ALLOC_SIZE);

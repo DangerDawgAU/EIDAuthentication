@@ -35,7 +35,7 @@ public:
 private:
 	CCredential* _pCredential;
 	EID_MESSAGE_STATE _State;
-	UCHAR Hash[CERT_HASH_LENGTH];
+	UCHAR Hash[CERT_HASH_LENGTH]; // NOSONAR - LSASS-01: C-style buffer for LSASS/crypto hash safety
 	PCCERT_CONTEXT pCertContext;
 	DWORD dwRid;
 	PBYTE pbChallenge;
@@ -45,7 +45,7 @@ private:
 	PWSTR szUserName;
 };
 
-class CCredential
+class CCredential  // NOSONAR - OWNERSHIP-01: manual Win32/crypto lifetime management; rule-of-five deferred
 {
 public:
 	CCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_INFO pCertInfo,PWSTR szPin, ULONG CredentialUseFlags);
@@ -55,13 +55,13 @@ public:
 	std::list<CSecurityContext> _Contexts;
 	PTSTR GetName();
 	static CCredential* CreateCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_INFO pCertInfo,PWSTR szPin, ULONG CredentialUseFlags);
-	BOOL Check(PLUID LogonId)
+	BOOL Check(PLUID LogonId) const  // NOSONAR - API-01: PLUID parameter type dictated by LSA API
 	{
 		return (LogonId != nullptr) && (_LogonId.HighPart == LogonId->HighPart) && (_LogonId.LowPart == LogonId->LowPart);
 	}
 	~CCredential();
 	LUID _LogonId;
-	UCHAR _rgbHashOfCert[CERT_HASH_LENGTH];
+	UCHAR _rgbHashOfCert[CERT_HASH_LENGTH]; // NOSONAR - LSASS-01: C-style buffer for LSASS/crypto hash safety
 	PWSTR _szPin;
 	DWORD _dwLen;
 	PCERT_CREDENTIAL_INFO _pCertInfo;

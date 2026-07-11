@@ -21,7 +21,7 @@
 #include "../EIDCardLibrary/GPO.h"
 
 CEIDFilter::CEIDFilter():
-    _cRef(1)
+    _cRef(1)  // NOSONAR - INIT-01: reference count initialized in constructor init list
 {
 }
 

@@ -214,6 +214,7 @@ function Set-LsaRunAsPPL {
             Write-Host "  RunAsPPLBoot set to $Value" -ForegroundColor Green
         }
     } catch {
+        # RunAsPPLBoot not present on this OS build; best-effort, ignore
     }
 }
 

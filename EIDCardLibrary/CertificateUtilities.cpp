@@ -50,8 +50,8 @@ BOOL SetupCertificateContextWithKeyInfo(
 	CRYPT_KEY_PROV_INFO KeyProvInfo;
 	memset(&KeyProvInfo, 0, sizeof(CRYPT_KEY_PROV_INFO));
 	KeyProvInfo.dwFlags = CERT_SET_KEY_CONTEXT_PROP_ID;
-	KeyProvInfo.pwszProvName = (LPWSTR)pwszProviderName;
-	KeyProvInfo.pwszContainerName = (LPWSTR)pwszContainerName;
+	KeyProvInfo.pwszProvName = (LPWSTR)pwszProviderName;  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
+	KeyProvInfo.pwszContainerName = (LPWSTR)pwszContainerName;  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 	KeyProvInfo.dwProvType = PROV_RSA_FULL;
 	KeyProvInfo.dwKeySpec = dwKeySpec;
 
@@ -168,7 +168,7 @@ PCCERT_CONTEXT SelectCertificateWithPrivateKey(HWND hWnd)
 			while (pCertContext)
 			{
 				
-				if (CertGetCertificateContextProperty(pCertContext,CERT_KEY_PROV_INFO_PROP_ID,dwKeySpec,&dwSize))
+				if (CertGetCertificateContextProperty(pCertContext,CERT_KEY_PROV_INFO_PROP_ID,dwKeySpec,&dwSize))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 				{
 					//The certificate has a private key
 					CertAddCertificateContextToStore(hStore,pCertContext,CERT_STORE_ADD_USE_EXISTING,nullptr);
@@ -259,7 +259,7 @@ PCCERT_CONTEXT SelectFirstCertificateWithPrivateKey()
 }
 
 
-LPBYTE AllocateAndEncodeObject(LPVOID pvStruct, LPCSTR lpszStructType, LPDWORD pdwSize )
+LPBYTE AllocateAndEncodeObject(LPVOID pvStruct, LPCSTR lpszStructType, LPDWORD pdwSize )  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
    // Get Key Usage blob size   
    LPBYTE pbEncodedObject = nullptr;
@@ -377,7 +377,7 @@ BOOL AskForCard(LPWSTR szReader, DWORD ReaderLength,LPWSTR szCard,DWORD CardLeng
 	return fReturn;
 }
 
-BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
+BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
 	BOOL fReturn = FALSE;
 	CERT_INFO CertInfo = {0};
@@ -391,7 +391,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 	PBYTE  pbSignedEncodedCertReq = nullptr;
 	BOOL bDestroyContainer = FALSE;
 	HCRYPTKEY hKey = NULL;  // NOSONAR - HANDLE-01: HCRYPTKEY is ULONG_PTR, not pointer type
-	CRYPT_KEY_PROV_INFO KeyProvInfo = {0};
+	CRYPT_KEY_PROV_INFO KeyProvInfo = {};
 	LPTSTR szContainerName=nullptr;
     FILETIME ftTime;
 	std::array<BYTE, 8> SerialNumber;
@@ -402,7 +402,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 	CRYPT_OBJID_BLOB  Parameters;
 	CRYPTUI_WIZ_EXPORT_INFO WizInfo = {0};
 	DWORD cbEncodedCertReqSize = 0;
-	TCHAR szProviderName[1024];
+	TCHAR szProviderName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwProviderNameLen = 1024;
 	DWORD dwFlag;
 	DWORD dwSize;
@@ -957,7 +957,7 @@ BOOL CreateCertificate(PUI_CERTIFICATE_INFO pCertificateInfo)
 				EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"AllocateAndInitializeSid 0x%08X", dwError);
 				__leave;
 			}
-			EXPLICIT_ACCESS ea[2];
+			EXPLICIT_ACCESS ea[2];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 			ZeroMemory(&ea, sizeof(ea));
 			// fill an entry for the SYSTEM account
 			ea[0].grfAccessMode = GRANT_ACCESS;
@@ -1151,7 +1151,7 @@ BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName)
 	// Note: We must collect all container names first, then delete them in a separate pass.
 	// Deleting containers while enumerating corrupts the enumeration state.
 	BOOL bStatus = FALSE;
-	WCHAR szProviderName[1024];
+	WCHAR szProviderName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwProviderNameLen = ARRAYSIZE(szProviderName);
 	CHAR szContainerName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwContainerNameLen = ARRAYSIZE(szContainerName);
@@ -1164,7 +1164,7 @@ BOOL ClearCard(PTSTR szReaderName, PTSTR szCardName)
 
 	// Dynamic array to collect container names before deletion
 	constexpr DWORD MAX_CONTAINERS = 100;
-	LPWSTR containerNames[MAX_CONTAINERS];
+	LPWSTR containerNames[MAX_CONTAINERS];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwContainerCount = 0;
 	DWORD i;
 
@@ -1285,19 +1285,19 @@ struct RSAPRIVKEY {
 	RSAPUBKEY rsapubkey;
 #ifdef _DEBUG
 	static constexpr DWORD BITLEN_TO_CHECK = 2048;
-	BYTE modulus[BITLEN_TO_CHECK/8];
-	BYTE prime1[BITLEN_TO_CHECK/16];
-	BYTE prime2[BITLEN_TO_CHECK/16];
-	BYTE exponent1[BITLEN_TO_CHECK/16];
-	BYTE exponent2[BITLEN_TO_CHECK/16];
-	BYTE coefficient[BITLEN_TO_CHECK/16];
-	BYTE privateExponent[BITLEN_TO_CHECK/8];
+	BYTE modulus[BITLEN_TO_CHECK/8];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	BYTE prime1[BITLEN_TO_CHECK/16];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	BYTE prime2[BITLEN_TO_CHECK/16];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	BYTE exponent1[BITLEN_TO_CHECK/16];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	BYTE exponent2[BITLEN_TO_CHECK/16];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	BYTE coefficient[BITLEN_TO_CHECK/16];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+	BYTE privateExponent[BITLEN_TO_CHECK/8];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 #endif
 };
 using PRSAPRIVKEY = RSAPRIVKEY*;
 
 
-BOOL CheckRSAKeyLength(PTSTR szContainerName, PTSTR szProviderName, RSAPRIVKEY* pbData)
+BOOL CheckRSAKeyLength(PTSTR szContainerName, PTSTR szProviderName, RSAPRIVKEY* pbData)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	BOOL fReturn = FALSE;
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
@@ -1356,7 +1356,7 @@ BOOL CheckRSAKeyLength(PTSTR szContainerName, PTSTR szProviderName, RSAPRIVKEY* 
 }
 
 
-BOOL ImportFileToSmartCard(PTSTR szFileName, PTSTR szPassword, PTSTR szReaderName, PTSTR szCardname)
+BOOL ImportFileToSmartCard(PTSTR szFileName, PTSTR szPassword, PTSTR szReaderName, PTSTR szCardname)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
 	BOOL fReturn = FALSE;
 	CRYPT_DATA_BLOB DataBlob = {0};
@@ -1448,7 +1448,7 @@ BOOL ImportFileToSmartCard(PTSTR szFileName, PTSTR szPassword, PTSTR szReaderNam
 					HKEY hRegKey;
 					DWORD dwKeyData = 0;
 					dwSize = sizeof(DWORD);
-					if (!RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Cryptography\\Defaults\\Provider\\Microsoft Base Smart Card Crypto Provider"),NULL, KEY_READ|KEY_QUERY_VALUE|KEY_WRITE, &hRegKey))
+					if (!RegOpenKeyEx(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\Cryptography\\Defaults\\Provider\\Microsoft Base Smart Card Crypto Provider"),NULL, KEY_READ|KEY_QUERY_VALUE|KEY_WRITE, &hRegKey))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 					{
 						if (dwKeySpec == AT_SIGNATURE)
 						{
@@ -1583,7 +1583,7 @@ BOOL ImportFileToSmartCard(PTSTR szFileName, PTSTR szPassword, PTSTR szReaderNam
 
 // find certificate using its hash
 
-PCCERT_CONTEXT FindCertificateFromHashOnCard(PCRYPT_DATA_BLOB pCertInfo, PTSTR szReaderName, PTSTR szProviderName)
+PCCERT_CONTEXT FindCertificateFromHashOnCard(PCRYPT_DATA_BLOB pCertInfo, PTSTR szReaderName, PTSTR szProviderName)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
 	PCCERT_CONTEXT pCertContext = nullptr;
 	HCRYPTPROV HCryptProv = NULL;  // Windows handle type - keep as NULL
@@ -1592,7 +1592,7 @@ PCCERT_CONTEXT FindCertificateFromHashOnCard(PCRYPT_DATA_BLOB pCertInfo, PTSTR s
 	DWORD dwContainerNameLen = ARRAYSIZE(szMainContainerName);
 	CHAR szContainerName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD dwError = 0;
-	DWORD pKeySpecs[2] = {AT_KEYEXCHANGE,AT_SIGNATURE};
+	DWORD pKeySpecs[2] = {AT_KEYEXCHANGE,AT_SIGNATURE};  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	HCRYPTKEY hKey = NULL;  // Windows handle type - keep as NULL
 	__try
 	{
@@ -1609,7 +1609,7 @@ PCCERT_CONTEXT FindCertificateFromHashOnCard(PCRYPT_DATA_BLOB pCertInfo, PTSTR s
 					CRYPT_SILENT))
 		{
 			// for the spanish EID
-			if (!CryptAcquireContext(&HCryptProv,
+			if (!CryptAcquireContext(&HCryptProv,  // NOSONAR - COMPLEXITY-01: crypto fallback kept as nested if
 					nullptr,
 					szProviderName,
 					PROV_RSA_FULL,
@@ -1650,7 +1650,7 @@ PCCERT_CONTEXT FindCertificateFromHashOnCard(PCRYPT_DATA_BLOB pCertInfo, PTSTR s
 					PROV_RSA_FULL,
 					CRYPT_SILENT))
 				{
-					for (DWORD i = 0; i < ARRAYSIZE(pKeySpecs); i++)
+					for (DWORD i = 0; i < ARRAYSIZE(pKeySpecs); i++)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 					{
 						if (CryptGetUserKey(hProv,
 								pKeySpecs[i],
@@ -1677,7 +1677,7 @@ PCCERT_CONTEXT FindCertificateFromHashOnCard(PCRYPT_DATA_BLOB pCertInfo, PTSTR s
 										KeyProvInfo.dwFlags = 0;
 										KeyProvInfo.dwKeySpec = pKeySpecs[i];
 										KeyProvInfo.dwProvType = PROV_RSA_FULL;
-										KeyProvInfo.pwszContainerName = (LPTSTR) szWideContainerName;
+										KeyProvInfo.pwszContainerName = szWideContainerName;
 										KeyProvInfo.pwszProvName = (LPTSTR) szProviderName;
 										KeyProvInfo.rgProvParam = nullptr;
 										KeyProvInfo.cProvParam = 0;

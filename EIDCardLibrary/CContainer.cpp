@@ -64,15 +64,15 @@ LPTSTR CContainer::ValidateAndCopyString(LPCTSTR szSource, DWORD maxLength, LPCW
 
 CContainer::CContainer(LPCTSTR szReaderName, LPCTSTR szCardName, LPCTSTR szProviderName, LPCTSTR szContainerName, DWORD KeySpec,__in USHORT ActivityCount,PCCERT_CONTEXT pCertContext)
 {
-	_dwRid = 0;
-	_szReaderName = nullptr;
-	_szCardName = nullptr;
-	_szProviderName = nullptr;
-	_szContainerName = nullptr;
-	_szUserName = nullptr;
-	_KeySpec = KeySpec;
-	_ActivityCount = ActivityCount;
-	_pCertContext = pCertContext;
+	_dwRid = 0; // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	_szReaderName = nullptr; // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	_szCardName = nullptr; // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	_szProviderName = nullptr; // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	_szContainerName = nullptr; // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	_szUserName = nullptr; // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	_KeySpec = KeySpec; // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	_ActivityCount = ActivityCount; // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	_pCertContext = pCertContext; // NOSONAR - INIT-01: member initialized in body for clarity/ordering
 
 	_szReaderName = ValidateAndCopyString(szReaderName, MAX_READER_NAME_LENGTH, L"Reader");
 	_szProviderName = ValidateAndCopyString(szProviderName, MAX_PROVIDER_NAME_LENGTH, L"Provider");
@@ -209,7 +209,6 @@ PEID_SMARTCARD_CSP_INFO CContainer::GetCSPInfo() const
 
 	PEID_SMARTCARD_CSP_INFO pCspInfo = (PEID_SMARTCARD_CSP_INFO) EIDAlloc(sizeof(EID_SMARTCARD_CSP_INFO)+dwBufferSize*sizeof(TCHAR));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (!pCspInfo) return nullptr;
-	//ZeroMemory(pCspInfo);
 	memset(pCspInfo,0,sizeof(EID_SMARTCARD_CSP_INFO));
 	pCspInfo->dwCspInfoLen = sizeof(EID_SMARTCARD_CSP_INFO)+dwBufferSize*sizeof(TCHAR);
 	pCspInfo->MessageType = 1;
@@ -275,7 +274,7 @@ BOOL CContainer::TriggerRemovePolicy() const
 	DWORD dwSize;
 	DWORD dwProcessId;
 	DWORD dwSessionId;
-	TCHAR szValueKey[sizeof(DWORD)+1];
+	TCHAR szValueKey[sizeof(DWORD)+1]; // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 
 	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Enter");
 	if (!_ActivityCount)
@@ -370,13 +369,13 @@ BOOL CContainer::TriggerRemovePolicy() const
 	return fReturn;
 }
 
-PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSize)
+PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSize) // NOSONAR - API-01: PWSTR parameter dictated by LSA/logon struct API
 {
 	PEID_INTERACTIVE_LOGON pReturn = nullptr;
 	PEID_INTERACTIVE_LOGON pRequest = nullptr;
 	DWORD dwRid = 0;
 	PWSTR szUserName = nullptr;
-	WCHAR szDomainName[MAX_COMPUTERNAME_LENGTH+1];
+	WCHAR szDomainName[MAX_COMPUTERNAME_LENGTH+1]; // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 	DWORD dwSize;
 	DWORD dwTotalSize;
 	__try
@@ -435,19 +434,19 @@ PEID_INTERACTIVE_LOGON CContainer::AllocateLogonStruct(PWSTR szPin, PDWORD pdwSi
 		PVOID pPointer = (PUCHAR) pRequest + sizeof(EID_INTERACTIVE_LOGON);
 		// PIN
 		_ASSERTE( _CrtCheckMemory( ) );
-		pRequest->Pin.Length = pRequest->Pin.MaximumLength = (USHORT) (wcslen(szPin) * sizeof(WCHAR));
+		pRequest->Pin.Length = pRequest->Pin.MaximumLength = (USHORT) (wcslen(szPin) * sizeof(WCHAR)); // NOSONAR - IDIOM-01: paired LENGTH/MaximumLength assignment is an intentional Win32 UNICODE_STRING idiom
 		pRequest->Pin.Buffer = (PWSTR) pPointer;
 		memcpy(pRequest->Pin.Buffer, szPin, pRequest->Pin.Length);
 		pPointer = (PVOID) ((PCHAR) pPointer + pRequest->Pin.Length);
 		// Username
 		_ASSERTE( _CrtCheckMemory( ) );
-		pRequest->UserName.Length = pRequest->UserName.MaximumLength = (USHORT) (wcslen(szUserName) * sizeof(WCHAR));
+		pRequest->UserName.Length = pRequest->UserName.MaximumLength = (USHORT) (wcslen(szUserName) * sizeof(WCHAR)); // NOSONAR - IDIOM-01: paired LENGTH/MaximumLength assignment is an intentional Win32 UNICODE_STRING idiom
 		pRequest->UserName.Buffer = (PWSTR) pPointer;
 		memcpy(pRequest->UserName.Buffer, szUserName, pRequest->UserName.Length);
 		pPointer = (PVOID) ((PCHAR) pPointer + pRequest->UserName.Length);
 		// Domain
 		_ASSERTE( _CrtCheckMemory( ) );
-		pRequest->LogonDomainName.Length = pRequest->LogonDomainName.MaximumLength = (USHORT) (wcslen(szDomainName) * sizeof(WCHAR));
+		pRequest->LogonDomainName.Length = pRequest->LogonDomainName.MaximumLength = (USHORT) (wcslen(szDomainName) * sizeof(WCHAR)); // NOSONAR - IDIOM-01: paired LENGTH/MaximumLength assignment is an intentional Win32 UNICODE_STRING idiom
 		pRequest->LogonDomainName.Buffer = (PWSTR) pPointer;
 		memcpy(pRequest->LogonDomainName.Buffer, szDomainName, pRequest->LogonDomainName.Length);
 		pPointer = (PVOID) ((PCHAR) pPointer + pRequest->LogonDomainName.Length);

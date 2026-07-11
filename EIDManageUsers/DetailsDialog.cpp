@@ -4,13 +4,13 @@
 #include <windowsx.h>
 
 // Helper: Convert bytes to hex string (local implementation to avoid include issues)
-static std::string BytesToHex(_In_reads_bytes_(cbBytes) const BYTE* pbBytes, _In_ DWORD cbBytes)
+static std::string BytesToHex(_In_reads_bytes_(cbBytes) const BYTE* pbBytes, _In_ DWORD cbBytes)  // NOSONAR - API-01: pointer+length signature dictated by Win32 buffer convention
 {
     std::string result;
     result.reserve(cbBytes * 2);
     for (DWORD i = 0; i < cbBytes; i++)
     {
-        char szHex[3];
+        char szHex[3];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         sprintf_s(szHex, sizeof(szHex), "%02X", pbBytes[i]);
         result += szHex;
     }
@@ -18,12 +18,12 @@ static std::string BytesToHex(_In_reads_bytes_(cbBytes) const BYTE* pbBytes, _In
 }
 
 // Store user pointer for dialog
-static const UserInfo* g_pUser = nullptr;
+static const UserInfo* g_pUser = nullptr;  // NOSONAR - GLOBAL-01: pointer assigned at runtime
 
 // Format user details
 std::wstring FormatUserDetails(_In_ const UserInfo& user)
 {
-    WCHAR szDetails[4096];
+    WCHAR szDetails[4096];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     DWORD dwPos = 0;
 
     dwPos += swprintf_s(szDetails + dwPos, ARRAYSIZE(szDetails) - dwPos,
@@ -39,8 +39,8 @@ std::wstring FormatUserDetails(_In_ const UserInfo& user)
         L"Has EID Credential: %s\r\n",
         user.fHasEIDCredential ? L"Yes" : L"No");
 
-    PCWSTR pwszEnc = (user.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtCrypted) ? L"Certificate-based" :
-                     (user.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtDPAPI) ? L"DPAPI" : L"None";
+    PCWSTR pwszEncFallback = (user.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtDPAPI) ? L"DPAPI" : L"None";
+    PCWSTR pwszEnc = (user.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtCrypted) ? L"Certificate-based" : pwszEncFallback;
     dwPos += swprintf_s(szDetails + dwPos, ARRAYSIZE(szDetails) - dwPos,
         L"Encryption Type: %s\r\n", pwszEnc);
 
@@ -63,7 +63,7 @@ std::wstring FormatUserDetails(_In_ const UserInfo& user)
         L"--- Group Membership ---\r\n");
     if (user.wsGroups.empty())
     {
-        dwPos += swprintf_s(szDetails + dwPos, ARRAYSIZE(szDetails) - dwPos,
+        swprintf_s(szDetails + dwPos, ARRAYSIZE(szDetails) - dwPos,
             L"No group memberships found.\r\n");
     }
     else
@@ -84,7 +84,7 @@ void InitializeDetailsDialog(HWND hwndDlg, _In_ const UserInfo* pUser)
     g_pUser = pUser;
 
     // Set window title
-    WCHAR szTitle[256];
+    WCHAR szTitle[256];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     swprintf_s(szTitle, ARRAYSIZE(szTitle),
         L"User Details - %s", pUser->wsUsername.c_str());
     SetWindowTextW(hwndDlg, szTitle);
@@ -106,7 +106,7 @@ INT_PTR CALLBACK WndProc_Details(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
     case WM_INITDIALOG:
         SetWindowIcon(hwndDlg);
         InitializeDetailsDialog(hwndDlg,
-            reinterpret_cast<const UserInfo*>(lParam));
+            reinterpret_cast<const UserInfo*>(lParam));  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         return TRUE;
 
     case WM_COMMAND:
@@ -117,6 +117,8 @@ INT_PTR CALLBACK WndProc_Details(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
         case IDCANCEL:
             EndDialog(hwndDlg, IDOK);
             return TRUE;
+        default:
+            break;
         }
         break;
 

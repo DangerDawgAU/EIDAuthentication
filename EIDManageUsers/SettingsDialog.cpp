@@ -4,9 +4,9 @@
 #include <windowsx.h>
 
 // Store temporary settings
-static std::vector<std::wstring> g_tempEIDGroups;
-static BOOL g_tempConfirmActions = TRUE;
-static BOOL g_tempShowWarnings = TRUE;
+static std::vector<std::wstring> g_tempEIDGroups;  // NOSONAR - GLOBAL-01: mutable temp settings state modified at runtime
+static BOOL g_tempConfirmActions = TRUE;  // NOSONAR - GLOBAL-01: mutable temp settings state modified at runtime
+static BOOL g_tempShowWarnings = TRUE;  // NOSONAR - GLOBAL-01: mutable temp settings state modified at runtime
 
 // Initialize settings dialog
 void InitializeSettingsDialog(HWND hwndDlg)
@@ -68,7 +68,7 @@ void UpdateGroupsList(HWND hwndDlg)
     HWND hCount = GetDlgItem(hwndDlg, IDC_SETTINGS_GROUPS_COUNT);
     if (hCount)
     {
-        WCHAR szCount[64];
+        WCHAR szCount[64];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         swprintf_s(szCount, ARRAYSIZE(szCount),
             L"%zu group(s)", g_tempEIDGroups.size());
         SetWindowTextW(hCount, szCount);
@@ -79,7 +79,7 @@ void UpdateGroupsList(HWND hwndDlg)
 void AddEIDGroup(HWND hwndDlg)
 {
     // Get group name from edit box
-    WCHAR szGroupName[256];
+    WCHAR szGroupName[256];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     szGroupName[0] = L'\0';
 
     HWND hEdit = GetDlgItem(hwndDlg, IDC_SETTINGS_GROUP_EDIT);
@@ -89,7 +89,7 @@ void AddEIDGroup(HWND hwndDlg)
         if (szGroupName[0] != L'\0')
         {
             // Add to list
-            g_tempEIDGroups.push_back(szGroupName);
+            g_tempEIDGroups.emplace_back(szGroupName);
             UpdateGroupsList(hwndDlg);
             SetWindowTextW(hEdit, L"");
         }
@@ -111,7 +111,7 @@ void RemoveEIDGroup(HWND hwndDlg)
         return;
 
     // Get selected index
-    int nSel = ListBox_GetCurSel(hList);
+    int nSel = ListBox_GetCurSel(hList);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
     if (nSel == LB_ERR)
     {
         MessageBoxW(hwndDlg,
@@ -130,7 +130,7 @@ void RemoveEIDGroup(HWND hwndDlg)
 }
 
 // Settings dialog procedure
-INT_PTR CALLBACK WndProc_Settings(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK WndProc_Settings(HWND hwndDlg, UINT uMsg, WPARAM wParam, [[maybe_unused]] LPARAM lParam)
 {
     switch (uMsg)
     {
@@ -158,6 +158,8 @@ INT_PTR CALLBACK WndProc_Settings(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM
         case IDCANCEL:
             EndDialog(hwndDlg, IDCANCEL);
             return TRUE;
+        default:
+            break;
         }
         break;
 

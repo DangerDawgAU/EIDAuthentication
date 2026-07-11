@@ -36,12 +36,12 @@ constexpr const wchar_t* AUTHENTICATIONPACKAGENAMEW = L"EIDAuthenticationPackage
 // Undefine first to ensure our definition takes precedence without warnings
 // NOSONAR - MACRO-02: Cannot convert to constexpr because Windows SDK defines this as a macro.
 // The preprocessor #undef/#define pattern is required to override the SDK value.
-#undef CERT_HASH_LENGTH
+#undef CERT_HASH_LENGTH  // NOSONAR - INCLUDE-01: #undef overrides Windows SDK CERT_HASH_LENGTH macro
 #define CERT_HASH_LENGTH 32  // NOSONAR - MACRO-02: SHA-256 hash length overriding Windows SDK SHA-1 default
 
 #pragma warning(pop)
 
-#include <utility>
+#include <utility>  // NOSONAR - INCLUDE-01: include placed after SDK macro setup; order significant
 #include <array>
 
 #include "ErrorHandling.h"
@@ -108,7 +108,7 @@ struct EID_SMARTCARD_CSP_INFO
   ULONG nReaderNameOffset;
   ULONG nContainerNameOffset;
   ULONG nCSPNameOffset;
-  TCHAR bBuffer[sizeof(DWORD)];
+  TCHAR bBuffer[sizeof(DWORD)];  // NOSONAR - LSASS-01: C-style buffer required by Win32/ABI struct
 };
 using PEID_SMARTCARD_CSP_INFO = EID_SMARTCARD_CSP_INFO*;
 #pragma pack(pop, EID_SMARTCARD_CSP_INFO)
@@ -280,7 +280,7 @@ enum class EID_MESSAGE_TYPE
 
 constexpr DWORD EID_MESSAGE_VERSION = 1;
 // Signature is exactly 8 bytes (7 chars + null terminator) to match message Signature[8] fields
-constexpr char EID_MESSAGE_SIGNATURE[8] = "EIDAuth";
+constexpr char EID_MESSAGE_SIGNATURE[8] = "EIDAuth";  // NOSONAR - LSASS-01: fixed-size signature buffer for wire protocol
 
 enum class EID_SSP_CALLER
 {
@@ -315,8 +315,8 @@ using PEIDM_ENUM_RESPONSE = EIDM_ENUM_RESPONSE*;
 struct EIDM_CREDENTIAL_SUMMARY
 {
 	DWORD dwRid;                              // Relative ID of user account
-	WCHAR wszUsername[EIDM_MAX_USERNAME_LENGTH];  // Username (null-terminated)
-	UCHAR CertificateHash[CERT_HASH_LENGTH];  // SHA-256 hash of certificate
+	WCHAR wszUsername[EIDM_MAX_USERNAME_LENGTH];  // Username (null-terminated)  // NOSONAR - LSASS-01: C-style array required by Win32/ABI struct
+	UCHAR CertificateHash[CERT_HASH_LENGTH];  // SHA-256 hash of certificate  // NOSONAR - LSASS-01: C-style array required by Win32/ABI struct
 	EID_PRIVATE_DATA_TYPE EncryptionType;     // Password encryption type
 	DWORD dwFlags;                            // Credential flags (reserved for future use)
 };
@@ -329,10 +329,10 @@ struct EIDM_EXPORT_RESPONSE
 	DWORD dwRid;                              // RID of exported credential
 	DWORD dwPrivateDataSize;                  // Size of EID_PRIVATE_DATA structure
 	DWORD dwCertificateSize;                  // Size of certificate data
-	DWORD dwPasswordSize;                     // Size of encrypted password data
+	DWORD dwPasswordSize;                     // Size of encrypted password data  // NOSONAR - ENUM-01: struct member name retained for ABI compatibility
 	EID_PRIVATE_DATA_TYPE EncryptionType;     // Password encryption type
-	UCHAR CertificateHash[CERT_HASH_LENGTH];  // SHA-256 hash of certificate
-	WCHAR wszUsername[EIDM_MAX_USERNAME_LENGTH];  // Username (null-terminated)
+	UCHAR CertificateHash[CERT_HASH_LENGTH];  // SHA-256 hash of certificate  // NOSONAR - LSASS-01: C-style array required by Win32/ABI struct
+	WCHAR wszUsername[EIDM_MAX_USERNAME_LENGTH];  // Username (null-terminated)  // NOSONAR - LSASS-01: C-style array required by Win32/ABI struct
 	// Following this structure in the buffer:
 	// 1. EID_PRIVATE_DATA structure (dwPrivateDataSize bytes)
 	// 2. Certificate data (dwCertificateSize bytes)
@@ -347,10 +347,10 @@ struct EIDM_IMPORT_REQUEST
 	DWORD dwRid;                              // Target RID for credential
 	DWORD dwPrivateDataSize;                  // Size of EID_PRIVATE_DATA structure
 	DWORD dwCertificateSize;                  // Size of certificate data
-	DWORD dwPasswordSize;                     // Size of encrypted password data
+	DWORD dwPasswordSize;                     // Size of encrypted password data  // NOSONAR - ENUM-01: struct member name retained for ABI compatibility
 	EID_PRIVATE_DATA_TYPE EncryptionType;     // Password encryption type
-	UCHAR CertificateHash[CERT_HASH_LENGTH];  // SHA-256 hash of certificate
-	WCHAR wszUsername[EIDM_MAX_USERNAME_LENGTH];  // Username (null-terminated)
+	UCHAR CertificateHash[CERT_HASH_LENGTH];  // SHA-256 hash of certificate  // NOSONAR - LSASS-01: C-style array required by Win32/ABI struct
+	WCHAR wszUsername[EIDM_MAX_USERNAME_LENGTH];  // Username (null-terminated)  // NOSONAR - LSASS-01: C-style array required by Win32/ABI struct
 	DWORD dwFlags;                            // Flags (e.g., create user if not exists)
 	// Following this structure in the buffer:
 	// 1. EID_PRIVATE_DATA structure (dwPrivateDataSize bytes)

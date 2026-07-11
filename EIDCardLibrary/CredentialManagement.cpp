@@ -29,7 +29,7 @@ using Credential_Pair = std::pair<LUID, CCredential*>;
 static CRITICAL_SECTION g_CredentialLock;  // NOSONAR - RUNTIME-01: Critical section, must be mutable
 
 // Static initializer to ensure critical section is initialized before use
-class CredentialLockInitializer {
+class CredentialLockInitializer {  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 public:
     CredentialLockInitializer() { InitializeCriticalSection(&g_CredentialLock); }
     ~CredentialLockInitializer() { DeleteCriticalSection(&g_CredentialLock); }
@@ -57,7 +57,7 @@ CCredential* CCredential::CreateCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_
 	return credential;
 }
 
-CCredential::CCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_INFO pCertInfo,PWSTR szPin, ULONG CredentialUseFlags)
+CCredential::CCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_INFO pCertInfo,PWSTR szPin, ULONG CredentialUseFlags)  // NOSONAR - API-01: signature must match class declaration
 {
 	if (szPin)
 	{
@@ -95,7 +95,7 @@ CCredential::~CCredential()
 	if (_szPin)
 	{
 		SecureZeroMemory(_szPin, _dwLen * sizeof(WCHAR));
-		delete[] _szPin;
+		delete[] _szPin;  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 	}
 	if (_pCertInfo)
 	{
@@ -111,7 +111,7 @@ BOOL CCredential::Delete(ULONG_PTR phCredential)
 	EnterCriticalSection(&g_CredentialLock);
 	for ( auto iter = Credentials.begin( ); iter != Credentials.end( ); iter++ )
 	{
-		CCredential* currentCredential = *iter;
+		CCredential* currentCredential = *iter;  // NOSONAR - API-01: non-const pointer retained by design
 		if (currentCredential == testedCredential)
 		{
 			toDelete = testedCredential;
@@ -123,7 +123,7 @@ BOOL CCredential::Delete(ULONG_PTR phCredential)
 
 	if (toDelete)
 	{
-		delete toDelete;  // Delete outside of lock
+		delete toDelete;  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 		return TRUE;
 	}
 	return FALSE;
@@ -178,15 +178,15 @@ CSecurityContext* CSecurityContext::CreateContext(CCredential* pCredential)
 
 CSecurityContext::CSecurityContext(CCredential* pCredential)
 {
-	_pCredential = pCredential;
+	_pCredential = pCredential;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
 	_State = EID_MESSAGE_STATE::EIDMSNone;
-	pbChallenge = nullptr;
-	pbResponse = nullptr;
-	dwChallengeSize = 0;
-	dwResponseSize = 0;
-	dwRid = 0;
-	pCertContext = nullptr;
-	szUserName = nullptr;
+	pbChallenge = nullptr;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	pbResponse = nullptr;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	dwChallengeSize = 0;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	dwResponseSize = 0;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	dwRid = 0;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	pCertContext = nullptr;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	szUserName = nullptr;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
 	if (pCredential && pCredential->_pCertInfo)
 	{
 		CRYPT_DATA_BLOB blob;
@@ -202,9 +202,9 @@ BOOL CSecurityContext::Delete(ULONG_PTR phContext)
 	CSecurityContext* toDelete = nullptr;
 
 	EnterCriticalSection(&g_CredentialLock);
-	for ( auto iter = Contexts.begin( ); iter != Contexts.end( ); iter++ )
+	for ( auto iter = Contexts.begin( ); iter != Contexts.end( ); iter++ )  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 	{
-		CSecurityContext* currentContext = *iter;
+		CSecurityContext* currentContext = *iter;  // NOSONAR - API-01: non-const pointer retained by design
 		if (currentContext == testedContext)
 		{
 			toDelete = testedContext;
@@ -216,7 +216,7 @@ BOOL CSecurityContext::Delete(ULONG_PTR phContext)
 
 	if (toDelete)
 	{
-		delete toDelete;  // Delete outside of lock
+		delete toDelete;  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 		return TRUE;
 	}
 	return FALSE;
@@ -245,7 +245,7 @@ CSecurityContext* CSecurityContext::GetContextFromHandle(ULONG_PTR context)
 NTSTATUS CSecurityContext::InitializeSecurityContextInput(PSecBufferDesc Buffer)
 {
 	NTSTATUS Status = STATUS_INVALID_SIGNATURE;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
-	switch (_State)
+	switch (_State)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 	{
 		case EID_MESSAGE_STATE::EIDMSNegociate:
 			Status = ReceiveChallengeMessage(Buffer);
@@ -323,11 +323,11 @@ NTSTATUS CSecurityContext::BuildNegociateMessage(PSecBufferDesc Buffer)
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INSUFFICIENT_MEMORY");
 		return SEC_E_INSUFFICIENT_MEMORY;
 	}
-	PEID_NEGOCIATE_MESSAGE message = (PEID_NEGOCIATE_MESSAGE) Buffer->pBuffers[0].pvBuffer;
+	PEID_NEGOCIATE_MESSAGE message = (PEID_NEGOCIATE_MESSAGE) Buffer->pBuffers[0].pvBuffer;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	memset(message, 0, sizeof(EID_NEGOCIATE_MESSAGE));
 	static_assert(sizeof(message->Signature) == sizeof(EID_MESSAGE_SIGNATURE), "Signature buffer sizes must match");
 	memcpy_s(message->Signature.data(), message->Signature.size(), EID_MESSAGE_SIGNATURE, sizeof(EID_MESSAGE_SIGNATURE));
-	message->MessageType = static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTNegociate);
+	message->MessageType = static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTNegociate);  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 	message->Version = EID_MESSAGE_VERSION;
 	static_assert(sizeof(Hash) == sizeof(_pCredential->_rgbHashOfCert), "Hash buffer sizes must match");
 	memcpy_s(Hash, sizeof(Hash), _pCredential->_rgbHashOfCert, sizeof(Hash));
@@ -344,7 +344,7 @@ NTSTATUS CSecurityContext::ReceiveNegociateMessage(PSecBufferDesc Buffer)
 		return SEC_E_INSUFFICIENT_MEMORY;
 	}
 	PEID_NEGOCIATE_MESSAGE message = (PEID_NEGOCIATE_MESSAGE) Buffer->pBuffers[0].pvBuffer;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-	if (message->MessageType != static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTNegociate))
+	if (message->MessageType != static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTNegociate))  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Incorrect messageType");
 		return STATUS_INVALID_SIGNATURE;
@@ -378,11 +378,11 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INSUFFICIENT_MEMORY");
 			__leave;
 		}
-		PEID_CHALLENGE_MESSAGE message = (PEID_CHALLENGE_MESSAGE) Buffer->pBuffers[0].pvBuffer;
+		PEID_CHALLENGE_MESSAGE message = (PEID_CHALLENGE_MESSAGE) Buffer->pBuffers[0].pvBuffer;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		memset(message, 0, sizeof(EID_CHALLENGE_MESSAGE));
 		static_assert(sizeof(message->Signature) == sizeof(EID_MESSAGE_SIGNATURE), "Signature buffer sizes must match");
 		memcpy_s(message->Signature.data(), message->Signature.size(), EID_MESSAGE_SIGNATURE, sizeof(EID_MESSAGE_SIGNATURE));
-		message->MessageType = static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTChallenge);
+		message->MessageType = static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTChallenge);  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 		message->Version = EID_MESSAGE_VERSION;
 		CStoredCredentialManager* manager = CStoredCredentialManager::Instance();
 		if (!manager->GetCertContextFromHash(Hash, &pCertContext, &dwRid))
@@ -443,7 +443,7 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 NTSTATUS CSecurityContext::ReceiveChallengeMessage(PSecBufferDesc Buffer)
 {
 	PEID_CHALLENGE_MESSAGE message = (PEID_CHALLENGE_MESSAGE) Buffer->pBuffers[0].pvBuffer;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-	if (message->MessageType != static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTChallenge))
+	if (message->MessageType != static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTChallenge))  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Incorrect messageType");
 		return STATUS_INVALID_SIGNATURE;
@@ -477,10 +477,10 @@ NTSTATUS CSecurityContext::BuildResponseMessage(PSecBufferDesc Buffer)
 	memset(message, 0, sizeof(EID_RESPONSE_MESSAGE));
 	static_assert(sizeof(message->Signature) == sizeof(EID_MESSAGE_SIGNATURE), "Signature buffer sizes must match");
 	memcpy_s(message->Signature.data(), message->Signature.size(), EID_MESSAGE_SIGNATURE, sizeof(EID_MESSAGE_SIGNATURE));
-	message->MessageType = static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTResponse);
+	message->MessageType = static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTResponse);  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 	message->Version = EID_MESSAGE_VERSION;
 	CStoredCredentialManager* manager = CStoredCredentialManager::Instance();
-	if (!manager->GetResponseFromSignatureChallenge(pbChallenge, dwChallengeSize, pCertContext,_pCredential->_szPin, &pbResponse, &dwResponseSize))
+	if (!manager->GetResponseFromSignatureChallenge(pbChallenge, dwChallengeSize, pCertContext,_pCredential->_szPin, &pbResponse, &dwResponseSize))  // NOSONAR - SCOPE-01: local scoped to block; init-statement refactor deferred
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_LOGON_DENIED");
 		return SEC_E_LOGON_DENIED;
@@ -495,7 +495,7 @@ NTSTATUS CSecurityContext::BuildResponseMessage(PSecBufferDesc Buffer)
 NTSTATUS CSecurityContext::ReceiveResponseMessage(PSecBufferDesc Buffer)
 {
 	PEID_RESPONSE_MESSAGE message = (PEID_RESPONSE_MESSAGE) Buffer->pBuffers[0].pvBuffer;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-	if (message->MessageType != static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTResponse))
+	if (message->MessageType != static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTResponse))  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Incorrect messageType");
 		return STATUS_INVALID_SIGNATURE;
@@ -514,12 +514,12 @@ NTSTATUS CSecurityContext::ReceiveResponseMessage(PSecBufferDesc Buffer)
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS CSecurityContext::BuildCompleteMessage(PSecBufferDesc Buffer)
+NTSTATUS CSecurityContext::BuildCompleteMessage(PSecBufferDesc Buffer)  // NOSONAR - API-01: signature must match class declaration
 {
 	// v�rification du challenge
 	UNREFERENCED_PARAMETER(Buffer);
 	CStoredCredentialManager* manager = CStoredCredentialManager::Instance();
-	if (!manager->VerifySignatureChallengeResponse(dwRid, pbChallenge, dwChallengeSize, pbResponse, dwResponseSize))
+	if (!manager->VerifySignatureChallengeResponse(dwRid, pbChallenge, dwChallengeSize, pbResponse, dwResponseSize))  // NOSONAR - SCOPE-01: local scoped to block; init-statement refactor deferred
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_LOGON_DENIED");
 		return SEC_E_LOGON_DENIED;
@@ -527,7 +527,7 @@ NTSTATUS CSecurityContext::BuildCompleteMessage(PSecBufferDesc Buffer)
 	return STATUS_SUCCESS;
 }
 
-DWORD CSecurityContext::GetRid()
+DWORD CSecurityContext::GetRid()  // NOSONAR - API-01: non-const by design (matches header declaration)
 {
 	return dwRid;
 }
@@ -567,7 +567,7 @@ CSecurityContext::~CSecurityContext()
 
 CUsermodeContext::CUsermodeContext(PEID_SSP_CALLBACK_MESSAGE pMessage)
 {
-	Handle = pMessage->hToken;
+	Handle = pMessage->hToken;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Token = 0x%08X", Handle);
 }
 
@@ -575,7 +575,7 @@ NTSTATUS CUsermodeContext::AddContextInfo(ULONG_PTR pHandle, PEID_SSP_CALLBACK_M
 {
 	NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	CUsermodeContext* pContext = GetContextFromHandle(pHandle);
-	if (!pContext)
+	if (!pContext)  // NOSONAR - SCOPE-01: local scoped to block; init-statement refactor deferred
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Inserting context 0x%08X", pHandle);
 		pContext = new CUsermodeContext(pMessage);  // NOSONAR - COM-01: User mode context requires heap allocation

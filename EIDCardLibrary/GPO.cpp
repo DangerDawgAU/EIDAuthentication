@@ -71,7 +71,7 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 	DWORD value = 0;
 	DWORD size = sizeof(DWORD);
 	DWORD type=REG_SZ;
-	wchar_t szValue[2] = L"0";
+	wchar_t szValue[2] = L"0";  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 	DWORD size2 = sizeof(szValue);
 	const int policyIndex = static_cast<int>(Policy);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,MyGPOInfo[policyIndex].Key,0, KEY_READ, &key)==ERROR_SUCCESS){
@@ -112,7 +112,7 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 
 BOOL SetRemovePolicyValue(DWORD dwActivate)
 {
-	wchar_t szValue[2];
+	wchar_t szValue[2];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 	LONG lReturn;
 	DWORD dwError = 0;
 	SC_HANDLE hService = nullptr;

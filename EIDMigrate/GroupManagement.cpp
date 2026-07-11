@@ -10,7 +10,7 @@
 
 namespace BuiltinGroups
 {
-    BOOL IsBuiltin(_In_ const std::wstring& wsGroupName)
+    BOOL IsBuiltin(_In_ const std::wstring& wsGroupName)  // NOSONAR - API-01: const reference signature retained for interface stability
     {
         return (wsGroupName == ADMINISTRATORS ||
             wsGroupName == USERS ||
@@ -51,7 +51,7 @@ HRESULT GroupExists(_In_ const std::wstring& wsGroupName, _Out_ BOOL& pfExists)
     pfExists = FALSE;
 
     NET_API_STATUS status = NetLocalGroupGetInfo(nullptr, wsGroupName.c_str(), 0,
-        reinterpret_cast<LPBYTE*>(&pInfo)); // NOSONAR - Windows Net API requires LPBYTE (BYTE*); cannot use std::byte // NOSONAR - Windows Net API requires LPBYTE* for output parameter
+        reinterpret_cast<LPBYTE*>(&pInfo)); // NOSONAR - Windows Net API requires LPBYTE (BYTE*); cannot use std::byte
 
     if (status == NERR_Success)
     {
@@ -74,7 +74,7 @@ HRESULT GetGroupInfo(_In_ const std::wstring& wsGroupName, _Out_ LocalGroupInfo&
     NET_API_STATUS status = NetLocalGroupGetInfo(nullptr, wsGroupName.c_str(), 1,
         reinterpret_cast<LPBYTE*>(&pInfo)); // NOSONAR - Windows Net API requires LPBYTE (BYTE*); cannot use std::byte
 
-    if (status != NERR_Success)
+    if (status != NERR_Success)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
         return HRESULT_FROM_WIN32(status);
 
     info.wsName = wsGroupName;
@@ -90,7 +90,7 @@ HRESULT GetGroupInfo(_In_ const std::wstring& wsGroupName, _Out_ LocalGroupInfo&
 HRESULT CreateLocalGroup(_In_ const std::wstring& wsGroupName, _In_ const std::wstring& wsComment)
 {
     LOCALGROUP_INFO_0 lg0 = {};
-    lg0.lgrpi0_name = const_cast<LPWSTR>(wsGroupName.c_str());
+    lg0.lgrpi0_name = const_cast<LPWSTR>(wsGroupName.c_str());  // NOSONAR - CAST-01: Win32 Net API struct field is input-only; const_cast safe
 
     DWORD parm_err = 0;
     NET_API_STATUS status = NetLocalGroupAdd(nullptr, 0,
@@ -107,7 +107,7 @@ HRESULT CreateLocalGroup(_In_ const std::wstring& wsGroupName, _In_ const std::w
 HRESULT SetGroupComment(_In_ const std::wstring& wsGroupName, _In_ const std::wstring& wsComment)
 {
     LOCALGROUP_INFO_1002 lg1002 = {};
-    lg1002.lgrpi1002_comment = const_cast<LPWSTR>(wsComment.c_str());
+    lg1002.lgrpi1002_comment = const_cast<LPWSTR>(wsComment.c_str());  // NOSONAR - CAST-01: Win32 Net API struct field is input-only; const_cast safe
 
     NET_API_STATUS status = NetLocalGroupSetInfo(nullptr, wsGroupName.c_str(),
         1002, reinterpret_cast<LPBYTE>(&lg1002), nullptr); // NOSONAR - Windows Net API requires LPBYTE (BYTE*); cannot use std::byte
@@ -118,7 +118,7 @@ HRESULT SetGroupComment(_In_ const std::wstring& wsGroupName, _In_ const std::ws
 HRESULT AddUserToGroup(_In_ const std::wstring& wsUsername, _In_ const std::wstring& wsGroupName)
 {
     LOCALGROUP_MEMBERS_INFO_3 lm3 = {};
-    lm3.lgrmi3_domainandname = const_cast<LPWSTR>(wsUsername.c_str());
+    lm3.lgrmi3_domainandname = const_cast<LPWSTR>(wsUsername.c_str());  // NOSONAR - CAST-01: Win32 Net API struct field is input-only; const_cast safe
 
     NET_API_STATUS status = NetLocalGroupAddMembers(nullptr, wsGroupName.c_str(),
         3, reinterpret_cast<LPBYTE>(&lm3), 1); // NOSONAR - Windows Net API requires LPBYTE (BYTE*); cannot use std::byte
@@ -129,7 +129,7 @@ HRESULT AddUserToGroup(_In_ const std::wstring& wsUsername, _In_ const std::wstr
 HRESULT RemoveUserFromGroup(_In_ const std::wstring& wsUsername, _In_ const std::wstring& wsGroupName)
 {
     LOCALGROUP_MEMBERS_INFO_3 lm3 = {};
-    lm3.lgrmi3_domainandname = const_cast<LPWSTR>(wsUsername.c_str());
+    lm3.lgrmi3_domainandname = const_cast<LPWSTR>(wsUsername.c_str());  // NOSONAR - CAST-01: Win32 Net API struct field is input-only; const_cast safe
 
     NET_API_STATUS status = NetLocalGroupDelMembers(nullptr, wsGroupName.c_str(),
         3, reinterpret_cast<LPBYTE>(&lm3), 1); // NOSONAR - Windows Net API requires LPBYTE (BYTE*); cannot use std::byte
@@ -144,20 +144,20 @@ HRESULT GetGroupMembers(_In_ const std::wstring& wsGroupName, _Out_ std::vector<
     DWORD dwTotalEntries = 0;
 
     NET_API_STATUS status = NetLocalGroupGetMembers(nullptr, wsGroupName.c_str(), 2,
-        reinterpret_cast<LPBYTE*>(&pBuf),
+        reinterpret_cast<LPBYTE*>(&pBuf),  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         MAX_PREFERRED_LENGTH,
         &dwEntriesRead,
         &dwTotalEntries,
         nullptr);
 
-    if (status != NERR_Success)
+    if (status != NERR_Success)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
         return HRESULT_FROM_WIN32(status);
 
     for (DWORD i = 0; i < dwEntriesRead; i++)
     {
         if (pBuf[i].lgrmi2_sidusage == SidTypeUser)
         {
-            wsMembers.push_back(pBuf[i].lgrmi2_domainandname);
+            wsMembers.emplace_back(pBuf[i].lgrmi2_domainandname);
         }
     }
 
@@ -172,13 +172,13 @@ HRESULT EnumerateLocalGroups(_Out_ std::vector<LocalGroupInfo>& groups)
     DWORD dwTotalEntries = 0;
 
     NET_API_STATUS status = NetLocalGroupEnum(nullptr, 1,
-        reinterpret_cast<LPBYTE*>(&pBuf),
+        reinterpret_cast<LPBYTE*>(&pBuf),  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         MAX_PREFERRED_LENGTH,
         &dwEntriesRead,
         &dwTotalEntries,
         nullptr);
 
-    if (status != NERR_Success)
+    if (status != NERR_Success)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
         return HRESULT_FROM_WIN32(status);
 
     for (DWORD i = 0; i < dwEntriesRead; i++)
@@ -206,17 +206,17 @@ HRESULT GetUserGroups(_In_ const std::wstring& wsUsername, _Out_ std::vector<std
 
     NET_API_STATUS status = NetUserGetLocalGroups(nullptr, wsUsername.c_str(), 0,
         LG_INCLUDE_INDIRECT,
-        reinterpret_cast<LPBYTE*>(&pBuf),
+        reinterpret_cast<LPBYTE*>(&pBuf),  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         MAX_PREFERRED_LENGTH,
         &dwEntriesRead,
         &dwTotalEntries);
 
-    if (status != NERR_Success)
+    if (status != NERR_Success)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
         return HRESULT_FROM_WIN32(status);
 
     for (DWORD i = 0; i < dwEntriesRead; i++)
     {
-        wsGroupNames.push_back(pBuf[i].lgrui0_name);
+        wsGroupNames.emplace_back(pBuf[i].lgrui0_name);
     }
 
     NetApiBufferFree(pBuf);
@@ -253,7 +253,7 @@ HRESULT SynchronizeGroupMemberships(
         if (!fInGroup)
         {
             // Don't try to add to built-in groups that don't exist
-            if (!BuiltinGroups::IsBuiltin(wsTargetGroup))
+            if (!BuiltinGroups::IsBuiltin(wsTargetGroup))  // NOSONAR - COMPLEXITY-01: nested if kept separate for clarity
             {
                 BOOL fExists = FALSE;
                 GroupExists(wsTargetGroup, fExists);

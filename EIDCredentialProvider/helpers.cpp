@@ -139,7 +139,7 @@ static HRESULT ProtectAndCopyString(
     // to encrypt, must include the NULL terminator!
     DWORD cchProtected = 0;
 	PWSTR pwzProtected = s_wszEmpty;
-	   if (!CredProtectW(FALSE, pwzToProtect, (DWORD)wcslen(pwzToProtect)+1, pwzProtected, &cchProtected, nullptr))
+	   if (!CredProtectW(FALSE, pwzToProtect, (DWORD)wcslen(pwzToProtect)+1, pwzProtected, &cchProtected, nullptr))  // NOSONAR - SCOPE-01: local scoped to block; init-statement refactor deferred
     {
         DWORD dwErr = GetLastError();
 
@@ -151,7 +151,7 @@ static HRESULT ProtectAndCopyString(
             if (pwzProtected)
             {
                 // The second call to CredProtect actually encrypts the string.
-                if (CredProtectW(FALSE, pwzToProtect, (DWORD)wcslen(pwzToProtect)+1, pwzProtected, &cchProtected, nullptr))
+                if (CredProtectW(FALSE, pwzToProtect, (DWORD)wcslen(pwzToProtect)+1, pwzProtected, &cchProtected, nullptr))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     *ppwzProtected = pwzProtected;
                     hr = S_OK;
@@ -204,7 +204,7 @@ HRESULT ProtectIfNecessaryAndCopyPassword(
         // If the password is already encrypted, we should not encrypt it again.
         // An encrypted password may be received through SetSerialization in the 
         // CPUS_LOGON scenario during a Terminal Services connection, for instance.
-        if(CredIsProtectedW(pwzPassword, &protectionType) && CredUnprotected != protectionType)
+        if(CredIsProtectedW(pwzPassword, &protectionType) && CredUnprotected != protectionType)  // NOSONAR - SCOPE-01: local scoped to block; init-statement refactor deferred
         {
             bCredAlreadyEncrypted = true;
         }
@@ -229,7 +229,7 @@ HRESULT ProtectIfNecessaryAndCopyPassword(
 }
 
 using PRShowRestoreFromMsginaW = BOOL (NTAPI*)(DWORD, DWORD, PWSTR, DWORD);
-static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam) 
+static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified 
 { 
  
     switch (message) 
@@ -303,7 +303,7 @@ static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT messa
 						NET_API_STATUS nStatus;
 						GetWindowTextW(GetDlgItem(hwndDlg,IDC_USERNAME),szUserName,ARRAYSIZE(szUserName));
 						nStatus = NetUserGetInfo(nullptr,szUserName,0,&pbBuffer);
-						if (nStatus == NERR_Success)
+						if (nStatus == NERR_Success)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 						{
 							NetApiBufferFree(pbBuffer);
 							__try

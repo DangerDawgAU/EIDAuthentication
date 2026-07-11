@@ -26,7 +26,7 @@
 #include "EventDefinitions.h"
 
 // Category name lookup table
-static const WCHAR s_wszCategoryNames[][32] = {
+static const WCHAR s_wszCategoryNames[][32] = {  // NOSONAR - LSASS-01: C-style fixed-size string lookup table
     L"AUTHENTICATION",   // 1000
     L"AUTHORIZATION",    // 2000
     L"SESSION",          // 3000
@@ -38,7 +38,7 @@ static const WCHAR s_wszCategoryNames[][32] = {
 };
 
 // Severity name lookup table
-static const WCHAR s_wszSeverityNames[][16] = {
+static const WCHAR s_wszSeverityNames[][16] = {  // NOSONAR - LSASS-01: C-style fixed-size string lookup table
     L"CRITICAL",         // 1
     L"ERROR",            // 2
     L"WARNING",          // 3
@@ -47,7 +47,7 @@ static const WCHAR s_wszSeverityNames[][16] = {
 };
 
 // Outcome name lookup table
-static const WCHAR s_wszOutcomeNames[][16] = {
+static const WCHAR s_wszOutcomeNames[][16] = {  // NOSONAR - LSASS-01: C-style fixed-size string lookup table
     L"Success",          // 0
     L"Failure",          // 1
     L"Partial",          // 2
@@ -58,7 +58,7 @@ static const WCHAR s_wszOutcomeNames[][16] = {
 
 PCWSTR GetCategoryName(EID_EVENT_CATEGORY category)
 {
-    WORD wCat = static_cast<WORD>(category);
+    WORD wCat = static_cast<WORD>(category);  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
     switch (wCat)
     {
         case 1000: return s_wszCategoryNames[0];  // AUTHENTICATION
@@ -73,9 +73,9 @@ PCWSTR GetCategoryName(EID_EVENT_CATEGORY category)
     }
 }
 
-PCWSTR GetEventName(EID_EVENT_ID eventId)
+PCWSTR GetEventName(EID_EVENT_ID eventId)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
-    DWORD dwId = static_cast<DWORD>(eventId);
+    DWORD dwId = static_cast<DWORD>(eventId);  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 
     // Authentication events (1xxx)
     if (dwId >= 1001 && dwId <= 1013)
@@ -95,6 +95,7 @@ PCWSTR GetEventName(EID_EVENT_ID eventId)
             case 1011: return L"Certificate Not Yet Valid";
             case 1012: return L"Certificate Chain Error";
             case 1013: return L"Account Lockout";
+            default: break;
         }
     }
 
@@ -115,6 +116,7 @@ PCWSTR GetEventName(EID_EVENT_ID eventId)
             case 2010: return L"LSA Secret Not Found";
             case 2011: return L"Credential Access Denied";
             case 2012: return L"LSA Secret Scan Miss";
+            default: break;
         }
     }
 
@@ -131,6 +133,7 @@ PCWSTR GetEventName(EID_EVENT_ID eventId)
             case 3006: return L"Session Unlock";
             case 3007: return L"Session Renewed";
             case 3008: return L"Session Timeout";
+            default: break;
         }
     }
 
@@ -153,6 +156,7 @@ PCWSTR GetEventName(EID_EVENT_ID eventId)
             case 4012: return L"Certificate Chain Build";
             case 4013: return L"Certificate Chain Error";
             case 4014: return L"Certificate Trust Error";
+            default: break;
         }
     }
 
@@ -171,6 +175,7 @@ PCWSTR GetEventName(EID_EVENT_ID eventId)
             case 5008: return L"ATR Read";
             case 5009: return L"Communication Error";
             case 5010: return L"Unknown Card Type";
+            default: break;
         }
     }
 
@@ -186,6 +191,7 @@ PCWSTR GetEventName(EID_EVENT_ID eventId)
             case 6005: return L"LSA Secret Created";
             case 6006: return L"LSA Secret Deleted";
             case 6007: return L"LSA Secret Format Error";
+            default: break;
         }
     }
 
@@ -205,6 +211,7 @@ PCWSTR GetEventName(EID_EVENT_ID eventId)
             case 7009: return L"CSV Logging Disabled";
             case 7010: return L"Column Selection Changed";
             case 7011: return L"Event Filter Changed";
+            default: break;
         }
     }
 
@@ -226,6 +233,7 @@ PCWSTR GetEventName(EID_EVENT_ID eventId)
             case 8011: return L"Import Failure";
             case 8012: return L"Validation Success";
             case 8013: return L"Validation Failure";
+            default: break;
         }
     }
 

@@ -4,32 +4,32 @@
 // NOSONAR - Macros are required by Windows Resource Compiler; cannot use constexpr/enum for resource IDs
 //
 #define IDI_APP_ICON                    101 // NOSONAR - RESOURCE-01: RC.exe requires #define macros
-#define IDD_PIN_PROMPT                  100
-#define IDC_PIN_EDIT                    102
-#define IDC_PIN_PROMPT_LABEL            103
-#define IDS_APP_NAME                    300
-#define IDS_APP_VERSION                 301
-#define IDS_APP_COPYRIGHT               302
-#define IDS_ERROR_PASSPHRASE_SHORT       400
-#define IDS_ERROR_PASSPHRASE_WEAK        401
-#define IDS_ERROR_FILE_READ              402
-#define IDS_ERROR_FILE_WRITE             403
-#define IDS_ERROR_INVALID_FORMAT         404
-#define IDS_ERROR_LSA_ACCESS_DENIED      405
-#define IDS_ERROR_NO_CREDENTIALS         406
-#define IDS_INFO_EXPORT_COMPLETE         500
-#define IDS_INFO_IMPORT_COMPLETE         501
-#define IDS_WARNING_DPAPI_SKIPPED        600
-#define IDS_WARNING_CERT_NOT_TRUSTED     601
-#define IDS_WARNING_GROUP_NOT_FOUND      602
+#define IDD_PIN_PROMPT                  100  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_PIN_EDIT                    102  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_PIN_PROMPT_LABEL            103  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_APP_NAME                    300  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_APP_VERSION                 301  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_APP_COPYRIGHT               302  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_ERROR_PASSPHRASE_SHORT       400  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_ERROR_PASSPHRASE_WEAK        401  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_ERROR_FILE_READ              402  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_ERROR_FILE_WRITE             403  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_ERROR_INVALID_FORMAT         404  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_ERROR_LSA_ACCESS_DENIED      405  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_ERROR_NO_CREDENTIALS         406  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_INFO_EXPORT_COMPLETE         500  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_INFO_IMPORT_COMPLETE         501  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_WARNING_DPAPI_SKIPPED        600  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_WARNING_CERT_NOT_TRUSTED     601  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_WARNING_GROUP_NOT_FOUND      602  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        201
-#define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         103
-#define _APS_NEXT_SYMED_VALUE           101
+#define _APS_NEXT_RESOURCE_VALUE        201  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define _APS_NEXT_COMMAND_VALUE         40001  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define _APS_NEXT_CONTROL_VALUE         103  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define _APS_NEXT_SYMED_VALUE           101  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #endif
 #endif

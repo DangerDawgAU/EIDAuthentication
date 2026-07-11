@@ -37,11 +37,11 @@ public:
 
     // Converting constructor (allows allocator<T> to construct allocator<U>)
     template<typename U>
-    SecureAllocator(const SecureAllocator<U>&) noexcept {}
+    SecureAllocator(const SecureAllocator<U>&) noexcept {}  // NOSONAR - API-01: implicit converting constructor required by Allocator concept
 
     pointer allocate(size_type n)
     {
-        pointer p = static_cast<pointer>(malloc(n * sizeof(T)));
+        pointer p = static_cast<pointer>(malloc(n * sizeof(T)));  // NOSONAR - ALLOC-01: malloc paired with free in deallocate
         if (!p)
         {
             throw std::bad_alloc();
@@ -54,7 +54,7 @@ public:
         if (p)
         {
             SecureZeroMemory(p, n * sizeof(T));
-            free(p);
+            free(p);  // NOSONAR - ALLOC-01: free paired with malloc in allocate
         }
     }
 };
@@ -87,7 +87,7 @@ public:
     SecureBuffer& operator=(SecureBuffer&& other) noexcept;
 
     PBYTE data() { return m_pbData; }
-    const PBYTE data() const { return m_pbData; }
+    PBYTE data() const { return m_pbData; }
     DWORD size() const { return m_cbSize; }
     bool empty() const { return m_pbData == nullptr; }
     bool locked() const { return m_fLocked; }
@@ -134,7 +134,7 @@ public:
 using SecurePassphrase = SecurePin;
 
 // Exception-safe scope for crypto operations
-class CryptoOperationScope
+class CryptoOperationScope  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 {
 private:
     std::vector<SecureBuffer> m_sensitiveBuffers;

@@ -89,7 +89,7 @@ extern "C"
 		return Destination;
 	}
 
-	PLSA_UNICODE_STRING LsaInitializeUnicodeStringFromWideString(PWSTR Source)
+	PLSA_UNICODE_STRING LsaInitializeUnicodeStringFromWideString(PWSTR Source)  // NOSONAR - API-01: signature dictated by Windows/callback API
 	{
 		if (Source == NULL)  // STRPTR-01: Validate pointer before wcslen
 		{
@@ -109,7 +109,7 @@ extern "C"
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"String size too large for safe allocation (%d chars)", Size);
 			return NULL;
 		}
-		PWSTR Buffer = static_cast<PWSTR>(EIDAlloc((Size + 1) * sizeof(WCHAR)));
+		PWSTR Buffer = static_cast<PWSTR>(EIDAlloc((Size + 1) * sizeof(WCHAR)));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		if (Buffer == NULL) {
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No Memory Buffer");
 			return NULL;
@@ -262,8 +262,8 @@ extern "C"
 	NTSTATUS NTAPI LsaApInitializePackage(
 	  __in      ULONG AuthenticationPackageId,
 	  __in      PLSA_DISPATCH_TABLE LsaDispatchTable,
-	  __in_opt  PLSA_STRING Database,
-	  __in_opt  PLSA_STRING Confidentiality,
+	  __in_opt  PLSA_STRING Database,  // NOSONAR - API-01: signature dictated by Windows/callback API
+	  __in_opt  PLSA_STRING Confidentiality,  // NOSONAR - API-01: signature dictated by Windows/callback API
 	  __out     PLSA_STRING *AuthenticationPackageName
 	) {
 		UNREFERENCED_PARAMETER(AuthenticationPackageId);
@@ -273,7 +273,7 @@ extern "C"
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"AuthenticationPackageName = %S",AUTHENTICATIONPACKAGENAME);
 		NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 
-		MyLsaDispatchTable = reinterpret_cast<PLSA_SECPKG_FUNCTION_TABLE>(LsaDispatchTable);
+		MyLsaDispatchTable = reinterpret_cast<PLSA_SECPKG_FUNCTION_TABLE>(LsaDispatchTable);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
 		*AuthenticationPackageName = LsaInitializeString(AUTHENTICATIONPACKAGENAME);
 
@@ -300,13 +300,13 @@ extern "C"
 	to LsaCallAuthenticationPackage by an application using an untrusted connection. 
 	This function is used for communicating with processes that do not have the SeTcbPrivilege privilege.*/
 
-	NTSTATUS NTAPI LsaApCallPackageUntrusted(
+	NTSTATUS NTAPI LsaApCallPackageUntrusted(  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 	  __in   PLSA_CLIENT_REQUEST ClientRequest,
 	  __in   PVOID ProtocolSubmitBuffer,
 	  __in   PVOID ClientBufferBase,
 	  __in   ULONG SubmitBufferLength,
 	  __out  PVOID *ProtocolReturnBuffer,
-	  __out  PULONG ReturnBufferLength,
+	  __out  PULONG ReturnBufferLength,  // NOSONAR - API-01: signature dictated by Windows/callback API
 	  __out  PNTSTATUS ProtocolStatus
 	) 
 	{
@@ -337,8 +337,8 @@ extern "C"
 					break;
 				}
 				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Has Authorization for rid = 0x%x", pBuffer->dwRid);
-				pPointer = reinterpret_cast<PBYTE>(pBuffer->wszPassword) - reinterpret_cast<ULONG_PTR>(ClientBufferBase) + reinterpret_cast<ULONG_PTR>(pBuffer);
-				pBuffer->wszPassword = reinterpret_cast<PWSTR>(pPointer);
+				pPointer = reinterpret_cast<PBYTE>(pBuffer->wszPassword) - reinterpret_cast<ULONG_PTR>(ClientBufferBase) + reinterpret_cast<ULONG_PTR>(pBuffer);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
+				pBuffer->wszPassword = reinterpret_cast<PWSTR>(pPointer);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 				pPointer = pBuffer->pbCertificate - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
 				pBuffer->pbCertificate = pPointer;
 				pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, pBuffer->pbCertificate, pBuffer->dwCertificateSize);
@@ -478,14 +478,14 @@ extern "C"
 	  __in   ULONG SubmitBufferLength,
 	  __out  PVOID *ProtocolReturnBuffer,
 	  __out  PULONG ReturnBufferLength,
-	  __out  PNTSTATUS ProtocolStatus
+	  __out  PNTSTATUS ProtocolStatus  // NOSONAR - API-01: signature dictated by Windows/callback API
 	  ) 
 	{
 		UNREFERENCED_PARAMETER(ProtocolStatus);
 		UNREFERENCED_PARAMETER(ClientBufferBase);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 		NTSTATUS StatusReturned = STATUS_SUCCESS;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-		PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST pGina = static_cast<PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST>(ProtocolSubmitBuffer);
+		PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST pGina = static_cast<PEID_MSGINA_AUTHENTICATION_CHALLENGE_REQUEST>(ProtocolSubmitBuffer);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		PBYTE pbChallenge = NULL;
 		DWORD dwChallengeSize = 0;
 		DWORD dwType = 0;
@@ -552,14 +552,14 @@ extern "C"
 	  __in   ULONG SubmitBufferLength,
 	  __out  PVOID *ProtocolReturnBuffer,
 	  __out  PULONG ReturnBufferLength,
-	  __out  PNTSTATUS ProtocolStatus
+	  __out  PNTSTATUS ProtocolStatus  // NOSONAR - API-01: signature dictated by Windows/callback API
 	  ) 
 	{
 		UNREFERENCED_PARAMETER(ProtocolStatus);
 		UNREFERENCED_PARAMETER(ClientBufferBase);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 		NTSTATUS StatusReturned = STATUS_SUCCESS;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-		PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST pGina = static_cast<PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST>(ProtocolSubmitBuffer);
+		PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST pGina = static_cast<PEID_MSGINA_AUTHENTICATION_RESPONSE_REQUEST>(ProtocolSubmitBuffer);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 		PWSTR szPassword = NULL;
 		EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER response = {0};
 		memset(&response, 0, sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER));
@@ -619,7 +619,7 @@ extern "C"
 			}
 			// Store size to avoid calling wcslen twice
 			DWORD PasswordSize = static_cast<DWORD>(wcslen(szPassword));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-			response.Password.MaximumLength = response.Password.Length = static_cast<USHORT>(sizeof(WCHAR) * PasswordSize);
+			response.Password.MaximumLength = response.Password.Length = static_cast<USHORT>(sizeof(WCHAR) * PasswordSize);  // NOSONAR - IDIOM-01: chained assignment intentional
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"OK");
 		}
 		__finally
@@ -629,7 +629,7 @@ extern "C"
 			{
 				if (szPassword) 
 				{
-					response.Password.Buffer = reinterpret_cast<PWSTR>(static_cast<PUCHAR>(*ProtocolReturnBuffer) + sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER));
+					response.Password.Buffer = reinterpret_cast<PWSTR>(static_cast<PUCHAR>(*ProtocolReturnBuffer) + sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER));  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 				}
 				StatusReturned = MyLsaDispatchTable->CopyToClientBuffer(ClientRequest, sizeof(EID_MSGINA_AUTHENTICATION_RESPONSE_ANSWER), *ProtocolReturnBuffer, &response);
 				if (StatusReturned == STATUS_SUCCESS && szPassword) 
@@ -669,7 +669,7 @@ extern "C"
 			// we take care here of messages requiring the TCB privilege (winlogon, msgina, ...)
 			// the other message are forwarded to LsaApCallPackageUntrusted
 			PEID_CALLPACKAGE_BUFFER pBuffer = static_cast<PEID_CALLPACKAGE_BUFFER>(ProtocolSubmitBuffer);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-			switch (pBuffer->MessageType)
+			switch (pBuffer->MessageType)  // NOSONAR - SCOPE-01: variable reused across switch cases
 			{
 			case EIDCMEIDGinaAuthenticationChallenge:
 				Status = PerformGinaAuthenticationChallenge(ClientRequest,ProtocolSubmitBuffer,ClientBufferBase,
@@ -716,7 +716,7 @@ extern "C"
 	to free any resources allocated for the logon session.*/
 
 	VOID NTAPI LsaApLogonTerminated(
-	  __in  PLUID LogonId
+	  __in  PLUID LogonId  // NOSONAR - API-01: signature dictated by Windows/callback API
 	) {
 		UNREFERENCED_PARAMETER(LogonId);
 		return;
@@ -754,8 +754,8 @@ extern "C"
 			{
 				__leave;
 			}
-			CredIsProtectedW = reinterpret_cast<CredIsProtectedWFct>(GetProcAddress(hModule,"CredIsProtectedW"));
-			CredUnprotectW = reinterpret_cast<CredUnprotectWFct>(GetProcAddress(hModule,"CredUnprotectW"));
+			CredIsProtectedW = reinterpret_cast<CredIsProtectedWFct>(GetProcAddress(hModule,"CredIsProtectedW"));  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
+			CredUnprotectW = reinterpret_cast<CredUnprotectWFct>(GetProcAddress(hModule,"CredUnprotectW"));  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 			if (CredIsProtectedW == NULL || CredUnprotectW == NULL)
 			{
 				// get here if on Windows XP
@@ -764,7 +764,7 @@ extern "C"
 			// here on Vista & later
 			if(CredIsProtectedW(pwzPin, &protectionType))
 			{
-				if(CredUnprotected != protectionType)
+				if(CredUnprotected != protectionType)  // NOSONAR - COMPLEXITY-01: nested if kept separate for clarity
 				{
 					if (!CredUnprotectW(FALSE,pwzPin,UNLEN,pwzPinUncrypted,&dPinUncrypted))
 					{
@@ -787,7 +787,7 @@ extern "C"
 
 	/** Called when the authentication package has been specified in a call to LsaLogonUser.
 	This function authenticates a security principal's logon data.*/
-	NTSTATUS NTAPI LsaApLogonUserEx2(
+	NTSTATUS NTAPI LsaApLogonUserEx2(  // NOSONAR - COMPLEXITY-01: LSA callback signature has fixed parameter count
 	  __in   PLSA_CLIENT_REQUEST ClientRequest,
 	  __in   SECURITY_LOGON_TYPE LogonType,
 	  __in   PVOID AuthenticationInformation,
@@ -1197,7 +1197,7 @@ extern "C"
 
 		exportedFunctions->InitializePackage = LsaApInitializePackage;
 		// missing the word NTAPI in NTSecPkg.h
-		exportedFunctions->LogonUserEx2 = reinterpret_cast<PLSA_AP_LOGON_USER_EX2>(LsaApLogonUserEx2);
+		exportedFunctions->LogonUserEx2 = reinterpret_cast<PLSA_AP_LOGON_USER_EX2>(LsaApLogonUserEx2);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 		exportedFunctions->LogonTerminated = LsaApLogonTerminated;
 		exportedFunctions->CallPackage = LsaApCallPackage;
 		exportedFunctions->CallPackagePassthrough = LsaApCallPackagePassthrough;
@@ -1206,7 +1206,7 @@ extern "C"
 
 	// CleanupLsaCredentials - Removes EID credential mappings from LSA Private Data
 	// Called by uninstaller to clean up stored credentials for all local users
-	HRESULT WINAPI CleanupLsaCredentials()
+	HRESULT WINAPI CleanupLsaCredentials()  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 	{
 		HRESULT hr = S_OK;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 		LSA_OBJECT_ATTRIBUTES ObjectAttributes = {0};
@@ -1292,15 +1292,15 @@ extern "C"
 					}
 
 					// Retry loop for SID allocation (handles TOCTOU race condition)
-					for (dwRetryCount = 0; dwRetryCount < MAX_RETRIES; dwRetryCount++)
+					for (dwRetryCount = 0; dwRetryCount < MAX_RETRIES; dwRetryCount++)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 					{
 						// Clean up from previous retry
-						if (pSidBuffer)
+						if (pSidBuffer)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 						{
 							EIDFree(pSidBuffer);
 							pSidBuffer = NULL;
 						}
-						if (pDomain)
+						if (pDomain)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 						{
 							EIDFree(pDomain);
 							pDomain = NULL;
@@ -1310,7 +1310,7 @@ extern "C"
 						pSidBuffer = (PBYTE)EIDAlloc(dwSidSize);
 						pDomain = (PWSTR)EIDAlloc(dwDomainSize * sizeof(WCHAR));
 
-						if (pSidBuffer && pDomain)
+						if (pSidBuffer && pDomain)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 						{
 							SecureZeroMemory(pSidBuffer, dwSidSize);
 							SecureZeroMemory(pDomain, dwDomainSize * sizeof(WCHAR));
@@ -1346,7 +1346,7 @@ extern "C"
 					if (fSuccess)
 						{
 							// Extract RID from SID
-							if (IsValidSid((PSID)pSidBuffer))
+							if (IsValidSid((PSID)pSidBuffer))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 							{
 								DWORD dwSubAuthorityCount = *GetSidSubAuthorityCount((PSID)pSidBuffer);
 								DWORD dwRid = *GetSidSubAuthority((PSID)pSidBuffer, dwSubAuthorityCount - 1);

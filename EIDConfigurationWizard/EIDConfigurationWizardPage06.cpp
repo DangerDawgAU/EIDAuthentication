@@ -26,8 +26,8 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, [[maybe_unused]
 				HICON hIcon = LoadIcon(hDll, MAKEINTRESOURCE(106));
 				// STM_SETIMAGE does NOT copy the icon - the control takes ownership.
 				// Destroy the previous icon (if any) returned by STM_SETIMAGE, but NOT the new one.
-				HICON hPrevIcon = (HICON)SendMessage(GetDlgItem(hWnd,IDC_06SHIELD),STM_SETIMAGE,IMAGE_ICON, (LPARAM) hIcon);
-				if (hPrevIcon)
+				HICON hPrevIcon = (HICON)SendMessage(GetDlgItem(hWnd,IDC_06SHIELD),STM_SETIMAGE,IMAGE_ICON, (LPARAM) hIcon);  // NOSONAR (EXPLICIT-TYPE-02) - HICON handle type retained for clarity
+				if (hPrevIcon)  // NOSONAR - SCOPE-01: declaration kept separate from if for clarity
 					DestroyIcon(hPrevIcon);
 				FreeLibrary(hDll);
 			}
@@ -37,7 +37,7 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, [[maybe_unused]
 	case WM_NOTIFY :
 		{
 			auto pnmh = (LPNMHDR)lParam;  // NOSONAR - Cast required for Windows message handling
-			switch(pnmh->code)
+			switch(pnmh->code)  // NOSONAR - SCOPE-01: declaration kept separate from switch for clarity
 			{
 			case NM_CLICK:
 			case NM_RETURN:
@@ -53,7 +53,7 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, [[maybe_unused]
 			case PSN_WIZFINISH:
 				// Clean up the icon handle before closing (control owns it after STM_SETIMAGE)
 				{
-					HICON hIcon = (HICON)SendDlgItemMessage(hWnd, IDC_06SHIELD, STM_SETIMAGE, IMAGE_ICON, 0);
+					HICON hIcon = (HICON)SendDlgItemMessage(hWnd, IDC_06SHIELD, STM_SETIMAGE, IMAGE_ICON, 0);  // NOSONAR (EXPLICIT-TYPE-02) - HICON handle type retained for clarity
 					if (hIcon)
 						DestroyIcon(hIcon);
 				}
@@ -61,7 +61,7 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, [[maybe_unused]
 					SecurelyClearPassword();
 					if (pCredentialList)
 					{
-						delete pCredentialList;
+						delete pCredentialList;  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 						pCredentialList = nullptr;
 					}
 					break;
@@ -69,7 +69,7 @@ INT_PTR CALLBACK	WndProc_06TESTRESULTOK(HWND hWnd, UINT message, [[maybe_unused]
 				case PSN_RESET:
 					// Clean up the icon handle when wizard is cancelled
 					{
-						HICON hIcon = (HICON)SendDlgItemMessage(hWnd, IDC_06SHIELD, STM_SETIMAGE, IMAGE_ICON, 0);
+						HICON hIcon = (HICON)SendDlgItemMessage(hWnd, IDC_06SHIELD, STM_SETIMAGE, IMAGE_ICON, 0);  // NOSONAR (EXPLICIT-TYPE-02) - HICON handle type retained for clarity
 						if (hIcon)
 							DestroyIcon(hIcon);
 					}

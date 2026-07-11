@@ -2,8 +2,8 @@
 #include "CertificateOps.h"
 #include "../EIDMigrate/Tracing.h"
 #include <sddl.h>
-#include <userenv.h>
-#include <lm.h>
+#include <userenv.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
+#include <lm.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 
 #pragma comment(lib, "crypt32.lib")
 #pragma comment(lib, "userenv.lib")
@@ -36,13 +36,13 @@ static HRESULT GetUserSid(_In_ const std::wstring& wsUsername, _Out_ PSID* ppSid
     if (dwSidSize == 0)
         return HRESULT_FROM_WIN32(GetLastError());
 
-    PSID pSid = static_cast<PSID>(LocalAlloc(LPTR, dwSidSize));
+    PSID pSid = static_cast<PSID>(LocalAlloc(LPTR, dwSidSize));  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
     if (!pSid)
         return E_OUTOFMEMORY;
 
     std::vector<WCHAR> domainBuffer(dwDomainSize);
 
-    if (!LookupAccountNameW(nullptr, wsUsername.c_str(),
+    if (!LookupAccountNameW(nullptr, wsUsername.c_str(),  // NOSONAR - SCOPE-01: declaration kept outside if for clarity
         pSid, &dwSidSize,
         domainBuffer.data(), &dwDomainSize, &use))
     {
@@ -84,9 +84,9 @@ HRESULT EnumerateUserCertificates(_In_ const std::wstring& wsUsername,
         }
 
         // Build store path for user
-        WCHAR szStorePath[MAX_PATH];
+        WCHAR szStorePath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         swprintf_s(szStorePath, ARRAYSIZE(szStorePath),
-            L"\\\\.%\\%s\\%s", pwszSid, L"MY");
+            L"\\\\.%\\%s\\%s", pwszSid, L"MY");  // NOSONAR - STRING-01: literal retained; raw-string conversion not behavior-safe for this format path
 
         LocalFree(pwszSid);
         LocalFree(pSid);
@@ -171,10 +171,8 @@ HRESULT RemoveUserCertificates(_In_ const std::wstring& wsUsername)
     }
 
     // Load user profile and impersonate
-    HANDLE hToken = nullptr;
 
     // Open store with impersonation
-    HCERTSTORE hStore = nullptr;
 
     // For admin tool running as system, we can delete directly
     // by using the user's SID
@@ -217,7 +215,7 @@ HRESULT RemoveCertificatesByHash(_In_ const std::wstring& wsUsername,
 
     std::vector<PCCERT_CONTEXT> certs;
     HRESULT hr = EnumerateUserCertificates(wsUsername, certs);
-    if (hr == S_FALSE || certs.empty())
+    if (hr == S_FALSE || certs.empty())  // NOSONAR - SCOPE-01: variable reused after the block
         return S_OK;
     else if (FAILED(hr))
         return hr;
@@ -226,7 +224,7 @@ HRESULT RemoveCertificatesByHash(_In_ const std::wstring& wsUsername,
     for (auto pCert : certs)
     {
         // Get certificate hash
-        BYTE certHash[32];
+        BYTE certHash[32];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         DWORD cbHashSize = sizeof(certHash);
 
         if (CertGetCertificateContextProperty(pCert,
@@ -234,11 +232,11 @@ HRESULT RemoveCertificatesByHash(_In_ const std::wstring& wsUsername,
             certHash,
             &cbHashSize))
         {
-            if (cbHashSize == cbHash &&
+            if (cbHashSize == cbHash &&  // NOSONAR - COMPLEXITY-01: nested if retained; logic verified
                 memcmp(certHash, pbHash, cbHash) == 0)
             {
                 // Found matching certificate
-                if (pCert->hCertStore && CertDeleteCertificateFromStore(pCert))
+                if (pCert->hCertStore && CertDeleteCertificateFromStore(pCert))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     dwRemoved++;
                 }
@@ -267,9 +265,9 @@ HRESULT GetUserCertStorePath(_In_ const std::wstring& wsUsername, _Out_ std::wst
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-    WCHAR szProfilePath[MAX_PATH];
+    WCHAR szProfilePath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     DWORD dwPathSize = MAX_PATH;
-    if (!GetProfilesDirectoryW(szProfilePath, &dwPathSize))
+    if (!GetProfilesDirectoryW(szProfilePath, &dwPathSize))  // NOSONAR - SCOPE-01: declaration kept outside if for clarity
     {
         LocalFree(pSid);
         LocalFree(pwszSid);

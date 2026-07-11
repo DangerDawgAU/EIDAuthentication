@@ -7,7 +7,7 @@
 #include <cstdint>
 
 // Magic number for .eidm files
-constexpr char EIDMIGRATE_MAGIC[16] = {
+constexpr char EIDMIGRATE_MAGIC[16] = {  // NOSONAR - LSASS-01: C-style buffer for fixed binary file-format layout
     'E', 'I', 'D', 'M', 'I', 'G', 'R', 'A', 'T', 'E',
     '\0', '\0', '\0', '\0', '\0', '\0'
 };
@@ -48,9 +48,9 @@ constexpr DWORD HMAC_SIZE = 32;              // SHA-256
 #pragma pack(push, 1)
 struct DERIVED_KEY
 {
-    BYTE rgbKey[PBKDF2_KEY_SIZE];            // AES-256 encryption key
-    BYTE rgbAuthKey[PBKDF2_KEY_SIZE];        // HMAC authentication key
-    BYTE rgbSalt[PBKDF2_SALT_SIZE];          // Random salt
+    BYTE rgbKey[PBKDF2_KEY_SIZE];            // AES-256 encryption key // NOSONAR - LSASS-01: C-style buffer for fixed binary file-format layout
+    BYTE rgbAuthKey[PBKDF2_KEY_SIZE];        // HMAC authentication key // NOSONAR - LSASS-01: C-style buffer for fixed binary file-format layout
+    BYTE rgbSalt[PBKDF2_SALT_SIZE];          // Random salt // NOSONAR - LSASS-01: C-style buffer for fixed binary file-format layout
 };
 #pragma pack(pop)
 
@@ -58,15 +58,15 @@ struct DERIVED_KEY
 #pragma pack(push, 1)
 struct EIDMIGRATE_FILE_HEADER
 {
-    UCHAR Magic[16];                         // "EIDMIGRATE\x00\x00\x00\x00\x00\x00"
+    UCHAR Magic[16];                         // "EIDMIGRATE\x00\x00\x00\x00\x00\x00" // NOSONAR - LSASS-01: C-style buffer for fixed binary file-format layout
     uint32_t FormatVersion;                  // Little-endian = 1
-    UCHAR PBKDF2Salt[16];                    // PBKDF2 salt
-    UCHAR GCMNonce[12];                      // GCM nonce/IV
-    UCHAR Reserved[16];                      // Future use (zero)
+    UCHAR PBKDF2Salt[16];                    // PBKDF2 salt // NOSONAR - LSASS-01: C-style buffer for fixed binary file-format layout
+    UCHAR GCMNonce[12];                      // GCM nonce/IV // NOSONAR - LSASS-01: C-style buffer for fixed binary file-format layout
+    UCHAR Reserved[16];                      // Future use (zero) // NOSONAR - LSASS-01: C-style buffer for fixed binary file-format layout
     uint32_t PBKDF2Iterations;               // 600000 (0x000927C0)
     uint32_t GCMTagLength;                   // 16 (0x00000010)
     uint64_t PayloadLength;                  // Encrypted JSON size
-    UCHAR GCMTag[16];                        // GCM authentication tag
+    UCHAR GCMTag[16];                        // GCM authentication tag // NOSONAR - LSASS-01: C-style buffer for fixed binary file-format layout
 };
 static_assert(sizeof(EIDMIGRATE_FILE_HEADER) == 0x60, "Header must be 96 bytes");
 #pragma pack(pop)

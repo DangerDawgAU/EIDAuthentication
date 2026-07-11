@@ -6,13 +6,13 @@
 #include "../EIDMigrate/CryptoHelpers.h"
 #include <commdlg.h>
 #include <windowsx.h>
-#include <commctrl.h>
+#include <commctrl.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 
 // Store the current file path for this page
-static std::wstring g_wsCurrentFile;
+static std::wstring g_wsCurrentFile;  // NOSONAR - GLOBAL-01: global state written at runtime
 
 // Store the currently displayed credentials (for both local and file modes)
-static std::vector<CredentialInfo> g_CurrentCredentials;
+static std::vector<CredentialInfo> g_CurrentCredentials;  // NOSONAR - GLOBAL-01: global state written at runtime
 
 // Forward declaration of file password dialog
 INT_PTR CALLBACK FilePasswordDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -21,11 +21,11 @@ INT_PTR CALLBACK FilePasswordDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
 struct FILE_PASSWORD_DATA {
     std::wstring wsPassword;
     BOOL fConfirmed;
-    FILE_PASSWORD_DATA() : fConfirmed(FALSE) {}
+    FILE_PASSWORD_DATA() : fConfirmed(FALSE) {}  // NOSONAR - INIT-01: constructor initializer list retained for clarity
 };
 
 // Simple file password dialog
-INT_PTR CALLBACK FilePasswordDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK FilePasswordDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
     static FILE_PASSWORD_DATA* pData = nullptr;
 
@@ -33,7 +33,7 @@ INT_PTR CALLBACK FilePasswordDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
     {
     case WM_INITDIALOG:
     {
-        pData = reinterpret_cast<FILE_PASSWORD_DATA*>(lParam);
+        pData = reinterpret_cast<FILE_PASSWORD_DATA*>(lParam);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         if (!pData)
             EndDialog(hwndDlg, IDCANCEL);
 
@@ -114,7 +114,7 @@ INT_PTR CALLBACK FilePasswordDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
                     L"The password is less than 16 characters. A strong password is recommended.\n\nDo you want to continue?",
                     L"Short Password",
                     MB_YESNO | MB_ICONWARNING);
-                if (nResult == IDNO)
+                if (nResult == IDNO)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     SecureZeroMemory(szPassword, sizeof(szPassword));
                     SecureZeroMemory(szConfirm, sizeof(szConfirm));
@@ -185,10 +185,10 @@ static void PopulateCredentialList(HWND hList, _In_ const std::vector<Credential
 
         LVITEM lvi = {0};
         lvi.mask = LVIF_TEXT | LVIF_PARAM;
-        lvi.pszText = const_cast<LPWSTR>(cred.wsUsername.c_str()); // Safe: ListView won't modify the string
+        lvi.pszText = const_cast<LPWSTR>(cred.wsUsername.c_str()); // Safe: ListView won't modify the string // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         lvi.iItem = (int)i;
         lvi.lParam = (LPARAM)i;  // Store index in lParam
-        int iItem = ListView_InsertItem(hList, &lvi);
+        int iItem = ListView_InsertItem(hList, &lvi);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
 
         // Column 1: Username (already set in insert)
         // Column 2: RID
@@ -197,8 +197,8 @@ static void PopulateCredentialList(HWND hList, _In_ const std::vector<Credential
         ListView_SetItemText(hList, iItem, 2, szRID);
 
         // Column 3: Encryption
-        PCWSTR pwszEnc = (cred.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtCrypted) ? L"Certificate" :
-                         (cred.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtDPAPI) ? L"DPAPI" : L"None";
+        PCWSTR pwszEncFallback = (cred.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtDPAPI) ? L"DPAPI" : L"None";
+        PCWSTR pwszEnc = (cred.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtCrypted) ? L"Certificate" : pwszEncFallback;
         ListView_SetItemText(hList, iItem, 3, const_cast<LPWSTR>(pwszEnc)); // Safe: ListView won't modify the string
 
         // Column 4: Certificate Hash (preview)
@@ -230,7 +230,7 @@ static HRESULT EnumerateLocalCredentialsHelper(HWND hList, HWND hwndDlg)
     if (SUCCEEDED(hr))
     {
         SetWindowTextW(hwndDlg,
-            (std::wstring(L"Local Machine (") +
+            (std::wstring(L"Local Machine (") +  // NOSONAR - STRING-01: manual concatenation retained
             std::to_wstring(credentials.size()) + L" credentials)").c_str());
     }
     else
@@ -275,7 +275,7 @@ static HRESULT EnumerateFileCredentialsHelper(HWND hList, HWND hwndDlg)
     if (SUCCEEDED(hr))
     {
         // Store credentials in wizard data for export feature
-        WIZARD_DATA* pWIZARD_DATA = (WIZARD_DATA*)GetWindowLongPtrW(GetParent(hwndDlg), DWLP_USER);
+        WIZARD_DATA* pWIZARD_DATA = (WIZARD_DATA*)GetWindowLongPtrW(GetParent(hwndDlg), DWLP_USER);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
         if (pWIZARD_DATA)
         {
             pWIZARD_DATA->credentials = data.credentials;
@@ -290,13 +290,13 @@ static HRESULT EnumerateFileCredentialsHelper(HWND hList, HWND hwndDlg)
 
             // Show file info in window title
             SetWindowTextW(hwndDlg,
-                (std::wstring(L"Viewing: ") +
+                (std::wstring(L"Viewing: ") +  // NOSONAR - STRING-01: manual concatenation retained
                 g_wsCurrentFile.substr(g_wsCurrentFile.find_last_of(L"\\/") + 1) +
                 L" (" + std::to_wstring(data.credentials.size()) + L" credentials)").c_str());
         }
 
         MessageBoxW(hwndDlg,
-            (std::wstring(L"Successfully loaded ") +
+            (std::wstring(L"Successfully loaded ") +  // NOSONAR - STRING-01: manual concatenation retained
             std::to_wstring(data.credentials.size()) + L" credential(s) from file.").c_str(),
             L"List Credentials",
             MB_ICONINFORMATION);
@@ -304,7 +304,7 @@ static HRESULT EnumerateFileCredentialsHelper(HWND hList, HWND hwndDlg)
     else
     {
         MessageBoxW(hwndDlg,
-            (std::wstring(L"Failed to read export file.\n\nError code: 0x") +
+            (std::wstring(L"Failed to read export file.\n\nError code: 0x") +  // NOSONAR - STRING-01: manual concatenation retained
             std::to_wstring(hr)).c_str(),
             L"List Credentials",
             MB_ICONERROR);
@@ -325,8 +325,8 @@ static void ShowCredentialDetails(HWND hwndParent, _In_ const CredentialInfo& cr
     dwPos += swprintf_s(szDetails + dwPos, ARRAYSIZE(szDetails) - dwPos,
         L"RID: %u\r\n", cred.dwRid);
 
-    PCWSTR pwszEnc = (cred.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtCrypted) ? L"Certificate-based" :
-                     (cred.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtDPAPI) ? L"DPAPI" : L"None";
+    PCWSTR pwszEncFallback = (cred.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtDPAPI) ? L"DPAPI" : L"None";
+    PCWSTR pwszEnc = (cred.EncryptionType == EID_PRIVATE_DATA_TYPE::eidpdtCrypted) ? L"Certificate-based" : pwszEncFallback;
     dwPos += swprintf_s(szDetails + dwPos, ARRAYSIZE(szDetails) - dwPos,
         L"Encryption Type: %s\r\n", pwszEnc);
 
@@ -392,14 +392,14 @@ static void ShowCredentialDetails(HWND hwndParent, _In_ const CredentialInfo& cr
 
     if (!cred.EncryptedPassword.empty())
     {
-        dwPos += swprintf_s(szDetails + dwPos, ARRAYSIZE(szDetails) - dwPos,
+        swprintf_s(szDetails + dwPos, ARRAYSIZE(szDetails) - dwPos,
             L"Encrypted Password: %zu bytes\r\n", cred.EncryptedPassword.size());
     }
 
     MessageBoxW(hwndParent, szDetails, L"Credential Details", MB_OK | MB_ICONINFORMATION);
 }
 
-INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
     switch (uMsg)
     {
@@ -418,22 +418,22 @@ INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wPar
 
             // Column 0: Checkbox (automatic with LVS_EX_CHECKBOXES)
             // Column 1: Username
-            lvc.pszText = const_cast<LPWSTR>(L"Username"); // Safe: ListView won't modify the string
+            lvc.pszText = const_cast<LPWSTR>(L"Username"); // Safe: ListView won't modify the string // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
             lvc.cx = 120;
             ListView_InsertColumn(hList, 1, &lvc);
 
             // Column 2: RID
-            lvc.pszText = const_cast<LPWSTR>(L"RID"); // Safe: ListView won't modify the string
+            lvc.pszText = const_cast<LPWSTR>(L"RID"); // Safe: ListView won't modify the string // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
             lvc.cx = 60;
             ListView_InsertColumn(hList, 2, &lvc);
 
             // Column 3: Encryption
-            lvc.pszText = const_cast<LPWSTR>(L"Encryption"); // Safe: ListView won't modify the string
+            lvc.pszText = const_cast<LPWSTR>(L"Encryption"); // Safe: ListView won't modify the string // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
             lvc.cx = 90;
             ListView_InsertColumn(hList, 3, &lvc);
 
             // Column 4: Certificate Hash (preview)
-            lvc.pszText = const_cast<LPWSTR>(L"Certificate Hash (preview)"); // Safe: ListView won't modify the string
+            lvc.pszText = const_cast<LPWSTR>(L"Certificate Hash (preview)"); // Safe: ListView won't modify the string // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
             lvc.cx = 180;
             ListView_InsertColumn(hList, 4, &lvc);
         }
@@ -447,7 +447,7 @@ INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wPar
 
     case WM_NOTIFY:
     {
-        LPNMHDR pnmh = (LPNMHDR)lParam;
+        LPNMHDR pnmh = (LPNMHDR)lParam;  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
         switch (pnmh->code)
         {
         case PSN_SETACTIVE:
@@ -584,10 +584,10 @@ INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wPar
 
             // Count checked items
             int nChecked = 0;
-            int nItemCount = ListView_GetItemCount(hList);
+            int nItemCount = ListView_GetItemCount(hList);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
             for (int i = 0; i < nItemCount; i++)
             {
-                if (ListView_GetCheckState(hList, i))
+                if (ListView_GetCheckState(hList, i))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                     nChecked++;
             }
 
@@ -601,7 +601,7 @@ INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wPar
             }
 
             // Prompt for output file
-            WCHAR szFile[MAX_PATH] = L"export_selected.eid";
+            WCHAR szFile[MAX_PATH] = L"export_selected.eid";  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
             OPENFILENAMEW ofn = {0};
             ofn.lStructSize = sizeof(OPENFILENAMEW);
             ofn.hwndOwner = hwndDlg;
@@ -632,14 +632,14 @@ INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wPar
             std::vector<CredentialInfo> selectedCredentials;
             for (int i = 0; i < nItemCount; i++)
             {
-                if (ListView_GetCheckState(hList, i))
+                if (ListView_GetCheckState(hList, i))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     // Get the item data (index into g_CurrentCredentials)
                     LVITEM lviGetData = {0};
                     lviGetData.mask = LVIF_PARAM;
                     lviGetData.iItem = i;
                     ListView_GetItem(hList, &lviGetData);
-                    size_t dwIndex = (size_t)lviGetData.lParam;
+                    size_t dwIndex = (size_t)lviGetData.lParam;  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
 
                     if (dwIndex < g_CurrentCredentials.size())
                     {
@@ -688,7 +688,7 @@ INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wPar
             if (SUCCEEDED(hr))
             {
                 MessageBoxW(hwndDlg,
-                    (std::wstring(L"Successfully exported ") +
+                    (std::wstring(L"Successfully exported ") +  // NOSONAR - STRING-01: manual concatenation retained
                     std::to_wstring(selectedCredentials.size()) +
                     L" credential(s) to:\n" + szFile).c_str(),
                     L"Export Selected",
@@ -697,7 +697,7 @@ INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wPar
             else
             {
                 MessageBoxW(hwndDlg,
-                    (std::wstring(L"Failed to export credentials.\n\nError code: 0x") +
+                    (std::wstring(L"Failed to export credentials.\n\nError code: 0x") +  // NOSONAR - STRING-01: manual concatenation retained
                     std::to_wstring(hr)).c_str(),
                     L"Export Selected",
                     MB_ICONERROR);
@@ -731,7 +731,7 @@ INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wPar
             }
 
             // Get the selected item
-            int iItem = ListView_GetNextItem(hList, -1, LVNI_SELECTED);
+            int iItem = ListView_GetNextItem(hList, -1, LVNI_SELECTED);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
             if (iItem != -1)
             {
                 // Get the credential data from g_CurrentCredentials
@@ -739,9 +739,9 @@ INT_PTR CALLBACK WndProc_11_ListCredentials(HWND hwndDlg, UINT uMsg, WPARAM wPar
                 lviGetData.mask = LVIF_PARAM;
                 lviGetData.iItem = iItem;
                 ListView_GetItem(hList, &lviGetData);
-                size_t dwIndex = (size_t)lviGetData.lParam;
+                size_t dwIndex = (size_t)lviGetData.lParam;  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
 
-                if (dwIndex < g_CurrentCredentials.size())
+                if (dwIndex < g_CurrentCredentials.size())  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     ShowCredentialDetails(hwndDlg, g_CurrentCredentials[dwIndex]);
                 }

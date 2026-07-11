@@ -24,7 +24,7 @@ INT_PTR CALLBACK WndProc_ForcePolicy(HWND hWnd, UINT message, WPARAM wParam, [[m
 		break;
 	case WM_COMMAND:
 		wmId    = LOWORD(wParam);
-		wmEvent = HIWORD(wParam);
+		wmEvent = HIWORD(wParam);  // NOSONAR - dead store retained; wmEvent is standard Win32 WndProc boilerplate
 		switch(wmId)
 		{
 		case IDOK:

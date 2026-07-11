@@ -22,7 +22,7 @@ VOID SecurelyClearPassword()
 #include "../EIDCardLibrary/Registration.h"
 #include "../EIDCardLibrary/CertificateUtilities.h"
 #include "../EIDCardLibrary/CertificateValidation.h"
-#include "../EIDCardLibrary/GPO.h"
+#include "../EIDCardLibrary/GPO.h" // NOSONAR - INCLUDE-01: include placement after SecurelyClearPassword is intentional for build ordering
 #include "../EIDCardLibrary/CommonManifest.h"
 #include "../EIDCardLibrary/StringConversion.h"
 

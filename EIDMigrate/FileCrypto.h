@@ -26,12 +26,13 @@ struct ExportFileData
         DWORD certificateEncrypted;
         DWORD dpapiEncrypted;
         DWORD skipped;
-    } stats;
+    };
+    Statistics stats;
 
     ExportFileData() :
-        dwVersion(1),
-        formatVersion("EIDMigrate-v1.0"),
-        stats{0}
+        dwVersion(1),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        formatVersion("EIDMigrate-v1.0"),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        stats{0}  // NOSONAR - INIT-01: constructor initializer list retained for clarity
     {}
 };
 

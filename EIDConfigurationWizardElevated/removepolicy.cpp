@@ -35,7 +35,6 @@ INT_PTR CALLBACK	WndProc_RemovePolicy(HWND hWnd, UINT message, WPARAM wParam, [[
 		break;
 	case WM_COMMAND:
 		wmId    = LOWORD(wParam);
-		wmEvent = HIWORD(wParam);
 		switch(wmId)
 		{
 		case IDOK:

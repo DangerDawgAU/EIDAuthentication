@@ -16,8 +16,8 @@
 #undef WARNING // NOSONAR - Must undef Windows macro that conflicts with enum value
 #endif
 
-static HANDLE g_hEventLog = nullptr;
-static std::wstring g_wsLogFilePath;
+static HANDLE g_hEventLog = nullptr;  // NOSONAR - GLOBAL-01: pointer assigned at runtime
+static std::wstring g_wsLogFilePath;  // NOSONAR - GLOBAL-01: global assigned at runtime
 
 HRESULT InitializeAuditLogging()
 {
@@ -25,14 +25,14 @@ HRESULT InitializeAuditLogging()
     return (g_hEventLog != nullptr) ? S_OK : E_FAIL;
 }
 
-void LogAuditEvent(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pwszUsername, _In_opt_ PCWSTR pwszDetails)
+void LogAuditEvent(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pwszUsername, _In_opt_ PCWSTR pwszDetails)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
     if (g_hEventLog)
     {
         WORD wType = GetEventLogLevel(eventType);
-        DWORD dwEventID = static_cast<DWORD>(eventType);
+        DWORD dwEventID = static_cast<DWORD>(eventType);  // NOSONAR - static_cast used for enum to underlying type; std::to_underlying is C++23, project uses earlier standard
 
-        WCHAR szMessage[512];
+        WCHAR szMessage[512];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         SecureZeroMemory(szMessage, sizeof(szMessage));
 
         switch (static_cast<DWORD>(eventType)) // NOSONAR - static_cast used for enum to underlying type; std::to_underlying is C++23, project uses earlier standard

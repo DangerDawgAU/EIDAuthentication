@@ -5,7 +5,7 @@
 
 #include <Windows.h>
 #include <tchar.h>
-#include <commctrl.h>
+#include <commctrl.h> // NOSONAR - INCLUDE-01: include casing per Windows SDK convention
 #include <windowsx.h>
 #include <string>
 #include <vector>
@@ -32,15 +32,15 @@
 #include "../EIDMigrate/Utils.h"
 
 // Version information
-#define EIDMIGRATEUI_APP_VERSION       L"1.0.0.1"
-#define EIDMIGRATEUI_APP_COPYRIGHT     L"Copyright (C) 2026"
-#define EIDMIGRATEUI_APP_NAME          L"EID Credential Migration Tool"
+#define EIDMIGRATEUI_APP_VERSION       L"1.0.0.1" // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMIGRATEUI_APP_COPYRIGHT     L"Copyright (C) 2026" // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EIDMIGRATEUI_APP_NAME          L"EID Credential Migration Tool" // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 
 // Wizard page count
-#define EIDMIGRATE_PAGE_COUNT          15  // Maximum wizard pages (safety margin)
+#define EIDMIGRATE_PAGE_COUNT          15  // NOSONAR - MACRO-01: macro constant retained for API/preprocessor use — maximum wizard pages (safety margin)
 
 // Page indices (for programmatic navigation)
-enum EIDMigratePage {
+enum EIDMigratePage { // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
     PAGE_WELCOME = 0,
     PAGE_EXPORT_SELECT,
     PAGE_EXPORT_GROUPS,     // NEW: Group selection for export
@@ -58,7 +58,7 @@ enum EIDMigratePage {
 };
 
 // Wizard flow selection
-enum WizardFlow {
+enum WizardFlow { // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
     FLOW_NONE = 0,
     FLOW_EXPORT,
     FLOW_IMPORT,
@@ -67,7 +67,7 @@ enum WizardFlow {
 };
 
 // Shared wizard state structure
-struct WIZARD_DATA {
+struct WIZARD_DATA { // NOSONAR - COMPLEXITY-01: field count required for wizard state; refactor deferred
     WizardFlow selectedFlow;
     BOOL fCredentialsFound;
     BOOL fFileDecrypted;
@@ -103,22 +103,22 @@ struct WIZARD_DATA {
     std::vector<std::pair<std::wstring, std::wstring>> userPasswords;
 
     WIZARD_DATA() :
-        selectedFlow(FLOW_NONE),
-        fCredentialsFound(FALSE),
-        fFileDecrypted(FALSE),
-        fExportComplete(FALSE),
-        fImportComplete(FALSE),
-        dwCredentialCount(0),
-        dwExportedCount(0),
-        dwImportedCount(0),
-        dwFailedCount(0),
-        fValidateCerts(FALSE),
-        fIncludeGroups(TRUE),
-        fDryRun(TRUE),
-        fCreateUsers(FALSE),
-        fContinueOnError(FALSE),
-        fOverwrite(FALSE),
-        dwFileCredentialCount(0)
+        selectedFlow(FLOW_NONE), // NOSONAR - INIT-01: member initialized in constructor init list
+        fCredentialsFound(FALSE), // NOSONAR - INIT-01: member initialized in constructor init list
+        fFileDecrypted(FALSE), // NOSONAR - INIT-01: member initialized in constructor init list
+        fExportComplete(FALSE), // NOSONAR - INIT-01: member initialized in constructor init list
+        fImportComplete(FALSE), // NOSONAR - INIT-01: member initialized in constructor init list
+        dwCredentialCount(0), // NOSONAR - INIT-01: member initialized in constructor init list
+        dwExportedCount(0), // NOSONAR - INIT-01: member initialized in constructor init list
+        dwImportedCount(0), // NOSONAR - INIT-01: member initialized in constructor init list
+        dwFailedCount(0), // NOSONAR - INIT-01: member initialized in constructor init list
+        fValidateCerts(FALSE), // NOSONAR - INIT-01: member initialized in constructor init list
+        fIncludeGroups(TRUE), // NOSONAR - INIT-01: member initialized in constructor init list
+        fDryRun(TRUE), // NOSONAR - INIT-01: member initialized in constructor init list
+        fCreateUsers(FALSE), // NOSONAR - INIT-01: member initialized in constructor init list
+        fContinueOnError(FALSE), // NOSONAR - INIT-01: member initialized in constructor init list
+        fOverwrite(FALSE), // NOSONAR - INIT-01: member initialized in constructor init list
+        dwFileCredentialCount(0) // NOSONAR - INIT-01: member initialized in constructor init list
     {}
 
     void Reset() {
@@ -151,10 +151,10 @@ struct WIZARD_DATA {
 };
 
 // Global wizard state
-extern WIZARD_DATA g_wizardData;
-extern HINSTANCE g_hinst;
-extern HWND g_hwndWizard;
-extern WizardFlow g_currentFlow;  // Tracks current wizard flow (export/import)
+extern WIZARD_DATA g_wizardData; // NOSONAR - GLOBAL-01: global state assigned at runtime
+extern HINSTANCE g_hinst; // NOSONAR - GLOBAL-01: pointer assigned at runtime
+extern HWND g_hwndWizard; // NOSONAR - GLOBAL-01: pointer assigned at runtime
+extern WizardFlow g_currentFlow;  // NOSONAR - GLOBAL-01: assigned at runtime — tracks current wizard flow (export/import)
 
 // Message constants for worker thread communication
 #define WM_USER_PROGRESS        (WM_USER + 100)

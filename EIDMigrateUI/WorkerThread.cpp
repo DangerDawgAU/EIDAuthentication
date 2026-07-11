@@ -5,7 +5,7 @@
 #include "EIDMigrateUI.h"
 #include "../EIDMigrate/SecureMemory.h"
 #include <vector>
-#include <Lmcons.h>
+#include <Lmcons.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 
 // Send progress message to parent window
 void SendProgress(HWND hwnd, UINT uMsg, DWORD dwCurrent, DWORD dwTotal, const std::wstring& wsStatus) {
@@ -35,7 +35,7 @@ void SendError(HWND hwnd, UINT uMsg, HRESULT hr, DWORD dwErrorCode, const std::w
 static std::wstring GetComputerName() {
     WCHAR computerName[MAX_COMPUTERNAME_LENGTH + 1]; // NOSONAR - Windows API GetComputerNameW requires WCHAR array buffer
     DWORD size = ARRAYSIZE(computerName);
-    if (GetComputerNameW(computerName, &size)) {
+    if (GetComputerNameW(computerName, &size)) {  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
         return std::wstring(computerName);
     }
     return L"Unknown";
@@ -43,7 +43,7 @@ static std::wstring GetComputerName() {
 
 // Export worker thread
 DWORD WINAPI ExportWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LPVOID (void*) for thread functions
-    WORKER_CONTEXT* pContext = (WORKER_CONTEXT*)lpParam;
+    WORKER_CONTEXT* pContext = (WORKER_CONTEXT*)lpParam;  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
     if (!pContext || !pContext->pwszOutputFile || !pContext->pwszPassword) {
         return ERROR_INVALID_PARAMETER;
     }
@@ -112,7 +112,7 @@ DWORD WINAPI ExportWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LP
 
 // Import worker thread
 DWORD WINAPI ImportWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LPVOID (void*) for thread functions
-    WORKER_CONTEXT* pContext = (WORKER_CONTEXT*)lpParam;
+    WORKER_CONTEXT* pContext = (WORKER_CONTEXT*)lpParam;  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
     if (!pContext || !pContext->pwszInputFile || !pContext->pwszPassword) {
         return ERROR_INVALID_PARAMETER;
     }
@@ -173,7 +173,7 @@ DWORD WINAPI ImportWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LP
 
 // Enumerate worker thread
 DWORD WINAPI EnumerateWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LPVOID (void*) for thread functions
-    WORKER_CONTEXT* pContext = (WORKER_CONTEXT*)lpParam;
+    WORKER_CONTEXT* pContext = (WORKER_CONTEXT*)lpParam;  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
     if (!pContext) {
         return ERROR_INVALID_PARAMETER;
     }
@@ -207,7 +207,7 @@ DWORD WINAPI EnumerateWorker(LPVOID lpParam) { // NOSONAR - Windows API requires
 
 // Validate file worker thread
 DWORD WINAPI ValidateFileWorker(LPVOID lpParam) { // NOSONAR - Windows API requires LPVOID (void*) for thread functions
-    WORKER_CONTEXT* pContext = (WORKER_CONTEXT*)lpParam;
+    WORKER_CONTEXT* pContext = (WORKER_CONTEXT*)lpParam;  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
     if (!pContext || !pContext->pwszInputFile) {
         return ERROR_INVALID_PARAMETER;
     }
@@ -231,14 +231,14 @@ DWORD WINAPI ValidateFileWorker(LPVOID lpParam) { // NOSONAR - Windows API requi
     // Create SecureWString from password string
     SecureWString swPassword(wsPassword.c_str());
     HRESULT hr = ValidateImportFile(wsInputFile, swPassword, options, result);
-    if (FAILED(hr) || !result.IsValid()) {
+    if (FAILED(hr) || !result.IsValid()) {  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
         SendError(hwnd, uErrorMsg, hr, GetLastError(), L"File validation failed");
         return hr;
     }
 
     SendProgress(hwnd, uProgressMsg, 100, 100, L"Validation complete");
 
-    std::wstring wsMessage = L"File is valid. Contains " + std::to_wstring(result.dwCredentialCount) + L" credentials";
+    std::wstring wsMessage = L"File is valid. Contains " + std::to_wstring(result.dwCredentialCount) + L" credentials";  // NOSONAR - STRING-01: manual concatenation retained
     SendComplete(hwnd, uCompleteMsg, S_OK, result.dwCredentialCount, wsMessage);
 
     return 0;

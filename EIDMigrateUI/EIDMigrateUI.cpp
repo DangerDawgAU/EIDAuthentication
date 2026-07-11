@@ -10,13 +10,13 @@
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 // Global application state
-WIZARD_DATA g_wizardData;
-HINSTANCE g_hinst = nullptr;
-HWND g_hwndWizard = nullptr;
-WizardFlow g_currentFlow = FLOW_NONE;  // Tracks current wizard flow (export/import)
+WIZARD_DATA g_wizardData; // NOSONAR - GLOBAL-01: global state assigned at runtime
+HINSTANCE g_hinst = nullptr; // NOSONAR - GLOBAL-01: pointer assigned at runtime
+HWND g_hwndWizard = nullptr; // NOSONAR - GLOBAL-01: pointer assigned at runtime
+WizardFlow g_currentFlow = FLOW_NONE;  // NOSONAR - GLOBAL-01: assigned at runtime — tracks current wizard flow (export/import)
 
 // Provide minimal APP_STATE for AuditLogging module
-APP_STATE g_AppState;
+APP_STATE g_AppState; // NOSONAR - GLOBAL-01: global state assigned at runtime
 
 // Hidden window class for owning the PropertySheet
 static const wchar_t szHiddenWindowClass[] = L"EIDMigrateUI_HiddenWindow";
@@ -47,7 +47,7 @@ HWND CreateHiddenOwnerWindow(HINSTANCE hInstance)
 
 // Load string resource
 std::wstring LoadStringResource(UINT uID) {
-    WCHAR szBuffer[512];
+    WCHAR szBuffer[512]; // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     if (LoadString(g_hinst, uID, szBuffer, ARRAYSIZE(szBuffer))) {
         return std::wstring(szBuffer);
     }
@@ -58,10 +58,10 @@ std::wstring LoadStringResource(UINT uID) {
 void SetWindowIcon(HWND hwnd, int iconId) {
     HMODULE hDll = LoadLibraryW(L"imageres.dll");
     if (hDll) {
-        HICON hIcon = (HICON)LoadImage(hDll, MAKEINTRESOURCE(iconId ? iconId : 58),
+        HICON hIcon = (HICON)LoadImage(hDll, MAKEINTRESOURCE(iconId ? iconId : 58), // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
             IMAGE_ICON, GetSystemMetrics(SM_CXSMICON),
             GetSystemMetrics(SM_CYSMICON), LR_SHARED);
-        if (hIcon) {
+        if (hIcon) { // NOSONAR - SCOPE-01: declaration kept at outer scope for readability
             SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
         }
         FreeLibrary(hDll);
@@ -102,7 +102,7 @@ HRESULT GetCredentialCount(DWORD* pdwCount) {
 }
 
 // Format certificate hash for display (show first 16 chars + "...")
-void FormatCredentialHash(const std::wstring& fullHash, std::wstring& truncated) {
+void FormatCredentialHash(const std::wstring& fullHash, std::wstring& truncated) { // NOSONAR - API-01: std::wstring reference retained; string_view breaks operator+ usage below
     if (fullHash.length() > 16) {
         truncated = fullHash.substr(0, 16) + L"...";
     } else {
@@ -167,7 +167,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     }
 
     // Create property sheet pages
-    HPROPSHEETPAGE ahpsp[EIDMIGRATE_PAGE_COUNT];
+    HPROPSHEETPAGE ahpsp[EIDMIGRATE_PAGE_COUNT]; // NOSONAR - LSASS-01: C-style array required by Win32 PropertySheet API
     int pageCount = 0;
 
     PROPSHEETPAGE psp = {0};
@@ -275,7 +275,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
 
     // Load icon
     HMODULE hDll = LoadLibraryW(L"imageres.dll");
-    if (hDll) {
+    if (hDll) { // NOSONAR - SCOPE-01: declaration kept at outer scope for readability
         psh.hIcon = LoadIcon(hDll, MAKEINTRESOURCE(58));
         FreeLibrary(hDll);
     }

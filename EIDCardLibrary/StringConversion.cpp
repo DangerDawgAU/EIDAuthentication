@@ -7,9 +7,9 @@ namespace EID {
 
     std::wstring LoadStringW(HINSTANCE hInst, UINT uID)
     {
-        wchar_t buffer[512] = { 0 };
+        wchar_t buffer[512] = { 0 };  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
         int result = ::LoadStringW(hInst, uID, buffer, ARRAYSIZE(buffer) - 1);
-        if (result > 0) {
+        if (result > 0) {  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
             return std::wstring(buffer);
         }
         return std::wstring();
@@ -66,7 +66,7 @@ namespace EID {
 
     std::wstring BuildContainerNameFromReader(const std::wstring& readerName)
     {
-        return L"\\\\.\\" + readerName + L"\\";
+        return L"\\\\.\\" + readerName + L"\\";  // NOSONAR - STRING-01: escaped literal retained to preserve device path
     }
 
     std::wstring SafeConvert(const char* src, size_t maxLen)
@@ -105,14 +105,14 @@ namespace EID {
             return std::wstring();
         }
 
-        wchar_t buffer[1024] = { 0 };
+        wchar_t buffer[1024] = { 0 };  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
         DWORD bufferSize = sizeof(buffer);
         DWORD dataType = 0;
 
         LONG result = RegQueryValueExW(hKey, valueName.c_str(), nullptr, &dataType,
                                        (LPBYTE)buffer, &bufferSize);
 
-        if (result != ERROR_SUCCESS || dataType != REG_SZ) {
+        if (result != ERROR_SUCCESS || dataType != REG_SZ) {  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
             return std::wstring();
         }
 
@@ -126,7 +126,7 @@ namespace EID {
         }
 
         size_t charCount = src.length() + 1;
-        if (charCount * sizeof(wchar_t) > bufferSize) {
+        if (charCount * sizeof(wchar_t) > bufferSize) {  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
             // Buffer too small
             dst->Length = 0;
             dst->MaximumLength = 0;

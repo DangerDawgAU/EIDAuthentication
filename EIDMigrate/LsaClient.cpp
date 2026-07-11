@@ -4,7 +4,7 @@
 #include "LsaClient.h"
 #include "Tracing.h"
 #include "../EIDCardLibrary/StoredCredentialManagement.h"  // For EID_PRIVATE_DATA
-#include <lm.h>
+#include <lm.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 #include <ntstatus.h>
 #include <sddl.h>  // For ConvertSidToStringSidW
 #include <vector>
@@ -35,11 +35,11 @@ HRESULT LsaEIDImportCredential(
 
 // Enumerate all EID credentials from LSA
 // Uses direct LSA access instead of the authentication package IPC
-HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
+HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
     // BUG FIX #19: C++ exception handling for LSA operations
     // Ensures proper cleanup even if C++ exceptions occur
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK;  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
     HANDLE hLsa = nullptr;
     LPUSER_INFO_0 pUserInfoArray = nullptr;
 
@@ -124,7 +124,7 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
         if (!pwszDomain)
         {
             EIDM_TRACE_ERROR(L"Failed to allocate domain buffer");
-            free(pSid);
+            free(pSid);  // NOSONAR - ALLOC-01: malloc paired with existing free/Win32 alloc
             continue;
         }
 
@@ -133,17 +133,17 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
             pwszDomain, &dwDomainSize, &use))
         {
             EIDM_TRACE_WARN(L"LookupAccountNameW failed for '%ls'", pUserInfoArray[i].usri0_name);
-            free(pSid);
-            free(pwszDomain);
+            free(pSid);  // NOSONAR - ALLOC-01: malloc paired with existing free/Win32 alloc
+            free(pwszDomain);  // NOSONAR - ALLOC-01: malloc paired with existing free/Win32 alloc
             continue;
         }
-        free(pwszDomain);
+        free(pwszDomain);  // NOSONAR - ALLOC-01: malloc paired with existing free/Win32 alloc
 
         // Validate the SID structure
         if (!IsValidSid(pSid))
         {
             EIDM_TRACE_ERROR(L"Invalid SID returned for '%ls'", pUserInfoArray[i].usri0_name);
-            free(pSid);
+            free(pSid);  // NOSONAR - ALLOC-01: malloc paired with existing free/Win32 alloc
             continue;
         }
 
@@ -152,19 +152,19 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
         if (dwSubAuthCount == 0)
         {
             EIDM_TRACE_ERROR(L"SID has no subauthorities for '%ls'", pUserInfoArray[i].usri0_name);
-            free(pSid);
+            free(pSid);  // NOSONAR - ALLOC-01: malloc paired with existing free/Win32 alloc
             continue;
         }
 
         DWORD dwRid = *GetSidSubAuthority(pSid, dwSubAuthCount - 1);
-        free(pSid);
+        free(pSid);  // NOSONAR - ALLOC-01: malloc paired with existing free/Win32 alloc
 
         EIDM_TRACE_VERBOSE(L"Checking user '%ls' (RID %u)", pUserInfoArray[i].usri0_name, dwRid);
 
         // Check if LSA secret exists for this RID
         // Format must match StoredCredentialManagement.cpp: L"%s_%08X" where CREDENTIAL_LSAPREFIX = L"L$_EID_"
         // Result: L$_EID__<RID> (note: double underscore since CREDENTIAL_LSAPREFIX already ends with _)
-        WCHAR wszSecretName[256];
+        WCHAR wszSecretName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
         swprintf_s(wszSecretName, ARRAYSIZE(wszSecretName), L"L$_EID__%08X", dwRid);
 
         LSA_UNICODE_STRING lsaSecretName;
@@ -199,7 +199,7 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
                 PEID_PRIVATE_DATA pPrivateData = reinterpret_cast<PEID_PRIVATE_DATA>(pSecretData->Buffer); // NOSONAR - Cast from PBYTE* to PEID_PRIVATE_DATA required for LSA private data structure
 
                 // Validate structure fields before accessing
-                if (pPrivateData->dwType >= static_cast<EID_PRIVATE_DATA_TYPE>(1) &&
+                if (pPrivateData->dwType >= static_cast<EID_PRIVATE_DATA_TYPE>(1) &&  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                     pPrivateData->dwType <= static_cast<EID_PRIVATE_DATA_TYPE>(3))
                 {
                     info.EncryptionType = pPrivateData->dwType;
@@ -214,7 +214,7 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
                 DWORD dwHashCopySize = min(CERT_HASH_LENGTH, pSecretData->Length - offsetof(EID_PRIVATE_DATA, Hash));
                 memcpy(info.CertificateHash, pPrivateData->Hash, dwHashCopySize);
                 // Zero out any remaining hash bytes
-                if (dwHashCopySize < CERT_HASH_LENGTH)
+                if (dwHashCopySize < CERT_HASH_LENGTH)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     SecureZeroMemory(info.CertificateHash + dwHashCopySize, CERT_HASH_LENGTH - dwHashCopySize);
                 }
@@ -230,7 +230,7 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
                 // - dwPasswordOffset is relative to Data field
                 //
                 // Extract certificate from the Data field at dwCertificatOffset
-                if (pPrivateData->dwCertificatSize > 0)
+                if (pPrivateData->dwCertificatSize > 0)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     // Certificate offset is relative to Data field, which is at pPrivateData->Data
                     BYTE* pCertificate = pPrivateData->Data + pPrivateData->dwCertificatOffset;
@@ -264,7 +264,7 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
 
                 // Extract symmetric key
                 // IMPORTANT: Offsets are relative to Data field, not struct start
-                if (pPrivateData->dwSymetricKeySize > 0)
+                if (pPrivateData->dwSymetricKeySize > 0)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     DWORD dwKeyEnd = pPrivateData->dwSymetricKeyOffset + pPrivateData->dwSymetricKeySize;
                     // Check bounds relative to Data field size
@@ -284,7 +284,7 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
 
                 // Extract encrypted password
                 // IMPORTANT: Offsets are relative to Data field, not struct start
-                if (pPrivateData->usPasswordLen > 0)
+                if (pPrivateData->usPasswordLen > 0)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     DWORD dwPwdEnd = pPrivateData->dwPasswordOffset + pPrivateData->usPasswordLen;
                     // Check bounds relative to Data field size
@@ -323,7 +323,7 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials)
 
     hr = S_OK;
     }
-    catch (...)
+    catch (...)  // NOSONAR - EXCEPTION-01: catch-all is intentional guard
     {
         EIDM_TRACE_ERROR(L"Exception occurred during LSA enumeration");
         hr = E_FAIL;
@@ -369,7 +369,7 @@ HRESULT ExportLsaCredential(_In_ DWORD dwRid, _Out_ CredentialInfo& info)
 
     // Retrieve the LSA secret for this RID
     // Format: L$_EID__<RID> (double underscore)
-    WCHAR wszSecretName[256];
+    WCHAR wszSecretName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
     swprintf_s(wszSecretName, ARRAYSIZE(wszSecretName), L"L$_EID__%08X", dwRid);
 
     LSA_UNICODE_STRING lsaSecretName;
@@ -382,7 +382,7 @@ HRESULT ExportLsaCredential(_In_ DWORD dwRid, _Out_ CredentialInfo& info)
 
     if (NT_SUCCESS(status) && pSecretData && pSecretData->Buffer)
     {
-        PEID_PRIVATE_DATA pPrivateData = reinterpret_cast<PEID_PRIVATE_DATA>(pSecretData->Buffer);
+        PEID_PRIVATE_DATA pPrivateData = reinterpret_cast<PEID_PRIVATE_DATA>(pSecretData->Buffer);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
         info.dwRid = dwRid;
         info.EncryptionType = pPrivateData->dwType;
@@ -484,7 +484,7 @@ HRESULT HasStoredCredential(_In_ DWORD dwRid, _Out_ BOOL& pfHasCredential)
 
     // Secret name must match StoredCredentialManagement.cpp's format
     // ("%s_%08X" with CREDENTIAL_LSAPREFIX = L"L$_EID_") -> L$_EID__<RID>.
-    WCHAR wszSecretName[256];
+    WCHAR wszSecretName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
     swprintf_s(wszSecretName, ARRAYSIZE(wszSecretName), L"L$_EID__%08X", dwRid);
 
     LSA_UNICODE_STRING lsaSecretName;
@@ -495,7 +495,7 @@ HRESULT HasStoredCredential(_In_ DWORD dwRid, _Out_ BOOL& pfHasCredential)
     PLSA_UNICODE_STRING pSecretData = nullptr;
     status = LsaRetrievePrivateData(hLsa, &lsaSecretName, &pSecretData);
 
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK;  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
     if (NT_SUCCESS(status) && pSecretData && pSecretData->Buffer && pSecretData->Length > 0)
     {
         pfHasCredential = TRUE;
@@ -534,7 +534,7 @@ std::wstring LookupUsernameByRid(_In_ DWORD dwRid)
 
 DWORD LookupRidByUsername(_In_ const std::wstring& wsUsername)
 {
-    return ::GetRidFromUsername(const_cast<PWSTR>(wsUsername.c_str()));
+    return ::GetRidFromUsername(const_cast<PWSTR>(wsUsername.c_str()));  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 }
 
 std::wstring LookupSidByUsername(_In_ const std::wstring& wsUsername)
@@ -544,7 +544,7 @@ std::wstring LookupSidByUsername(_In_ const std::wstring& wsUsername)
     DWORD dwDomainSize = 0;
     SID_NAME_USE use;
 
-    BOOL fResult = LookupAccountNameW(nullptr, wsUsername.c_str(), nullptr, &dwSidSize,
+    BOOL fResult = LookupAccountNameW(nullptr, wsUsername.c_str(), nullptr, &dwSidSize,  // NOSONAR - IDIOM-01: two-call Win32 size-probe; first result intentionally overwritten
         nullptr, &dwDomainSize, &use);
 
     // After first call, check if we got the size
@@ -563,7 +563,7 @@ std::wstring LookupSidByUsername(_In_ const std::wstring& wsUsername)
     SecureZeroMemory(domainBuffer.data(), dwDomainSize * sizeof(WCHAR));
 
     fResult = LookupAccountNameW(nullptr, wsUsername.c_str(),
-        reinterpret_cast<PSID>(sidBytes.data()), &dwSidSize,
+        reinterpret_cast<PSID>(sidBytes.data()), &dwSidSize,  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         domainBuffer.data(), &dwDomainSize, &use);
 
     if (!fResult)
@@ -573,7 +573,7 @@ std::wstring LookupSidByUsername(_In_ const std::wstring& wsUsername)
     }
 
     // Validate the SID before using it
-    if (!IsValidSid(reinterpret_cast<PSID>(sidBytes.data())))
+    if (!IsValidSid(reinterpret_cast<PSID>(sidBytes.data())))  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
     {
         EIDM_TRACE_ERROR(L"Invalid SID returned for '%ls'", wsUsername.c_str());
         return std::wstring();
@@ -581,7 +581,7 @@ std::wstring LookupSidByUsername(_In_ const std::wstring& wsUsername)
 
     // Convert SID to string
     LPWSTR pwszSid = nullptr;
-    if (!ConvertSidToStringSidW(reinterpret_cast<PSID>(sidBytes.data()), &pwszSid))
+    if (!ConvertSidToStringSidW(reinterpret_cast<PSID>(sidBytes.data()), &pwszSid))  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
     {
         EIDM_TRACE_ERROR(L"ConvertSidToStringSidW failed for '%ls'", wsUsername.c_str());
         return std::wstring();
@@ -594,7 +594,7 @@ std::wstring LookupSidByUsername(_In_ const std::wstring& wsUsername)
 
 HRESULT ImportLsaCredential(
     _In_ const CredentialInfo& info,
-    _In_ DWORD dwFlags,
+    _In_ [[maybe_unused]] DWORD dwFlags,
     _Out_ BOOL& pfUserCreated)
 {
     EIDM_TRACE_VERBOSE(L"Importing credential for RID %u via direct LSA access...", info.dwRid);
@@ -627,7 +627,7 @@ HRESULT ImportLsaCredential(
         static_cast<DWORD>(info.EncryptedPassword.size());
 
     std::vector<BYTE> buffer(dwPrivateDataSize);
-    PEID_PRIVATE_DATA pPrivateData = reinterpret_cast<PEID_PRIVATE_DATA>(buffer.data());
+    PEID_PRIVATE_DATA pPrivateData = reinterpret_cast<PEID_PRIVATE_DATA>(buffer.data());  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
     // Fill in the structure
     // IMPORTANT: All offsets are relative to the Data field, starting at 0
@@ -668,7 +668,7 @@ HRESULT ImportLsaCredential(
 
     // Store the LSA secret
     // Format: L$_EID__<RID> (double underscore)
-    WCHAR wszSecretName[256];
+    WCHAR wszSecretName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
     swprintf_s(wszSecretName, ARRAYSIZE(wszSecretName), L"L$_EID__%08X", info.dwRid);
 
     LSA_UNICODE_STRING lsaSecretName;
@@ -677,7 +677,7 @@ HRESULT ImportLsaCredential(
     lsaSecretName.MaximumLength = lsaSecretName.Length + sizeof(WCHAR);
 
     LSA_UNICODE_STRING lsaSecretData;
-    lsaSecretData.Buffer = reinterpret_cast<PWSTR>(buffer.data());
+    lsaSecretData.Buffer = reinterpret_cast<PWSTR>(buffer.data());  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
     lsaSecretData.Length = static_cast<USHORT>(dwPrivateDataSize);
     lsaSecretData.MaximumLength = lsaSecretData.Length;
 

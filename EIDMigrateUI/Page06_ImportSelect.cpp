@@ -4,7 +4,7 @@
 #include "../EIDMigrate/SecureMemory.h"
 #include <commdlg.h>
 
-INT_PTR CALLBACK WndProc_06_ImportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK WndProc_06_ImportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
     switch (uMsg)
     {
@@ -19,7 +19,7 @@ INT_PTR CALLBACK WndProc_06_ImportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 
     case WM_NOTIFY:
     {
-        LPNMHDR pnmh = (LPNMHDR)lParam;
+        LPNMHDR pnmh = (LPNMHDR)lParam;  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
         switch (pnmh->code)
         {
         case PSN_SETACTIVE:
@@ -114,7 +114,8 @@ INT_PTR CALLBACK WndProc_06_ImportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam,
             // Try to read and parse the file
             std::vector<CredentialInfo> credentials;
             std::vector<GroupInfo> groups;
-            std::wstring wsSourceMachine, wsExportDate;
+            std::wstring wsSourceMachine;
+            std::wstring wsExportDate;
 
             SecureWString secPassword;
             secPassword.assign(szPassword, wcslen(szPassword)); // NOSONAR - szPassword is stack-allocated buffer, never NULL

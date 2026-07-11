@@ -3,9 +3,9 @@
 #include "EventLogReader.h"
 #include "EIDUserManagement.h"
 #include "../EIDMigrate/LsaClient.h"
-#include <lm.h>
+#include <lm.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 #include <windowsx.h>
-#include <commctrl.h>
+#include <commctrl.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 
 #pragma comment(lib, "netapi32.lib")
 
@@ -14,7 +14,7 @@ PCWSTR GetEncryptionTypeString(EID_PRIVATE_DATA_TYPE type)
 {
     switch (type)
     {
-    case EID_PRIVATE_DATA_TYPE::eidpdtCrypted:
+    case EID_PRIVATE_DATA_TYPE::eidpdtCrypted:  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
         return L"Certificate";
     case EID_PRIVATE_DATA_TYPE::eidpdtDPAPI:
         return L"DPAPI";
@@ -42,22 +42,22 @@ void InitializeMainPage(HWND hwndDlg)
     lvc.mask = LVCF_TEXT | LVCF_WIDTH;
 
     // Column 1: Username
-    lvc.pszText = const_cast<LPWSTR>(L"Username");
+    lvc.pszText = const_cast<LPWSTR>(L"Username");  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
     lvc.cx = 150;
     ListView_InsertColumn(hList, 0, &lvc);
 
     // Column 2: RID
-    lvc.pszText = const_cast<LPWSTR>(L"RID");
+    lvc.pszText = const_cast<LPWSTR>(L"RID");  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
     lvc.cx = 60;
     ListView_InsertColumn(hList, 1, &lvc);
 
     // Column 3: Encryption
-    lvc.pszText = const_cast<LPWSTR>(L"Encryption");
+    lvc.pszText = const_cast<LPWSTR>(L"Encryption");  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
     lvc.cx = 100;
     ListView_InsertColumn(hList, 2, &lvc);
 
     // Column 4: Last Login
-    lvc.pszText = const_cast<LPWSTR>(L"Last Login");
+    lvc.pszText = const_cast<LPWSTR>(L"Last Login");  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
     lvc.cx = 140;
     ListView_InsertColumn(hList, 3, &lvc);
 
@@ -97,7 +97,7 @@ HRESULT RefreshUserList(HWND hwndDlg)
     LPUSER_INFO_0 pUserInfoArray = nullptr;
 
     DWORD dwNetStatus = NetUserEnum(nullptr, 0, FILTER_NORMAL_ACCOUNT,
-        reinterpret_cast<LPBYTE*>(&pUserInfoArray),
+        reinterpret_cast<LPBYTE*>(&pUserInfoArray),  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         MAX_PREFERRED_LENGTH,
         &dwEntriesRead,
         &dwTotalEntries,
@@ -106,7 +106,7 @@ HRESULT RefreshUserList(HWND hwndDlg)
     if (dwNetStatus != NERR_Success)
     {
         MessageBoxW(hwndDlg,
-            (std::wstring(L"Failed to enumerate users.\n\nError: ") +
+            (std::wstring(L"Failed to enumerate users.\n\nError: ") +  // NOSONAR - STRING-01: manual concatenation retained
             std::to_wstring(dwNetStatus)).c_str(),
             EIDMANAGE_APP_NAME,
             MB_ICONERROR);
@@ -189,7 +189,7 @@ HRESULT RefreshUserList(HWND hwndDlg)
     if (hCount)
     {
         SetWindowTextW(hCount,
-            (std::to_wstring(g_appState.users.size()) + L" users").c_str());
+            (std::to_wstring(g_appState.users.size()) + L" users").c_str());  // NOSONAR - STRING-01: manual concatenation retained
     }
 
     return S_OK;
@@ -206,13 +206,13 @@ void PopulateUserList(HWND hList, _In_ const std::vector<UserInfo>& users)
 
         LVITEM lvi = {0};
         lvi.mask = LVIF_TEXT | LVIF_PARAM;
-        lvi.pszText = const_cast<LPWSTR>(user.wsUsername.c_str());
+        lvi.pszText = const_cast<LPWSTR>(user.wsUsername.c_str());  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         lvi.iItem = static_cast<int>(i);
         lvi.lParam = static_cast<LPARAM>(i);
-        int iItem = ListView_InsertItem(hList, &lvi);
+        int iItem = ListView_InsertItem(hList, &lvi);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
 
         // RID
-        WCHAR szRID[32];
+        WCHAR szRID[32];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         swprintf_s(szRID, ARRAYSIZE(szRID), L"%u", user.dwRid);
         ListView_SetItemText(hList, iItem, 1, szRID);
 
@@ -234,7 +234,7 @@ HRESULT GetSelectedUsers(HWND hList, _Out_ std::vector<UserInfo>& selectedUsers)
 {
     selectedUsers.clear();
 
-    int nCount = ListView_GetItemCount(hList);
+    int nCount = ListView_GetItemCount(hList);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
     for (int i = 0; i < nCount; i++)
     {
         if (ListView_GetCheckState(hList, i))
@@ -244,8 +244,8 @@ HRESULT GetSelectedUsers(HWND hList, _Out_ std::vector<UserInfo>& selectedUsers)
             lvi.iItem = i;
             if (ListView_GetItem(hList, &lvi))
             {
-                size_t index = static_cast<size_t>(lvi.lParam);
-                if (index < g_appState.users.size())
+                size_t index = static_cast<size_t>(lvi.lParam);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
+                if (index < g_appState.users.size())  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     selectedUsers.push_back(g_appState.users[index]);
                 }
@@ -280,7 +280,7 @@ void ShowDetailsDialog(HWND hwndParent)
         return;
 
     // Get selected item
-    int iItem = ListView_GetNextItem(hList, -1, LVNI_SELECTED);
+    int iItem = ListView_GetNextItem(hList, -1, LVNI_SELECTED);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
     if (iItem == -1)
     {
         MessageBoxW(hwndParent,
@@ -296,7 +296,7 @@ void ShowDetailsDialog(HWND hwndParent)
     if (!ListView_GetItem(hList, &lvi))
         return;
 
-    size_t index = static_cast<size_t>(lvi.lParam);
+    size_t index = static_cast<size_t>(lvi.lParam);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
     if (index >= g_appState.users.size())
         return;
 

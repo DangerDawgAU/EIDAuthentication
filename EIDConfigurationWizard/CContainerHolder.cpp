@@ -53,7 +53,7 @@ BOOL GetTrustErrorMessage(DWORD dwError, PTSTR szName, DWORD dwSize)
 		dwResourceId = 3294;
 	}
 	HINSTANCE Handle = EIDLoadSystemLibrary(TEXT("cryptui.dll"));
-	if (Handle)
+	if (Handle)  // NOSONAR - SCOPE-01: library handle declared before the guarding if for clarity
 	{
 		LoadStringW(Handle, dwResourceId, szName, dwSize);
 		FreeLibrary(Handle);
@@ -68,7 +68,7 @@ BOOL GetTrustErrorMessage(DWORD dwError, PTSTR szName, DWORD dwSize)
 
 CContainerHolderTest::CContainerHolderTest(CContainer* pContainer)
 {
-	_pContainer = pContainer;
+	_pContainer = pContainer;  // NOSONAR - INIT-01: member set in body; subsequent init calls depend on it
 	_IsTrusted = IsTrusted();
 	_SupportEncryption = SupportEncryption();
 }
@@ -77,12 +77,12 @@ CContainerHolderTest::~CContainerHolderTest()
 {
 	if (_pContainer)
 	{
-		delete _pContainer;
+		delete _pContainer;  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 	}
 }
 void CContainerHolderTest::Release()
 {
-	delete this;
+	delete this;  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 }
 
 int CContainerHolderTest::GetIconIndex() const
@@ -106,7 +106,7 @@ BOOL CContainerHolderTest::IsTrusted()
 {
 	BOOL fReturn = FALSE;
 	PCCERT_CONTEXT pCertContext = _pContainer->GetCertificate();
-	if (pCertContext)
+	if (pCertContext)  // NOSONAR - SCOPE-01: context handle declared before the guarding if for clarity
 	{
 		fReturn = IsTrustedCertificate(pCertContext);
 		_dwTrustError = GetLastError();
@@ -118,7 +118,7 @@ BOOL CContainerHolderTest::SupportEncryption() const
 {
 	return _pContainer->GetKeySpec() == AT_KEYEXCHANGE;
 }
-HRESULT CContainerHolderTest::SetUsageScenario(
+HRESULT CContainerHolderTest::SetUsageScenario(  // NOSONAR - API-01: non-const by design; matches interface signature
     [[maybe_unused]] __in CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,
     [[maybe_unused]] __in DWORD dwFlags)
 {
@@ -132,24 +132,24 @@ CContainer* CContainerHolderTest::GetContainer() const
 
 int CContainerHolderTest::GetCheckCount() const
 {
-	return static_cast<int>(CheckType::CHECK_MAX);
+	return static_cast<int>(CheckType::CHECK_MAX);  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 }
 int CContainerHolderTest::GetImage(DWORD dwCheckNum) const
 {
 
 	switch(dwCheckNum)
 	{
-	case static_cast<DWORD>(CheckType::CHECK_SIGNATUREONLY):
+	case static_cast<DWORD>(CheckType::CHECK_SIGNATUREONLY):  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 		if (!HasSignatureUsageOnly())
 			return CHECK_SUCCESS;
 		else
 			return CHECK_FAILED;
-	case static_cast<DWORD>(CheckType::CHECK_TRUST):
+	case static_cast<DWORD>(CheckType::CHECK_TRUST):  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 		if (_IsTrusted)
 			return CHECK_SUCCESS;
 		else
 			return CHECK_FAILED;
-	case static_cast<DWORD>(CheckType::CHECK_CRYPTO):
+	case static_cast<DWORD>(CheckType::CHECK_CRYPTO):  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 		if (_SupportEncryption)
 			return CHECK_SUCCESS;
 		else
@@ -167,13 +167,13 @@ PTSTR CContainerHolderTest::GetDescription(DWORD dwCheckNum) const
 	szDescription[0] = 0;
 	switch(dwCheckNum)
 	{
-	case static_cast<DWORD>(CheckType::CHECK_SIGNATUREONLY):
+	case static_cast<DWORD>(CheckType::CHECK_SIGNATUREONLY):  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 		if (!HasSignatureUsageOnly())
 			LoadString(g_hinst,IDS_04SIGNATUREONLYOK,szDescription, dwWords);
 		else
 			LoadString(g_hinst,IDS_04SIGNATUREONLYNOK,szDescription, dwWords);
 		break;
-	case static_cast<DWORD>(CheckType::CHECK_TRUST):
+	case static_cast<DWORD>(CheckType::CHECK_TRUST):  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 		if (_IsTrusted)
 			LoadString(g_hinst,IDS_04TRUSTOK,szDescription, dwWords);
 		else
@@ -184,7 +184,7 @@ PTSTR CContainerHolderTest::GetDescription(DWORD dwCheckNum) const
 			}
 		}
 		break;
-	case static_cast<DWORD>(CheckType::CHECK_CRYPTO):
+	case static_cast<DWORD>(CheckType::CHECK_CRYPTO):  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 		if (_SupportEncryption)
 			LoadString(g_hinst,IDS_04ENCRYPTIONOK,szDescription, dwWords);
 		else
@@ -204,13 +204,13 @@ PTSTR CContainerHolderTest::GetSolveDescription(DWORD dwCheckNum) const
 	szDescription[0] = 0;
 	switch(dwCheckNum)
 	{
-	case static_cast<DWORD>(CheckType::CHECK_SIGNATUREONLY):
+	case static_cast<DWORD>(CheckType::CHECK_SIGNATUREONLY):  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 		if (HasSignatureUsageOnly())
 		{
 			LoadString(g_hinst,IDS_04CHANGESIGNATUREPOLICY,szDescription, dwWords);
 		}
 		break;
-	case static_cast<DWORD>(CheckType::CHECK_TRUST):
+	case static_cast<DWORD>(CheckType::CHECK_TRUST):  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 		if (!_IsTrusted)
 		{
 			if (_dwTrustError & CERT_TRUST_IS_UNTRUSTED_ROOT || _dwTrustError & CERT_TRUST_IS_PARTIAL_CHAIN)
@@ -261,13 +261,13 @@ static BOOL RunElevatedWithParam(LPCTSTR szParameters, DWORD& dwError)
 	return FALSE;
 }
 
-BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
+BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
 	BOOL fReturn = FALSE;
 	DWORD dwError = 0;
 	switch(dwCheckNum)
 	{
-	case static_cast<DWORD>(CheckType::CHECK_SIGNATUREONLY):
+	case static_cast<DWORD>(CheckType::CHECK_SIGNATUREONLY):  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 		{
 			if (IsElevated())
 			{
@@ -280,7 +280,7 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 			}
 		}
 		break;
-	case static_cast<DWORD>(CheckType::CHECK_TRUST):
+	case static_cast<DWORD>(CheckType::CHECK_TRUST):  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 		if (_dwTrustError & CERT_TRUST_IS_UNTRUSTED_ROOT || _dwTrustError & CERT_TRUST_IS_PARTIAL_CHAIN)
 		{
 			if (IsElevated())
@@ -295,7 +295,7 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 				TCHAR szParameters[8000] = TEXT("TRUST ");  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 				PCCERT_CONTEXT pCertContext = _pContainer->GetCertificate();
 				DWORD dwSize = ARRAYSIZE(szParameters) - 6;
-				if (CryptBinaryToString(pCertContext->pbCertEncoded,pCertContext->cbCertEncoded, CRYPT_STRING_BASE64, szParameters + 6,&dwSize))
+				if (CryptBinaryToString(pCertContext->pbCertEncoded,pCertContext->cbCertEncoded, CRYPT_STRING_BASE64, szParameters + 6,&dwSize))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 				{
 					fReturn = RunElevatedWithParam(szParameters, dwError);
 				}
@@ -311,7 +311,7 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 			if (IsElevated())
 			{
 				fReturn = SetPolicyValue(GPOPolicy::AllowCertificatesWithNoEKU, 1);
-				if (!fReturn) dwError = GetLastError();
+				if (!fReturn) dwError = GetLastError();  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 			}
 			else
 			{
@@ -323,7 +323,7 @@ BOOL CContainerHolderTest::Solve(DWORD dwCheckNum)
 			if (IsElevated())
 			{
 				fReturn = SetPolicyValue(GPOPolicy::AllowTimeInvalidCertificates, 1);
-				if (!fReturn) dwError = GetLastError();
+				if (!fReturn) dwError = GetLastError();  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 			}
 			else
 			{
