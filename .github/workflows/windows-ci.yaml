@@ -13,13 +13,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Cache the bundled minidrivers so we don't re-hit vendor sites every run.
       # The key tracks Installer/Stage-Minidrivers.ps1, which carries the URL +
       # SHA-256 manifest for each driver; changing either rotates the cache.
       - name: Cache bundled minidrivers
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: Installer/drivers
           key: drivers-${{ hashFiles('Installer/Stage-Minidrivers.ps1') }}
@@ -50,7 +50,7 @@ jobs:
       # CI / PR runs: store everything as workflow artifacts.
       - name: Upload workflow artifacts
         if: github.event_name != 'release'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: EIDAuthentication-${{ github.sha }}
           path: |
@@ -63,7 +63,7 @@ jobs:
       # Release runs only: attach to the GitHub Release that triggered us.
       - name: Upload to GitHub Release
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             Installer/EIDInstallx64.exe
@@ -72,7 +72,7 @@ jobs:
 
       - name: Upload build log on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-log-${{ github.sha }}
           path: build.log

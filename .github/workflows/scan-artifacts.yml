@@ -50,16 +50,16 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@v3
 
       - name: Build Solution (Release x64)
         run: msbuild EIDCredentialProvider.sln /p:Configuration=Release /p:Platform=x64 /m /v:minimal
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-artifacts
           path: |
@@ -75,10 +75,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: build-artifacts
           path: artifacts
@@ -90,7 +90,7 @@ jobs:
       # staged at build time. Cache them so we don't re-hit vendor sites every
       # run; the key tracks the manifest script so a driver change busts it.
       - name: Cache bundled minidrivers
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: Installer/drivers
           key: drivers-${{ hashFiles('Installer/Stage-Minidrivers.ps1') }}
@@ -142,7 +142,7 @@ jobs:
         shell: pwsh
 
       - name: Upload packaged artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: packaged-artifacts
           path: artifacts/
@@ -159,7 +159,7 @@ jobs:
 
     steps:
       - name: Download packaged artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: packaged-artifacts
           path: artifacts
@@ -172,7 +172,7 @@ jobs:
       - name: Scan artifacts with VirusTotal
         id: virustotal-scan
         continue-on-error: true  # WF-03: Non-blocking
-        uses: crazy-max/ghaction-virustotal@v4
+        uses: crazy-max/ghaction-virustotal@v5
         with:
           vt_api_key: ${{ secrets.VT_API_KEY }}
           files: |
@@ -229,7 +229,7 @@ jobs:
 
     steps:
       - name: Create commit comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const analysis = `${{ needs.scan.outputs.analysis }}`;
