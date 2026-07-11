@@ -77,7 +77,7 @@ INT_PTR CALLBACK WndProc_07_ImportOptions(HWND hwndDlg, UINT uMsg, WPARAM wParam
                         {
                             // User provided a password, store it for later
                             g_wizardData.userPasswords.emplace_back(
-                                std::make_pair(cred.wsUsername, wsPassword));
+                                cred.wsUsername, wsPassword);
                         }
                         // If skipped, no password will be set (smart card only)
                     }

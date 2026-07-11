@@ -32,8 +32,7 @@ struct LocalGroupInfo
     std::vector<BYTE> sidBytes;
     BOOL fBuiltin = FALSE;
 
-    LocalGroupInfo()
-    {}
+    LocalGroupInfo() = default;
 };
 
 // Check if group exists

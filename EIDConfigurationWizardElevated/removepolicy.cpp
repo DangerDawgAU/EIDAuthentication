@@ -7,7 +7,6 @@
 INT_PTR CALLBACK	WndProc_RemovePolicy(HWND hWnd, UINT message, WPARAM wParam, [[maybe_unused]] LPARAM lParam)
 {
 	int wmId;
-	int wmEvent;
 	DWORD dwValue;
 	switch(message)
 	{
