@@ -50,5 +50,21 @@
       </disabledValue>
     </policy>
 
+    <policy name="RequireCardBoundCredentials"
+            class="Machine"
+            displayName="$(string.RequireCardBoundCredentials)"
+            explainText="$(string.RequireCardBoundCredentials_Help)"
+            key="SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider"
+            valueName="RequireCardBoundCredentials">
+      <parentCategory ref="EIDAuthentication" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+
   </policies>
 </policyDefinitions>
