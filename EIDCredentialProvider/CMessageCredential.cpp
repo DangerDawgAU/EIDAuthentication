@@ -149,13 +149,9 @@ HRESULT CMessageCredential::GetFieldState(
     {
         *pcpfis = _rgFieldStatePairs[dwFieldID].cpfis;
 		*pcpfs = _rgFieldStatePairs[dwFieldID].cpfs;
-		if (dwFieldID == SMFI_CANCELFORCEPOLICY && (_cpus == CPUS_LOGON || _cpus == CPUS_UNLOCK_WORKSTATION))
-		{
-			if (GetPolicyValue(GPOPolicy::scforceoption))  // NOSONAR - COMPLEXITY-01: nested if retained; logic verified
-			{
-				*pcpfs = CPFS_DISPLAY_IN_SELECTED_TILE;
-			}
-		}
+		// SECURITY (M4): the "disable force policy" command link is intentionally never displayed.
+		// It opened a secure-desktop dialog that could launch the keymgr password-reset wizard and
+		// downgrade the smart-card-required policy from the lock screen.
 
         hr = S_OK;
     }
@@ -284,25 +280,10 @@ HRESULT CMessageCredential::GetBitmapValue(
 // Called when a command link is clicked.
 HRESULT CMessageCredential::CommandLinkClicked(DWORD dwFieldID)
 {
-    HRESULT hr = S_OK;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
-	if (SMFI_CANCELFORCEPOLICY == dwFieldID)
-	{
-		if (_pCredProvCredentialEvents)
-		{
-			HWND hWnd;
-			_pCredProvCredentialEvents->OnCreatingWindow(&hWnd);
-			ShowCancelForcePolicyWizard(hWnd);
-		}
-		else
-		{
-			hr = E_INVALIDARG;
-		}
-	}
-	else
-	{
-		hr = E_INVALIDARG;
-	}
-    return hr;
+    UNREFERENCED_PARAMETER(dwFieldID);
+	// SECURITY (M4): the lock-screen "disable force policy" wizard has been removed; this
+	// credential no longer launches any secure-desktop dialog, so no command link is acted upon.
+    return E_INVALIDARG;
 }
 
 // Since this credential isn't intended to provide a way for the user to submit their

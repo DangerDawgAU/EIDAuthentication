@@ -228,122 +228,12 @@ HRESULT ProtectIfNecessaryAndCopyPassword(
     return hr;
 }
 
-using PRShowRestoreFromMsginaW = BOOL (NTAPI*)(DWORD, DWORD, PWSTR, DWORD);
-static INT_PTR CALLBACK CancelForcePolicyWizardCallBack(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified 
-{ 
- 
-    switch (message) 
-    { 
-        case WM_INITDIALOG: 
-			break;
-		case WM_COMMAND: 
-            switch (LOWORD(wParam)) 
-            { 
-            case IDC_OK: 
-				
-				{
-					WCHAR szUserName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
-					WCHAR szPassword[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
-					HANDLE hToken = INVALID_HANDLE_VALUE;  // NOSONAR - EXPLICIT-TYPE-02: HANDLE visible for security audit
-					DWORD dwValue = 0;
-					LONG lStatus;
-					__try
-					{
-						GetWindowTextW(GetDlgItem(hwndDlg,IDC_USERNAME),szUserName,ARRAYSIZE(szUserName));
-						GetWindowTextW(GetDlgItem(hwndDlg,IDC_PASSWORD),szPassword,ARRAYSIZE(szPassword));
-						if (!LogonUser(szUserName,nullptr,szPassword,LOGON32_LOGON_INTERACTIVE,LOGON32_PROVIDER_DEFAULT,&hToken))
-						{
-							MessageBoxWin32(GetLastError());
-							__leave;
-						}
-						if (!IsAdmin(szUserName))
-						{
-							MessageBoxWin32(0x5);
-							__leave;
-						}
-						lStatus = RegSetKeyValue(	HKEY_LOCAL_MACHINE, 
-								TEXT("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Policies\\System"), 
-								TEXT("scforceoption"), REG_DWORD, &dwValue,sizeof(DWORD));
-						if (lStatus != ERROR_SUCCESS)
-						{
-							MessageBoxWin32(lStatus);
-							__leave;
-						}
-					}
-					__finally
-					{
-						if (hToken != INVALID_HANDLE_VALUE)
-							CloseHandle(hToken);
-					}
-				}
-				EndDialog(hwndDlg,1);
-                return TRUE; 
-			case IDC_CANCEL:
-				EndDialog(hwndDlg,0);
-                return TRUE;
-			default:
-				break;
-            }
-			break;
-			// g_hLink is the handle of the SysLink control.
-		case WM_NOTIFY:
-			switch (((LPNMHDR)lParam)->code)
-			{
-			case NM_CLICK:
-			case NM_RETURN:
-				{
-					PNMLINK pNMLink = (PNMLINK)lParam;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-					// C++17 init-statement: item is only used within this if block
-					if (LITEM item = pNMLink->item; wcscmp(item.szID, L"idinfo") == 0)
-					{
-						// launch the password reset wizard
-						HMODULE keymgrDll = nullptr;
-						WCHAR szUserName[256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
-						PBYTE pbBuffer;
-						NET_API_STATUS nStatus;
-						GetWindowTextW(GetDlgItem(hwndDlg,IDC_USERNAME),szUserName,ARRAYSIZE(szUserName));
-						nStatus = NetUserGetInfo(nullptr,szUserName,0,&pbBuffer);
-						if (nStatus == NERR_Success)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
-						{
-							NetApiBufferFree(pbBuffer);
-							__try
-							{
-								keymgrDll = EIDLoadSystemLibrary(TEXT("keymgr.dll"));
-								if (!keymgrDll)
-								{
-									__leave;
-								}
-								PRShowRestoreFromMsginaW MyPRShowRestoreFromMsginaW = (PRShowRestoreFromMsginaW) GetProcAddress(keymgrDll,"PRShowRestoreFromMsginaW");  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-								if (!MyPRShowRestoreFromMsginaW)
-								{
-									__leave;
-								}
-								MyPRShowRestoreFromMsginaW(0,0,szUserName,0);
-							}
-							__finally
-							{
-								if (keymgrDll)
-									FreeLibrary(keymgrDll);
-							}
-						}
-						else
-						{
-							MessageBoxWin32(nStatus);
-						}
-					}
-					break;
-				}
-			default:
-				break;
-			}
-			break;
-		default:
-			break;
-	}
-	return FALSE;
-}
 
 void ShowCancelForcePolicyWizard(HWND hWnd)
 {
-	DialogBox(HINST_THISDLL,MAKEINTRESOURCE(IDD_CANCELFORCEPOLICY) ,hWnd,CancelForcePolicyWizardCallBack);
-}
+	// SECURITY (M4): removed. This previously ran a dialog on the secure desktop that could launch
+	// the keymgr password-reset wizard (PRShowRestoreFromMsginaW) and downgrade the smart-card-
+	// required policy via an ad-hoc LogonUser prompt - a lock-screen escape / policy-downgrade
+	// surface. Retained as a no-op so existing callers still link.
+	UNREFERENCED_PARAMETER(hWnd);
+}
