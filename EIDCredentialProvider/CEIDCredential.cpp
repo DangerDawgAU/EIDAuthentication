@@ -710,6 +710,11 @@ HRESULT CEIDCredential::GetSerialization(
 
     // Initialize kiul with weak references to our credential.
     hr = EIDUnlockLogonInit(wsz, _rgFieldStrings[SFI_USERNAME], pwzProtectedPin, _cpus, &kiul);
+    // Zeroize the CredProtect-wrapped PIN copy before releasing it so it does not linger.
+    if (pwzProtectedPin)
+    {
+        SecureZeroMemory(pwzProtectedPin, (wcslen(pwzProtectedPin) + 1) * sizeof(WCHAR));
+    }
     CoTaskMemFree(pwzProtectedPin);
 
     // Guard clause: logon init failed
@@ -850,6 +855,9 @@ HRESULT CEIDCredential::ReportResult(
     // If we failed the logon, try to erase the Pin field.
     if (!SUCCEEDED(HRESULT_FROM_NT(ntsStatus)))
     {
+        // Zeroize the internal PIN buffer, not just the visible UI field, so the typed
+        // PIN does not linger in memory after a failed logon.
+        SecureClearPin();
         if (_pCredProvCredentialEvents)  // NOSONAR - CONTROL-01: nested if kept for cleanup clarity
         {
             _pCredProvCredentialEvents->SetFieldString(this, SFI_PIN, L"");

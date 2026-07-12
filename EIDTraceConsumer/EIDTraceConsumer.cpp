@@ -27,7 +27,40 @@
 #include <evntrace.h>
 #include <evntprov.h>
 #include <strsafe.h>
+#include <sddl.h>
 #include <stdio.h>
+
+// ================================================================
+// M5: Restrictive DACL for the log directory.
+// Full control to SYSTEM (SY) and Administrators (BA); Read&Execute only
+// (0x1200a9, no create/write) to Users (BU). PAI = protected, no inheritance
+// from the (Users-writable) ProgramData parent. Prevents a low-privileged
+// user from planting files/symlinks that this SYSTEM service would follow.
+// ================================================================
+#define EID_LOG_DIR_SDDL L"D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+
+// Build a SECURITY_ATTRIBUTES carrying the restrictive log-dir DACL above.
+// On success returns TRUE and hands back the SD in *ppSD; the caller MUST
+// LocalFree(*ppSD) once CreateDirectoryW has returned. On failure returns
+// FALSE and the caller should fall back to a NULL security descriptor.
+static BOOL BuildLogDirSecurityAttributes(SECURITY_ATTRIBUTES* psa, PSECURITY_DESCRIPTOR* ppSD)
+{
+    if (ppSD)
+        *ppSD = nullptr;
+    if (!psa || !ppSD)
+        return FALSE;
+
+    PSECURITY_DESCRIPTOR pSD = nullptr;
+    if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            EID_LOG_DIR_SDDL, SDDL_REVISION_1, &pSD, nullptr))
+        return FALSE;
+
+    psa->nLength = sizeof(SECURITY_ATTRIBUTES);
+    psa->lpSecurityDescriptor = pSD;
+    psa->bInheritHandle = FALSE;
+    *ppSD = pSD;
+    return TRUE;
+}
 
 // Service name and display name
 #define SERVICE_NAME             L"EIDTraceConsumer"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
@@ -184,10 +217,28 @@ BOOL EnsureDiagFileOpen()
     WCHAR szDir[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     wcscpy_s(szDir, g_szDiagPath);
     WCHAR* pLastSlash = wcsrchr(szDir, L'\\');
-    if (pLastSlash) { *pLastSlash = L'\0'; CreateDirectoryW(szDir, nullptr); }  // NOSONAR - SCOPE-01: declaration kept outside if for readability
+    if (pLastSlash)  // NOSONAR - SCOPE-01: declaration kept outside if for readability
+    {
+        *pLastSlash = L'\0';
+        // M5: create the log directory with a restrictive DACL (Full to
+        // SYSTEM/Admins, Read&Execute to Users). No-op if it already exists.
+        SECURITY_ATTRIBUTES sa;
+        PSECURITY_DESCRIPTOR pSD = nullptr;
+        if (BuildLogDirSecurityAttributes(&sa, &pSD))  // NOSONAR - SCOPE-01: declaration kept outside if for readability
+        {
+            CreateDirectoryW(szDir, &sa);
+            LocalFree(pSD);
+        }
+        else
+        {
+            CreateDirectoryW(szDir, nullptr);
+        }
+    }
 
+    // M5: FILE_FLAG_OPEN_REPARSE_POINT so a pre-planted symlink/junction at the
+    // diagnostics path is opened as the reparse point (and fails) rather than followed.
     g_hDiagFile = CreateFileW(g_szDiagPath, GENERIC_WRITE, FILE_SHARE_READ,
-        nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT, nullptr);
     if (g_hDiagFile == INVALID_HANDLE_VALUE)
         return FALSE;
 
@@ -673,6 +724,11 @@ BOOL InstallService()
     WCHAR szPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     GetModuleFileNameW(nullptr, szPath, MAX_PATH);
 
+    // M6: quote the binary path so a directory such as "C:\Program Files\..."
+    // cannot be hijacked via the unquoted-service-path privilege escalation.
+    WCHAR szQuotedPath[MAX_PATH + 2];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+    StringCchPrintfW(szQuotedPath, ARRAYSIZE(szQuotedPath), L"\"%s\"", szPath);
+
     SC_HANDLE hService = CreateServiceW(
         hSCManager,
         SERVICE_NAME,
@@ -681,7 +737,7 @@ BOOL InstallService()
         SERVICE_WIN32_OWN_PROCESS,
         SERVICE_AUTO_START,
         SERVICE_ERROR_NORMAL,
-        szPath,
+        szQuotedPath,
         nullptr,
         nullptr,
         nullptr,

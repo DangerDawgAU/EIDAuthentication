@@ -246,17 +246,31 @@ BOOL EIDCSVLogger::EnsureLogFileOpen()
     if (pLastSlash)  // NOSONAR - SCOPE-01: declaration kept separate from if for readability
     {
         *pLastSlash = L'\0';
-        CreateDirectoryW(szDir, nullptr);
+        // M5: create the log directory with a restrictive DACL (Full to
+        // SYSTEM/Admins, Read&Execute to Users). No-op if it already exists.
+        SECURITY_ATTRIBUTES sa;
+        PSECURITY_DESCRIPTOR pSD = nullptr;
+        if (BuildLogDirSecurityAttributes(&sa, &pSD))  // NOSONAR - SCOPE-01: declaration kept separate from if for readability
+        {
+            CreateDirectoryW(szDir, &sa);
+            LocalFree(pSD);
+        }
+        else
+        {
+            CreateDirectoryW(szDir, nullptr);
+        }
     }
 
     // Open file for append (UTF-16 LE encoding)
+    // M5: FILE_FLAG_OPEN_REPARSE_POINT so a pre-planted symlink/junction at the
+    // log path is opened as the reparse point (and fails) rather than followed.
     s_hLogFile = CreateFileW(
         s_szCurrentLogPath,
         GENERIC_WRITE,
         FILE_SHARE_READ,
         nullptr,
         OPEN_ALWAYS,
-        FILE_ATTRIBUTE_NORMAL,
+        FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT,
         nullptr
     );
 

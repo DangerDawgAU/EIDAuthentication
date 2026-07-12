@@ -740,7 +740,17 @@ HRESULT ReadEncryptedFile(
     std::vector<BYTE> storedHmac(HMAC_SIZE);
     memcpy(storedHmac.data(), fileData.data() + nHmacOffset, HMAC_SIZE);
 
-    if (fileHmac != storedHmac)
+    // SECURITY (L11): compare the computed and stored HMAC in constant time over exactly
+    // HMAC_SIZE bytes. std::vector operator!= short-circuits on the first mismatch and would
+    // leak match progress via timing; accumulate the XOR of every byte pair instead and only
+    // test the accumulator once, with no early return.
+    volatile BYTE hmacDiff = 0;
+    for (size_t i = 0; i < static_cast<size_t>(HMAC_SIZE); i++)
+    {
+        hmacDiff |= static_cast<BYTE>(fileHmac[i] ^ storedHmac[i]);
+    }
+
+    if (hmacDiff != 0)
     {
         SecureZeroMemory(&derivedKey, sizeof(derivedKey));
         SecureZeroMemory(fileData.data(), fileData.size());

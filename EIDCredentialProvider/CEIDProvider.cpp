@@ -265,6 +265,11 @@ STDMETHODIMP CEIDProvider::SetSerialization(  // NOSONAR - COM-01: ICredentialPr
     )
 {
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"");
+	// Guard clause: LogonUI may pass a NULL serialization.
+	if (!pcpcs)
+	{
+		return E_INVALIDARG;
+	}
 	if (_dwFlags & CREDUIWIN_AUTHPACKAGE_ONLY || _dwFlags & CREDUIWIN_IN_CRED_ONLY)
 	{
 		if (pcpcs->ulAuthenticationPackage > 0)  // NOSONAR - COMPLEXITY-01: nested guard retained for readability; logic verified
@@ -282,10 +287,19 @@ STDMETHODIMP CEIDProvider::SetSerialization(  // NOSONAR - COM-01: ICredentialPr
 		}
 	}
 	PSEC_WINNT_CREDUI_CONTEXT pCredUIContext = nullptr;
-	SECURITY_STATUS status;
-	status= SspiUnmarshalCredUIContext(pcpcs->rgbSerialization, pcpcs->cbSerialization, &pCredUIContext);  // NOSONAR - DEADSTORE-01: unmarshal call retained; status intentionally unused here
+	SECURITY_STATUS status = SspiUnmarshalCredUIContext(pcpcs->rgbSerialization, pcpcs->cbSerialization, &pCredUIContext);
+	if (status != SEC_E_OK)
+	{
+		// Attacker-supplied bytes may fail to unmarshal; ignore them without side effects.
+		return S_OK;
+	}
+	if (pCredUIContext)
+	{
+		// Free the context buffer allocated by SspiUnmarshalCredUIContext to avoid a per-call leak.
+		FreeContextBuffer(pCredUIContext);
+	}
 
-	   return S_OK;
+	return S_OK;
 }
 
 // Called by LogonUI to give you a callback. Providers often use the callback if they

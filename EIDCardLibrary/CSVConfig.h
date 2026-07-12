@@ -26,6 +26,7 @@
 #pragma once
 
 #include <Windows.h>
+#include <sddl.h>
 #include <string>
 #include "EventDefinitions.h"
 
@@ -218,6 +219,38 @@ struct EID_CSV_CONFIG
 #define EID_CSV_CONFIG_PATH         L"C:\\ProgramData\\EIDAuthentication\\logging.json"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 #define EID_CSV_DEFAULT_LOG_PATH    L"C:\\ProgramData\\EIDAuthentication\\logs\\events.csv"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 #define EID_CSV_CONFIG_KEY          L"SOFTWARE\\EIDAuthentication\\LogManager"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+
+// ================================================================
+// M5: Restrictive DACL for the log/config directory.
+// Full control to SYSTEM (SY) and Administrators (BA); Read&Execute only
+// (0x1200a9, no create/write) to Users (BU). PAI = protected, no inheritance
+// from the (Users-writable) ProgramData parent. Prevents a low-privileged
+// user from planting files/symlinks that a SYSTEM writer would follow.
+// ================================================================
+#define EID_LOG_DIR_SDDL            L"D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+
+// Build a SECURITY_ATTRIBUTES carrying the restrictive log-dir DACL above.
+// On success returns TRUE, fills *psa and hands back the security descriptor in
+// *ppSD; the caller MUST LocalFree(*ppSD) once CreateDirectoryW has returned.
+// On failure returns FALSE and the caller should fall back to a NULL SD.
+inline BOOL BuildLogDirSecurityAttributes(SECURITY_ATTRIBUTES* psa, PSECURITY_DESCRIPTOR* ppSD)
+{
+    if (ppSD)
+        *ppSD = nullptr;
+    if (!psa || !ppSD)
+        return FALSE;
+
+    PSECURITY_DESCRIPTOR pSD = nullptr;
+    if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            EID_LOG_DIR_SDDL, SDDL_REVISION_1, &pSD, nullptr))
+        return FALSE;
+
+    psa->nLength = sizeof(SECURITY_ATTRIBUTES);
+    psa->lpSecurityDescriptor = pSD;
+    psa->bInheritHandle = FALSE;
+    *ppSD = pSD;
+    return TRUE;
+}
 
 // ================================================================
 // Configuration Management Functions

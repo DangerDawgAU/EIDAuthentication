@@ -73,7 +73,7 @@ std::string JsonValue::stringify(int indent) const
 }  // end function stringify
 
 // JSON Parser implementation
-std::shared_ptr<JsonValue> JsonParser::parseValue()
+std::shared_ptr<JsonValue> JsonParser::parseValue(int depth)
 {
     skipWhitespace();
 
@@ -86,9 +86,9 @@ std::shared_ptr<JsonValue> JsonParser::parseValue()
     else if (c == '-' || isdigit(c))
         return std::make_shared<JsonValue>(parseNumber());
     else if (c == '[')
-        return std::make_shared<JsonValue>(parseArray());
+        return std::make_shared<JsonValue>(parseArray(depth));
     else if (c == '{')
-        return std::make_shared<JsonValue>(parseObject());
+        return std::make_shared<JsonValue>(parseObject(depth));
     else if (c == 'n')
     {
         m_pos += 4; // "null"
@@ -197,11 +197,24 @@ long long JsonParser::parseNumber()
     }
 
     std::string numStr = m_json.substr(start, m_pos - start);
-    return std::stoll(numStr);
+    // SECURITY (L9): std::stoll throws on malformed/overflowing input; convert those into a
+    // parse error so they cannot escape the parser as an unrelated exception.
+    try
+    {
+        return std::stoll(numStr);
+    }
+    catch (const std::exception&)
+    {
+        throw std::runtime_error("Invalid numeric value"); // NOSONAR - std::runtime_error is appropriate for JSON parsing errors
+    }
 }
 
-JsonArray JsonParser::parseArray()
+JsonArray JsonParser::parseArray(int depth)
 {
+    // SECURITY (L9): reject arrays nested deeper than MAX_PARSE_DEPTH before recursing.
+    if (depth >= MAX_PARSE_DEPTH)
+        throw std::runtime_error("JSON nesting too deep"); // NOSONAR - std::runtime_error is appropriate for JSON parsing errors
+
     // Skip opening bracket
     m_pos++;
     skipWhitespace();
@@ -220,7 +233,7 @@ JsonArray JsonParser::parseArray()
         }
 
         // Parse element
-        array.push_back(parseValue());
+        array.push_back(parseValue(depth + 1));
 
         skipWhitespace();
         c = current();
@@ -243,8 +256,12 @@ JsonArray JsonParser::parseArray()
     return array;
 }
 
-JsonObject JsonParser::parseObject()
+JsonObject JsonParser::parseObject(int depth)
 {
+    // SECURITY (L9): reject objects nested deeper than MAX_PARSE_DEPTH before recursing.
+    if (depth >= MAX_PARSE_DEPTH)
+        throw std::runtime_error("JSON nesting too deep"); // NOSONAR - std::runtime_error is appropriate for JSON parsing errors
+
     // Skip opening brace
     m_pos++;
     skipWhitespace();
@@ -279,7 +296,7 @@ JsonObject JsonParser::parseObject()
         // Don't increment m_pos here - parseValue will handle it
 
         // Parse value
-        std::shared_ptr<JsonValue> value = parseValue();
+        std::shared_ptr<JsonValue> value = parseValue(depth + 1);
         obj[key] = value;
 
         skipWhitespace();

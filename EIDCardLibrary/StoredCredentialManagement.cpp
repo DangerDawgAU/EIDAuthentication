@@ -1455,6 +1455,8 @@ BOOL CStoredCredentialManager::GenerateSymetricKeyAndEncryptIt(__in HCRYPTPROV h
 		}
 		if (hHash)
 			CryptDestroyHash(hHash);
+		// L3: scrub the raw AES key material from the stack.
+		SecureZeroMemory(&bKey, sizeof(bKey));
 	}
 	SetLastError(dwError);
 	return fReturn;
@@ -1688,6 +1690,8 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 			CryptReleaseContext(hProv, 0);
 			CryptAcquireContext(&hProv,CREDENTIAL_CONTAINER,CREDENTIALPROVIDER,PROV_RSA_AES,CRYPT_DELETEKEYSET);
 		}
+		// L3: scrub the raw AES key material from the stack.
+		SecureZeroMemory(&bKey, sizeof(bKey));
 	}
 	SetLastError(dwError);
 	return fReturn;

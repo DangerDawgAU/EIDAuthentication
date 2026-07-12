@@ -56,7 +56,7 @@ std::wstring LoadStringResource(UINT uID) {
 
 // Set window icon (uses imageres.dll shield icon by default)
 void SetWindowIcon(HWND hwnd, int iconId) {
-    HMODULE hDll = LoadLibraryW(L"imageres.dll");
+    HMODULE hDll = LoadLibraryExW(L"imageres.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (hDll) {
         HICON hIcon = (HICON)LoadImage(hDll, MAKEINTRESOURCE(iconId ? iconId : 58), // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
             IMAGE_ICON, GetSystemMetrics(SM_CXSMICON),
@@ -274,7 +274,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     psh.pszbmHeader = nullptr;
 
     // Load icon
-    HMODULE hDll = LoadLibraryW(L"imageres.dll");
+    HMODULE hDll = LoadLibraryExW(L"imageres.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (hDll) { // NOSONAR - SCOPE-01: declaration kept at outer scope for readability
         psh.hIcon = LoadIcon(hDll, MAKEINTRESOURCE(58));
         FreeLibrary(hDll);

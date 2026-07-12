@@ -179,12 +179,16 @@ private:
     char current() const { return m_pos < m_json.length() ? m_json[m_pos] : '\0'; }
     bool eof() const { return m_pos >= m_json.length(); }
 
-    std::shared_ptr<JsonValue> parseValue();
+    // SECURITY (L9): cap recursion depth for the mutually-recursive value/array/object
+    // parsers so deeply nested input fails with a parse error instead of overflowing the stack.
+    static constexpr int MAX_PARSE_DEPTH = 64;
+
+    std::shared_ptr<JsonValue> parseValue(int depth = 0);
     std::string parseString();
     bool parseBool();
     long long parseNumber();
-    JsonArray parseArray();
-    JsonObject parseObject();
+    JsonArray parseArray(int depth = 0);
+    JsonObject parseObject(int depth = 0);
 
 public:
     explicit JsonParser(const std::string& json) : m_json(json) {}

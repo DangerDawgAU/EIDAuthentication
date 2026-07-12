@@ -50,7 +50,7 @@ INT_PTR CALLBACK WndProc_10_ImportComplete(HWND hwndDlg, UINT uMsg, WPARAM wPara
             SetDlgItemText(hwndDlg, IDC_10_WARNINGS, wsWarnings.c_str());
 
             // Load shield icon
-            HMODULE hDll = LoadLibraryW(L"imageres.dll");
+            HMODULE hDll = LoadLibraryExW(L"imageres.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
             if (hDll) {
                 HICON hIcon = LoadIcon(hDll, MAKEINTRESOURCE(58));
                 if (hIcon) {  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified

@@ -26,7 +26,7 @@ INT_PTR CALLBACK WndProc_03_ExportConfirm(HWND hwndDlg, UINT uMsg, WPARAM wParam
             SetDlgItemText(hwndDlg, IDC_03_OUTPUT_PATH, g_wizardData.wsOutputFile.c_str());
 
             // Load shield icon
-            HMODULE hDll = LoadLibraryW(L"imageres.dll");
+            HMODULE hDll = LoadLibraryExW(L"imageres.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
             if (hDll) {
                 HICON hIcon = LoadIcon(hDll, MAKEINTRESOURCE(58));
                 if (hIcon) {  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
