@@ -37,6 +37,7 @@
 
   !insertmacro MUI_PAGE_LICENSE "License.txt"
   !insertmacro MUI_PAGE_COMPONENTS
+  Page custom ShowSecurityOptions LeaveSecurityOptions
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
 
@@ -68,6 +69,12 @@
 ;Variables for size calculation
 
   Var /GLOBAL InstallSize
+
+;--------------------------------
+;Security option (install-time question)
+
+  Var /GLOBAL RequireCardBound
+  Var /GLOBAL RequireCardBoundCheckbox
 
 ;--------------------------------
 ;Uninstaller Variables
@@ -190,6 +197,11 @@ Section "Core" SecCore
   ; Write installation path to registry
   SetRegView 64
   WriteRegStr HKLM "Software\EIDAuthentication" "InstallPath" "$INSTDIR"
+
+  ; Security policy: RequireCardBoundCredentials (from the install-time question).
+  ; 1 = only card-wrapped (crypted) credentials may be created / used at logon / imported;
+  ; the Windows password can then never be recovered without the smart card.
+  WriteRegDWORD HKLM "SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider" "RequireCardBoundCredentials" $RequireCardBound
 
   ; Uninstall info
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "DisplayName" "EID Authentication"
@@ -373,6 +385,34 @@ SectionGroupEnd
     !insertmacro MUI_DESCRIPTION_TEXT ${SecYubiKeyMinidriver} $(DESC_SecYubiKey)
     !insertmacro MUI_DESCRIPTION_TEXT ${SecWUMinidriver}      $(DESC_SecWU)
   !insertmacro MUI_FUNCTION_DESCRIPTION_END
+
+;--------------------------------
+;Install-time Security Options page
+
+Function ShowSecurityOptions
+  !insertmacro MUI_HEADER_TEXT "Security Options" "Choose how EID Authentication protects stored credentials."
+
+  nsDialogs::Create 1018
+  Pop $0
+  ${If} $0 == error
+    Abort
+  ${EndIf}
+
+  ${NSD_CreateLabel} 0 0 100% 60u "When 'Require card-bound credentials' is enabled, each user's Windows password is only ever stored sealed to their smart card, so it cannot be recovered from this machine without the card (and PIN).$\n$\nRecommended for decrypt-capable cards such as MyEID (Aventra) and YubiKey (PIV). Leave it OFF if you use signature-only cards, which cannot use card-bound storage and would otherwise fail to enrol / log on."
+  Pop $0
+
+  ${NSD_CreateCheckbox} 10u 68u 100% 12u "Require card-bound credentials (RequireCardBoundCredentials policy)"
+  Pop $RequireCardBoundCheckbox
+  ${If} $RequireCardBound == 1
+    ${NSD_Check} $RequireCardBoundCheckbox
+  ${EndIf}
+
+  nsDialogs::Show
+FunctionEnd
+
+Function LeaveSecurityOptions
+  ${NSD_GetState} $RequireCardBoundCheckbox $RequireCardBound
+FunctionEnd
 
 ;--------------------------------
 ;Helper Functions for Certificate Cleanup
@@ -606,6 +646,9 @@ Function .onInit
     MessageBox MB_OK "This installer is designed for 64bits only"
     Abort
   ${EndIf}
+
+  ; Default the security option to OFF (no behaviour change unless the admin opts in)
+  StrCpy $RequireCardBound 0
 
   ; Check if already installed via registry
   SetRegView 64
