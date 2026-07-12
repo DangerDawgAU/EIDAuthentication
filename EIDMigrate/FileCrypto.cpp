@@ -710,6 +710,16 @@ HRESULT ReadEncryptedFile(
         return E_INVALIDARG;
     }
 
+    // SECURITY: the header's PayloadLength is attacker-controlled; validate it against the real
+    // file size before using it to size the plaintext buffer or drive GCM decryption (prevents
+    // heap OOB read and huge-allocation DoS). Layout is exactly [header][ciphertext: PayloadLength][HMAC].
+    if (header.PayloadLength > fileData.size() ||
+        fileData.size() - header.PayloadLength != sizeof(header) + static_cast<size_t>(HMAC_SIZE))
+    {
+        EIDM_TRACE_ERROR(L"PayloadLength inconsistent with file size - rejecting");
+        return E_INVALIDARG;
+    }
+
     // Derive key from passphrase using salt from file header
     CRYPTO_STATUS cryptoStatus = DeriveKeyFromPassphraseWithSalt(
         wsPassword.c_str(), wsPassword.length(), header.PBKDF2Salt, &derivedKey);

@@ -192,7 +192,9 @@ HRESULT EnumerateLsaCredentials(_Out_ std::vector<CredentialInfo>& credentials) 
 
             // Parse the secret data to get certificate hash and encryption type
             // The secret format is: EID_PRIVATE_DATA structure
-            constexpr DWORD dwMinPrivateDataSize = offsetof(EID_PRIVATE_DATA, Hash) + CERT_HASH_LENGTH;
+            // SECURITY: require the full fixed struct (not just up to Hash) so the later
+            // "Length - sizeof(EID_PRIVATE_DATA)" offset math cannot integer-underflow -> OOB read.
+            constexpr DWORD dwMinPrivateDataSize = sizeof(EID_PRIVATE_DATA);
 
             if (pSecretData->Length >= dwMinPrivateDataSize)
             {
@@ -383,6 +385,16 @@ HRESULT ExportLsaCredential(_In_ DWORD dwRid, _Out_ CredentialInfo& info)
     if (NT_SUCCESS(status) && pSecretData && pSecretData->Buffer)
     {
         PEID_PRIVATE_DATA pPrivateData = reinterpret_cast<PEID_PRIVATE_DATA>(pSecretData->Buffer);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
+
+        // SECURITY: require the full fixed struct before reading fields / computing
+        // "Length - sizeof(EID_PRIVATE_DATA)" below, so a short/corrupt secret cannot underflow -> OOB read.
+        if (pSecretData->Length < sizeof(EID_PRIVATE_DATA))
+        {
+            EIDM_TRACE_WARN(L"ExportLsaCredential: LSA secret too small (%u bytes) - rejecting", pSecretData->Length);
+            LsaFreeMemory(pSecretData);
+            LsaClose(hLsa);
+            return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+        }
 
         info.dwRid = dwRid;
         info.EncryptionType = pPrivateData->dwType;
