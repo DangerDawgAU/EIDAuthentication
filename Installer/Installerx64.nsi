@@ -647,8 +647,9 @@ Function .onInit
     Abort
   ${EndIf}
 
-  ; Default the security option to OFF (no behaviour change unless the admin opts in)
-  StrCpy $RequireCardBound 0
+  ; Default the security option to ON (card-bound credentials recommended); the admin
+  ; can uncheck it on the Security Options page if they use signature-only cards.
+  StrCpy $RequireCardBound 1
 
   ; Check if already installed via registry
   SetRegView 64
