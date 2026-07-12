@@ -38,18 +38,19 @@ enum class GPOPolicy
   scforceoption,
   scremoveoption,
   EnforceCSPWhitelist,  // Security: block CSP providers not in whitelist
+  RequireCardBoundCredentials,  // Security (H3): when set, only card-wrapped (crypted) credentials may be created/used/imported
 };
 
 // Validates that a GPOPolicy enum value is within valid bounds to prevent array overflow
 // Marked constexpr+noexcept for compile-time evaluation and LSASS compatibility
 constexpr bool IsValidPolicy(GPOPolicy policy) noexcept
 {
-    return policy >= GPOPolicy::AllowSignatureOnlyKeys && policy <= GPOPolicy::EnforceCSPWhitelist;
+    return policy >= GPOPolicy::AllowSignatureOnlyKeys && policy <= GPOPolicy::RequireCardBoundCredentials;
 }
 
 // Compile-time validation of GPOPolicy enum bounds
 static_assert(IsValidPolicy(GPOPolicy::AllowSignatureOnlyKeys), "AllowSignatureOnlyKeys must be a valid policy");
-static_assert(IsValidPolicy(GPOPolicy::EnforceCSPWhitelist), "EnforceCSPWhitelist must be a valid policy");
+static_assert(IsValidPolicy(GPOPolicy::RequireCardBoundCredentials), "RequireCardBoundCredentials must be a valid policy");
 
 DWORD GetPolicyValue(GPOPolicy Policy);
 BOOL SetPolicyValue(GPOPolicy Policy, DWORD dwValue);

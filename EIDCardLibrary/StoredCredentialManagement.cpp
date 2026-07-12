@@ -37,6 +37,7 @@
 #include "StringConversion.h"
 #include "CSVConfig.h"
 #include "CSVLogger.h"
+#include "GPO.h"
 #include <string>
 #include <span>
 #include <array>
@@ -413,6 +414,15 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 	// Uses helper functions CalculateSecretSize, BuildSecretData, EncryptPasswordWithDPAPI
 	// to reduce cognitive complexity while maintaining SEH safety.
 
+	// SECURITY (H3): when the RequireCardBoundCredentials policy is set, refuse to create a
+	// non-card-wrapped (DPAPI) credential - its password would be recoverable without the card.
+	if (!fEncryptPassword && GetPolicyValue(GPOPolicy::RequireCardBoundCredentials))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RequireCardBoundCredentials: refusing to create non-crypted credential");
+		SetLastError(ERROR_ACCESS_DENIED);
+		return FALSE;
+	}
+
 	BOOL fReturn = FALSE;
 	BOOL fStatus;
 	DWORD dwError = 0;
@@ -788,6 +798,13 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 			__leave;
 		}
 		*pType = static_cast<DWORD>(pEidPrivateData->dwType);  // NOSONAR - ENUM-01: enum-to-underlying cast for Win32/ABI compatibility
+		// SECURITY (H3): when policy requires card-bound credentials, refuse any non-crypted type.
+		if (*pType != static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted) && GetPolicyValue(GPOPolicy::RequireCardBoundCredentials))
+		{
+			dwError = ERROR_ACCESS_DENIED;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RequireCardBoundCredentials: refusing non-crypted credential type %d",*pType);
+			__leave;
+		}
 		switch(*pType)
 		{
 		case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted):  // NOSONAR - ENUM-01: enum-to-underlying cast for Win32/ABI compatibility
@@ -1536,6 +1553,13 @@ BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __i
 
 BOOL CStoredCredentialManager::GetPasswordFromChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in DWORD dwChallengeType, __in PBYTE pResponse, __in DWORD dwResponseSize, PWSTR *pszPassword)
 {
+	// SECURITY (H3): when policy requires card-bound credentials, only crypted may be recovered.
+	if (dwChallengeType != static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted) && GetPolicyValue(GPOPolicy::RequireCardBoundCredentials))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RequireCardBoundCredentials: refusing non-crypted credential type %d",dwChallengeType);
+		SetLastError(ERROR_ACCESS_DENIED);
+		return FALSE;
+	}
 	switch(dwChallengeType)
 	{  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 	case static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtClearText):  // NOSONAR - ENUM-01: enum-to-underlying cast for Win32/ABI compatibility

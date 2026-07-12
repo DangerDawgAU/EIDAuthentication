@@ -613,6 +613,23 @@ HRESULT ImportLsaCredential(
 
     pfUserCreated = FALSE;
 
+    // SECURITY (H3): when the RequireCardBoundCredentials policy is enabled, refuse to import a
+    // non-card-wrapped (DPAPI/ClearText) credential - its password would be recoverable without
+    // the card. Read the policy directly to avoid a link dependency on EIDCardLibrary.
+    if (info.EncryptionType != EID_PRIVATE_DATA_TYPE::eidpdtCrypted)
+    {
+        DWORD dwRequireCardBound = 0;
+        DWORD dwSize = sizeof(dwRequireCardBound);
+        if (RegGetValueW(HKEY_LOCAL_MACHINE,
+                L"SOFTWARE\\Policies\\Microsoft\\Windows\\SmartCardCredentialProvider",
+                L"RequireCardBoundCredentials", RRF_RT_REG_DWORD, nullptr,
+                &dwRequireCardBound, &dwSize) == ERROR_SUCCESS && dwRequireCardBound != 0)
+        {
+            EIDM_TRACE_ERROR(L"RequireCardBoundCredentials policy set: refusing to import non-crypted credential for RID %u", info.dwRid);
+            return HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED);
+        }
+    }
+
     NTSTATUS status;
     HANDLE hLsa = nullptr;
     LSA_OBJECT_ATTRIBUTES objectAttributes = {};
