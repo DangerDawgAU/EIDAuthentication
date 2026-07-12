@@ -1593,6 +1593,14 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 		bKey.bVersion = CUR_BLOB_VERSION;
 		bKey.reserved = 0;
 		bKey.aiKeyAlg = CREDENTIALCRYPTALG;
+		// SECURITY: pResponse/dwResponseSize come from the card CSP (or a GINA-response caller);
+		// bound them to the fixed AES key buffer to prevent a stack overflow in LSASS.
+		if (dwResponseSize > sizeof(bKey.Data))
+		{
+			dwError = ERROR_INVALID_PARAMETER;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"dwResponseSize 0x%x exceeds key buffer size 0x%x",dwResponseSize,(DWORD)sizeof(bKey.Data));
+			__leave;
+		}
 		bKey.cb = dwResponseSize;
 		memcpy(bKey.Data, pResponse, dwResponseSize);
 		// import the aes key

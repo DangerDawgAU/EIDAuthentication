@@ -300,6 +300,36 @@ extern "C"
 	to LsaCallAuthenticationPackage by an application using an untrusted connection. 
 	This function is used for communicating with processes that do not have the SeTcbPrivilege privilege.*/
 
+	// SECURITY helper: the untrusted call-package buffer is fully attacker-controlled, including
+	// the embedded pointer fields (wszPassword/pbCertificate) and the ClientBufferBase used to
+	// rebase them. Validate that a rebased pointer's [offset, offset+size) range lies entirely
+	// within the SubmitBufferLength-sized copy before dereferencing it. Returns the in-bounds
+	// server-side pointer, or nullptr if out of bounds. Overflow-safe.
+	static PBYTE RebaseAndBoundCheck(PVOID clientPtr, PVOID clientBufferBase, PVOID serverBuffer, ULONG size, ULONG submitBufferLength)  // NOSONAR - COMPLEXITY-01: bounds-check helper
+	{
+		ULONG_PTR offset = reinterpret_cast<ULONG_PTR>(clientPtr) - reinterpret_cast<ULONG_PTR>(clientBufferBase);
+		if (offset > submitBufferLength)			// start out of range (also catches pointer < base underflow)
+			return nullptr;
+		if (size > submitBufferLength - offset)		// end out of range (submitBufferLength - offset cannot underflow here)
+			return nullptr;
+		return reinterpret_cast<PBYTE>(serverBuffer) + offset;
+	}
+
+	// As above, for a NUL-terminated wide string: also require the terminator to be inside the buffer.
+	static PWSTR RebaseWStringAndBoundCheck(PVOID clientPtr, PVOID clientBufferBase, PVOID serverBuffer, ULONG submitBufferLength)
+	{
+		PBYTE start = RebaseAndBoundCheck(clientPtr, clientBufferBase, serverBuffer, sizeof(WCHAR), submitBufferLength);
+		if (!start)
+			return nullptr;
+		PBYTE bufEnd = reinterpret_cast<PBYTE>(serverBuffer) + submitBufferLength;
+		for (PBYTE p = start; p + sizeof(WCHAR) <= bufEnd; p += sizeof(WCHAR))
+		{
+			if (*reinterpret_cast<const WCHAR*>(p) == L'\0')
+				return reinterpret_cast<PWSTR>(start);
+		}
+		return nullptr;									// not NUL-terminated within the buffer
+	}
+
 	NTSTATUS NTAPI LsaApCallPackageUntrusted(  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 	  __in   PLSA_CLIENT_REQUEST ClientRequest,
 	  __in   PVOID ProtocolSubmitBuffer,
@@ -319,11 +349,17 @@ extern "C"
 		UNREFERENCED_PARAMETER(ClientRequest);
 		UNREFERENCED_PARAMETER(ReturnBufferLength);
 		UNREFERENCED_PARAMETER(ProtocolReturnBuffer);
-		UNREFERENCED_PARAMETER(SubmitBufferLength);
 		__try
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
 			*ProtocolStatus = STATUS_SUCCESS;
+			// SECURITY: an untrusted caller controls the whole submit buffer; reject any buffer
+			// too small to hold the fixed message header before touching any field.
+			if (SubmitBufferLength < sizeof(EID_CALLPACKAGE_BUFFER))
+			{
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SubmitBufferLength 0x%x smaller than message header - rejecting",SubmitBufferLength);
+				return STATUS_INVALID_PARAMETER;
+			}
 			PEID_CALLPACKAGE_BUFFER pBuffer = static_cast<PEID_CALLPACKAGE_BUFFER>(ProtocolSubmitBuffer);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 			pBuffer->dwError = 0;
 			
@@ -337,9 +373,23 @@ extern "C"
 					break;
 				}
 				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Has Authorization for rid = 0x%x", pBuffer->dwRid);
-				pPointer = reinterpret_cast<PBYTE>(pBuffer->wszPassword) - reinterpret_cast<ULONG_PTR>(ClientBufferBase) + reinterpret_cast<ULONG_PTR>(pBuffer);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
+				// SECURITY: validate & rebase client-supplied embedded pointers against the submit
+				// buffer before use, so a hostile caller cannot point them at arbitrary LSASS memory.
+				pPointer = reinterpret_cast<PBYTE>(RebaseWStringAndBoundCheck(pBuffer->wszPassword, ClientBufferBase, pBuffer, SubmitBufferLength));  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
+				if (!pPointer)
+				{
+					pBuffer->dwError = ERROR_INVALID_PARAMETER;
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"wszPassword offset/length out of bounds - rejecting");
+					break;
+				}
 				pBuffer->wszPassword = reinterpret_cast<PWSTR>(pPointer);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
-				pPointer = pBuffer->pbCertificate - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
+				pPointer = RebaseAndBoundCheck(pBuffer->pbCertificate, ClientBufferBase, pBuffer, pBuffer->dwCertificateSize, SubmitBufferLength);
+				if (!pPointer)
+				{
+					pBuffer->dwError = ERROR_INVALID_PARAMETER;
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pbCertificate offset/size out of bounds - rejecting");
+					break;
+				}
 				pBuffer->pbCertificate = pPointer;
 				pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, pBuffer->pbCertificate, pBuffer->dwCertificateSize);
 				if (!pCertContext)
@@ -422,7 +472,13 @@ extern "C"
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Not authorized");
 					break;
 				}
-				pPointer = pBuffer->pbCertificate - (ULONG_PTR) ClientBufferBase + (ULONG_PTR) pBuffer;
+				pPointer = RebaseAndBoundCheck(pBuffer->pbCertificate, ClientBufferBase, pBuffer, pBuffer->dwCertificateSize, SubmitBufferLength);
+				if (!pPointer)
+				{
+					pBuffer->dwError = ERROR_INVALID_PARAMETER;
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pbCertificate offset/size out of bounds - rejecting");
+					break;
+				}
 				pBuffer->pbCertificate = pPointer;
 				pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, pBuffer->pbCertificate, pBuffer->dwCertificateSize);
 				if (!pCertContext)
