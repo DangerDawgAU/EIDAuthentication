@@ -9,7 +9,6 @@
     - EIDPasswordChangeNotification.dll (Password change notification)
     - EIDConfigurationWizard.exe (Configuration tool)
     - EIDCardLibrary (shared library)
-    - EIDLogManager.exe (Log management utility)
     - EIDMigrate.exe (Credential migration CLI utility, x64 only)
     - EIDMigrateUI.exe (Credential migration GUI wizard, x64 only)
     - EIDManageUsers.exe (User account management tool, x64 only)
@@ -117,8 +116,6 @@ $iconMappings = @(
     @{ Source = "cred_tile_image.bmp"; Destination = "EIDCredentialProvider\SmartcardCredentialProvider.bmp" }
     # Configuration Wizard Icon
     @{ Source = "app_configuration_wizard.ico"; Destination = "EIDConfigurationWizard\app.ico" }
-    # Log Manager Icon (has existing icons - will be replaced if new ones exist)
-    @{ Source = "app_log_manager.ico"; Destination = "EIDLogManager\EIDLogManager.ico" }
     # Migrate CLI Icon
     @{ Source = "app_migrate_cli.ico"; Destination = "EIDMigrate\app.ico" }
     # Migrate UI Icon
@@ -137,8 +134,8 @@ $iconsCopied = 0
 $iconsMissing = 0
 $placeholdersUsed = 0
 
-# Placeholder icon - use existing EIDLogManager.ico as fallback
-$placeholderIcon = "EIDLogManager\EIDLogManager.ico"
+# Placeholder icon - use an existing committed icon as fallback
+$placeholderIcon = "icons\app_installer.ico"
 $placeholderExists = Test-Path $placeholderIcon
 
 if (Test-Path $iconsSourceDir) {

@@ -81,27 +81,15 @@ INT_PTR CALLBACK WndProc_10_ImportComplete(HWND hwndDlg, UINT uMsg, WPARAM wPara
     case WM_COMMAND:
     {
         if (LOWORD(wParam) == IDC_10_VIEW_LOG) {
-            WCHAR szModulePath[MAX_PATH] = { 0 }; // NOSONAR - Windows API GetModuleFileNameW requires WCHAR buffer
-            if (GetModuleFileNameW(nullptr, szModulePath, ARRAYSIZE(szModulePath)) == 0) {
-                MessageBoxW(hwndDlg, L"Unable to locate installation directory.",
-                    L"View Log", MB_ICONWARNING);
-                return TRUE;
-            }
-            std::wstring wsLogManager(szModulePath);
-            size_t pos = wsLogManager.find_last_of(L"\\/");
-            if (pos == std::wstring::npos) {
-                MessageBoxW(hwndDlg, L"Unable to locate installation directory.",
-                    L"View Log", MB_ICONWARNING);
-                return TRUE;
-            }
-            wsLogManager = wsLogManager.substr(0, pos + 1) + L"EIDLogManager.exe";
-
-            HINSTANCE hResult = ShellExecuteW(hwndDlg, L"open", wsLogManager.c_str(),
+            // EIDLogManager has been retired in favour of Group Policy management; open the CSV
+            // audit-log folder directly instead of launching the (removed) manager application.
+            HINSTANCE hResult = ShellExecuteW(hwndDlg, L"open",
+                L"C:\\ProgramData\\EIDAuthentication\\logs",
                 nullptr, nullptr, SW_SHOWNORMAL);
             if ((INT_PTR)hResult <= 32) {
                 MessageBoxW(hwndDlg,
-                    L"Unable to launch EIDLogManager.exe. Open it manually from the "
-                    L"installation directory or the Start Menu (EID Authentication -> Log Manager).",
+                    L"Unable to open the log folder. The CSV audit logs are located at "
+                    L"C:\\ProgramData\\EIDAuthentication\\logs.",
                     L"View Log", MB_ICONWARNING);
             }
             return TRUE;
