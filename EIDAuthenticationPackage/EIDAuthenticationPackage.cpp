@@ -358,6 +358,7 @@ extern "C"
 			if (SubmitBufferLength < sizeof(EID_CALLPACKAGE_BUFFER))
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SubmitBufferLength 0x%x smaller than message header - rejecting",SubmitBufferLength);
+				EIDSecurityAudit(SECURITY_AUDIT_WARNING, L"[IPC_REJECT] Rejected undersized untrusted call-package buffer (0x%x bytes) - possible probing of the LSA package", SubmitBufferLength);
 				return STATUS_INVALID_PARAMETER;
 			}
 			PEID_CALLPACKAGE_BUFFER pBuffer = static_cast<PEID_CALLPACKAGE_BUFFER>(ProtocolSubmitBuffer);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
@@ -380,6 +381,7 @@ extern "C"
 				{
 					pBuffer->dwError = ERROR_INVALID_PARAMETER;
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"wszPassword offset/length out of bounds - rejecting");
+					EIDSecurityAudit(SECURITY_AUDIT_WARNING, L"[IPC_REJECT] Rejected out-of-bounds wszPassword pointer in untrusted call-package (rid 0x%x)", pBuffer->dwRid);
 					break;
 				}
 				pBuffer->wszPassword = reinterpret_cast<PWSTR>(pPointer);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
@@ -388,6 +390,7 @@ extern "C"
 				{
 					pBuffer->dwError = ERROR_INVALID_PARAMETER;
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pbCertificate offset/size out of bounds - rejecting");
+					EIDSecurityAudit(SECURITY_AUDIT_WARNING, L"[IPC_REJECT] Rejected out-of-bounds pbCertificate pointer in untrusted call-package (rid 0x%x)", pBuffer->dwRid);
 					break;
 				}
 				pBuffer->pbCertificate = pPointer;
@@ -477,6 +480,7 @@ extern "C"
 				{
 					pBuffer->dwError = ERROR_INVALID_PARAMETER;
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pbCertificate offset/size out of bounds - rejecting");
+					EIDSecurityAudit(SECURITY_AUDIT_WARNING, L"[IPC_REJECT] Rejected out-of-bounds pbCertificate pointer in untrusted call-package (rid 0x%x)", pBuffer->dwRid);
 					break;
 				}
 				pBuffer->pbCertificate = pPointer;

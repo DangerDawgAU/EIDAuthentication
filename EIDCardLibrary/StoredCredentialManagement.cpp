@@ -419,6 +419,7 @@ BOOL CStoredCredentialManager::CreateCredential(__in DWORD dwRid, __in PCCERT_CO
 	if (!fEncryptPassword && GetPolicyValue(GPOPolicy::RequireCardBoundCredentials))
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RequireCardBoundCredentials: refusing to create non-crypted credential");
+		EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"[POLICY_DENY] RequireCardBoundCredentials: refused to create a non-card-bound credential for rid 0x%x", dwRid);
 		SetLastError(ERROR_ACCESS_DENIED);
 		return FALSE;
 	}
@@ -803,6 +804,7 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 		{
 			dwError = ERROR_ACCESS_DENIED;
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RequireCardBoundCredentials: refusing non-crypted credential type %d",*pType);
+			EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"[POLICY_DENY] RequireCardBoundCredentials: refused logon challenge for non-card-bound credential (type %d, rid 0x%x)", *pType, dwRid);
 			__leave;
 		}
 		switch(*pType)
@@ -1557,6 +1559,7 @@ BOOL CStoredCredentialManager::GetPasswordFromChallengeResponse(__in DWORD dwRid
 	if (dwChallengeType != static_cast<DWORD>(EID_PRIVATE_DATA_TYPE::eidpdtCrypted) && GetPolicyValue(GPOPolicy::RequireCardBoundCredentials))
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RequireCardBoundCredentials: refusing non-crypted credential type %d",dwChallengeType);
+		EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"[POLICY_DENY] RequireCardBoundCredentials: refused password recovery for non-card-bound credential (type %d, rid 0x%x)", dwChallengeType, dwRid);
 		SetLastError(ERROR_ACCESS_DENIED);
 		return FALSE;
 	}
@@ -1625,6 +1628,7 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 		{
 			dwError = ERROR_INVALID_PARAMETER;
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"dwResponseSize 0x%x exceeds key buffer size 0x%x",dwResponseSize,(DWORD)sizeof(bKey.Data));
+			EIDSecurityAudit(SECURITY_AUDIT_WARNING, L"[CARD_REJECT] Rejected oversized card response (0x%x bytes) for rid 0x%x - possible malicious CSP/card", dwResponseSize, dwRid);
 			__leave;
 		}
 		bKey.cb = dwResponseSize;

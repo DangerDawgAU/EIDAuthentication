@@ -16,13 +16,50 @@
 #undef WARNING // NOSONAR - Must undef Windows macro that conflicts with enum value
 #endif
 
+#include <evntprov.h>
+#include <winmeta.h>
+#pragma comment(lib, "advapi32")
+
 static HANDLE g_hEventLog = nullptr;  // NOSONAR - GLOBAL-01: pointer assigned at runtime
 static std::wstring g_wsLogFilePath;  // NOSONAR - GLOBAL-01: global assigned at runtime
+
+// EID authentication ETW provider {B4866A0A-DB08-4835-A26F-414B46F3244C}. EIDTraceConsumer
+// subscribes to this GUID and writes captured free-text messages to the central diagnostics log,
+// so emitting here routes migration audit events into the same pipeline / SIEM feed as the
+// auth-stack security audits (which are also EventWriteString'd to this provider).
+static const GUID EID_AUDIT_PROVIDER_GUID =
+    {0xB4866A0A, 0xDB08, 0x4835, {0xA2, 0x6F, 0x41, 0x4B, 0x46, 0xF3, 0x24, 0x4C}};
+static REGHANDLE g_hEtwAuditProvider = 0;  // NOSONAR - GLOBAL-01: ETW registration handle set at runtime
 
 HRESULT InitializeAuditLogging()
 {
     g_hEventLog = RegisterEventSourceW(nullptr, L"EIDMigrate");
+    // Register with the EID ETW provider so audit events also reach the central logging pipeline.
+    EventRegister(&EID_AUDIT_PROVIDER_GUID, nullptr, nullptr, &g_hEtwAuditProvider);
     return (g_hEventLog != nullptr) ? S_OK : E_FAIL;
+}
+
+// Emit an audit event to the EID ETW provider (captured by EIDTraceConsumer -> diagnostics log).
+// Uses a "[MIGRATE-AUDIT]" prefix (not "[EID:") so the consumer routes it to the diagnostics log.
+static void LogAuditEventToEtw(EID_AUDIT_EVENT_TYPE eventType, PCWSTR pwszUsername, PCWSTR pwszDetails)
+{
+    if (g_hEtwAuditProvider == 0)
+        return;
+
+    WCHAR szMsg[512];  // NOSONAR - LSASS-01: C-style buffer for logging
+    swprintf_s(szMsg, ARRAYSIZE(szMsg), L"[MIGRATE-AUDIT] %ls User: %ls Details: %ls",
+        GetEventTypeString(eventType),
+        pwszUsername ? pwszUsername : L"(system)",
+        pwszDetails ? pwszDetails : L"(none)");
+
+    const WORD wType = GetEventLogLevel(eventType);
+    UCHAR etwLevel = WINEVENT_LEVEL_INFO;
+    if (wType == EVENTLOG_ERROR_TYPE)
+        etwLevel = WINEVENT_LEVEL_ERROR;
+    else if (wType == EVENTLOG_WARNING_TYPE)
+        etwLevel = WINEVENT_LEVEL_WARNING;
+
+    EventWriteString(g_hEtwAuditProvider, etwLevel, 0, szMsg);
 }
 
 void LogAuditEvent(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pwszUsername, _In_opt_ PCWSTR pwszDetails)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
@@ -118,6 +155,7 @@ void LogAuditEventBoth(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pwsz
 {
     LogAuditEvent(eventType, pwszUsername, pwszDetails);
     LogAuditEventToFile(eventType, pwszUsername, pwszDetails);
+    LogAuditEventToEtw(eventType, pwszUsername, pwszDetails);
 }
 
 HRESULT SetLogFile(_In_ const std::wstring& wsFilePath)
