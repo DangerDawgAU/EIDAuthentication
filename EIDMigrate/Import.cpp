@@ -11,6 +11,8 @@
 #include "Utils.h"
 #include "PinPrompt.h"
 #include "CertificateInstall.h"
+#include "../EIDCardLibrary/CertificateValidation.h"  // M3: reuse the logon-path trust/EKU checks
+#include "../EIDCardLibrary/GPO.h"                     // M3: honor the AllowCertificatesWithNoEKU policy
 #include <map>
 
 HRESULT CommandImport(_In_ const COMMAND_OPTIONS& options)
@@ -604,6 +606,30 @@ HRESULT ValidateCertificateForImport(
     {
         warnings.emplace_back(L"Certificate expires within 30 days");
         pfTrusted = TRUE; // Still trusted, just warning
+    }
+
+    // M3 (security uplift): validate the certificate the same way the logon path will, so a
+    // self-signed / wrong-EKU / untrusted / revoked certificate is rejected AT IMPORT time
+    // instead of being silently enrolled. Previously only NotBefore/NotAfter were checked, so
+    // an attacker-supplied self-signed cert was installed and its LSA secret written; combined
+    // with a trusted root (M2) or a weakening policy that became a full bypass. These checks are
+    // defense-in-depth: the logon path re-validates too, but rejecting early is safer and clearer.
+    //
+    // IsTrustedCertificate builds the chain to a trusted root, enforces the Smart Card Logon EKU
+    // (unless AllowCertificatesWithNoEKU is set) and performs OFFLINE revocation checking (M1).
+    // HasCertificateRightEKU gives a specific message for the common missing-EKU case.
+    // NOTE: keep these AFTER the 30-day block above, which unconditionally sets pfTrusted = TRUE.
+    if (!GetPolicyValue(GPOPolicy::AllowCertificatesWithNoEKU) && !HasCertificateRightEKU(pCertContext))
+    {
+        warnings.emplace_back(L"Certificate is missing the Smart Card Logon EKU");
+        pfTrusted = FALSE;
+    }
+
+    if (!IsTrustedCertificate(pCertContext))
+    {
+        warnings.emplace_back(L"Certificate does not chain to a trusted root on this machine, or is "
+            L"revoked. Install and trust the issuing CA (and its CRL) before importing.");
+        pfTrusted = FALSE;
     }
 
     return S_OK;

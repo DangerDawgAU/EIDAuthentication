@@ -104,7 +104,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir);..\EIDCardLibrary;..\EIDMigrate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>comctl32.lib;advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;winscard.lib;cryptui.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
       <DelayLoadDLLs>%(DelayLoadDLLs)</DelayLoadDLLs>
@@ -132,7 +132,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir);..\EIDCardLibrary;..\EIDMigrate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>comctl32.lib;advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;winscard.lib;cryptui.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
       <DelayLoadDLLs>%(DelayLoadDLLs)</DelayLoadDLLs>
@@ -157,7 +157,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir);..\EIDCardLibrary;..\EIDMigrate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>comctl32.lib;advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;winscard.lib;cryptui.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
       <DelayLoadDLLs>%(DelayLoadDLLs)</DelayLoadDLLs>
@@ -188,7 +188,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir);..\EIDCardLibrary;..\EIDMigrate;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>comctl32.lib;advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>comctl32.lib;advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;winscard.lib;cryptui.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
       <DelayLoadDLLs>%(DelayLoadDLLs)</DelayLoadDLLs>

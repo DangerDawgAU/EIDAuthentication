@@ -26,6 +26,70 @@ VOID SecurelyClearPassword()
 #include "../EIDCardLibrary/CommonManifest.h"
 #include "../EIDCardLibrary/StringConversion.h"
 
+// M2 (security uplift): the elevated instance makes machine-wide trust changes straight from
+// its command-line arguments (install an argv[1] root/CA certificate via TRUST, or flip the
+// AllowSignatureOnly / AllowNoEKU / AllowTimeInvalid GPOs). A single, under-described UAC prompt
+// otherwise silently installs a machine-wide trust anchor -> every cert the attacker issues then
+// chains to trusted -> smart-card logon bypass. Require an explicit, SPECIFIC confirmation inside
+// the elevated process, showing exactly which certificate / weakening is about to be applied,
+// defaulting to "No". The interactive wizard's own "solve trust" path re-derives the certificate
+// from the inserted card (CContainerHolder::Solve) and is unaffected.
+static void FormatSha1Thumbprint(PCCERT_CONTEXT pCertContext, PWSTR szOut, DWORD cchOut)  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+{
+	BYTE rgbHash[20] = {0};  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+	DWORD cbHash = sizeof(rgbHash);
+	if (cchOut == 0) return;
+	szOut[0] = L'\0';
+	if (CertGetCertificateContextProperty(pCertContext, CERT_SHA1_HASH_PROP_ID, rgbHash, &cbHash))
+	{
+		DWORD pos = 0;
+		for (DWORD i = 0; i < cbHash; i++)
+		{
+			int n = swprintf_s(szOut + pos, cchOut - pos, (i ? L" %02X" : L"%02X"), rgbHash[i]);
+			if (n < 0) break;
+			pos += (DWORD) n;
+		}
+	}
+}
+
+static BOOL ConfirmTrustInstall(PCCERT_CONTEXT pCertContext)
+{
+	if (!pCertContext) return FALSE;
+	WCHAR szSubject[512] = L"";  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+	WCHAR szIssuer[512] = L"";  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+	WCHAR szThumb[128] = L"";  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+	CertGetNameStringW(pCertContext, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, nullptr, szSubject, ARRAYSIZE(szSubject));
+	CertGetNameStringW(pCertContext, CERT_NAME_SIMPLE_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, nullptr, szIssuer, ARRAYSIZE(szIssuer));
+	FormatSha1Thumbprint(pCertContext, szThumb, ARRAYSIZE(szThumb));
+
+	WCHAR szMsg[2048];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+	swprintf_s(szMsg, ARRAYSIZE(szMsg),
+		L"You are about to install a certificate as a TRUSTED AUTHORITY for ALL users on this "
+		L"computer. Any smart-card certificate that chains to it will then be accepted for logon.\n\n"
+		L"Subject:\t%ls\n"
+		L"Issuer:\t%ls\n"
+		L"SHA-1:\t%ls\n\n"
+		L"Only continue if you obtained this certificate from a trusted source and were expecting "
+		L"this prompt. Install it machine-wide?",
+		szSubject[0] ? szSubject : L"(unknown)",
+		szIssuer[0] ? szIssuer : L"(unknown)",
+		szThumb[0] ? szThumb : L"(unavailable)");
+
+	return MessageBoxW(nullptr, szMsg, L"Confirm trusted certificate install",
+		MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SETFOREGROUND) == IDYES;
+}
+
+static BOOL ConfirmPolicyWeaken(LPCWSTR szWhat)
+{
+	WCHAR szMsg[1024];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+	swprintf_s(szMsg, ARRAYSIZE(szMsg),
+		L"You are about to WEAKEN smart-card logon security for ALL users on this computer:\n\n"
+		L"    %ls\n\n"
+		L"Only continue if you were expecting this prompt. Apply this change machine-wide?", szWhat);
+	return MessageBoxW(nullptr, szMsg, L"Confirm security policy change",
+		MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SETFOREGROUND) == IDYES;
+}
+
 INT_PTR CALLBACK	WndProc_01MAIN(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	WndProc_02ENABLE(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	WndProc_03NEW(HWND, UINT, WPARAM, LPARAM);
@@ -90,17 +154,26 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		}
 		else if (_tcscmp(pszCommandLine[0],L"ENABLESIGNATUREONLY") == 0)
 		{
-			SetPolicyValue(GPOPolicy::AllowSignatureOnlyKeys, 1);
+			if (ConfirmPolicyWeaken(L"Allow smart cards whose certificate has signature-only keys."))
+			{
+				SetPolicyValue(GPOPolicy::AllowSignatureOnlyKeys, 1);
+			}
 			return 0;
 		}
 		else if (_tcscmp(pszCommandLine[0],L"ENABLENOEKU") == 0)
 		{
-			SetPolicyValue(GPOPolicy::AllowCertificatesWithNoEKU, 1);
+			if (ConfirmPolicyWeaken(L"Allow certificates that do NOT have the Smart Card Logon EKU."))
+			{
+				SetPolicyValue(GPOPolicy::AllowCertificatesWithNoEKU, 1);
+			}
 			return 0;
 		}
 		else if (_tcscmp(pszCommandLine[0],L"ENABLETIMEINVALID") == 0)
 		{
-			SetPolicyValue(GPOPolicy::AllowTimeInvalidCertificates, 1);
+			if (ConfirmPolicyWeaken(L"Allow expired or not-yet-valid certificates for logon."))
+			{
+				SetPolicyValue(GPOPolicy::AllowTimeInvalidCertificates, 1);
+			}
 			return 0;
 		}
 		else if (_tcscmp(pszCommandLine[0],L"TRUST") == 0)
@@ -116,12 +189,17 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			PCCERT_CONTEXT pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING,pbCertificate, dwCertSize);
 			if (pCertContext)
 			{
-				MakeTrustedCertifcate(pCertContext);
+				// M2: require explicit confirmation of the specific certificate before it becomes a
+				// machine-wide trust anchor. Defaults to No; a silent/forced elevation cannot proceed.
+				if (ConfirmTrustInstall(pCertContext))
+				{
+					MakeTrustedCertifcate(pCertContext);
+				}
 				CertFreeCertificateContext(pCertContext);
 			}
 			EIDFree(pbCertificate);
 			return 0;
-		} 
+		}
 		else if(_tcscmp(pszCommandLine[0],L"REPORT") == 0)
 		{
 			if (iNumArgs < 2)

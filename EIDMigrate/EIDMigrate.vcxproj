@@ -63,7 +63,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir);..\EIDCardLibrary;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;comctl32.lib;EIDCardLibrary.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;comctl32.lib;winscard.lib;cryptui.lib;EIDCardLibrary.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
@@ -87,7 +87,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir);..\EIDCardLibrary;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;comctl32.lib;EIDCardLibrary.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;crypt32.lib;bcrypt.lib;netapi32.lib;comctl32.lib;winscard.lib;cryptui.lib;EIDCardLibrary.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
