@@ -107,14 +107,23 @@ BOOL CheckChainTrustStatus(__in PCCERT_CHAIN_CONTEXT pChainContext, __out DWORD*
     //   HAS_EXCLUDED_NAME_CONSTRAINT      - cert names a subject inside the
     //     excluded subtree of an issuer above it.
     //   Both indicate an explicit PKI policy violation; honour them.
-    constexpr DWORD SOFT_FAILURES = CERT_TRUST_IS_NOT_TIME_NESTED |
-                                    CERT_TRUST_REVOCATION_STATUS_UNKNOWN |
-                                    CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT |
-                                    CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT;
+    DWORD dwSoftFailures = CERT_TRUST_IS_NOT_TIME_NESTED |
+                           CERT_TRUST_REVOCATION_STATUS_UNKNOWN |
+                           CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT |
+                           CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT;
 
-    if (DWORD dwHardFailures = dwStatus & ~SOFT_FAILURES; dwHardFailures != 0)
+    // M1: when RequireRevocationCheck is set, "revocation status unknown" (no local CRL) becomes a
+    // HARD failure - the card is refused unless a current CRL proves it is not revoked. Default
+    // (policy off) keeps soft-failing unknown so isolated machines without a CRL still log on.
+    if (GetPolicyValue(GPOPolicy::RequireRevocationCheck) != 0)
+        dwSoftFailures &= ~CERT_TRUST_REVOCATION_STATUS_UNKNOWN;
+
+    if (DWORD dwHardFailures = dwStatus & ~dwSoftFailures; dwHardFailures != 0)
     {
         *pdwError = dwStatus;
+        // A revoked card is a high-signal security event - audit it (structured, for SIEM).
+        if (dwStatus & CERT_TRUST_IS_REVOKED)
+            EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"[CERT_REVOKED] Smart card certificate is revoked (chain status 0x%08x) - logon refused", dwStatus);
         EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error %s (0x%08x) returned by CertGetCertificateChain",
                             GetTrustErrorText(dwStatus), dwStatus);
         return FALSE;
@@ -167,10 +176,17 @@ BOOL CheckChainDepth(__in PCCERT_CHAIN_CONTEXT pChainContext, __out DWORD* pdwEr
 // Complexity reduction helper for certificate validation (Phase 36-01)
 BOOL IsPolicySoftFailure(__in DWORD dwPolicyError)
 {
-    // Soft policy failures for self-managed PKI
-    return (dwPolicyError == CERT_E_VALIDITYPERIODNESTING ||
-            dwPolicyError == CRYPT_E_NO_REVOCATION_CHECK ||
-            dwPolicyError == CRYPT_E_REVOCATION_OFFLINE);
+    // Validity-period nesting is always a soft failure for self-managed PKI.
+    if (dwPolicyError == CERT_E_VALIDITYPERIODNESTING)
+        return TRUE;
+
+    // M1: revocation could not be performed (no CRL cached / offline). Soft-fail by default so
+    // isolated machines without a distributed CRL still work; hard-fail when RequireRevocationCheck
+    // demands positive proof the certificate is not revoked.
+    if (dwPolicyError == CRYPT_E_NO_REVOCATION_CHECK || dwPolicyError == CRYPT_E_REVOCATION_OFFLINE)
+        return GetPolicyValue(GPOPolicy::RequireRevocationCheck) == 0;
+
+    return FALSE;
 }
 
 } // anonymous namespace
@@ -478,8 +494,16 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 			__leave;
 		}
 
-		// Build certificate chain using helper
-		DWORD dwChainFlags = CERT_CHAIN_ENABLE_PEER_TRUST;
+		// Build certificate chain using helper.
+		// Revocation (M1): check the chain (excluding the root) using ONLY locally cached/installed
+		// CRLs - CACHE_ONLY_URL_RETRIEVAL never touches the network, so this works on isolated
+		// machines where CRLs are distributed offline (e.g. via "EIDMigrate import-crl"). A revoked
+		// cert then fails hard (CERT_TRUST_IS_REVOKED); "revocation unknown" (no CRL cached) is
+		// soft-failed unless the RequireRevocationCheck policy is set (see CheckChainTrustStatus /
+		// IsPolicySoftFailure).
+		DWORD dwChainFlags = CERT_CHAIN_ENABLE_PEER_TRUST
+			| CERT_CHAIN_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT
+			| CERT_CHAIN_CACHE_ONLY_URL_RETRIEVAL;
 		pChainContext = BuildCertificateChain(hChainEngine, pCertContext, &params.ChainPara, dwChainFlags);
 		if (!pChainContext)
 		{

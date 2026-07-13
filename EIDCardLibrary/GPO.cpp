@@ -57,7 +57,8 @@ const GPOInfo MyGPOInfo[] =  // NOSONAR - Const lookup table for GPO settings
   {szForceGPOKey, L"scforceoption" },
   {szRemoveGPOKey, L"scremoveoption" },
   {szMainGPOKey, L"EnforceCSPWhitelist" },  // Security: block CSPs not in whitelist
-  {szMainGPOKey, L"RequireCardBoundCredentials" }  // Security (H3): only card-wrapped credentials allowed when set
+  {szMainGPOKey, L"RequireCardBoundCredentials" },  // Security (H3): only card-wrapped credentials allowed when set
+  {szMainGPOKey, L"RequireRevocationCheck" }  // Security (M1): fail-closed when revocation cannot be confirmed offline
 };
 
 DWORD GetPolicyValue( GPOPolicy Policy)

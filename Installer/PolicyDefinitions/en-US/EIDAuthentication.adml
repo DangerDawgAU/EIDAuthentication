@@ -36,6 +36,17 @@ Default: Disabled. The EID Authentication installer offers to enable this at ins
 This policy is written to:
 HKLM\SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider!RequireCardBoundCredentials (DWORD)</string>
 
+      <string id="RequireRevocationCheck">Require certificate revocation checking (offline)</string>
+      <string id="RequireRevocationCheck_Help">When enabled, a smart-card certificate whose revocation status cannot be confirmed from a locally installed CRL is refused ("fail closed"). Revocation is checked using ONLY locally cached/installed CRLs - the network is never contacted - so this is safe for isolated/air-gapped machines. Distribute the issuing CA's CRL to each machine (for example with "EIDMigrate import-crl") and refresh it before its nextUpdate.
+
+A revoked certificate is always refused whenever a current CRL is present, regardless of this policy. This policy only controls what happens when revocation is UNKNOWN (no CRL cached):
+- Disabled or not configured: revocation-unknown is allowed (default; isolated machines without a CRL still log on).
+- Enabled: revocation-unknown is refused - a valid, current CRL must be present.
+
+Note: self-signed (peer-trust) card certificates have no CRL and cannot be revocation-checked; use credential de-registration for those.
+
+Registry: HKLM\SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider!RequireRevocationCheck (DWORD)</string>
+
       <string id="Cat_EIDLogging">Logging (EID Log Manager)</string>
 
       <string id="LogCSVEnabled">Enable CSV audit logging</string>

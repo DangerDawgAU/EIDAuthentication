@@ -69,6 +69,18 @@
       </disabledValue>
     </policy>
 
+    <policy name="RequireRevocationCheck"
+            class="Machine"
+            displayName="$(string.RequireRevocationCheck)"
+            explainText="$(string.RequireRevocationCheck_Help)"
+            key="SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider"
+            valueName="RequireRevocationCheck">
+      <parentCategory ref="EIDAuthentication" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <enabledValue><decimal value="1" /></enabledValue>
+      <disabledValue><decimal value="0" /></disabledValue>
+    </policy>
+
     <!-- ============ EIDLogManager settings (SOFTWARE\Policies\EIDAuthentication\LogManager) ============ -->
 
     <policy name="LogCSVEnabled" class="Machine"
