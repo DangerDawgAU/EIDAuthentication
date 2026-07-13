@@ -89,13 +89,15 @@ STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSME
 FONT 9, "Segoe UI", 0, 0, 0x0
 BEGIN
     CONTROL         "Export credentials from this machine",IDC_01_EXPORT,"Button",
-                    BS_COMMANDLINK | WS_TABSTOP,21,21,231,35
+                    BS_COMMANDLINK | WS_TABSTOP,21,10,231,35
     CONTROL         "Import credentials to this machine",IDC_01_IMPORT,"Button",
-                    BS_COMMANDLINK | WS_TABSTOP,21,69,231,35
+                    BS_COMMANDLINK | WS_TABSTOP,21,49,231,35
     CONTROL         "View/List credentials",IDC_01_LIST,"Button",
-                    BS_COMMANDLINK | WS_TABSTOP,21,117,231,35
+                    BS_COMMANDLINK | WS_TABSTOP,21,88,231,35
     CONTROL         "Validate export file",IDC_01_VALIDATE,"Button",
-                    BS_COMMANDLINK | WS_TABSTOP,21,165,231,35
+                    BS_COMMANDLINK | WS_TABSTOP,21,127,231,35
+    CONTROL         "Manage certificate revocation",IDC_01_REVOKE,"Button",
+                    BS_COMMANDLINK | WS_TABSTOP,21,166,231,35
 END
 
 IDD_02_EXPORT_SELECT DIALOGEX 0, 0, 273, 209
@@ -291,6 +293,21 @@ BEGIN
     LTEXT           "N/A",IDC_12_SOURCE_MACHINE,95,193,160,10
 END
 
+IDD_15_REVOCATION DIALOGEX 0, 0, 273, 209
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+FONT 9, "Segoe UI", 0, 0, 0x0
+BEGIN
+    LTEXT           "Install or update the Certificate Revocation List (CRL) used for offline revocation checking. The CRL must be signed by a certification authority already trusted on this machine.",IDC_STATIC,10,10,253,26
+    LTEXT           "CRL file (.crl):",IDC_STATIC,10,42,60,10
+    EDITTEXT        IDC_15_CRL_PATH,10,54,200,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse...",IDC_15_BROWSE,215,53,48,14
+    PUSHBUTTON      "Install CRL",IDC_15_INSTALL,10,74,70,14
+    GROUPBOX        "Result",IDC_STATIC,10,96,253,58
+    LTEXT           "",IDC_15_RESULTS,20,110,235,38
+    CONTROL         "Require certificate revocation checking (refuse a card whose revocation status cannot be confirmed from a locally installed CRL)",IDC_15_REQUIRE_REVOCATION,"Button",BS_AUTOCHECKBOX | BS_MULTILINE | WS_TABSTOP,10,162,253,24
+    LTEXT           "Revocation is checked offline against locally installed CRLs; the network is never contacted.",IDC_STATIC,10,190,253,14
+END
+
 IDD_PROGRESS DIALOGEX 0, 0, 200, 60
 STYLE DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION
 CAPTION "Working"
@@ -349,6 +366,7 @@ BEGIN
     IDS_TITLE_LIST          "View Credentials"
     IDS_TITLE_VALIDATE      "Validate Export File"
     IDS_TITLE_GROUP_SELECT  "Select Groups"
+    IDS_TITLE_REVOCATION    "Manage Certificate Revocation"
 END
 
 STRINGTABLE

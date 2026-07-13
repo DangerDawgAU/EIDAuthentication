@@ -63,7 +63,8 @@ enum WizardFlow { // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
     FLOW_EXPORT,
     FLOW_IMPORT,
     FLOW_LIST,
-    FLOW_VALIDATE
+    FLOW_VALIDATE,
+    FLOW_REVOKE
 };
 
 // Shared wizard state structure

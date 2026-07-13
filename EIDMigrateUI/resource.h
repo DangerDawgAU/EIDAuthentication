@@ -21,6 +21,7 @@
 #define IDD_PROGRESS                    112  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDD_13_PASSWORD_PROMPT          113  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDD_14_GROUP_SELECT             114  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDD_15_REVOCATION               115  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 
 // Control IDs - Welcome Page
 #define IDC_01_EXPORT                   1001  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
@@ -28,6 +29,7 @@
 #define IDC_01_LIST                     1003  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_01_VALIDATE                 1004  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_STC_WELCOME                 1005  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_01_REVOKE                   1006  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 
 // Control IDs - Export Select Page
 #define IDC_02_OUTPUT_FILE              2001  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
@@ -133,6 +135,13 @@
 #define IDC_12_SOURCE_MACHINE           12011  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_12_EXPORT_DATE              12012  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 
+// Control IDs - Revocation Page
+#define IDC_15_CRL_PATH                 15001  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_15_BROWSE                   15002  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_15_INSTALL                  15003  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_15_RESULTS                  15004  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDC_15_REQUIRE_REVOCATION       15005  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+
 // Control IDs - Password Prompt Dialog
 #define IDC_13_USERNAME                 13001  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDC_13_PASSWORD                 13002  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
@@ -165,6 +174,7 @@
 #define IDS_TITLE_LIST                  10  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDS_TITLE_VALIDATE              11  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDS_TITLE_GROUP_SELECT          12  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
+#define IDS_TITLE_REVOCATION            13  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 
 #define IDS_EID_NOT_AVAILABLE           50  // NOSONAR - RESOURCE-01: RC.exe requires #define macros
 #define IDS_REQUIRE_ADMIN               51  // NOSONAR - RESOURCE-01: RC.exe requires #define macros

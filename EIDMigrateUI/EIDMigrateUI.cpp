@@ -4,6 +4,7 @@
 #include "EIDMigrateUI.h"
 #include "WorkerThread.h"
 #include "Page14_GroupSelect.h"
+#include "Page15_Revocation.h"
 #include "../EIDMigrate/EIDMigrate.h"
 
 // Link with Common Controls v6 for Aero Wizard support
@@ -258,6 +259,12 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_VALIDATE);
     psp.pszTemplate = MAKEINTRESOURCE(IDD_12_VALIDATE_FILE);
     psp.pfnDlgProc = WndProc_12_ValidateFile;
+    ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
+
+    // Page 15: Manage Certificate Revocation (index 14, reached from Welcome)
+    psp.pszHeaderTitle = MAKEINTRESOURCE(IDS_TITLE_REVOCATION);
+    psp.pszTemplate = MAKEINTRESOURCE(IDD_15_REVOCATION);
+    psp.pfnDlgProc = WndProc_15_Revocation;
     ahpsp[pageCount++] = CreatePropertySheetPage(&psp);
 
     // Configure property sheet header

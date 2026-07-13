@@ -34,6 +34,12 @@ INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
                 (LPARAM)L"Check the integrity and contents of an export file");
         }
 
+        HWND hwndRevoke = GetDlgItem(hwndDlg, IDC_01_REVOKE);
+        if (hwndRevoke) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
+            SendMessage(hwndRevoke, BCM_SETNOTE, 0,
+                (LPARAM)L"Install a CRL for offline revocation and require revocation checking");
+        }
+
         // Reset wizard state
         g_wizardData.Reset();
 
@@ -122,6 +128,17 @@ INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
             HWND hwndParent = GetParent(hwndDlg);
             if (hwndParent) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
                 PropSheet_SetCurSel(hwndParent, nullptr, 13);
+            }
+            return TRUE;
+        }
+
+        case IDC_01_REVOKE:
+        {
+            g_wizardData.selectedFlow = FLOW_REVOKE;
+            // Navigate to Revocation page (page index 14)
+            HWND hwndParent = GetParent(hwndDlg);
+            if (hwndParent) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
+                PropSheet_SetCurSel(hwndParent, nullptr, 14);
             }
             return TRUE;
         }
