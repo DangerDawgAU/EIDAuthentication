@@ -72,6 +72,18 @@ extern "C"
 		}
 	}
 
+	// Silent variant for unattended use (e.g. a scheduled task). Re-applies the ETW autologger
+	// configuration from the (now Group-Policy-aware) trace config with no UI, so ETW settings
+	// managed via Group Policy take effect without EIDLogManager. rundll32-compatible signature.
+	void CALLBACK DllApplyTraceConfigW(HWND hwnd, HINSTANCE hinst, LPWSTR lpszCmdLine, int nCmdShow)  // NOSONAR - API-01: rundll32 entry-point signature
+	{
+		UNREFERENCED_PARAMETER(hwnd);
+		UNREFERENCED_PARAMETER(hinst);
+		UNREFERENCED_PARAMETER(lpszCmdLine);
+		UNREFERENCED_PARAMETER(nCmdShow);
+		EnableLogging();
+	}
+
 	int NTAPI Commit(MSIHANDLE hInstall)
 	{
 		UNREFERENCED_PARAMETER(hInstall);

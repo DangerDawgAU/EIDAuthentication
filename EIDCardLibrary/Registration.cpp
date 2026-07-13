@@ -580,6 +580,56 @@ BOOL GetTraceConfig(DWORD* pdwLevel, LPWSTR szLogPath, DWORD cchPath, DWORD* pdw
 		}
 	}
 
+	// GPO override: values under SOFTWARE\Policies\EIDAuthentication\LogManager win over local config,
+	// so EnableLogging() (which builds the ETW autologger from these values) honours Group Policy.
+	HKEY hPolicy = nullptr;
+	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Policies\\EIDAuthentication\\LogManager", 0, KEY_READ, &hPolicy) == ERROR_SUCCESS)
+	{
+		DWORD dwPolType = 0;
+		DWORD dwPolVal = 0;
+		DWORD dwPolSize = 0;
+		if (pdwLevel != nullptr)
+		{
+			dwPolSize = sizeof(DWORD);
+			if (RegQueryValueEx(hPolicy, L"TraceLevel", nullptr, &dwPolType, (LPBYTE)&dwPolVal, &dwPolSize) == ERROR_SUCCESS
+				&& dwPolType == REG_DWORD && dwPolVal >= WINEVENT_LEVEL_CRITICAL && dwPolVal <= WINEVENT_LEVEL_VERBOSE)
+				*pdwLevel = dwPolVal;
+		}
+		if (szLogPath != nullptr && cchPath > 0)
+		{
+			WCHAR szPolPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+			dwPolSize = sizeof(szPolPath);
+			if (RegQueryValueEx(hPolicy, L"LogPath", nullptr, &dwPolType, (LPBYTE)szPolPath, &dwPolSize) == ERROR_SUCCESS
+				&& dwPolType == REG_SZ && szPolPath[0] != L'\0')
+			{
+				szPolPath[MAX_PATH - 1] = L'\0';
+				wcscpy_s(szLogPath, cchPath, szPolPath);
+			}
+		}
+		if (pdwMaxSizeMB != nullptr)
+		{
+			dwPolSize = sizeof(DWORD);
+			if (RegQueryValueEx(hPolicy, L"MaxFileSize", nullptr, &dwPolType, (LPBYTE)&dwPolVal, &dwPolSize) == ERROR_SUCCESS
+				&& dwPolType == REG_DWORD && dwPolVal >= 1 && dwPolVal <= 1024)
+				*pdwMaxSizeMB = dwPolVal;
+		}
+		if (pdwFileCounter != nullptr)
+		{
+			dwPolSize = sizeof(DWORD);
+			if (RegQueryValueEx(hPolicy, L"FileCounter", nullptr, &dwPolType, (LPBYTE)&dwPolVal, &dwPolSize) == ERROR_SUCCESS
+				&& dwPolType == REG_DWORD && dwPolVal >= 1 && dwPolVal <= 100)
+				*pdwFileCounter = dwPolVal;
+		}
+		if (pfAutoStart != nullptr)
+		{
+			dwPolSize = sizeof(DWORD);
+			if (RegQueryValueEx(hPolicy, L"AutoStart", nullptr, &dwPolType, (LPBYTE)&dwPolVal, &dwPolSize) == ERROR_SUCCESS
+				&& dwPolType == REG_DWORD)
+				*pfAutoStart = (dwPolVal != 0);
+		}
+		RegCloseKey(hPolicy);
+	}
+
 	return fReturn;
 }
 
