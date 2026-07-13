@@ -470,6 +470,15 @@ void EIDSecurityAuditEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR dw
 	// Failures are logged at CRITICAL level for highest visibility
 	UCHAR dwLevel = (dwAuditType == 1) ? WINEVENT_LEVEL_CRITICAL : WINEVENT_LEVEL_ERROR;
 	EventWriteString(hPub, dwLevel, 0, AuditBuffer);
+
+	// Also emit a structured row to events.csv (when CSV logging is enabled) so security audits are
+	// SIEM-parseable, not just free-text in the diagnostics log. Buffer holds the formatted message.
+	EID_EVENT_ID auditEventId = (dwAuditType == SECURITY_AUDIT_SUCCESS)
+		? EID_EVENT_ID::AUDIT_ADMIN_ACTION : EID_EVENT_ID::AUDIT_SECURITY_VIOLATION;  // NOSONAR - ENUM-01: event-id selection
+	EID_SEVERITY auditSeverity = (dwAuditType == SECURITY_AUDIT_FAILURE) ? EID_SEVERITY::ERROR
+		: ((dwAuditType == SECURITY_AUDIT_WARNING) ? EID_SEVERITY::WARNING : EID_SEVERITY::INFO);
+	EID_OUTCOME auditOutcome = (dwAuditType == SECURITY_AUDIT_SUCCESS) ? EID_OUTCOME::SUCCESS : EID_OUTCOME::FAILURE;
+	EIDCardLibraryLogStructured(auditEventId, auditSeverity, auditOutcome, nullptr, L"Security Audit", Buffer);
 }
 
 // Enhanced error logging with structured context

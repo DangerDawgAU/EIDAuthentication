@@ -116,6 +116,25 @@ void LogAuditEvent(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pwszUser
     }
 }
 
+// Escape a value for a CSV field: quote it if it contains a comma, quote or newline,
+// and double any embedded quotes.
+static std::wstring CsvEscapeField(PCWSTR pwsz)
+{
+    std::wstring s = pwsz ? pwsz : L"";
+    if (s.find_first_of(L",\"\r\n") == std::wstring::npos)
+        return s;
+    std::wstring out = L"\"";
+    for (wchar_t c : s)
+    {
+        if (c == L'"') out += L"\"\"";
+        else out += c;
+    }
+    out += L"\"";
+    return out;
+}
+
+// Structured CSV audit trail (SIEM-parseable). Columns:
+//   Timestamp,EventType,Outcome,Severity,User,Details
 void LogAuditEventToFile(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pwszUsername, _In_opt_ PCWSTR pwszDetails)
 {
     if (!g_AppState.pLogFile && g_wsLogFilePath.empty())
@@ -133,21 +152,33 @@ void LogAuditEventToFile(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pw
     if (!pLogFile)
         return;
 
-    // Write timestamp
-    fwprintf(pLogFile, L"[%ls] ", FormatCurrentTimestamp().c_str());
+    // Write the CSV header once, when the file is empty.
+    fseek(pLogFile, 0, SEEK_END);
+    if (ftell(pLogFile) == 0)
+        fwprintf(pLogFile, L"Timestamp,EventType,Outcome,Severity,User,Details\n");
 
-    // Write event type
-    fwprintf(pLogFile, L"%ls ", GetEventTypeString(eventType));
+    // Derive outcome and severity from the event type.
+    PCWSTR pwszOutcome = L"Success";
+    switch (static_cast<DWORD>(eventType))  // NOSONAR - static_cast for enum underlying value
+    {
+    case 2: case 4: case 5: case 6: case 8: case 14:  // export/import failure, access denied, auth failure, validation failure, rate limit
+        pwszOutcome = L"Failure"; break;
+    case 9:  // WARNING
+        pwszOutcome = L"Warning"; break;
+    default:
+        pwszOutcome = L"Success"; break;
+    }
+    const WORD wLevel = GetEventLogLevel(eventType);
+    PCWSTR pwszSeverity = (wLevel == EVENTLOG_ERROR_TYPE) ? L"Error"
+                        : ((wLevel == EVENTLOG_WARNING_TYPE) ? L"Warning" : L"Info");
 
-    // Write username if provided
-    if (pwszUsername)
-        fwprintf(pLogFile, L"User: %ls ", pwszUsername);
-
-    // Write details if provided
-    if (pwszDetails)
-        fwprintf(pLogFile, L"Details: %ls", pwszDetails);
-
-    fwprintf(pLogFile, L"\n");
+    fwprintf(pLogFile, L"%ls,%ls,%ls,%ls,%ls,%ls\n",
+        CsvEscapeField(FormatCurrentTimestamp().c_str()).c_str(),
+        CsvEscapeField(GetEventTypeString(eventType)).c_str(),
+        pwszOutcome,
+        pwszSeverity,
+        CsvEscapeField(pwszUsername).c_str(),
+        CsvEscapeField(pwszDetails).c_str());
     fflush(pLogFile);
 }
 
