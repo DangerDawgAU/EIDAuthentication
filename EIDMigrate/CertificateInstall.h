@@ -29,3 +29,9 @@ BOOL IsCertificateInstalled(
 HRESULT RemoveCertificateFromStore(
     _In_reads_bytes_(cbCertificate) const BYTE* pbCertificate,
     _In_ DWORD cbCertificate);
+
+// Install a CRL (Certificate Revocation List) into the LocalMachine CA store for offline
+// revocation checking (M1). Accepts DER or PEM/base64. The CRL is installed ONLY if its
+// signature verifies against a CA already trusted on this machine (Root/CA store), so a forged
+// CRL cannot be planted. Requires administrator (writes the machine store).
+HRESULT InstallCrlFromFile(_In_ const std::wstring& wsCrlPath);

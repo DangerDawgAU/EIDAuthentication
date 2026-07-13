@@ -418,3 +418,125 @@ HRESULT RemoveCertificateFromStore(
 
     return hr;
 }
+
+// ================================================================
+// M1: Install an offline-distributed CRL into the LocalMachine CA store.
+// The CRL is installed ONLY if its signature verifies against a CA already trusted on this
+// machine (Root/CA store), so a forged CRL cannot be planted. Accepts DER or PEM/base64.
+// ================================================================
+HRESULT InstallCrlFromFile(_In_ const std::wstring& wsCrlPath)  // NOSONAR - COMPLEXITY-01: sequential validate-then-install, logic verified
+{
+    EIDM_TRACE_INFO(L"Importing CRL from '%ls'", wsCrlPath.c_str());
+
+    // ---- Read the file into memory (cap at 10 MB) ----
+    HANDLE hFile = CreateFileW(wsCrlPath.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr,
+        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE)  // NOSONAR (EXPLICIT-TYPE-02) - HANDLE visible for clarity
+    {
+        DWORD dwErr = GetLastError();
+        EIDM_TRACE_ERROR(L"Cannot open CRL file: %u", dwErr);
+        return HRESULT_FROM_WIN32(dwErr);
+    }
+    LARGE_INTEGER liSize;
+    if (!GetFileSizeEx(hFile, &liSize) || liSize.QuadPart <= 0 || liSize.QuadPart > (10LL * 1024 * 1024))
+    {
+        CloseHandle(hFile);
+        EIDM_TRACE_ERROR(L"CRL file missing, empty, or too large");
+        return E_INVALIDARG;
+    }
+    std::vector<BYTE> fileData(static_cast<size_t>(liSize.QuadPart));
+    DWORD dwRead = 0;
+    BOOL fRead = ReadFile(hFile, fileData.data(), static_cast<DWORD>(fileData.size()), &dwRead, nullptr);
+    CloseHandle(hFile);
+    if (!fRead || dwRead != fileData.size())
+        return HRESULT_FROM_WIN32(GetLastError());
+
+    // ---- Parse as DER; fall back to PEM/base64 ----
+    PCCRL_CONTEXT pCrl = CertCreateCRLContext(X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+        fileData.data(), static_cast<DWORD>(fileData.size()));
+    std::vector<BYTE> derBuffer;
+    if (!pCrl)
+    {
+        DWORD cbBin = 0;
+        if (CryptStringToBinaryA(reinterpret_cast<LPCSTR>(fileData.data()), static_cast<DWORD>(fileData.size()),
+                CRYPT_STRING_BASE64_ANY, nullptr, &cbBin, nullptr, nullptr) && cbBin > 0)
+        {
+            derBuffer.resize(cbBin);
+            if (CryptStringToBinaryA(reinterpret_cast<LPCSTR>(fileData.data()), static_cast<DWORD>(fileData.size()),
+                    CRYPT_STRING_BASE64_ANY, derBuffer.data(), &cbBin, nullptr, nullptr))
+            {
+                pCrl = CertCreateCRLContext(X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, derBuffer.data(), cbBin);
+            }
+        }
+    }
+    if (!pCrl)
+    {
+        EIDM_TRACE_ERROR(L"File is not a valid CRL (DER or PEM)");
+        return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+    }
+
+    HRESULT hr = E_FAIL;  // NOSONAR (EXPLICIT-TYPE-03) - HRESULT visible for security audit
+    HCERTSTORE hRoot = CertOpenStore(CERT_STORE_PROV_SYSTEM, X509_ASN_ENCODING, NULL,
+        CERT_SYSTEM_STORE_LOCAL_MACHINE | CERT_STORE_READONLY_FLAG, L"Root");
+    HCERTSTORE hCA = CertOpenStore(CERT_STORE_PROV_SYSTEM, X509_ASN_ENCODING, NULL,
+        CERT_SYSTEM_STORE_LOCAL_MACHINE | CERT_STORE_READONLY_FLAG, L"CA");
+    HCERTSTORE hDest = nullptr;
+    PCCERT_CONTEXT pIssuer = nullptr;
+
+    // ---- SECURITY: only install a CRL signed by a CA already trusted on this machine ----
+    if (hCA)
+        pIssuer = CertFindCertificateInStore(hCA, X509_ASN_ENCODING, 0, CERT_FIND_SUBJECT_NAME, &pCrl->pCrlInfo->Issuer, nullptr);
+    if (!pIssuer && hRoot)
+        pIssuer = CertFindCertificateInStore(hRoot, X509_ASN_ENCODING, 0, CERT_FIND_SUBJECT_NAME, &pCrl->pCrlInfo->Issuer, nullptr);
+
+    if (!pIssuer)
+    {
+        EIDM_TRACE_ERROR(L"CRL issuer is not a trusted CA on this machine - refusing to install");
+        hr = HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+        goto cleanup;
+    }
+    if (!CryptVerifyCertificateSignatureEx(NULL, X509_ASN_ENCODING,
+            CRYPT_VERIFY_CERT_SIGN_SUBJECT_CRL, (void*)pCrl,
+            CRYPT_VERIFY_CERT_SIGN_ISSUER_CERT, (void*)pIssuer, 0, nullptr))
+    {
+        EIDM_TRACE_ERROR(L"CRL signature does not verify against its issuer - refusing to install (0x%08X)", GetLastError());
+        hr = HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+        goto cleanup;
+    }
+
+    // ---- Freshness warning (nextUpdate in the past) ----
+    {
+        FILETIME ftNow;
+        GetSystemTimeAsFileTime(&ftNow);
+        const FILETIME ftNext = pCrl->pCrlInfo->NextUpdate;
+        if ((ftNext.dwLowDateTime != 0 || ftNext.dwHighDateTime != 0) && CompareFileTime(&ftNext, &ftNow) < 0)
+            EIDM_TRACE_WARN(L"CRL nextUpdate is in the past - it is stale; distribute a fresher CRL");
+    }
+
+    // ---- Install into LocalMachine\CA (replace any older CRL from the same issuer) ----
+    hDest = CertOpenStore(CERT_STORE_PROV_SYSTEM, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_LOCAL_MACHINE, L"CA");
+    if (!hDest)
+    {
+        DWORD dwErr = GetLastError();
+        EIDM_TRACE_ERROR(L"Cannot open LocalMachine CA store (administrator required?): %u", dwErr);
+        hr = HRESULT_FROM_WIN32(dwErr);
+        goto cleanup;
+    }
+    if (!CertAddCRLContextToStore(hDest, pCrl, CERT_STORE_ADD_REPLACE_EXISTING, nullptr))
+    {
+        DWORD dwErr = GetLastError();
+        EIDM_TRACE_ERROR(L"CertAddCRLContextToStore failed: %u", dwErr);
+        hr = HRESULT_FROM_WIN32(dwErr);
+        goto cleanup;
+    }
+    EIDM_TRACE_INFO(L"CRL installed into the LocalMachine CA store");
+    hr = S_OK;
+
+cleanup:
+    if (pIssuer) CertFreeCertificateContext(pIssuer);
+    if (hDest) CertCloseStore(hDest, 0);
+    if (hCA) CertCloseStore(hCA, 0);
+    if (hRoot) CertCloseStore(hRoot, 0);
+    if (pCrl) CertFreeCRLContext(pCrl);
+    return hr;
+}

@@ -32,6 +32,7 @@ enum class COMMAND_TYPE
     IMPORT,
     LIST,
     VALIDATE,
+    IMPORT_CRL,
     HELP,
     VERSION,
 };
@@ -113,3 +114,4 @@ HRESULT CommandExport(_In_ const COMMAND_OPTIONS& options);
 HRESULT CommandImport(_In_ const COMMAND_OPTIONS& options);
 HRESULT CommandList(_In_ const COMMAND_OPTIONS& options);
 HRESULT CommandValidate(_In_ const COMMAND_OPTIONS& options);
+HRESULT CommandImportCrl(_In_ const COMMAND_OPTIONS& options);
