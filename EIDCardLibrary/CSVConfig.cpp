@@ -408,24 +408,81 @@ HRESULT EID_CSV_SaveConfigToRegistry(const EID_CSV_CONFIG& config)
 }
 
 // ================================================================
-// Load configuration (tries JSON, then registry, then defaults)
+// Apply Group Policy overrides (HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager)
+// Any value present under the policy key wins over local file/registry config.
+// ================================================================
+void EID_CSV_ApplyPolicyOverrides(EID_CSV_CONFIG& config)  // NOSONAR - COMPLEXITY-01: sequential per-value overrides, logic verified
+{
+    HKEY hKey = nullptr;
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, EID_CSV_POLICY_KEY, 0, KEY_READ, &hKey) != ERROR_SUCCESS)
+        return;
+
+    DWORD dwType = 0;
+    DWORD dwValue = 0;
+    DWORD dwSize = 0;
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"CSVEnabled", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.fEnabled = (dwValue != 0);
+
+    WCHAR szPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+    dwSize = sizeof(szPath);
+    if (RegQueryValueExW(hKey, L"CSVLogPath", nullptr, &dwType, reinterpret_cast<LPBYTE>(szPath), &dwSize) == ERROR_SUCCESS && dwType == REG_SZ && szPath[0] != L'\0')
+    {
+        szPath[MAX_PATH - 1] = L'\0';
+        wcscpy_s(config.szLogPath, szPath);
+    }
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"CSVMaxFileSize", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.dwMaxFileSizeMB = dwValue;
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"CSVFileCount", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.dwFileCount = dwValue;
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"CSVColumns", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.dwColumns = static_cast<EID_CSV_COLUMN>(dwValue);  // NOSONAR - ENUM-01: enum cast retained for Win32/ABI compatibility
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"CSVCategoryFilter", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.dwCategoryFilter = dwValue;
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"CSVVerbose", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.fVerboseEvents = (dwValue != 0);
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"DiagnosticsEnabled", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.fDiagnosticsEnabled = (dwValue != 0);
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"DiagnosticsLevel", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.dwDiagnosticsLevel = dwValue;
+
+    RegCloseKey(hKey);
+}
+
+// ================================================================
+// Load configuration (tries JSON, then registry, then defaults; GPO overrides win)
 // ================================================================
 HRESULT EID_CSV_LoadConfig(EID_CSV_CONFIG& config)
 {
-    // Try JSON file first
+    // Try JSON file first, then registry, then defaults.
     HRESULT hr = EID_CSV_LoadConfigFromFile(EID_CSV_CONFIG_PATH, config);
-    if (SUCCEEDED(hr))
-        return S_OK;
+    if (FAILED(hr))
+        hr = EID_CSV_LoadConfigFromRegistry(config);
+    if (FAILED(hr))
+    {
+        config = EID_CSV_CONFIG();
+        wcscpy_s(config.szLogPath, EID_CSV_DEFAULT_LOG_PATH);
+        hr = S_FALSE;  // Indicate defaults were used
+    }
 
-    // Fall back to registry
-    hr = EID_CSV_LoadConfigFromRegistry(config);
-    if (SUCCEEDED(hr))
-        return S_OK;
-
-    // Use defaults
-    config = EID_CSV_CONFIG();
-    wcscpy_s(config.szLogPath, EID_CSV_DEFAULT_LOG_PATH);
-    return S_FALSE;  // Indicate defaults were used
+    // Group Policy overrides win over local file/registry config.
+    EID_CSV_ApplyPolicyOverrides(config);
+    return hr;
 }
 
 // ================================================================

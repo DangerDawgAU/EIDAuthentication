@@ -89,6 +89,8 @@ HANDLE g_StopEvent = nullptr;  // NOSONAR - GLOBAL-01: handle assigned at runtim
 
 // Registry key for configuration
 #define EID_CSV_CONFIG_KEY L"SOFTWARE\\EIDAuthentication\\LogManager"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+// Group Policy key: values here override the local config (ADMX-managed).
+#define EID_CSV_POLICY_KEY L"SOFTWARE\\Policies\\EIDAuthentication\\LogManager"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 
 // CSV log file handle and state
 WCHAR g_szCsvPath[MAX_PATH] = {0};  // NOSONAR - GLOBAL-01: runtime-mutable C-style path buffer
@@ -192,6 +194,44 @@ BOOL LoadCsvConfiguration()
         g_dwDiagnosticsLevel = 4;
 
     RegCloseKey(hKey);
+
+    // Group Policy overrides (HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager) win over the
+    // local config for the values this service consumes.
+    HKEY hPolicy = nullptr;
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, EID_CSV_POLICY_KEY, 0, KEY_READ, &hPolicy) == ERROR_SUCCESS)
+    {
+        DWORD dwType = 0;
+        DWORD dw = 0;
+        DWORD cb = sizeof(dw);
+        if (RegQueryValueExW(hPolicy, L"CSVEnabled", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dw), &cb) == ERROR_SUCCESS && dwType == REG_DWORD)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
+            g_fCsvEnabled = (dw != 0);
+
+        WCHAR szPolicyPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+        DWORD cbPath = sizeof(szPolicyPath);
+        if (RegQueryValueExW(hPolicy, L"CSVLogPath", nullptr, &dwType, reinterpret_cast<LPBYTE>(szPolicyPath), &cbPath) == ERROR_SUCCESS && dwType == REG_SZ && szPolicyPath[0] != L'\0')  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
+        {
+            szPolicyPath[MAX_PATH - 1] = L'\0';
+            wcscpy_s(g_szCsvPath, szPolicyPath);
+        }
+
+        cb = sizeof(dw);
+        if (RegQueryValueExW(hPolicy, L"CSVMaxFileSize", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dw), &cb) == ERROR_SUCCESS && dwType == REG_DWORD)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
+            g_dwMaxFileSizeMB = dw;
+
+        cb = sizeof(dw);
+        if (RegQueryValueExW(hPolicy, L"CSVFileCount", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dw), &cb) == ERROR_SUCCESS && dwType == REG_DWORD)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
+            g_dwFileCount = dw;
+
+        cb = sizeof(dw);
+        if (RegQueryValueExW(hPolicy, L"DiagnosticsEnabled", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dw), &cb) == ERROR_SUCCESS && dwType == REG_DWORD)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
+            g_fDiagnosticsEnabled = (dw != 0);
+
+        cb = sizeof(dw);
+        if (RegQueryValueExW(hPolicy, L"DiagnosticsLevel", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dw), &cb) == ERROR_SUCCESS && dwType == REG_DWORD)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
+            g_dwDiagnosticsLevel = dw;
+
+        RegCloseKey(hPolicy);
+    }
 
     wprintf(L"CSV logging: %s, Path: %s, MaxSize: %u MB, Files: %u\n",
             g_fCsvEnabled ? L"Enabled" : L"Disabled",

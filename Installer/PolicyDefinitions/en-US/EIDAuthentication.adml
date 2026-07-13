@@ -36,6 +36,86 @@ Default: Disabled. The EID Authentication installer offers to enable this at ins
 This policy is written to:
 HKLM\SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider!RequireCardBoundCredentials (DWORD)</string>
 
+      <string id="Cat_EIDLogging">Logging (EID Log Manager)</string>
+
+      <string id="LogCSVEnabled">Enable CSV audit logging</string>
+      <string id="LogCSVEnabled_Help">When enabled, EID Authentication writes structured audit events to a CSV log file. When disabled, CSV logging is off. When not configured, the local EID Log Manager setting applies.
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!CSVEnabled (DWORD)</string>
+
+      <string id="LogCSVLogPath">CSV log file path</string>
+      <string id="LogCSVLogPath_Help">Full path to the CSV audit log file (for example C:\ProgramData\EIDAuthentication\logs\events.csv). When not configured, the local setting applies.
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!CSVLogPath (REG_SZ)</string>
+
+      <string id="LogCSVMaxFileSize">Maximum CSV file size (MB)</string>
+      <string id="LogCSVMaxFileSize_Help">Maximum size in megabytes the CSV log may reach before it is rotated. Range 1-4096. When not configured, the local setting applies (default 64).
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!CSVMaxFileSize (DWORD)</string>
+
+      <string id="LogCSVFileCount">Rotated CSV file count</string>
+      <string id="LogCSVFileCount_Help">Number of rotated CSV log files to keep. Range 1-999. When not configured, the local setting applies (default 5).
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!CSVFileCount (DWORD)</string>
+
+      <string id="LogCSVColumns">CSV column set</string>
+      <string id="LogCSVColumns_Help">Which columns are written to the CSV log, chosen from presets. When not configured, the local setting applies (default Standard).
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!CSVColumns (DWORD bitmask)</string>
+
+      <string id="LogCSVCategoryFilter">Event categories to log</string>
+      <string id="LogCSVCategoryFilter_Help">Which event categories are written to the CSV log, chosen from presets. When not configured, the local setting applies (default All categories).
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!CSVCategoryFilter (DWORD bitmask)</string>
+
+      <string id="LogCSVVerbose">Include verbose-level events</string>
+      <string id="LogCSVVerbose_Help">When enabled, verbose-level events are included in the CSV log. When not configured, the local setting applies.
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!CSVVerbose (DWORD)</string>
+
+      <string id="LogDiagnosticsEnabled">Enable diagnostics trace capture</string>
+      <string id="LogDiagnosticsEnabled_Help">When enabled, free-text provider diagnostic traces are captured to diagnostics.log. When not configured, the local setting applies.
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!DiagnosticsEnabled (DWORD)</string>
+
+      <string id="LogDiagnosticsLevel">Diagnostics verbosity ceiling</string>
+      <string id="LogDiagnosticsLevel_Help">The maximum trace verbosity captured to diagnostics.log. When not configured, the local setting applies (default Information).
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!DiagnosticsLevel (DWORD; 4=Information, 5=Verbose)</string>
+
+      <string id="Cols_Minimal">Minimal (5 columns for compliance)</string>
+      <string id="Cols_Standard">Standard (8 columns for typical auditing)</string>
+      <string id="Cols_Extended">Extended (detailed columns)</string>
+      <string id="Cols_All">All columns</string>
+
+      <string id="Cat_AllCategories">All categories</string>
+      <string id="Cat_SecurityCritical">Security-critical (Authentication, Authorization, Certificate, LSA, Audit)</string>
+      <string id="Cat_AuditOnly">Audit events only</string>
+
+      <string id="DiagLevel_Info">Information (4)</string>
+      <string id="DiagLevel_Verbose">Verbose (5)</string>
+
     </stringTable>
+
+    <presentationTable>
+      <presentation id="LogCSVLogPath">
+        <textBox refId="LogCSVLogPath_Text"><label>CSV log file path:</label></textBox>
+      </presentation>
+      <presentation id="LogCSVMaxFileSize">
+        <decimalTextBox refId="LogCSVMaxFileSize_Dec" defaultValue="64">Maximum file size (MB) before rotation:</decimalTextBox>
+      </presentation>
+      <presentation id="LogCSVFileCount">
+        <decimalTextBox refId="LogCSVFileCount_Dec" defaultValue="5">Number of rotated files to keep:</decimalTextBox>
+      </presentation>
+      <presentation id="LogCSVColumns">
+        <dropdownList refId="LogCSVColumns_Enum" defaultItem="1">CSV column set:</dropdownList>
+      </presentation>
+      <presentation id="LogCSVCategoryFilter">
+        <dropdownList refId="LogCSVCategoryFilter_Enum" defaultItem="0">Event categories to log:</dropdownList>
+      </presentation>
+      <presentation id="LogDiagnosticsLevel">
+        <dropdownList refId="LogDiagnosticsLevel_Enum" defaultItem="0">Diagnostics verbosity ceiling:</dropdownList>
+      </presentation>
+    </presentationTable>
   </resources>
 </policyDefinitionResources>

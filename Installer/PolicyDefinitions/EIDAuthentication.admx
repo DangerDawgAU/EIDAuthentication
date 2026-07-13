@@ -30,6 +30,9 @@
     <category name="EIDAuthentication" displayName="$(string.Cat_EIDAuthentication)">
       <parentCategory ref="windows:WindowsComponents" />
     </category>
+    <category name="EIDLogging" displayName="$(string.Cat_EIDLogging)">
+      <parentCategory ref="EIDAuthentication" />
+    </category>
   </categories>
 
   <policies>
@@ -64,6 +67,113 @@
       <disabledValue>
         <decimal value="0" />
       </disabledValue>
+    </policy>
+
+    <!-- ============ EIDLogManager settings (SOFTWARE\Policies\EIDAuthentication\LogManager) ============ -->
+
+    <policy name="LogCSVEnabled" class="Machine"
+            displayName="$(string.LogCSVEnabled)" explainText="$(string.LogCSVEnabled_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager" valueName="CSVEnabled">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <enabledValue><decimal value="1" /></enabledValue>
+      <disabledValue><decimal value="0" /></disabledValue>
+    </policy>
+
+    <policy name="LogCSVLogPath" class="Machine"
+            displayName="$(string.LogCSVLogPath)" explainText="$(string.LogCSVLogPath_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager"
+            presentation="$(presentation.LogCSVLogPath)">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <elements>
+        <text id="LogCSVLogPath_Text" valueName="CSVLogPath" required="true" maxLength="259" />
+      </elements>
+    </policy>
+
+    <policy name="LogCSVMaxFileSize" class="Machine"
+            displayName="$(string.LogCSVMaxFileSize)" explainText="$(string.LogCSVMaxFileSize_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager"
+            presentation="$(presentation.LogCSVMaxFileSize)">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <elements>
+        <decimal id="LogCSVMaxFileSize_Dec" valueName="CSVMaxFileSize" minValue="1" maxValue="4096" />
+      </elements>
+    </policy>
+
+    <policy name="LogCSVFileCount" class="Machine"
+            displayName="$(string.LogCSVFileCount)" explainText="$(string.LogCSVFileCount_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager"
+            presentation="$(presentation.LogCSVFileCount)">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <elements>
+        <decimal id="LogCSVFileCount_Dec" valueName="CSVFileCount" minValue="1" maxValue="999" />
+      </elements>
+    </policy>
+
+    <policy name="LogCSVColumns" class="Machine"
+            displayName="$(string.LogCSVColumns)" explainText="$(string.LogCSVColumns_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager"
+            presentation="$(presentation.LogCSVColumns)">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <elements>
+        <enum id="LogCSVColumns_Enum" valueName="CSVColumns">
+          <item displayName="$(string.Cols_Minimal)"><value><decimal value="115" /></value></item>
+          <item displayName="$(string.Cols_Standard)"><value><decimal value="255" /></value></item>
+          <item displayName="$(string.Cols_Extended)"><value><decimal value="30719" /></value></item>
+          <item displayName="$(string.Cols_All)"><value><decimal value="32767" /></value></item>
+        </enum>
+      </elements>
+    </policy>
+
+    <policy name="LogCSVCategoryFilter" class="Machine"
+            displayName="$(string.LogCSVCategoryFilter)" explainText="$(string.LogCSVCategoryFilter_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager"
+            presentation="$(presentation.LogCSVCategoryFilter)">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <elements>
+        <enum id="LogCSVCategoryFilter_Enum" valueName="CSVCategoryFilter">
+          <item displayName="$(string.Cat_AllCategories)"><value><decimal value="65535" /></value></item>
+          <item displayName="$(string.Cat_SecurityCritical)"><value><decimal value="342" /></value></item>
+          <item displayName="$(string.Cat_AuditOnly)"><value><decimal value="256" /></value></item>
+        </enum>
+      </elements>
+    </policy>
+
+    <policy name="LogCSVVerbose" class="Machine"
+            displayName="$(string.LogCSVVerbose)" explainText="$(string.LogCSVVerbose_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager" valueName="CSVVerbose">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <enabledValue><decimal value="1" /></enabledValue>
+      <disabledValue><decimal value="0" /></disabledValue>
+    </policy>
+
+    <policy name="LogDiagnosticsEnabled" class="Machine"
+            displayName="$(string.LogDiagnosticsEnabled)" explainText="$(string.LogDiagnosticsEnabled_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager" valueName="DiagnosticsEnabled">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <enabledValue><decimal value="1" /></enabledValue>
+      <disabledValue><decimal value="0" /></disabledValue>
+    </policy>
+
+    <policy name="LogDiagnosticsLevel" class="Machine"
+            displayName="$(string.LogDiagnosticsLevel)" explainText="$(string.LogDiagnosticsLevel_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager"
+            presentation="$(presentation.LogDiagnosticsLevel)">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <elements>
+        <enum id="LogDiagnosticsLevel_Enum" valueName="DiagnosticsLevel">
+          <item displayName="$(string.DiagLevel_Info)"><value><decimal value="4" /></value></item>
+          <item displayName="$(string.DiagLevel_Verbose)"><value><decimal value="5" /></value></item>
+        </enum>
+      </elements>
     </policy>
 
   </policies>
