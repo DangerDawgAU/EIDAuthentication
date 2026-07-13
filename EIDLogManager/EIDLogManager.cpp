@@ -31,6 +31,7 @@ HRESULT SaveCSVSettings(HWND hDlg);
 void BrowseForCSVPath(HWND hDlg);
 void ApplyColumnPreset(HWND hDlg, EID_CSV_COLUMN preset);
 void EnableDisableCSVControls(HWND hDlg, BOOL fEnabled);
+void ApplyLogManagerPolicyToUI(HWND hDlg);
 void RestartTraceConsumer();
 
 #pragma comment(lib,"comctl32")
@@ -308,6 +309,7 @@ INT_PTR CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 					BOOL fOn = IsDlgButtonChecked(hDlg, IDC_DIAG_ENABLE_CHECK) == BST_CHECKED;
 					EnableWindow(GetDlgItem(hDlg, IDC_DIAG_LEVEL), fOn);
 					EnableWindow(GetDlgItem(hDlg, IDC_DIAG_LEVEL_LABEL), fOn);
+					ApplyLogManagerPolicyToUI(hDlg);  // keep GP-managed diag level greyed
 					return (INT_PTR)TRUE;
 				}
 
@@ -902,4 +904,60 @@ void EnableDisableCSVControls(HWND hDlg, BOOL fEnabled)
 	EnableWindow(GetDlgItem(hDlg, IDC_CSV_COLUMN_PRESET_EXTENDED), fEnabled);
 	EnableWindow(GetDlgItem(hDlg, IDC_CSV_COLUMN_PRESET_MINIMAL), fEnabled);
 	EnableWindow(GetDlgItem(hDlg, IDC_CSV_FILTERS_GROUP), fEnabled);
+
+	// Re-apply Group Policy locking so managed settings stay greyed after any panel toggle.
+	ApplyLogManagerPolicyToUI(hDlg);
+}
+
+// Grey out (mark "Managed by Group Policy") any CSV/diagnostics settings that are enforced by a
+// value under HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager. Runtime already lets policy win;
+// this stops the admin from editing a value that would just be overridden. Called after the panel
+// is (re)populated. If no policy values are present, nothing is changed.
+void ApplyLogManagerPolicyToUI(HWND hDlg)  // NOSONAR - COMPLEXITY-01: sequential per-value UI locking, logic verified
+{
+	HKEY hKey = nullptr;
+	if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, EID_CSV_POLICY_KEY, 0, KEY_READ, &hKey) != ERROR_SUCCESS)
+		return;  // no managed values
+
+	auto present = [&](PCWSTR name) -> bool {
+		return RegQueryValueExW(hKey, name, nullptr, nullptr, nullptr, nullptr) == ERROR_SUCCESS;
+	};
+	auto lock = [&](int id) { EnableWindow(GetDlgItem(hDlg, id), FALSE); };
+
+	BOOL fAnyManaged = FALSE;
+
+	if (present(L"CSVEnabled"))        { lock(IDC_CSV_ENABLE_CHECK); fAnyManaged = TRUE; }
+	if (present(L"CSVLogPath"))        { lock(IDC_CSV_LOG_PATH); lock(IDC_CSV_BROWSE_PATH); fAnyManaged = TRUE; }
+	if (present(L"CSVMaxFileSize"))    { lock(IDC_CSV_MAX_SIZE); fAnyManaged = TRUE; }
+	if (present(L"CSVFileCount"))      { lock(IDC_CSV_FILE_COUNT); fAnyManaged = TRUE; }
+	if (present(L"CSVColumns"))
+	{
+		const int ids[] = {
+			IDC_CSV_COLUMN_CHECK_TIMESTAMP, IDC_CSV_COLUMN_CHECK_EVENT_ID, IDC_CSV_COLUMN_CHECK_CATEGORY,
+			IDC_CSV_COLUMN_CHECK_SEVERITY, IDC_CSV_COLUMN_CHECK_OUTCOME, IDC_CSV_COLUMN_CHECK_USERNAME,
+			IDC_CSV_COLUMN_CHECK_ACTION, IDC_CSV_COLUMN_CHECK_MESSAGE, IDC_CSV_COLUMN_CHECK_DOMAIN,
+			IDC_CSV_COLUMN_CHECK_SOURCE_IP, IDC_CSV_COLUMN_CHECK_PROCESS_ID, IDC_CSV_COLUMN_CHECK_THREAD_ID,
+			IDC_CSV_COLUMN_CHECK_SESSION_ID, IDC_CSV_COLUMN_CHECK_RESOURCE, IDC_CSV_COLUMN_CHECK_REASON,
+			IDC_CSV_COLUMN_PRESET_STANDARD, IDC_CSV_COLUMN_PRESET_EXTENDED, IDC_CSV_COLUMN_PRESET_MINIMAL
+		};
+		for (int id : ids) lock(id);
+		fAnyManaged = TRUE;
+	}
+	if (present(L"CSVCategoryFilter"))
+	{
+		const int ids[] = {
+			IDC_CSV_FILTER_AUTH, IDC_CSV_FILTER_AUTHZ, IDC_CSV_FILTER_SESSION, IDC_CSV_FILTER_CERT,
+			IDC_CSV_FILTER_SMARTCARD, IDC_CSV_FILTER_LSA, IDC_CSV_FILTER_CONFIG, IDC_CSV_FILTER_AUDIT
+		};
+		for (int id : ids) lock(id);
+		fAnyManaged = TRUE;
+	}
+	if (present(L"CSVVerbose"))         { lock(IDC_CSV_VERBOSE_CHECK); fAnyManaged = TRUE; }
+	if (present(L"DiagnosticsEnabled")) { lock(IDC_DIAG_ENABLE_CHECK); fAnyManaged = TRUE; }
+	if (present(L"DiagnosticsLevel"))   { lock(IDC_DIAG_LEVEL); fAnyManaged = TRUE; }
+
+	RegCloseKey(hKey);
+
+	if (fAnyManaged)
+		SetDlgItemText(hDlg, IDC_CSV_CONFIG_GROUP, L"CSV Logging  (some settings managed by Group Policy)");
 }
