@@ -95,6 +95,37 @@ Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!DiagnosticsLevel (
       <string id="DiagLevel_Info">Information (4)</string>
       <string id="DiagLevel_Verbose">Verbose (5)</string>
 
+      <string id="TraceLevel">ETW trace verbosity level</string>
+      <string id="TraceLevel_Help">Verbosity of the ETW trace session (the WMI autologger) that feeds the logging pipeline. When not configured, the local setting applies (default Information). Note: the trace consumer captures the provider at full verbosity regardless, so this mainly affects the raw .etl session; the CSV output is shaped by the CSV policies above.
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!TraceLevel (DWORD; 1=Critical .. 5=Verbose)</string>
+
+      <string id="TraceLogPath">ETW trace (.etl) file path</string>
+      <string id="TraceLogPath_Help">Full path to the ETW trace (.etl) file for the autologger session. When not configured, the local/default path applies.
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!LogPath (REG_SZ)</string>
+
+      <string id="TraceMaxFileSize">ETW trace maximum file size (MB)</string>
+      <string id="TraceMaxFileSize_Help">Maximum size in megabytes of the ETW .etl file. Range 1-1024. When not configured, the local setting applies (default 64).
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!MaxFileSize (DWORD)</string>
+
+      <string id="TraceFileCounter">ETW trace file count</string>
+      <string id="TraceFileCounter_Help">Number of ETW .etl files to keep. Range 1-100. When not configured, the local setting applies (default 5).
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!FileCounter (DWORD)</string>
+
+      <string id="TraceAutoStart">Start ETW trace session at boot</string>
+      <string id="TraceAutoStart_Help">When enabled, the ETW autologger session starts automatically at boot. When not configured, the local setting applies (default off).
+
+Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!AutoStart (DWORD)</string>
+
+      <string id="Lvl_Critical">Critical (1)</string>
+      <string id="Lvl_Error">Error (2)</string>
+      <string id="Lvl_Warning">Warning (3)</string>
+      <string id="Lvl_Info">Information (4)</string>
+      <string id="Lvl_Verbose">Verbose (5)</string>
+
     </stringTable>
 
     <presentationTable>
@@ -115,6 +146,18 @@ Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!DiagnosticsLevel (
       </presentation>
       <presentation id="LogDiagnosticsLevel">
         <dropdownList refId="LogDiagnosticsLevel_Enum" defaultItem="0">Diagnostics verbosity ceiling:</dropdownList>
+      </presentation>
+      <presentation id="TraceLevel">
+        <dropdownList refId="TraceLevel_Enum" defaultItem="3">ETW trace verbosity:</dropdownList>
+      </presentation>
+      <presentation id="TraceLogPath">
+        <textBox refId="TraceLogPath_Text"><label>ETW .etl file path:</label></textBox>
+      </presentation>
+      <presentation id="TraceMaxFileSize">
+        <decimalTextBox refId="TraceMaxFileSize_Dec" defaultValue="64">Maximum .etl size (MB):</decimalTextBox>
+      </presentation>
+      <presentation id="TraceFileCounter">
+        <decimalTextBox refId="TraceFileCounter_Dec" defaultValue="5">Number of .etl files to keep:</decimalTextBox>
       </presentation>
     </presentationTable>
   </resources>

@@ -176,5 +176,66 @@
       </elements>
     </policy>
 
+    <!-- ============ ETW trace-session settings (feed the WMI autologger) ============ -->
+
+    <policy name="TraceLevel" class="Machine"
+            displayName="$(string.TraceLevel)" explainText="$(string.TraceLevel_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager"
+            presentation="$(presentation.TraceLevel)">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <elements>
+        <enum id="TraceLevel_Enum" valueName="TraceLevel">
+          <item displayName="$(string.Lvl_Critical)"><value><decimal value="1" /></value></item>
+          <item displayName="$(string.Lvl_Error)"><value><decimal value="2" /></value></item>
+          <item displayName="$(string.Lvl_Warning)"><value><decimal value="3" /></value></item>
+          <item displayName="$(string.Lvl_Info)"><value><decimal value="4" /></value></item>
+          <item displayName="$(string.Lvl_Verbose)"><value><decimal value="5" /></value></item>
+        </enum>
+      </elements>
+    </policy>
+
+    <policy name="TraceLogPath" class="Machine"
+            displayName="$(string.TraceLogPath)" explainText="$(string.TraceLogPath_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager"
+            presentation="$(presentation.TraceLogPath)">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <elements>
+        <text id="TraceLogPath_Text" valueName="LogPath" required="true" maxLength="259" />
+      </elements>
+    </policy>
+
+    <policy name="TraceMaxFileSize" class="Machine"
+            displayName="$(string.TraceMaxFileSize)" explainText="$(string.TraceMaxFileSize_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager"
+            presentation="$(presentation.TraceMaxFileSize)">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <elements>
+        <decimal id="TraceMaxFileSize_Dec" valueName="MaxFileSize" minValue="1" maxValue="1024" />
+      </elements>
+    </policy>
+
+    <policy name="TraceFileCounter" class="Machine"
+            displayName="$(string.TraceFileCounter)" explainText="$(string.TraceFileCounter_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager"
+            presentation="$(presentation.TraceFileCounter)">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <elements>
+        <decimal id="TraceFileCounter_Dec" valueName="FileCounter" minValue="1" maxValue="100" />
+      </elements>
+    </policy>
+
+    <policy name="TraceAutoStart" class="Machine"
+            displayName="$(string.TraceAutoStart)" explainText="$(string.TraceAutoStart_Help)"
+            key="SOFTWARE\Policies\EIDAuthentication\LogManager" valueName="AutoStart">
+      <parentCategory ref="EIDLogging" />
+      <supportedOn ref="SUPPORTED_EIDAuth_1_0" />
+      <enabledValue><decimal value="1" /></enabledValue>
+      <disabledValue><decimal value="0" /></disabledValue>
+    </policy>
+
   </policies>
 </policyDefinitions>
