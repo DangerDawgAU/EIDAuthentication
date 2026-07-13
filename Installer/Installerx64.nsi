@@ -116,10 +116,6 @@ Section "Core" SecCore
   Push "$INSTDIR\EIDConfigurationWizardElevated.exe"
   Call AddFileSize
 
-  FILE "..\x64\Release\EIDLogManager.exe"
-  Push "$INSTDIR\EIDLogManager.exe"
-  Call AddFileSize
-
   FILE "..\x64\Release\EIDMigrate.exe"
   Push "$INSTDIR\EIDMigrate.exe"
   Call AddFileSize
@@ -173,7 +169,6 @@ Section "Core" SecCore
   ; Create Start Menu folder and shortcuts for all executables
   CreateDirectory "$SMPROGRAMS\EID Authentication"
   CreateShortcut "$SMPROGRAMS\EID Authentication\Configuration Wizard.lnk" "$INSTDIR\EIDConfigurationWizard.exe" "" "$INSTDIR\EIDConfigurationWizard.exe" 0
-  CreateShortcut "$SMPROGRAMS\EID Authentication\Log Manager.lnk" "$INSTDIR\EIDLogManager.exe" "" "$INSTDIR\EIDLogManager.exe" 0
   CreateShortcut "$SMPROGRAMS\EID Authentication\Credential Migration (CLI).lnk" "$INSTDIR\EIDMigrate.exe" "" "$INSTDIR\EIDMigrate.exe" 0
   CreateShortcut "$SMPROGRAMS\EID Authentication\Credential Migration (GUI).lnk" "$INSTDIR\EIDMigrateUI.exe" "" "$INSTDIR\EIDMigrateUI.exe" 0
   CreateShortcut "$SMPROGRAMS\EID Authentication\Manage Users.lnk" "$INSTDIR\EIDManageUsers.exe" "" "$INSTDIR\EIDManageUsers.exe" 0
@@ -235,11 +230,20 @@ Section "Core" SecCore
   nsExec::ExecToLog 'net start ScDeviceEnum'
 
   ; Install and start the ETW trace consumer service. Without this the CSV
-  ; logging configured in EIDLogManager has no consumer and never produces
-  ; files. The executable self-registers as an auto-start service via -install.
+  ; logging (configured via Group Policy / the LogManager registry key) has no
+  ; consumer and never produces files. The executable self-registers as an
+  ; auto-start service via -install.
   DetailPrint "Installing EID Trace Consumer service..."
   nsExec::ExecToLog '"$INSTDIR\EIDTraceConsumer.exe" -install'
   nsExec::ExecToLog '"$INSTDIR\EIDTraceConsumer.exe" -start'
+
+  ; Apply the (Group Policy-aware) ETW trace-session config to the WMI autologger now, and create a
+  ; boot-time scheduled task that re-applies it each boot so Group Policy changes to the logging/ETW
+  ; settings take effect without EIDLogManager. Runs as SYSTEM (needs HKLM autologger write).
+  ; $SYSDIR resolves to the real System32 here (x64 FS redirection is disabled above).
+  DetailPrint "Applying trace configuration and scheduling the GPO-apply task..."
+  nsExec::ExecToLog 'rundll32.exe "$SYSDIR\EIDAuthenticationPackage.dll",DllApplyTraceConfigW'
+  nsExec::ExecToLog 'schtasks /Create /F /RU SYSTEM /RL HIGHEST /SC ONSTART /TN "EID Authentication\Apply Trace Config" /TR "rundll32.exe $SYSDIR\EIDAuthenticationPackage.dll,DllApplyTraceConfigW"'
 
   SetPluginUnload manual
   SetRebootFlag true
@@ -511,7 +515,6 @@ Section "Uninstall"
 
   ; Delete Start Menu shortcuts and folder
   Delete "$SMPROGRAMS\EID Authentication\Configuration Wizard.lnk"
-  Delete "$SMPROGRAMS\EID Authentication\Log Manager.lnk"
   Delete "$SMPROGRAMS\EID Authentication\Credential Migration (CLI).lnk"
   Delete "$SMPROGRAMS\EID Authentication\Credential Migration (GUI).lnk"
   Delete "$SMPROGRAMS\EID Authentication\Manage Users.lnk"
@@ -546,13 +549,14 @@ Section "Uninstall"
   ; Delete Program Files installation - Executables
   Delete "$INSTDIR\EIDConfigurationWizard.exe"
   Delete "$INSTDIR\EIDConfigurationWizardElevated.exe"
-  Delete "$INSTDIR\EIDLogManager.exe"
   Delete "$INSTDIR\EIDMigrate.exe"
   Delete "$INSTDIR\EIDMigrateUI.exe"
   Delete "$INSTDIR\EIDManageUsers.exe"
 
   ; Stop and remove the ETW trace consumer service before deleting its binary,
   ; otherwise the running service holds the file open and leaves a stale service.
+  ; Remove the trace-config GPO-apply scheduled task
+  nsExec::ExecToLog 'schtasks /Delete /F /TN "EID Authentication\Apply Trace Config"'
   nsExec::ExecToLog '"$INSTDIR\EIDTraceConsumer.exe" -stop'
   nsExec::ExecToLog '"$INSTDIR\EIDTraceConsumer.exe" -uninstall'
   Delete "$INSTDIR\EIDTraceConsumer.exe"
