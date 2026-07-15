@@ -167,6 +167,7 @@ already does); retire the DPAPI and ClearText variants, or refuse to load/import
 ---
 
 ### H4 — Malicious migration file provisions users / passwords / admin-group with no authenticity check
+**Status: CLOSED (194be73)** for the single-issuer / trusted-operator deployment. Re-assessment narrowed the practical risk: M3 (938dbda) now requires the import cert to chain to a trusted root + SC-logon EKU + pass offline revocation (cert-injection closed); the password sink is operator-supplied at import, not read from the file. The remaining concern was provenance/authenticity — and the `.eidm` already stamps machine/operator/time *inside* the AES-GCM+HMAC authenticated payload (tamper-proof without the passphrase). H4 fix (#1): the CLI import now shows that stamp before applying anything and supports `-expect-source <machine>` to refuse a file not from the expected issuer; the GUI already surfaces machine+date. A machine signature (unforgeable even to a passphrase holder) was considered and **declined** as beyond this deployment's threat model (one trusted issuing system, air-gapped).
 **Location:** `EIDMigrate/Import.cpp:373-559`; sink `EIDMigrate/LsaClient.cpp:595-698`
 **Category:** logic / auth-bypass · **Confidence:** high (behavior explicit); severity bounded by `-force` + social engineering
 
