@@ -39,6 +39,7 @@ struct IMPORT_OPTIONS
     BOOL fCreateUsers;
     BOOL fContinueOnError;
     std::vector<std::wstring> SelectedGroups;  // Specific groups to import (empty = all)
+    std::wstring wsExpectedSource;             // H4 #1: if set, refuse a file not stamped by this machine
 
     // Optional: Map of username to password to set for user accounts
     // This allows setting a fallback password for smart card users

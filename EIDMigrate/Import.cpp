@@ -60,6 +60,7 @@ HRESULT CommandImport(_In_ const COMMAND_OPTIONS& options)
     opts.fCreateUsers = options.CreateUsers;
     opts.fContinueOnError = options.ContinueOnError;
     opts.SelectedGroups = options.SelectedGroups;
+    opts.wsExpectedSource = options.ExpectedSource;
 
     IMPORT_STATS stats;
     HRESULT hr = ImportCredentials(options.InputFile, wsPassword, opts, stats);
@@ -87,15 +88,41 @@ HRESULT ImportCredentials(  // NOSONAR - COMPLEXITY-01: refactor deferred; logic
     HRESULT hr = S_OK;  // NOSONAR (EXPLICIT-TYPE-03) - Explicit type preferred for clarity
 
     {
-        // Read and parse import file
+        // Read and parse import file (with the provenance stamp)
         std::vector<CredentialInfo> credentials;
         std::vector<GroupInfo> groups;
+        std::wstring wsSourceMachine;
+        std::wstring wsExportDate;
+        std::wstring wsExportedBy;
 
-        hr = ReadImportFile(wsInputPath, wsPassword, credentials, groups);
+        hr = ReadImportFileWithMetadata(wsInputPath, wsPassword, credentials, groups,
+            &wsSourceMachine, &wsExportDate, &wsExportedBy);
         if (FAILED(hr))
         {
             EIDM_TRACE_ERROR(L"Failed to read import file: 0x%08X", hr);
             return hr;
+        }
+
+        // H4 (#1): surface the file's provenance stamp (which machine/operator made it, and when)
+        // before applying anything. The stamp lives INSIDE the authenticated + encrypted payload
+        // (AES-GCM + HMAC), so it cannot be altered without the passphrase.
+        EIDM_TRACE_INFO(L"");
+        EIDM_TRACE_INFO(L"=== Import file provenance ===");
+        EIDM_TRACE_INFO(L"  Source machine: %ls", wsSourceMachine.empty() ? L"(unknown)" : wsSourceMachine.c_str());
+        EIDM_TRACE_INFO(L"  Exported by:    %ls", wsExportedBy.empty() ? L"(unknown)" : wsExportedBy.c_str());
+        EIDM_TRACE_INFO(L"  Export date:    %ls", wsExportDate.empty() ? L"(unknown)" : wsExportDate.c_str());
+        EIDM_TRACE_INFO(L"");
+
+        // Optional pin: if the operator named an expected issuing machine, refuse a file that was
+        // not stamped by it (case-insensitive) before making any changes.
+        if (!options.wsExpectedSource.empty() &&
+            _wcsicmp(options.wsExpectedSource.c_str(), wsSourceMachine.c_str()) != 0)
+        {
+            EIDM_TRACE_ERROR(L"Import aborted: file source machine '%ls' does not match the expected "
+                L"issuer '%ls'.",
+                wsSourceMachine.empty() ? L"(unknown)" : wsSourceMachine.c_str(),
+                options.wsExpectedSource.c_str());
+            return HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED);
         }
 
         stats.dwTotalCredentials = static_cast<DWORD>(credentials.size());

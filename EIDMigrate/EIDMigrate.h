@@ -45,6 +45,7 @@ struct COMMAND_OPTIONS
     std::wstring OutputFile;
     std::wstring LogFile;
     std::wstring Password;
+    std::wstring ExpectedSource;  // import: refuse a file not stamped by this issuing machine
     std::vector<std::wstring> SelectedGroups;  // Specific groups to export/import
     BOOL DryRun;
     BOOL Force;

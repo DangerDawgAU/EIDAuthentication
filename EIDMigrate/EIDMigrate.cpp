@@ -52,6 +52,7 @@ void ShowUsage()
     fwprintf(stderr, L"  -force                   Perform actual import (use with caution)\n");
     fwprintf(stderr, L"  -create-users            Create missing user accounts\n");
     fwprintf(stderr, L"  -continue-on-error       Continue after individual credential errors\n");
+    fwprintf(stderr, L"  -expect-source <machine> Refuse a file not stamped by this issuing machine\n");
     fwprintf(stderr, L"  -v, -verbose             Verbose output\n");
     fwprintf(stderr, L"  -log <path>              Log file path\n");
     fwprintf(stderr, L"\n");
@@ -234,6 +235,15 @@ BOOL ParseCommandLine(_In_ int argc, _In_ PWSTR argv[], _Out_ COMMAND_OPTIONS& o
         else if (wsArg == L"-continue-on-error")
         {
             options.ContinueOnError = TRUE;
+        }
+        else if (wsArg == L"-expect-source")
+        {
+            if (i + 1 >= argc)
+            {
+                fwprintf(stderr, L"Error: %ls requires a machine name argument\n", wsArg.c_str());
+                return FALSE;
+            }
+            options.ExpectedSource = argv[++i];
         }
         else if (wsArg == L"-groups")
         {
