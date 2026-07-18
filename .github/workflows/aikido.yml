@@ -1,0 +1,32 @@
+name: Aikido Security
+
+# Free-tier Aikido PR gate. The Aikido GitHub App (configured on aikido.dev) runs
+# the scanners (SAST, SCA, secrets, IaC) on Aikido's cloud; this workflow gates the
+# PR on the results. On the free tier only the dependency (SCA) scan can fail the
+# build; SAST/IaC findings are surfaced on the PR but not blocking (flip the flags
+# below to true if the plan is upgraded).
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write   # required to post the scan status / SAST review comments
+
+jobs:
+  aikido:
+    name: Aikido scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aikido PR gate
+        uses: AikidoSec/github-actions-workflow@v1.0.13
+        with:
+          secret-key: ${{ secrets.AIKIDO_KEY }}
+          minimum-severity: HIGH            # fail on HIGH + CRITICAL dependency CVEs
+          fail-on-dependency-scan: true     # the gate the free tier enforces
+          fail-on-sast-scan: false          # scanned + surfaced, non-blocking (free tier)
+          fail-on-iac-scan: false           # scanned + surfaced, non-blocking (free tier)
+          post-scan-status-comment: only_if_new_findings
+          post-sast-review-comments: 'on'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          timeout-seconds: 300
