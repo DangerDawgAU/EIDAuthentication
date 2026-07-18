@@ -14,13 +14,15 @@ on:
     types: [published]
 
 permissions:
-  contents: write  # Required to update release notes
+  contents: read
 
 jobs:
   scan-release:
     name: Scan Release Artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: write  # Required to download assets and update release notes
 
     steps:
       - name: Checkout repository
@@ -29,14 +31,17 @@ jobs:
       - name: Download release assets
         env:
           GH_TOKEN: ${{ github.token }}
+          # Pass untrusted event data via env, never inline into the script (avoids
+          # template injection — the tag name is attacker-controllable).
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           # Download all release assets
-          gh release download ${{ github.event.release.tag_name }} --dir release-assets
+          gh release download "$RELEASE_TAG" --dir release-assets
 
       - name: Scan release assets with VirusTotal
         id: virustotal-scan
         continue-on-error: true
-        uses: crazy-max/ghaction-virustotal@v5
+        uses: crazy-max/ghaction-virustotal@936d8c5c00afe97d3d9a1af26d017cfdf26800a2  # v5
         with:
           vt_api_key: ${{ secrets.VT_API_KEY }}
           files: ./release-assets/*
@@ -47,11 +52,12 @@ jobs:
       - name: Update release notes with scan results
         env:
           GH_TOKEN: ${{ github.token }}
+          # Untrusted / dynamic values passed via env to avoid template injection.
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          CURRENT_NOTES: ${{ github.event.release.body }}
+          ANALYSIS: ${{ steps.virustotal-scan.outputs.analysis }}
+          SCAN_OUTCOME: ${{ steps.virustotal-scan.outcome }}
         run: |
-          # Get current release notes
-          CURRENT_NOTES="${{ github.event.release.body }}"
-          ANALYSIS="${{ steps.virustotal-scan.outputs.analysis }}"
-          SCAN_OUTCOME="${{ steps.virustotal-scan.outcome }}"
 
           # Build VT section
           VT_SECTION="\n\n---\n\n## 🔍 VirusTotal Scan Results\n\n"
@@ -82,13 +88,15 @@ jobs:
           fi
 
           # Update the release
-          gh release edit ${{ github.event.release.tag_name }} --notes "$UPDATED_NOTES"
+          gh release edit "$RELEASE_TAG" --notes "$UPDATED_NOTES"
 
       - name: Report results
         if: always()
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           echo "## Release Scan Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Release notes updated with VirusTotal scan results." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Release: ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "Release: $RELEASE_TAG" >> $GITHUB_STEP_SUMMARY
