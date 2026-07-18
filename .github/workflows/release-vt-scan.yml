@@ -13,9 +13,7 @@ on:
   release:
     types: [published]
 
-permissions:
-  contents: read
-
+# Permissions declared per-job (no workflow-level default).
 jobs:
   scan-release:
     name: Scan Release Artifacts
