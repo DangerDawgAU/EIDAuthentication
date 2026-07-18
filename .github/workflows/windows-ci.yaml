@@ -63,7 +63,7 @@ jobs:
       # Release runs only: attach to the GitHub Release that triggered us.
       - name: Upload to GitHub Release
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228  # v3
         with:
           files: |
             Installer/EIDInstallx64.exe
