@@ -1,0 +1,237 @@
+name: PR Report
+
+# Single-pane-of-glass PR report. Triggered when CI finishes; waits for every
+# check on the PR head commit to complete, then collates results AND findings
+# from every action (checks, annotations, CodeQL, SonarCloud, Aikido) into one
+# sticky PR comment + a job-summary dashboard. See
+# docs/superpowers/specs/2026-07-18-pr-report-single-pane-design.md
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+jobs:
+  report:
+    name: Collate PR report
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write   # create/update the sticky comment
+      checks: read           # list check-runs + annotations
+      security-events: read  # CodeQL code-scanning alerts
+      contents: read
+      actions: read          # workflow-run timing
+    steps:
+      - name: Build and publish report
+        uses: actions/github-script@v8
+        env:
+          SELF_CHECK_NAME: "Collate PR report"
+          SONAR_PROJECT: "DangerDawgAU_EIDAuthentication"
+          AIKIDO_REPO_NAME: "EIDAuthentication"
+          AIKIDO_API_CLIENT_ID: ${{ secrets.AIKIDO_API_CLIENT_ID }}
+          AIKIDO_API_CLIENT_SECRET: ${{ secrets.AIKIDO_API_CLIENT_SECRET }}
+        with:
+          script: |
+            const MARKER = '<!-- pr-report -->';
+            const { owner, repo } = context.repo;
+            const run = context.payload.workflow_run;
+            const headSha = run.head_sha;
+            const prs = run.pull_requests || [];
+            if (prs.length === 0) {
+              core.info('No associated PR (fork or non-PR run); nothing to report.');
+              return;
+            }
+            const prNumber = prs[0].number;
+            const selfName = process.env.SELF_CHECK_NAME;
+            const sonarProject = process.env.SONAR_PROJECT;
+
+            const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+            const esc = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ').trim();
+            const fmtDur = (a, b) => {
+              if (!a || !b) return '—';
+              const s = Math.max(0, Math.round((new Date(b) - new Date(a)) / 1000));
+              return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
+            };
+            const iconFor = (cr) => {
+              if (cr.status !== 'completed') return '⏳';
+              return { success: '✅', failure: '❌', neutral: '➖', cancelled: '🚫',
+                       skipped: '⏭️', timed_out: '⌛', action_required: '⚠️' }[cr.conclusion] || '❓';
+            };
+
+            // 1. Poll until all checks on the head commit finish (self excluded), 20-min cap.
+            const deadline = Date.now() + 20 * 60 * 1000;
+            let checks = [];
+            while (true) {
+              checks = await github.paginate(github.rest.checks.listForRef, {
+                owner, repo, ref: headSha, per_page: 100,
+              });
+              const others = checks.filter((c) => c.name !== selfName);
+              const pending = others.filter((c) => c.status !== 'completed');
+              if (pending.length === 0 || Date.now() > deadline) {
+                if (pending.length) core.warning(`Timeout: ${pending.length} check(s) still running.`);
+                break;
+              }
+              core.info(`Waiting on ${pending.length} check(s): ${pending.map((c) => c.name).join(', ')}`);
+              await sleep(30000);
+            }
+            checks = checks.filter((c) => c.name !== selfName);
+
+            // 2. PR metadata.
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+
+            // 3. Per-check annotations (catch-all findings any action emitted).
+            const annotations = [];
+            for (const c of checks) {
+              try {
+                const anns = await github.paginate(github.rest.checks.listAnnotations, {
+                  owner, repo, check_run_id: c.id, per_page: 100,
+                });
+                for (const a of anns) annotations.push({ check: c.name, ...a });
+              } catch (e) { core.info(`annotations ${c.name}: ${e.message}`); }
+            }
+
+            // 4. CodeQL alerts.
+            let codeql = [];
+            try {
+              codeql = await github.paginate(github.rest.codeScanning.listAlertsForRepo, {
+                owner, repo, ref: `refs/pull/${prNumber}/merge`, state: 'open', per_page: 100,
+              });
+            } catch (e) { core.info(`code-scanning: ${e.message}`); }
+
+            // 5. SonarCloud (public API).
+            const sonar = { gate: null, measures: {}, issues: [], issuesTotal: 0, hotspots: [], ok: false };
+            const sc = async (path) => {
+              const r = await fetch(`https://sonarcloud.io/api/${path}`);
+              if (!r.ok) throw new Error(`${path} -> ${r.status}`);
+              return r.json();
+            };
+            try {
+              const gs = await sc(`qualitygates/project_status?projectKey=${sonarProject}&pullRequest=${prNumber}`);
+              sonar.gate = gs.projectStatus;
+              const mk = 'new_bugs,new_vulnerabilities,new_security_hotspots,new_code_smells,new_coverage,new_duplicated_lines_density';
+              const ms = await sc(`measures/component?component=${sonarProject}&pullRequest=${prNumber}&metricKeys=${mk}`);
+              for (const m of (ms.component?.measures || [])) {
+                sonar.measures[m.metric] = m.period?.value ?? m.periods?.[0]?.value ?? m.value ?? '—';
+              }
+              const is = await sc(`issues/search?componentKeys=${sonarProject}&pullRequest=${prNumber}&resolved=false&ps=100`);
+              sonar.issues = is.issues || []; sonar.issuesTotal = is.total ?? sonar.issues.length;
+              const hs = await sc(`hotspots/search?projectKey=${sonarProject}&pullRequest=${prNumber}&ps=100`);
+              sonar.hotspots = hs.hotspots || [];
+              sonar.ok = true;
+            } catch (e) { core.info(`sonarcloud: ${e.message}`); }
+
+            // 6. Aikido REST API findings (repo-scoped) — optional (needs secrets).
+            const aikido = { ok: false, findings: [], reason: 'not configured' };
+            const aid = process.env.AIKIDO_API_CLIENT_ID, asec = process.env.AIKIDO_API_CLIENT_SECRET;
+            if (aid && asec) {
+              try {
+                const basic = Buffer.from(`${aid}:${asec}`).toString('base64');
+                const tr = await fetch('https://app.aikido.dev/api/oauth/token', {
+                  method: 'POST',
+                  headers: { Authorization: `Basic ${basic}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: 'grant_type=client_credentials',
+                });
+                if (!tr.ok) throw new Error(`token ${tr.status}`);
+                const token = (await tr.json()).access_token;
+                const repoName = encodeURIComponent(process.env.AIKIDO_REPO_NAME);
+                const fr = await fetch(
+                  `https://app.aikido.dev/api/public/v1/issues/export?format=json&filter_status=open&filter_code_repo_name=${repoName}&per_page=200`,
+                  { headers: { Authorization: `Bearer ${token}` } });
+                if (!fr.ok) throw new Error(`issues ${fr.status}`);
+                const body = await fr.json();
+                aikido.findings = Array.isArray(body) ? body : (body.issues || body.data || []);
+                aikido.ok = true;
+              } catch (e) { aikido.reason = e.message; core.info(`aikido: ${e.message}`); }
+            }
+            const aikidoCheck = checks.find((c) => /aikido/i.test(c.name));
+
+            // ---- Compose the pane ----
+            const total = checks.length;
+            const passed = checks.filter((c) => c.conclusion === 'success' || c.conclusion === 'skipped' || c.conclusion === 'neutral').length;
+            const failed = checks.filter((c) => c.conclusion === 'failure' || c.conclusion === 'timed_out' || c.conclusion === 'action_required').length;
+            const overall = failed === 0 ? '✅ Passing' : `❌ ${failed} failing`;
+            const wall = fmtDur(run.run_started_at || checks[0]?.started_at, new Date().toISOString());
+            const cap = (arr, n, render, moreUrl) => {
+              const out = arr.slice(0, n).map(render);
+              if (arr.length > n) out.push(`…and ${arr.length - n} more${moreUrl ? ` — [see all](${moreUrl})` : ''}`);
+              return out.join('\n');
+            };
+            const details = (summary, body) => `<details><summary>${summary}</summary>\n\n${body}\n\n</details>`;
+
+            let md = `${MARKER}\n## 🪟 PR Report — ${overall}\n\n`;
+            md += `**#${prNumber} ${esc(pr.title)}** · by @${pr.user.login} · \`${pr.head.ref}\` → \`${pr.base.ref}\`\n\n`;
+            md += `**${passed}/${total}** checks passed · CI wall-clock ~${wall} · [run](${run.html_url})\n\n`;
+
+            // Diff stats
+            md += `### 📦 Changes\n`;
+            md += `${pr.commits} commit(s) · ${pr.changed_files} file(s) · +${pr.additions} / −${pr.deletions}\n\n`;
+
+            // Check table
+            md += `### ✔️ Checks\n\n|  | Check | Result | Time |\n|--|-------|--------|------|\n`;
+            for (const c of checks.sort((a, b) => a.name.localeCompare(b.name))) {
+              md += `| ${iconFor(c)} | [${esc(c.name)}](${c.html_url || run.html_url}) | ${c.conclusion || c.status} | ${fmtDur(c.started_at, c.completed_at)} |\n`;
+            }
+            md += `\n`;
+
+            // Quality metrics
+            md += `### 📊 Quality metrics\n\n`;
+            if (sonar.ok) {
+              const g = sonar.gate?.status === 'OK' ? '✅ OK' : `❌ ${sonar.gate?.status || 'unknown'}`;
+              const m = sonar.measures;
+              md += `**SonarCloud gate (new code):** ${g}\n\n`;
+              md += `| Bugs | Vulns | Hotspots | Smells | Coverage | Dup % |\n|--|--|--|--|--|--|\n`;
+              md += `| ${m.new_bugs ?? '—'} | ${m.new_vulnerabilities ?? '—'} | ${m.new_security_hotspots ?? '—'} | ${m.new_code_smells ?? '—'} | ${m.new_coverage ?? '—'} | ${m.new_duplicated_lines_density ?? '—'} |\n\n`;
+            } else {
+              md += `_SonarCloud metrics unavailable._\n\n`;
+            }
+            md += `**CodeQL alerts (open on this PR):** ${codeql.length}\n\n`;
+
+            // Findings
+            md += `### 🔎 Findings\n\n`;
+            let any = false;
+            if (codeql.length) {
+              any = true;
+              md += details(`CodeQL — ${codeql.length}`, cap(codeql, 15, (a) =>
+                `- **${a.rule?.security_severity_level || a.rule?.severity || 'note'}** \`${a.rule?.id}\` — ${esc(a.most_recent_instance?.message?.text || a.rule?.description)} (${esc(a.most_recent_instance?.location?.path)}:${a.most_recent_instance?.location?.start_line || '?'})`)) + `\n\n`;
+            }
+            if (sonar.issues.length) {
+              any = true;
+              md += details(`SonarCloud issues — ${sonar.issuesTotal}`, cap(sonar.issues, 15, (i) =>
+                `- **${i.severity}** [${i.type}] ${esc(i.message)} (\`${esc((i.component || '').split(':').pop())}:${i.line ?? '?'}\`)`,
+                `https://sonarcloud.io/project/issues?id=${sonarProject}&pullRequest=${prNumber}&resolved=false`)) + `\n\n`;
+            }
+            if (sonar.hotspots.length) {
+              any = true;
+              md += details(`SonarCloud hotspots — ${sonar.hotspots.length}`, cap(sonar.hotspots, 15, (h) =>
+                `- **${h.vulnerabilityProbability}** ${esc(h.message)} (\`${esc((h.component || '').split(':').pop())}:${h.line ?? '?'}\`)`)) + `\n\n`;
+            }
+            if (aikido.ok && aikido.findings.length) {
+              any = true;
+              md += details(`Aikido — ${aikido.findings.length} open (repo-wide)`, cap(aikido.findings, 15, (f) =>
+                `- **${f.severity || '?'}** [${f.type || f.issue_type || '?'}] ${esc(f.title || f.description || f.rule || f.name || JSON.stringify(f).slice(0, 120))}`)) + `\n\n`;
+            } else if (aikidoCheck) {
+              md += `**Aikido:** ${iconFor(aikidoCheck)} ${aikidoCheck.conclusion || aikidoCheck.status}` +
+                    (aikido.reason && !aikido.ok ? ` _(itemized findings ${aikido.reason})_` : '') +
+                    ` — [scan](${aikidoCheck.details_url || aikidoCheck.html_url})\n\n`;
+            }
+            const warnAnns = annotations.filter((a) => a.annotation_level !== 'notice');
+            if (warnAnns.length) {
+              any = true;
+              md += details(`Other check annotations — ${warnAnns.length}`, cap(warnAnns, 15, (a) =>
+                `- **${a.annotation_level}** [${esc(a.check)}] ${esc(a.message)} (\`${esc(a.path)}:${a.start_line ?? '?'}\`)`)) + `\n\n`;
+            }
+            if (!any) md += `_No findings reported by any action._\n\n`;
+
+            md += `---\n_VirusTotal scan runs on push-to-main, not PRs._ · _Generated ${new Date().toISOString()}_\n`;
+
+            // ---- Publish: sticky comment + job summary ----
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: prNumber, per_page: 100,
+            });
+            const existing = comments.find((c) => (c.body || '').includes(MARKER));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body: md });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body: md });
+            }
+            await core.summary.addRaw(md).write();
+            core.info(`Report published for PR #${prNumber} (${overall}).`);
