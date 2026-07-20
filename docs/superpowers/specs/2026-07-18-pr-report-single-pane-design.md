@@ -114,3 +114,5 @@ permissions:
 - Email delivery (explicitly declined).
 - Per-PR-diff scoping of Aikido findings (API is repo-scoped).
 - Changes to existing workflows.
+
+<!-- smoke-test: trigger pr-report to verify Aikido REST API wiring (issues:read) -->
