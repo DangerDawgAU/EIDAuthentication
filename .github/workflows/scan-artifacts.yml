@@ -52,6 +52,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false  # build only; no git push needs the token
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57  # v3
@@ -79,6 +81,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false  # packaging only; no git push needs the token
 
       - name: Download build artifacts
         uses: actions/download-artifact@v7

@@ -17,6 +17,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false  # build only; no git push needs the token
 
       # Cache the bundled minidrivers so we don't re-hit vendor sites every run.
       # The key tracks Installer/Stage-Minidrivers.ps1, which carries the URL +

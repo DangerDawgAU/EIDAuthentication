@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false  # release ops use GH_TOKEN, not git creds
 
       - name: Download release assets
         env:

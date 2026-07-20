@@ -29,6 +29,10 @@ jobs:
           AIKIDO_REPO_NAME: "EIDAuthentication"
           AIKIDO_API_CLIENT_ID: ${{ secrets.AIKIDO_API_CLIENT_ID }}
           AIKIDO_API_CLIENT_SECRET: ${{ secrets.AIKIDO_API_CLIENT_SECRET }}
+          # Optional: Aikido's internal repo id for the code-quality endpoint. If
+          # unset, it's derived from an open issue at runtime. Set the repo variable
+          # to make code-quality work even when there are zero open issues.
+          AIKIDO_CODE_REPO_ID: ${{ vars.AIKIDO_CODE_REPO_ID }}
         with:
           script: |
             const MARKER = '<!-- pr-report -->';
@@ -120,7 +124,8 @@ jobs:
             } catch (e) { core.info(`sonarcloud: ${e.message}`); }
 
             // 6. Aikido REST API findings (repo-scoped) — optional (needs secrets).
-            const aikido = { ok: false, findings: [], reason: 'not configured' };
+            const aikido = { ok: false, findings: [], reason: 'not configured' };     // repo-wide issues (issues:read)
+            const aikidoCq = { ok: false, findings: [], reason: 'not configured' };   // this-PR code quality (code_quality:read)
             const aid = process.env.AIKIDO_API_CLIENT_ID, asec = process.env.AIKIDO_API_CLIENT_SECRET;
             if (aid && asec) {
               try {
@@ -132,15 +137,48 @@ jobs:
                 });
                 if (!tr.ok) throw new Error(`token ${tr.status}`);
                 const token = (await tr.json()).access_token;
+                const authHdr = { Authorization: `Bearer ${token}` };
                 const repoName = encodeURIComponent(process.env.AIKIDO_REPO_NAME);
-                const fr = await fetch(
-                  `https://app.aikido.dev/api/public/v1/issues/export?format=json&filter_status=open&filter_code_repo_name=${repoName}&per_page=200`,
-                  { headers: { Authorization: `Bearer ${token}` } });
-                if (!fr.ok) throw new Error(`issues ${fr.status}`);
-                const body = await fr.json();
-                aikido.findings = Array.isArray(body) ? body : (body.issues || body.data || []);
-                aikido.ok = true;
-              } catch (e) { aikido.reason = e.message; core.info(`aikido: ${e.message}`); }
+
+                // 6a. Open issues (SAST/SCA/secrets/IaC), repo-wide — scope issues:read.
+                try {
+                  const fr = await fetch(
+                    `https://app.aikido.dev/api/public/v1/issues/export?format=json&filter_status=open&filter_code_repo_name=${repoName}&per_page=200`,
+                    { headers: authHdr });
+                  if (!fr.ok) throw new Error(`issues ${fr.status}`);
+                  const body = await fr.json();
+                  aikido.findings = Array.isArray(body) ? body : (body.issues || body.data || []);
+                  aikido.ok = true;
+                  core.info(`aikido issues: ${aikido.findings.length}`);
+                } catch (e) { aikido.reason = e.message; core.info(`aikido issues: ${e.message}`); }
+
+                // 6b. Code-quality findings for THIS PR — scope code_quality:read. The
+                // endpoint needs Aikido's internal code_repo_id (not the repo name):
+                // prefer an explicit AIKIDO_CODE_REPO_ID env, else lift it off an issue.
+                let repoId = process.env.AIKIDO_CODE_REPO_ID || '';
+                if (!repoId) {
+                  const withId = aikido.findings.find((f) => f.code_repo_id ?? f.repo_id ?? f.codeRepoId);
+                  repoId = withId ? String(withId.code_repo_id ?? withId.repo_id ?? withId.codeRepoId) : '';
+                  if (!repoId && aikido.findings.length) {
+                    core.info(`aikido issue keys: ${Object.keys(aikido.findings[0]).join(',')}`);
+                  }
+                }
+                if (repoId) {
+                  try {
+                    const cr = await fetch(
+                      `https://app.aikido.dev/api/public/v1/code-quality/findings?code_repo_id=${encodeURIComponent(repoId)}&pr_number=${prNumber}`,
+                      { headers: authHdr });
+                    if (!cr.ok) throw new Error(`code-quality ${cr.status}`);
+                    const cb = await cr.json();
+                    aikidoCq.findings = Array.isArray(cb) ? cb : (cb.findings || cb.data || []);
+                    aikidoCq.ok = true;
+                    core.info(`aikido code-quality: ${aikidoCq.findings.length} (repo ${repoId}, pr ${prNumber})`);
+                  } catch (e) { aikidoCq.reason = e.message; core.info(`aikido code-quality: ${e.message}`); }
+                } else {
+                  aikidoCq.reason = 'no code_repo_id (set AIKIDO_CODE_REPO_ID, or needs an open issue to derive it)';
+                  core.info(`aikido code-quality: ${aikidoCq.reason}`);
+                }
+              } catch (e) { aikido.reason = e.message; aikidoCq.reason = e.message; core.info(`aikido: ${e.message}`); }
             }
             const aikidoCheck = checks.find((c) => /aikido/i.test(c.name));
 
@@ -212,6 +250,11 @@ jobs:
               md += `**Aikido:** ${iconFor(aikidoCheck)} ${aikidoCheck.conclusion || aikidoCheck.status}` +
                     (aikido.reason && !aikido.ok ? ` _(itemized findings ${aikido.reason})_` : '') +
                     ` — [scan](${aikidoCheck.details_url || aikidoCheck.html_url})\n\n`;
+            }
+            if (aikidoCq.ok && aikidoCq.findings.length) {
+              any = true;
+              md += details(`Aikido code quality — ${aikidoCq.findings.length} (this PR)`, cap(aikidoCq.findings, 15, (f) =>
+                `- \`${esc(f.rule_id || f.rule || '?')}\` ${esc(f.description || f.message || f.name || '')} (\`${esc(f.file || f.path || '?')}:${f.start_line ?? f.line ?? '?'}\`)`)) + `\n\n`;
             }
             const warnAnns = annotations.filter((a) => a.annotation_level !== 'notice');
             if (warnAnns.length) {
