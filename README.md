@@ -1,5 +1,12 @@
 # EID Authentication for Windows
 
+[![CI](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/windows-ci.yaml/badge.svg)](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/windows-ci.yaml)
+[![CodeQL](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/codeql.yml/badge.svg)](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/codeql.yml)
+[![VirusTotal Scan](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/scan-artifacts.yml/badge.svg)](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/scan-artifacts.yml)
+[![Release Scan](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/release-vt-scan.yml/badge.svg)](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/release-vt-scan.yml)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=DangerDawgAU_EIDAuthentication&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=DangerDawgAU_EIDAuthentication)
+[![License: GPL-3.0](https://img.shields.io/github/license/DangerDawgAU/EIDAuthentication)](LICENSE)
+
 **LSA-based smart card authentication for Windows standalone/local accounts.**
 
 Compatible with Aventura MyEID 4.5 cards using the Aventura Minidriver.
