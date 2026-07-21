@@ -9,7 +9,7 @@
 [![Aikido Code Quality](https://img.shields.io/badge/Aikido-code%20quality-1f6feb)](https://app.aikido.dev/repositories/2594845)
 [![License: GPL-3.0](https://img.shields.io/github/license/DangerDawgAU/EIDAuthentication)](LICENSE)
 
-**LSA-based smart card authentication for Windows standalone/local accounts.**
+**Sign in to a standalone Windows PC with a smart card — not a password.**
 
 Compatible with Aventura MyEID 4.5 cards using the Aventura Minidriver.
 
@@ -17,7 +17,7 @@ Compatible with Aventura MyEID 4.5 cards using the Aventura Minidriver.
 
 ## Concept of Operations
 
-EID Authentication provides standalone Windows logon using smart card certificates instead of passwords. The system integrates with Windows LSA (Local Security Authority) to intercept authentication at the kernel security level, enabling smart card-based login for local (non-domain) accounts.
+EID Authentication brings smart-card sign-in to Windows machines that aren't joined to a domain. It plugs directly into the Windows Local Security Authority (LSA), so a local account can be unlocked with a card and PIN instead of a password — no Active Directory or domain controller involved.
 
 **Authentication Flow:**
 1. User inserts smart card at Windows logon screen
