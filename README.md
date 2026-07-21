@@ -5,6 +5,8 @@
 [![VirusTotal Scan](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/scan-artifacts.yml/badge.svg)](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/scan-artifacts.yml)
 [![Release Scan](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/release-vt-scan.yml/badge.svg)](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/release-vt-scan.yml)
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=DangerDawgAU_EIDAuthentication&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=DangerDawgAU_EIDAuthentication)
+[![Aikido Security](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FDangerDawgAU%2FEIDAuthentication%2Fbadges%2Faikido-security.json)](https://app.aikido.dev/repositories/2594845)
+[![Aikido Code Quality](https://img.shields.io/badge/Aikido-code%20quality-1f6feb)](https://app.aikido.dev/repositories/2594845)
 [![License: GPL-3.0](https://img.shields.io/github/license/DangerDawgAU/EIDAuthentication)](LICENSE)
 
 **LSA-based smart card authentication for Windows standalone/local accounts.**
