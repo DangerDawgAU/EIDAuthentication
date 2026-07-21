@@ -11,7 +11,7 @@
 
 **Certificate-based smart card logon for local Windows accounts, built for environments where Active Directory cannot be used.**
 
-Compatible with Aventura MyEID 4.5 cards using the Aventura Minidriver.
+Supports any smart card with a Windows minidriver. The installer bundles minidrivers for Aventra MyEID, YubiKey, and Idemia IDOne PIV cards; the OpenSC minidriver extends coverage to many additional cards.
 
 ---
 
@@ -242,22 +242,34 @@ Windows Password Filter API implementation:
 
 ## Smart Card Compatibility
 
-**Supported:** Aventura MyEID 4.5 cards via Aventura Minidriver
+EID Authentication uses the Windows smart card minidriver model rather than any single vendor stack. Any card with a working Windows minidriver can be used, including PIV-compliant cards; the minidriver mapped to the card by Windows is located and loaded at runtime.
+
+**Bundled Minidrivers:**
+
+The installer bundles three minidrivers (SHA-256 verified at build time, staged by `Installer\Stage-Minidrivers.ps1`) and installs them without internet access. Offline installation matters on isolated and air-gapped hosts. The "Smart Card Minidrivers" section is auto-selected for the Complete install type.
+
+| Minidriver | Version | Cards |
+|------------|---------|-------|
+| Aventra MyEID | 3.0.1.2 (Certified) | Aventra MyEID (tested with MyEID 4.5) |
+| Yubico YubiKey Smart Card Minidriver | 5.0.4.273 (x64) | YubiKey with PIV enabled |
+| Idemia IDOne PIV | 2.4.3 (Microsoft Update catalog) | IDOne PIV cards |
+
+**Wider Compatibility via OpenSC:**
+
+The OpenSC project provides a Windows minidriver (installed by the OpenSC MSI) that covers a broad range of additional cards, including many national eID cards and other PKCS#15-capable tokens. Cards supported by the OpenSC minidriver work with EID Authentication the same way as cards using vendor minidrivers. OpenSC is not bundled; obtain it from https://github.com/OpenSC/OpenSC/releases.
 
 **Other Compatible Cards:**
-- YubiKey (requires YubiKey Smart Card Minidriver to be installed)
 - PIVKey cards via PIVKey Minidriver
 - Gemalto/eGem 4B cards
 - Any PIV-compliant card with a Windows minidriver
 
 **Minidriver Integration:**
-- Uses `SCardGetCardTypeProviderName()` to locate minidriver DLL
+- Uses `SCardGetCardTypeProviderName()` to locate the minidriver DLL
 - Dynamically loads via `CardAcquireContext` (Card Module API)
-- All crypto operations performed on-card (private keys never leave card)
+- All cryptographic operations are performed on-card (private keys never leave the card)
 
 **Important Notes for YubiKey Users:**
-- **YubiKey Smart Card Minidriver must be installed** before using the Configuration Wizard
-- Download from: https://www.yubico.com/support/download/yubikey-minidriver/
+- **The YubiKey Smart Card Minidriver must be installed** before using the Configuration Wizard. The installer's "Smart Card Minidrivers" section installs it; it can also be downloaded from https://www.yubico.com/support/download/yubikey-minidriver/
 - The YubiKey minidriver has known limitations with on-card key generation. If you encounter "smart card is read only" errors during certificate creation:
   - Generate keys/certificates externally using YubiKey Manager (`ykman`)
   - Then use the "Existing Certificate" option in the Configuration Wizard
