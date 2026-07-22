@@ -10,10 +10,15 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    # Least privilege: the build needs only read access. Publishing to a
+    # GitHub Release (which needs contents: write) is done by the separate
+    # release job below, on release events only.
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false  # build only; no git push needs the token
 
       # Cache the bundled minidrivers so we don't re-hit vendor sites every run.
       # The key tracks Installer/Stage-Minidrivers.ps1, which carries the URL +
@@ -47,9 +52,10 @@ jobs:
           Compress-Archive -Path "$($zip.FullName)\*" `
             -DestinationPath Installer\EIDAuthentication-x64.zip -Force
 
-      # CI / PR runs: store everything as workflow artifacts.
+      # Always store the build outputs as workflow artifacts. On CI/PR runs these
+      # are the deliverable; on release runs the release job below downloads them
+      # to attach to the GitHub Release (keeps write scope out of this job).
       - name: Upload workflow artifacts
-        if: github.event_name != 'release'
         uses: actions/upload-artifact@v6
         with:
           name: EIDAuthentication-${{ github.sha }}
@@ -60,16 +66,6 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      # Release runs only: attach to the GitHub Release that triggered us.
-      - name: Upload to GitHub Release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v3
-        with:
-          files: |
-            Installer/EIDInstallx64.exe
-            Installer/EIDAuthentication-x64.zip
-            Installer/SHA256SUMS.txt
-
       - name: Upload build log on failure
         if: failure()
         uses: actions/upload-artifact@v6
@@ -78,3 +74,26 @@ jobs:
           path: build.log
           if-no-files-found: warn
           retention-days: 14
+
+  # Release runs only: attach the built artifacts to the GitHub Release that
+  # triggered us. Isolated here so contents: write is scoped to release events.
+  release:
+    needs: build
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to upload assets to the GitHub Release
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: EIDAuthentication-${{ github.sha }}
+          path: dist
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228  # v3
+        with:
+          files: |
+            dist/EIDInstallx64.exe
+            dist/EIDAuthentication-x64.zip
+            dist/SHA256SUMS.txt

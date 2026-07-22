@@ -1,14 +1,23 @@
 # EID Authentication for Windows
 
-**LSA-based smart card authentication for Windows standalone/local accounts.**
+[![CI](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/windows-ci.yaml/badge.svg)](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/windows-ci.yaml)
+[![CodeQL](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/codeql.yml/badge.svg)](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/codeql.yml)
+[![VirusTotal Scan](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/scan-artifacts.yml/badge.svg)](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/scan-artifacts.yml)
+[![Release Scan](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/release-vt-scan.yml/badge.svg)](https://github.com/DangerDawgAU/EIDAuthentication/actions/workflows/release-vt-scan.yml)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=DangerDawgAU_EIDAuthentication&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=DangerDawgAU_EIDAuthentication)
+[![Aikido Security](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FDangerDawgAU%2FEIDAuthentication%2Fbadges%2Faikido-security.json)](https://app.aikido.dev/repositories/2594845)
+[![Aikido Code Quality](https://img.shields.io/badge/Aikido-code%20quality-1f6feb)](https://app.aikido.dev/repositories/2594845)
+[![License: GPL-3.0](https://img.shields.io/github/license/DangerDawgAU/EIDAuthentication)](LICENSE)
 
-Compatible with Aventura MyEID 4.5 cards using the Aventura Minidriver.
+**Certificate-based smart card logon for local Windows accounts, built for environments where Active Directory cannot be used.**
+
+Supports any smart card with a Windows minidriver. The installer bundles minidrivers for Aventra MyEID, YubiKey, and Idemia IDOne PIV cards; the OpenSC minidriver extends coverage to many additional cards.
 
 ---
 
 ## Concept of Operations
 
-EID Authentication provides standalone Windows logon using smart card certificates instead of passwords. The system integrates with Windows LSA (Local Security Authority) to intercept authentication at the kernel security level, enabling smart card-based login for local (non-domain) accounts.
+EID Authentication provides certificate-based smart card logon for local Windows accounts. It registers an authentication package with the Windows Local Security Authority (LSA) and a credential provider with the logon UI, replacing password entry with card-and-PIN authentication on hosts that are not domain-joined. Enrollment, certificate validation, and authentication are performed entirely on the local machine; no Active Directory, domain controller, or network connectivity is required. This design targets standalone, isolated, and air-gapped systems where domain infrastructure is unavailable or prohibited by policy.
 
 **Authentication Flow:**
 1. User inserts smart card at Windows logon screen
@@ -31,7 +40,7 @@ EID Authentication provides standalone Windows logon using smart card certificat
 
 | Logon Type | Blank Password Account |
 |------------|------------------------|
-| Physical console | ⚠️ Allowed - can log in without credentials |
+| Physical console | Allowed - can log in without credentials |
 | Remote Desktop | Blocked |
 | Network access (SMB) | Blocked |
 
@@ -91,7 +100,7 @@ HKLM\SYSTEM\CurrentControlSet\Control\Lsa\limitblankpassworduse = 0
 | DLL | Purpose |
 |-----|---------|
 | **EIDAuthenticationPackage.dll** | LSA Authentication Package - core authentication logic running in LSASS |
-| **EIDCredentialProvider.dll** | Credential Provider v2 - integrates with Windows logon screen |
+| **EIDCredentialProvider.dll** | Credential Provider - integrates with the Windows logon screen |
 | **EIDPasswordChangeNotification.dll** | Password Filter - synchronizes Windows password changes with stored credentials |
 
 | Library | Purpose |
@@ -122,7 +131,7 @@ Implements the Windows LSA Authentication Package interface (`SpLsaModeInitializ
 | `EIDCMEIDGinaAuthenticationChallenge` | Initiate challenge-response |
 | `EIDCMEIDGinaAuthenticationResponse` | Submit challenge response |
 
-**LSA Private Data Keys:** Format `L$_EID_<RID_HEX>` (e.g., `L$_EID_000003E9` for RID 1001)
+**LSA Private Data Keys:** Format `L$_EID__<RID_HEX>` with a double underscore (e.g., `L$_EID__000003E9` for RID 1001)
 
 ### Credential Provider (EIDCredentialProvider.dll)
 
@@ -233,22 +242,34 @@ Windows Password Filter API implementation:
 
 ## Smart Card Compatibility
 
-**Supported:** Aventura MyEID 4.5 cards via Aventura Minidriver
+EID Authentication uses the Windows smart card minidriver model rather than any single vendor stack. Any card with a working Windows minidriver can be used, including PIV-compliant cards; the minidriver mapped to the card by Windows is located and loaded at runtime.
+
+**Bundled Minidrivers:**
+
+The installer bundles three minidrivers (SHA-256 verified at build time, staged by `Installer\Stage-Minidrivers.ps1`) and installs them without internet access. Offline installation matters on isolated and air-gapped hosts. The "Smart Card Minidrivers" section is auto-selected for the Complete install type.
+
+| Minidriver | Version | Cards |
+|------------|---------|-------|
+| Aventra MyEID | 3.0.1.2 (Certified) | Aventra MyEID (tested with MyEID 4.5) |
+| Yubico YubiKey Smart Card Minidriver | 5.0.4.273 (x64) | YubiKey with PIV enabled |
+| Idemia IDOne PIV | 2.4.3 (Microsoft Update catalog) | IDOne PIV cards |
+
+**Wider Compatibility via OpenSC:**
+
+The OpenSC project provides a Windows minidriver (installed by the OpenSC MSI) that covers a broad range of additional cards, including many national eID cards and other PKCS#15-capable tokens. Cards supported by the OpenSC minidriver work with EID Authentication the same way as cards using vendor minidrivers. OpenSC is not bundled; obtain it from https://github.com/OpenSC/OpenSC/releases.
 
 **Other Compatible Cards:**
-- YubiKey (requires YubiKey Smart Card Minidriver to be installed)
 - PIVKey cards via PIVKey Minidriver
 - Gemalto/eGem 4B cards
 - Any PIV-compliant card with a Windows minidriver
 
 **Minidriver Integration:**
-- Uses `SCardGetCardTypeProviderName()` to locate minidriver DLL
+- Uses `SCardGetCardTypeProviderName()` to locate the minidriver DLL
 - Dynamically loads via `CardAcquireContext` (Card Module API)
-- All crypto operations performed on-card (private keys never leave card)
+- All cryptographic operations are performed on-card (private keys never leave the card)
 
 **Important Notes for YubiKey Users:**
-- **YubiKey Smart Card Minidriver must be installed** before using the Configuration Wizard
-- Download from: https://www.yubico.com/support/download/yubikey-minidriver/
+- **The YubiKey Smart Card Minidriver must be installed** before using the Configuration Wizard. The installer's "Smart Card Minidrivers" section installs it; it can also be downloaded from https://www.yubico.com/support/download/yubikey-minidriver/
 - The YubiKey minidriver has known limitations with on-card key generation. If you encounter "smart card is read only" errors during certificate creation:
   - Generate keys/certificates externally using YubiKey Manager (`ykman`)
   - Then use the "Existing Certificate" option in the Configuration Wizard
@@ -335,7 +356,7 @@ Export files use the `.eid` extension with the following security:
 ## Code Signing
 
 The beta releases of EID Authentication are **unsigned**. Windows "LSA
-Protection" (a.k.a. `RunAsPPL` / Protected Process Light) will refuse to
+Protection" (also known as `RunAsPPL` or Protected Process Light) will refuse to
 load unsigned plug-ins into LSASS, which blocks the authentication package
 and password-change notification DLL. To test the unsigned beta, LSA
 Protection must be disabled on the target machine.
@@ -356,12 +377,12 @@ probes the current state, backs up the prior values, and toggles
 %ProgramFiles%\EID Authentication\tools\Disable-LsaProtection.ps1
 ```
 
-A Start Menu shortcut is also created: **EID Authentication →
+A Start Menu shortcut is also created: **EID Authentication >
 Disable LSA Protection (manual)**. The script requires Administrator
-rights and will self-elevate. It must NEVER be run on production
-workstations, domain controllers, or any host with cached credentials
-you care about — disabling LSA Protection allows tools like Mimikatz
-to dump LSASS memory.
+rights and will self-elevate. It must never be run on production
+workstations, domain controllers, or any host holding cached credentials
+of value: disabling LSA Protection allows tools such as Mimikatz to
+read LSASS memory.
 
 ### Registry values involved
 
@@ -372,7 +393,7 @@ to dump LSASS memory.
 | `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\LSASS.exe` | `AuditLevel` | DWORD | `8` = audit (log, don't block) for CodeIntegrity events 3033/3063/3065/3066 |
 
 If LSA Protection was enabled with UEFI lock on a Secure Boot host, a
-registry change alone is not sufficient — the UEFI variable must be
+registry change alone is not sufficient; the UEFI variable must be
 cleared with Microsoft's `LsaPplConfig.efi` opt-out tool
 (<https://www.microsoft.com/download/details.aspx?id=40897>). The
 PowerShell helper detects this case and prints a warning.
@@ -387,11 +408,11 @@ code-signed:
 
 - `EIDAuthenticationPackage.dll` (LSA Authentication Package)
 - `EIDPasswordChangeNotification.dll` (Password Change Notification)
-- `EIDCredentialProvider.dll` (Credential Provider — loaded by LogonUI, not LSASS, but signed by policy)
+- `EIDCredentialProvider.dll` (Credential Provider; loaded by LogonUI rather than LSASS, signed as a matter of policy)
 
 Signing the first two requires enrolment in Microsoft's [LSA file-signing
 service](https://learn.microsoft.com/en-us/windows-hardware/drivers/dashboard/file-signing-manage)
-(not a regular Authenticode certificate — Microsoft-countersigned binaries
+(not a regular Authenticode certificate; Microsoft-countersigned binaries
 only). Until a signed release is cut, beta users must disable LSA
 Protection.
 
@@ -418,7 +439,7 @@ Protection.
 | Component | Description |
 |-----------|-------------|
 | `EIDAuthenticationPackage.dll` | LSA Authentication Package |
-| `EIDCredentialProvider.dll` | Credential Provider v2 |
+| `EIDCredentialProvider.dll` | Credential Provider |
 | `EIDPasswordChangeNotification.dll` | Password Filter |
 | `EIDConfigurationWizard.exe` | Enrollment wizard |
 | `EIDLogManager.exe` | ETW trace control utility |
