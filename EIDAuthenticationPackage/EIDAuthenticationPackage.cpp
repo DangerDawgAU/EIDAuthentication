@@ -1250,7 +1250,8 @@ extern "C"
 			// We'll use a simpler approach: get well-known SIDs and local accounts
 
 			// Instead of enumerating all users, we'll look for LSA keys that match our pattern
-			// LSA private data keys for EID are named: L$_EID_<RID_in_hex>
+			// LSA private data keys for EID are named: L$_EID__<RID_in_hex> (double underscore:
+			// StoredCredentialManagement.cpp builds them as CREDENTIAL_LSAPREFIX "L$_EID_" + "_%08X")
 
 			// Try to enumerate local users using NetUserEnum
 			// This is more reliable than trying all possible RIDs
@@ -1351,9 +1352,10 @@ extern "C"
 								DWORD dwSubAuthorityCount = *GetSidSubAuthorityCount((PSID)pSidBuffer);
 								DWORD dwRid = *GetSidSubAuthority((PSID)pSidBuffer, dwSubAuthorityCount - 1);
 
-								// Build the LSA key name: L$_EID_<RID>
+								// Build the LSA key name: L$_EID__<RID> (double underscore, matching
+								// StoredCredentialManagement.cpp: CREDENTIAL_LSAPREFIX + "_%08X")
 								WCHAR szKeyName[64];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
-								swprintf_s(szKeyName, _countof(szKeyName), L"L$_EID_%08X", dwRid);
+								swprintf_s(szKeyName, _countof(szKeyName), L"L$_EID__%08X", dwRid);
 
 								// Create LSA_UNICODE_STRING for the key name
 								LSA_UNICODE_STRING LsaKeyName;
