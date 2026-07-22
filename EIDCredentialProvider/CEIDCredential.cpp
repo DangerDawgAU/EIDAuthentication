@@ -709,17 +709,22 @@ HRESULT CEIDCredential::GetSerialization(
     EID_INTERACTIVE_UNLOCK_LOGON kiul;
 
     // Initialize kiul with weak references to our credential.
+    // EIDUnlockLogonInit stores only a WEAK pointer to pwzProtectedPin inside kiul, and
+    // EIDUnlockLogonPack (below) copies the PIN bytes FROM that buffer.  The CredProtect-wrapped
+    // PIN copy must therefore stay alive until AFTER EIDUnlockLogonPack has consumed it; only then
+    // is it zeroized and freed.  Every early-exit path between here and that point frees it too, so
+    // it is neither leaked nor freed while kiul still references it.
     hr = EIDUnlockLogonInit(wsz, _rgFieldStrings[SFI_USERNAME], pwzProtectedPin, _cpus, &kiul);
-    // Zeroize the CredProtect-wrapped PIN copy before releasing it so it does not linger.
-    if (pwzProtectedPin)
-    {
-        SecureZeroMemory(pwzProtectedPin, (wcslen(pwzProtectedPin) + 1) * sizeof(WCHAR));
-    }
-    CoTaskMemFree(pwzProtectedPin);
 
     // Guard clause: logon init failed
     if (FAILED(hr))
     {
+        // Zeroize the CredProtect-wrapped PIN copy before releasing it so it does not linger.
+        if (pwzProtectedPin)
+        {
+            SecureZeroMemory(pwzProtectedPin, (wcslen(pwzProtectedPin) + 1) * sizeof(WCHAR));
+        }
+        CoTaskMemFree(pwzProtectedPin);
         EIDLogErrorWithContext("GetSerialization::EIDUnlockLogonInit", hr, nullptr);
         EIDLogErrorWithContext("GetSerialization", hr, nullptr);
         return hr;
@@ -733,6 +738,12 @@ HRESULT CEIDCredential::GetSerialization(
     // Guard clause: no CSP info
     if (!pCspInfo)
     {
+        // Zeroize the CredProtect-wrapped PIN copy before releasing it so it does not linger.
+        if (pwzProtectedPin)
+        {
+            SecureZeroMemory(pwzProtectedPin, (wcslen(pwzProtectedPin) + 1) * sizeof(WCHAR));
+        }
+        CoTaskMemFree(pwzProtectedPin);
         EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pCspInfo NULL");
         EIDLogErrorWithContext("GetSerialization", E_FAIL, nullptr);
         return E_FAIL;
@@ -740,6 +751,16 @@ HRESULT CEIDCredential::GetSerialization(
 
     hr = EIDUnlockLogonPack(kiul, pCspInfo, &pcpcs->rgbSerialization, &pcpcs->cbSerialization);
     _pContainer->FreeCSPInfo(pCspInfo);
+
+    // EIDUnlockLogonPack has now consumed the weakly-referenced PIN.  Zeroize the CredProtect-wrapped
+    // PIN copy before releasing it so it does not linger; this covers the pack-failed guard below and
+    // every path to the end of the function.
+    if (pwzProtectedPin)
+    {
+        SecureZeroMemory(pwzProtectedPin, (wcslen(pwzProtectedPin) + 1) * sizeof(WCHAR));
+    }
+    CoTaskMemFree(pwzProtectedPin);
+    pwzProtectedPin = nullptr;
 
     // Guard clause: logon pack failed
     if (FAILED(hr))

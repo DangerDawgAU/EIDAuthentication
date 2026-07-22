@@ -98,6 +98,9 @@ BOOL CheckChainTrustStatus(__in PCCERT_CHAIN_CONTEXT pChainContext, __out DWORD*
     // Soft failures: non-security-critical conditions that allow continuation.
     //   IS_NOT_TIME_NESTED         : a non-root cert expires after its issuer - harmless.
     //   REVOCATION_STATUS_UNKNOWN  : no CRL/OCSP reachable - expected on air-gapped hosts.
+    //   IS_OFFLINE_REVOCATION      : the revocation server was unreachable / no cached CRL -
+    //     Windows raises this alongside REVOCATION_STATUS_UNKNOWN on a host with no cached CRL
+    //     (the default), so it must be tolerated in lockstep with UNKNOWN.
     //   HAS_NOT_SUPPORTED_NAME_CONSTRAINT, HAS_NOT_DEFINED_NAME_CONSTRAINT:
     //     constraint types Windows can't evaluate - treat as unknown rather than failure.
     //
@@ -109,14 +112,16 @@ BOOL CheckChainTrustStatus(__in PCCERT_CHAIN_CONTEXT pChainContext, __out DWORD*
     //   Both indicate an explicit PKI policy violation; honour them.
     DWORD dwSoftFailures = CERT_TRUST_IS_NOT_TIME_NESTED |
                            CERT_TRUST_REVOCATION_STATUS_UNKNOWN |
+                           CERT_TRUST_IS_OFFLINE_REVOCATION |
                            CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT |
                            CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT;
 
-    // M1: when RequireRevocationCheck is set, "revocation status unknown" (no local CRL) becomes a
-    // HARD failure - the card is refused unless a current CRL proves it is not revoked. Default
-    // (policy off) keeps soft-failing unknown so isolated machines without a CRL still log on.
+    // M1: when RequireRevocationCheck is set, an unproven revocation state - "revocation status
+    // unknown" AND "offline revocation" (no reachable/cached CRL) - becomes a HARD failure: the
+    // card is refused unless a current CRL proves it is not revoked (fail closed). Default (policy
+    // off) keeps soft-failing both so isolated machines without a CRL still log on (fail open).
     if (GetPolicyValue(GPOPolicy::RequireRevocationCheck) != 0)
-        dwSoftFailures &= ~CERT_TRUST_REVOCATION_STATUS_UNKNOWN;
+        dwSoftFailures &= ~(CERT_TRUST_REVOCATION_STATUS_UNKNOWN | CERT_TRUST_IS_OFFLINE_REVOCATION);
 
     if (DWORD dwHardFailures = dwStatus & ~dwSoftFailures; dwHardFailures != 0)
     {

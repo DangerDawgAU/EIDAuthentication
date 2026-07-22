@@ -726,6 +726,13 @@ extern "C"
 		__try
 		{
 			*ProtocolStatus = STATUS_SUCCESS;
+			// SECURITY: reject any buffer too small to hold the fixed message header before
+			// dereferencing MessageType, mirroring the untrusted path's guard.
+			if (SubmitBufferLength < sizeof(EID_CALLPACKAGE_BUFFER))
+			{
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SubmitBufferLength 0x%x smaller than message header - rejecting",SubmitBufferLength);
+				return STATUS_INVALID_PARAMETER;
+			}
 			// we take care here of messages requiring the TCB privilege (winlogon, msgina, ...)
 			// the other message are forwarded to LsaApCallPackageUntrusted
 			PEID_CALLPACKAGE_BUFFER pBuffer = static_cast<PEID_CALLPACKAGE_BUFFER>(ProtocolSubmitBuffer);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity

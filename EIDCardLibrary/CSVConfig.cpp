@@ -259,6 +259,10 @@ HRESULT EID_CSV_LoadConfigFromRegistry(EID_CSV_CONFIG& config)  // NOSONAR - COM
             reinterpret_cast<LPBYTE>(&config.dwMaxFileSizeMB), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS || dwType != REG_DWORD)
             config.dwMaxFileSizeMB = 64;
+        // BUG 10: clamp to [1, 1024] MB - an unbounded value here is only a sizing knob, but
+        // keep it in the same sane range as the override path / ETL trace config for consistency.
+        if (config.dwMaxFileSizeMB < 1) config.dwMaxFileSizeMB = 1;
+        if (config.dwMaxFileSizeMB > 1024) config.dwMaxFileSizeMB = 1024;
 
         // Read CSVFileCount
         dwSize = sizeof(DWORD);
@@ -266,6 +270,10 @@ HRESULT EID_CSV_LoadConfigFromRegistry(EID_CSV_CONFIG& config)  // NOSONAR - COM
             reinterpret_cast<LPBYTE>(&config.dwFileCount), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS || dwType != REG_DWORD)
             config.dwFileCount = 5;
+        // BUG 10: clamp to [1, 100] - prevents a huge/zero value from driving a runaway
+        // rotation loop in CSVLogger::RotateLogFile (DoS via misconfiguration).
+        if (config.dwFileCount < 1) config.dwFileCount = 1;
+        if (config.dwFileCount > 100) config.dwFileCount = 100;
 
         // Read CSVColumns
         dwSize = sizeof(DWORD);
@@ -435,11 +443,24 @@ void EID_CSV_ApplyPolicyOverrides(EID_CSV_CONFIG& config)  // NOSONAR - COMPLEXI
 
     dwSize = sizeof(dwValue);
     if (RegQueryValueExW(hKey, L"CSVMaxFileSize", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+    {
+        // BUG 10: clamp policy-supplied value to [1, 1024] MB instead of taking it verbatim -
+        // matches the bounds used by the ETL trace path (Registration.cpp SetTraceConfig).
+        if (dwValue < 1) dwValue = 1;
+        if (dwValue > 1024) dwValue = 1024;
         config.dwMaxFileSizeMB = dwValue;
+    }
 
     dwSize = sizeof(dwValue);
     if (RegQueryValueExW(hKey, L"CSVFileCount", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+    {
+        // BUG 10: clamp policy-supplied value to [1, 100] - an unclamped admin-set
+        // CSVFileCount (e.g. 0xFFFFFFFF) would drive a ~4-billion-iteration rotation loop
+        // in CSVLogger::RotateLogFile (DoS via misconfiguration).
+        if (dwValue < 1) dwValue = 1;
+        if (dwValue > 100) dwValue = 100;
         config.dwFileCount = dwValue;
+    }
 
     dwSize = sizeof(dwValue);
     if (RegQueryValueExW(hKey, L"CSVColumns", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)

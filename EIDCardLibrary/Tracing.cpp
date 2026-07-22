@@ -338,7 +338,11 @@ void MessageBoxWin32Ex2(DWORD status, HWND hWnd, LPCSTR szFile, DWORD dwLine) {
 	MessageBox(hWnd,szMessage, szTitle ,MB_ICONASTERISK);
 }
 
-BOOL StartLogging()
+// BUG 5: StartLogging now takes the trace level so the live ETW session is
+// enabled at the policy/config TraceLevel instead of a hardcoded VERBOSE. The
+// no-arg overload (declared in Tracing.h, called by DebugReport.cpp) preserves
+// the previous behaviour by defaulting to VERBOSE when no config is supplied.
+BOOL StartLogging(UCHAR level)
 {
 	BOOL fReturn = FALSE;
 	TRACEHANDLE SessionHandle;
@@ -357,7 +361,7 @@ BOOL StartLogging()
 		Properties.TraceProperties.Wnode.Guid = CLSID_CEIDProvider;
 		Properties.TraceProperties.Wnode.Flags = WNODE_FLAG_TRACED_GUID;
 		Properties.TraceProperties.Wnode.ClientContext = 1;
-		Properties.TraceProperties.LogFileMode = 4864; 
+		Properties.TraceProperties.LogFileMode = 4864;
 		Properties.TraceProperties.LogFileNameOffset = sizeof(EVENT_TRACE_PROPERTIES);
 		Properties.TraceProperties.LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES) + 1024 * sizeof(TCHAR);
 		Properties.TraceProperties.MaximumFileSize = 8;
@@ -369,7 +373,7 @@ BOOL StartLogging()
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"StartTrace 0x%08x", err);
 			__leave;
 		}
-		err = EnableTraceEx(&CLSID_CEIDProvider,nullptr,SessionHandle,TRUE,WINEVENT_LEVEL_VERBOSE,0,0,0,nullptr);
+		err = EnableTraceEx(&CLSID_CEIDProvider,nullptr,SessionHandle,TRUE,level,0,0,0,nullptr);
 		if (err != ERROR_SUCCESS)
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EnableTraceEx 0x%08x", err);
@@ -382,6 +386,13 @@ BOOL StartLogging()
 		// NOSONAR - SEH-01: Empty finally block required for SEH completeness
 	}
 	return fReturn;
+}
+
+// Backward-compatible overload matching the Tracing.h declaration. Defaults to
+// the previous hardcoded VERBOSE level when the caller has no configured level.
+BOOL StartLogging()
+{
+	return StartLogging(static_cast<UCHAR>(WINEVENT_LEVEL_VERBOSE));
 }
 
 BOOL StopLogging()
@@ -597,8 +608,17 @@ void EIDLogStackTraceEx(
 // Structured CSV Logging Implementation
 // ================================================================
 
-// Static flag to track CSV initialization
-static BOOL g_CSVInitialized = FALSE;  // NOSONAR - RUNTIME-01: CSV initialization flag, set at runtime
+// BUG 7: Track CSV initialization with INIT_ONCE instead of an unsynchronized
+// BOOL. Two concurrent first-logons (console + RDP) could otherwise both see the
+// flag clear and double-run EID_CSV_Initialize. INIT_ONCE runs the init exactly
+// once and blocks the second caller until it completes (LSASS-safe, no DllMain).
+static INIT_ONCE g_CSVInitOnce = INIT_ONCE_STATIC_INIT;  // NOSONAR - RUNTIME-01: CSV initialization guard, set at runtime
+
+static BOOL CALLBACK EIDCSVInitOnceCallback(PINIT_ONCE, PVOID, PVOID*)
+{
+	EID_CSV_Initialize();
+	return TRUE;
+}
 
 // Structured logging function - logs to both ETW and CSV
 void EIDCardLibraryLogStructured(  // NOSONAR - COMPLEXITY-01: parameter count dictated by structured-logging schema
@@ -616,12 +636,8 @@ void EIDCardLibraryLogStructured(  // NOSONAR - COMPLEXITY-01: parameter count d
     PCWSTR pwszResource,
     PCWSTR pwszReason)
 {
-	// Initialize CSV logger on first use
-	if (!g_CSVInitialized)
-	{
-		EID_CSV_Initialize();
-		g_CSVInitialized = TRUE;
-	}
+	// Initialize CSV logger on first use (thread-safe, runs exactly once)
+	InitOnceExecuteOnce(&g_CSVInitOnce, EIDCSVInitOnceCallback, nullptr, nullptr);
 
 	// Build ETW message (with event ID prefix for correlation)
 	WCHAR szETWMessage[512];  // NOSONAR - LSASS-01: Stack-allocated buffer for LSASS safety

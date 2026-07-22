@@ -7,6 +7,7 @@
 #include <lm.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 #include <ntstatus.h>
 #include <sddl.h>  // For ConvertSidToStringSidW
+#include <intsafe.h>  // For SizeTToUShort (BUG 9: checked narrowing to EID_PRIVATE_DATA's USHORT fields)
 #include <vector>
 
 #pragma comment(lib, "netapi32.lib")
@@ -655,6 +656,27 @@ HRESULT ImportLsaCredential(
         static_cast<DWORD>(info.SymmetricKey.size()) +
         static_cast<DWORD>(info.EncryptedPassword.size());
 
+    // SECURITY/ROBUSTNESS (BUG 9): dwCertificatSize, dwSymetricKeySize, usPasswordLen, and
+    // lsaSecretData.Length below are all USHORT fields. Validate each source length (and the
+    // combined total) fits before the narrowing assignments, otherwise a field >= 65536 bytes
+    // would silently wrap and produce a corrupt LSA secret.
+    USHORT usCertificateSize = 0;
+    USHORT usSymmetricKeySize = 0;
+    USHORT usPasswordLen = 0;
+    USHORT usTotalSize = 0;
+    HRESULT hrSize = SizeTToUShort(info.Certificate.size(), &usCertificateSize);
+    if (SUCCEEDED(hrSize))
+        hrSize = SizeTToUShort(info.SymmetricKey.size(), &usSymmetricKeySize);
+    if (SUCCEEDED(hrSize))
+        hrSize = SizeTToUShort(info.EncryptedPassword.size(), &usPasswordLen);
+    if (SUCCEEDED(hrSize))
+        hrSize = SizeTToUShort(dwPrivateDataSize, &usTotalSize);
+    if (FAILED(hrSize))
+    {
+        EIDM_TRACE_ERROR(L"[ERROR] Credential field(s) for RID %u exceed USHORT limits for LSA secret storage: 0x%08X", info.dwRid, hrSize);
+        return hrSize;
+    }
+
     std::vector<BYTE> buffer(dwPrivateDataSize);
     PEID_PRIVATE_DATA pPrivateData = reinterpret_cast<PEID_PRIVATE_DATA>(buffer.data());  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
@@ -665,15 +687,15 @@ HRESULT ImportLsaCredential(
 
     // Certificate always at offset 0
     pPrivateData->dwCertificatOffset = 0;
-    pPrivateData->dwCertificatSize = static_cast<USHORT>(info.Certificate.size());
+    pPrivateData->dwCertificatSize = usCertificateSize;
 
     // Symmetric key follows certificate
     pPrivateData->dwSymetricKeyOffset = pPrivateData->dwCertificatOffset + pPrivateData->dwCertificatSize;
-    pPrivateData->dwSymetricKeySize = static_cast<USHORT>(info.SymmetricKey.size());
+    pPrivateData->dwSymetricKeySize = usSymmetricKeySize;
 
     // Encrypted password follows symmetric key
     pPrivateData->dwPasswordOffset = pPrivateData->dwSymetricKeyOffset + pPrivateData->dwSymetricKeySize;
-    pPrivateData->usPasswordLen = static_cast<USHORT>(info.EncryptedPassword.size());
+    pPrivateData->usPasswordLen = usPasswordLen;
 
     memcpy(pPrivateData->Hash, info.CertificateHash, CERT_HASH_LENGTH);
 
@@ -707,7 +729,7 @@ HRESULT ImportLsaCredential(
 
     LSA_UNICODE_STRING lsaSecretData;
     lsaSecretData.Buffer = reinterpret_cast<PWSTR>(buffer.data());  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
-    lsaSecretData.Length = static_cast<USHORT>(dwPrivateDataSize);
+    lsaSecretData.Length = usTotalSize;  // BUG 9: validated above via SizeTToUShort, no truncation
     lsaSecretData.MaximumLength = lsaSecretData.Length;
 
     status = LsaStorePrivateData(hLsa, &lsaSecretName, &lsaSecretData);

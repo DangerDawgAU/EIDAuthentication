@@ -39,6 +39,23 @@ WCHAR EIDCSVLogger::s_szCurrentLogPath[MAX_PATH] = {0};  // NOSONAR - LSASS-01: 
 BOOL EIDCSVLogger::s_fHeaderWritten = FALSE;
 
 // ================================================================
+// BUG 7: Thread-safe one-time creation of the logger critical section.
+// Two concurrent first-logons (e.g. console + RDP) could both observe
+// s_csInitialized == FALSE and call InitializeCriticalSection twice on the same
+// object, corrupting the lock. INIT_ONCE serialises the creation exactly once.
+// The critical section is passed via the callback Parameter so the free callback
+// needs no access to the private class members; s_csInitialized is then set by
+// Initialize() itself (which has member access) purely for state consistency.
+// ================================================================
+static INIT_ONCE s_csLoggerInitOnce = INIT_ONCE_STATIC_INIT;
+
+static BOOL CALLBACK EIDCSVLoggerInitCriticalSection(PINIT_ONCE, PVOID Parameter, PVOID*)
+{
+    InitializeCriticalSection(static_cast<LPCRITICAL_SECTION>(Parameter));
+    return TRUE;
+}
+
+// ================================================================
 // Helper: Format Timestamp as ISO 8601
 // ================================================================
 void EIDCSVLogger::FormatTimestamp(WCHAR* pszBuffer, size_t cchBuffer)
@@ -264,10 +281,18 @@ BOOL EIDCSVLogger::EnsureLogFileOpen()
     // Open file for append (UTF-16 LE encoding)
     // M5: FILE_FLAG_OPEN_REPARSE_POINT so a pre-planted symlink/junction at the
     // log path is opened as the reparse point (and fails) rather than followed.
+    // BUG 4: LSASS and the LogonUI credential provider are SEPARATE processes both
+    // emitting audit rows on the logon path. Open with FILE_APPEND_DATA (not
+    // GENERIC_WRITE/FILE_WRITE_DATA) so every write atomically targets end-of-file,
+    // and share FILE_SHARE_READ | FILE_SHARE_WRITE so the second process no longer
+    // fails CreateFileW with ERROR_SHARING_VIOLATION and silently drops its audits.
+    // FILE_READ_ATTRIBUTES is added so GetFileSizeEx (used for rotation) still works
+    // on the append-only handle without granting FILE_WRITE_DATA (which would defeat
+    // the kernel's atomic-append guarantee).
     s_hLogFile = CreateFileW(
         s_szCurrentLogPath,
-        GENERIC_WRITE,
-        FILE_SHARE_READ,
+        FILE_APPEND_DATA | FILE_READ_ATTRIBUTES,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
         nullptr,
         OPEN_ALWAYS,
         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT,
@@ -307,12 +332,10 @@ BOOL EIDCSVLogger::EnsureLogFileOpen()
 // ================================================================
 HRESULT EIDCSVLogger::Initialize(const EID_CSV_CONFIG& config)
 {
-    // Initialize critical section if needed
-    if (!s_csInitialized)
-    {
-        InitializeCriticalSection(&s_csLogger);
-        s_csInitialized = TRUE;
-    }
+    // BUG 7: create the critical section exactly once, even under concurrent
+    // first-logons, via INIT_ONCE (LSASS-safe; no DllMain / loader-lock work).
+    InitOnceExecuteOnce(&s_csLoggerInitOnce, EIDCSVLoggerInitCriticalSection, &s_csLogger, nullptr);
+    s_csInitialized = TRUE;
 
     EnterCriticalSection(&s_csLogger);
 
@@ -485,29 +508,104 @@ void EIDCSVLogger::LogEvent(  // NOSONAR - COMPLEXITY-01: refactor deferred; log
         EID_CSV_COLUMN cols = s_config.dwColumns;
         BOOL fFirstField = TRUE;
 
-        // Helper lambda to write field with comma separator
-        auto writeField = [&szBuffer, &dwWritten, &fFirstField]([[maybe_unused]] PCWSTR pwszValue)  // NOSONAR - LSASS-01: C-style WCHAR buffer captured for LSASS safety
+        // BUG 4: single write-cap for the whole row. All field appends stay at or
+        // below dwCap so the trailing CRLF (2 WCHAR) always fits. Attacker-influenced
+        // audit fields (e.g. an oversized certificate subject/SAN) can drive dwWritten
+        // to the buffer end, so every append below is bounds-checked against dwCap.
+        const DWORD dwCap = _countof(szBuffer) - 2;  // reserve room for trailing CRLF
+
+        // Helper lambda to write field with comma separator (bounds-checked)
+        auto writeField = [&szBuffer, &dwWritten, &fFirstField, dwCap]([[maybe_unused]] PCWSTR pwszValue)  // NOSONAR - LSASS-01: C-style WCHAR buffer captured for LSASS safety
         {
             if (!fFirstField)
-                szBuffer[dwWritten++] = L',';
+            {
+                if (dwWritten < dwCap)
+                    szBuffer[dwWritten++] = L',';
+            }
             else
                 fFirstField = FALSE;
             return dwWritten;
+        };
+
+        // BUG 4: append an escaped CSV field directly into szBuffer (instead of a
+        // separate WriteFile per field) so the whole row can be emitted with ONE
+        // WriteFile and stays atomic across the LSASS/LogonUI processes. The escaping
+        // rules are identical to WriteEscapedCSVField; only the sink changed (buffer,
+        // not file). Bounds-checked and reserves 2 WCHAR at the tail for the CRLF.
+        auto appendEscapedField = [&szBuffer, &dwWritten, dwCap](PCWSTR pwszValue)  // NOSONAR - LSASS-01: C-style WCHAR buffer captured for LSASS safety
+        {
+            if (!pwszValue || !pwszValue[0])
+                return;
+
+            // Check if field needs quoting
+            BOOL fNeedsQuotes = FALSE;
+            for (PCWSTR p = pwszValue; *p; p++)
+            {
+                if (*p == L',' || *p == L'"' || *p == L'\n' || *p == L'\r')
+                {
+                    fNeedsQuotes = TRUE;
+                    break;
+                }
+            }
+
+            if (!fNeedsQuotes)
+            {
+                // No escaping needed, copy as-is
+                for (PCWSTR p = pwszValue; *p && dwWritten < dwCap; p++)
+                    szBuffer[dwWritten++] = *p;
+                return;
+            }
+
+            // Needs escaping: wrap in quotes, double inner quotes
+            if (dwWritten < dwCap) szBuffer[dwWritten++] = L'"';
+            for (PCWSTR p = pwszValue; *p; p++)
+            {
+                if (*p == L'"')
+                {
+                    if (dwWritten < dwCap) szBuffer[dwWritten++] = L'"';
+                    if (dwWritten < dwCap) szBuffer[dwWritten++] = L'"';
+                }
+                else
+                {
+                    if (dwWritten < dwCap) szBuffer[dwWritten++] = *p;
+                }
+            }
+            if (dwWritten < dwCap) szBuffer[dwWritten++] = L'"';
+        };
+
+        // BUG 4: truncate-safe formatted append for the numeric/name columns.
+        // Plain swprintf_s invokes the CRT invalid-parameter handler when the count
+        // argument is too small (buffer nearly full) — fatal in LSASS. _snwprintf_s
+        // with _TRUNCATE instead truncates and returns -1 without aborting; we then
+        // advance by the actual chars written so dwWritten never exceeds _countof-1.
+        auto appendFormatted = [&szBuffer, &dwWritten, dwCap](PCWSTR pwszFormat, auto value)  // NOSONAR - LSASS-01: C-style WCHAR buffer captured for LSASS safety
+        {
+            if (dwWritten >= dwCap)
+                return;
+            size_t rem = _countof(szBuffer) - dwWritten;
+            int written = _snwprintf_s(szBuffer + dwWritten, rem, _TRUNCATE, pwszFormat, value);
+            if (written < 0)
+                dwWritten += static_cast<DWORD>(wcslen(szBuffer + dwWritten));  // truncated: advance by actual
+            else
+                dwWritten += static_cast<DWORD>(written);
         };
 
         // Timestamp
         if (cols & EID_CSV_COLUMN::TIMESTAMP)
         {
             writeField(L"");
-            FormatTimestamp(szBuffer + dwWritten, _countof(szBuffer) - dwWritten);
-            dwWritten += static_cast<DWORD>(wcslen(szBuffer + dwWritten));
+            if (dwWritten < dwCap)
+            {
+                FormatTimestamp(szBuffer + dwWritten, _countof(szBuffer) - dwWritten);
+                dwWritten += static_cast<DWORD>(wcslen(szBuffer + dwWritten));
+            }
         }
 
         // Event ID
         if (cols & EID_CSV_COLUMN::EVENT_ID)
         {
             writeField(L"");
-            dwWritten += swprintf_s(szBuffer + dwWritten, _countof(szBuffer) - dwWritten, L"%u", static_cast<DWORD>(eventId));  // NOSONAR - ENUM-01: enum cast to underlying value for format API
+            appendFormatted(L"%u", static_cast<DWORD>(eventId));  // NOSONAR - ENUM-01: enum cast to underlying value for format API
         }
 
         // Category
@@ -515,122 +613,98 @@ void EIDCSVLogger::LogEvent(  // NOSONAR - COMPLEXITY-01: refactor deferred; log
         {
             writeField(L"");
             PCWSTR pwszCategory = GetCategoryName(GetEventCategory(eventId));
-            dwWritten += swprintf_s(szBuffer + dwWritten, _countof(szBuffer) - dwWritten, L"%s", pwszCategory);
+            appendFormatted(L"%s", pwszCategory);
         }
 
         // Severity
         if (cols & EID_CSV_COLUMN::SEVERITY)
         {
             writeField(L"");
-            dwWritten += swprintf_s(szBuffer + dwWritten, _countof(szBuffer) - dwWritten, L"%s", GetSeverityName(static_cast<UCHAR>(severity)));  // NOSONAR - ENUM-01: enum cast to underlying value for Win32 API
+            appendFormatted(L"%s", GetSeverityName(static_cast<UCHAR>(severity)));  // NOSONAR - ENUM-01: enum cast to underlying value for Win32 API
         }
 
         // Outcome
         if (cols & EID_CSV_COLUMN::OUTCOME)
         {
             writeField(L"");
-            dwWritten += swprintf_s(szBuffer + dwWritten, _countof(szBuffer) - dwWritten, L"%s", GetOutcomeName(static_cast<UCHAR>(outcome)));  // NOSONAR - ENUM-01: enum cast to underlying value for Win32 API
+            appendFormatted(L"%s", GetOutcomeName(static_cast<UCHAR>(outcome)));  // NOSONAR - ENUM-01: enum cast to underlying value for Win32 API
         }
 
         // Username
         if (cols & EID_CSV_COLUMN::USERNAME)
         {
             writeField(L"");
-            WriteFile(s_hLogFile, szBuffer, dwWritten * sizeof(WCHAR), &dwWritten, nullptr);
-            s_dwCurrentFileSize += dwWritten;
-            WriteEscapedCSVField(pwszUsername ? pwszUsername : L"");
-            dwWritten = 0;
-            fFirstField = FALSE;
+            appendEscapedField(pwszUsername ? pwszUsername : L"");
         }
 
         // Domain
         if (cols & EID_CSV_COLUMN::DOMAIN)
         {
             writeField(L"");
-            WriteFile(s_hLogFile, szBuffer, dwWritten * sizeof(WCHAR), &dwWritten, nullptr);
-            s_dwCurrentFileSize += dwWritten;
-            WriteEscapedCSVField(pwszDomain);
-            dwWritten = 0;
-            fFirstField = FALSE;
+            appendEscapedField(pwszDomain);
         }
 
         // Source IP
         if (cols & EID_CSV_COLUMN::CLIENT_IP)
         {
             writeField(L"");
-            WriteFile(s_hLogFile, szBuffer, dwWritten * sizeof(WCHAR), &dwWritten, nullptr);
-            s_dwCurrentFileSize += dwWritten;
-            WriteEscapedCSVField(pwszSourceIP);
-            dwWritten = 0;
-            fFirstField = FALSE;
+            appendEscapedField(pwszSourceIP);
         }
 
         // Action
         if (cols & EID_CSV_COLUMN::ACTION)
         {
             writeField(L"");
-            WriteFile(s_hLogFile, szBuffer, dwWritten * sizeof(WCHAR), &dwWritten, nullptr);
-            s_dwCurrentFileSize += dwWritten;
-            WriteEscapedCSVField(pwszAction ? pwszAction : L"");
-            dwWritten = 0;
-            fFirstField = FALSE;
+            appendEscapedField(pwszAction ? pwszAction : L"");
         }
 
         // Resource
         if (cols & EID_CSV_COLUMN::TARGET)
         {
             writeField(L"");
-            WriteFile(s_hLogFile, szBuffer, dwWritten * sizeof(WCHAR), &dwWritten, nullptr);
-            s_dwCurrentFileSize += dwWritten;
-            WriteEscapedCSVField(pwszResource);
-            dwWritten = 0;
-            fFirstField = FALSE;
+            appendEscapedField(pwszResource);
         }
 
         // Reason
         if (cols & EID_CSV_COLUMN::REASON)
         {
             writeField(L"");
-            WriteFile(s_hLogFile, szBuffer, dwWritten * sizeof(WCHAR), &dwWritten, nullptr);
-            s_dwCurrentFileSize += dwWritten;
-            WriteEscapedCSVField(pwszReason);
-            dwWritten = 0;
-            fFirstField = FALSE;
+            appendEscapedField(pwszReason);
         }
 
         // Session ID
         if (cols & EID_CSV_COLUMN::LOGIN_SESSION)
         {
             writeField(L"");
-            dwWritten += swprintf_s(szBuffer + dwWritten, _countof(szBuffer) - dwWritten, L"%u", dwSessionID);
+            appendFormatted(L"%u", dwSessionID);
         }
 
         // Process ID
         if (cols & EID_CSV_COLUMN::PROCESS_ID)
         {
             writeField(L"");
-            dwWritten += swprintf_s(szBuffer + dwWritten, _countof(szBuffer) - dwWritten, L"%u", dwProcessID ? dwProcessID : GetCurrentProcessId());
+            appendFormatted(L"%u", dwProcessID ? dwProcessID : GetCurrentProcessId());
         }
 
         // Message
         if (cols & EID_CSV_COLUMN::MESSAGE)
         {
             writeField(L"");
-            WriteFile(s_hLogFile, szBuffer, dwWritten * sizeof(WCHAR), &dwWritten, nullptr);
-            s_dwCurrentFileSize += dwWritten;
-            WriteEscapedCSVField(pwszMessage ? pwszMessage : L"");
-            dwWritten = 0;
-            fFirstField = FALSE;
+            appendEscapedField(pwszMessage ? pwszMessage : L"");
         }
 
-        // Write line ending
-        if (dwWritten > 0 || !fFirstField)
-        {
-            WriteFile(s_hLogFile, szBuffer, dwWritten * sizeof(WCHAR), &dwWritten, nullptr);
+        // BUG 4: terminate the row and emit it with a SINGLE WriteFile so that on
+        // local NTFS the append (< 64KB) is atomic and audit rows from the LSASS
+        // and LogonUI processes never interleave or get dropped. appendEscapedField
+        // reserved 2 WCHAR for the CRLF; clamp defensively in case numeric fields
+        // filled the buffer, so a well-formed row is always written.
+        if (dwWritten > _countof(szBuffer) - 2)
+            dwWritten = _countof(szBuffer) - 2;
+        szBuffer[dwWritten++] = L'\r';
+        szBuffer[dwWritten++] = L'\n';
+
+        if (WriteFile(s_hLogFile, szBuffer, dwWritten * sizeof(WCHAR), &dwWritten, nullptr))
             s_dwCurrentFileSize += dwWritten;
-        }
-        WriteFile(s_hLogFile, L"\r\n", 2 * sizeof(WCHAR), &dwWritten, nullptr);
-        s_dwCurrentFileSize += dwWritten;
 
         // Flush for immediate visibility (optional, can be disabled for performance)
         // FlushFileBuffers(s_hLogFile);

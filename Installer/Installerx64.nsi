@@ -196,7 +196,14 @@ Section "Core" SecCore
   ; Security policy: RequireCardBoundCredentials (from the install-time question).
   ; 1 = only card-wrapped (crypted) credentials may be created / used at logon / imported;
   ; the Windows password can then never be recovered without the smart card.
-  WriteRegDWORD HKLM "SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider" "RequireCardBoundCredentials" $RequireCardBound
+  ; Do not clobber an existing value on upgrade/repair - only set it if it has never
+  ; been configured, so an admin's prior choice (or a prior non-card-bound enrollment)
+  ; is preserved.
+  ClearErrors
+  ReadRegDWORD $0 HKLM "SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider" "RequireCardBoundCredentials"
+  ${If} ${Errors}
+    WriteRegDWORD HKLM "SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider" "RequireCardBoundCredentials" $RequireCardBound
+  ${EndIf}
 
   ; Uninstall info
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "DisplayName" "EID Authentication"
@@ -651,9 +658,11 @@ Function .onInit
     Abort
   ${EndIf}
 
-  ; Default the security option to ON (card-bound credentials recommended); the admin
-  ; can uncheck it on the Security Options page if they use signature-only cards.
-  StrCpy $RequireCardBound 1
+  ; Default the security option to OFF (opt-in). Defaulting to ON would silently
+  ; re-lock existing non-card-bound (signature-only) enrollments out of logon on
+  ; upgrade/repair, since silent (/S) installs never show the Security Options page.
+  ; The admin can still turn this on deliberately on that page for decrypt-capable cards.
+  StrCpy $RequireCardBound 0
 
   ; Check if already installed via registry
   SetRegView 64

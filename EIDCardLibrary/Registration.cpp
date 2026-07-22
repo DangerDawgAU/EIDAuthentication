@@ -28,6 +28,11 @@
 #include "../EIDCardLibrary/StringConversion.h"
 #include <string>
 
+// BUG 5: level-taking overload of StartLogging (real logic lives in Tracing.cpp).
+// Tracing.h only declares the no-arg StartLogging(); declare the overload locally
+// so EnableLogging can start the live ETW session at the configured TraceLevel.
+BOOL StartLogging(UCHAR level);
+
 
 // Non-const string buffers for Windows API compatibility (AddSecurityPackage/DeleteSecurityPackage require LPWSTR)
 static WCHAR s_wszAuthenticationPackageName[] = L"EIDAuthenticationPackage";  // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
@@ -699,10 +704,18 @@ BOOL EnableLogging()
 				entries[i].szValueName, entries[i].dwType, entries[i].pData, entries[i].cbData);
 			if (err != ERROR_SUCCESS) __leave;
 		}
-		if (!StartLogging())
+		// BUG 5: only start the LIVE trace session when autostart is enabled by
+		// config/GPO. The persisted autologger 'Start' value (entries[3]) is always
+		// written above, but a boot task must NOT force a live VERBOSE capture when
+		// policy set TraceAutoStart=Disabled. When it IS enabled, start at the
+		// configured TraceLevel rather than a hardcoded VERBOSE.
+		if (fConfigAutoStart)
 		{
-			err = GetLastError();
-			__leave;
+			if (!StartLogging(static_cast<UCHAR>(dwConfigLevel)))
+			{
+				err = GetLastError();
+				__leave;
+			}
 		}
 		fReturn = TRUE;
 	}
