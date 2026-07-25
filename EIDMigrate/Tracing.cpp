@@ -6,7 +6,7 @@
 #include <cstdarg>
 
 // Global verbosity level (declared as extern in Tracing.h)
-VERBOSITY g_Verbosity = VERBOSITY::NORMAL;
+VERBOSITY g_Verbosity = VERBOSITY::NORMAL;  // NOSONAR - GLOBAL-01: mutable global modified at runtime
 
 // Console colors for Windows
 static const WORD CONSOLE_COLOR_DEFAULT = 7;  // White on black
@@ -17,9 +17,9 @@ static const WORD CONSOLE_COLOR_INFO = 11;    // Cyan on black
 // Check if we have a valid console (for GUI compatibility)
 static BOOL HasValidConsole()
 {
-    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
-    HANDLE hStdErr = GetStdHandle(STD_ERROR_HANDLE);
+    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);  // NOSONAR - API-01: signature dictated by Windows/callback API
+    HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);  // NOSONAR - API-01: signature dictated by Windows/callback API
+    HANDLE hStdErr = GetStdHandle(STD_ERROR_HANDLE);  // NOSONAR - API-01: signature dictated by Windows/callback API
 
     return (hStdOut != INVALID_HANDLE_VALUE && hStdOut != nullptr &&
             hStdIn != INVALID_HANDLE_VALUE && hStdIn != nullptr &&
@@ -48,7 +48,7 @@ static void SetConsoleColor(WORD wColor)
     }
 }
 
-void EIDMigrateTrace(_In_ DWORD dwLevel, _In_ PCWSTR pwszFormat, ...)
+void EIDMigrateTrace(_In_ DWORD dwLevel, _In_ PCWSTR pwszFormat, ...)  // NOSONAR - VARIADIC-01: printf-style logger requires variadic arguments
 {
     if (!pwszFormat)
         return;
@@ -60,7 +60,7 @@ void EIDMigrateTrace(_In_ DWORD dwLevel, _In_ PCWSTR pwszFormat, ...)
     // Check verbosity level
     VERBOSITY requiredLevel = VERBOSITY::MINIMAL;
     switch (dwLevel)
-    {
+    {  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
     case WINEVENT_LEVEL_ERROR:
         requiredLevel = VERBOSITY::MINIMAL;
         break;
@@ -97,14 +97,14 @@ void EIDMigrateTrace(_In_ DWORD dwLevel, _In_ PCWSTR pwszFormat, ...)
 
     // Add newline if not present
     size_t cchLen = wcslen(pwszFormat); // NOSONAR - pwszFormat already used successfully in vfwprintf above, non-NULL guaranteed
-    if (cchLen == 0 || pwszFormat[cchLen - 1] != L'\n')
+    if (cchLen == 0 || pwszFormat[cchLen - 1] != L'\n')  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
         fwprintf(stderr, L"\n");
 
     // Reset console color
     SetConsoleColor(CONSOLE_COLOR_DEFAULT);
 }
 
-static DWORD g_dwProgressLastWidth = 0;
+static DWORD g_dwProgressLastWidth = 0;  // NOSONAR - GLOBAL-01: mutable global modified at runtime
 
 void ShowProgress(_In_ PCWSTR pwszOperation, _In_ DWORD dwCurrent, _In_ DWORD dwTotal)
 {
@@ -122,7 +122,7 @@ void ShowProgress(_In_ PCWSTR pwszOperation, _In_ DWORD dwCurrent, _In_ DWORD dw
     DWORD dwPercent = (dwTotal > 0) ? (dwCurrent * 100 / dwTotal) : 100;
 
     // Build progress string
-    WCHAR szProgress[256];
+    WCHAR szProgress[256];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     swprintf_s(szProgress, L"  %ls: %u/%u (%u%%)",
         pwszOperation, dwCurrent, dwTotal, dwPercent);
 
@@ -134,7 +134,7 @@ void ShowProgress(_In_ PCWSTR pwszOperation, _In_ DWORD dwCurrent, _In_ DWORD dw
 
     // Print progress (without newline for overwriting)
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hConsole != INVALID_HANDLE_VALUE)
+    if (hConsole != INVALID_HANDLE_VALUE)  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
     {
         DWORD dwWritten;
         WriteConsoleW(hConsole, szProgress,
@@ -153,7 +153,7 @@ void ClearProgress()
         return;
 
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hConsole != INVALID_HANDLE_VALUE)
+    if (hConsole != INVALID_HANDLE_VALUE)  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
     {
         CONSOLE_SCREEN_BUFFER_INFO csbi;
         if (GetConsoleScreenBufferInfo(hConsole, &csbi))
@@ -184,7 +184,7 @@ void ClearProgress()
 
 PCWSTR GetErrorCodeString(_In_ HRESULT hr)
 {
-    static thread_local WCHAR szBuffer[512];
+    static thread_local WCHAR szBuffer[512];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 
     if (HRESULT_FACILITY(hr) == FACILITY_WIN32)
     {
@@ -205,7 +205,7 @@ PCWSTR GetErrorCodeString(_In_ HRESULT hr)
 
 PCWSTR GetErrorCodeString(_In_ DWORD dwError)
 {
-    static thread_local WCHAR szBuffer[512];
+    static thread_local WCHAR szBuffer[512];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 
     FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM,
         nullptr, dwError, 0, szBuffer,

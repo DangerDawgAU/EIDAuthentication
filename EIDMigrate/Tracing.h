@@ -9,10 +9,10 @@
 // Simplified winevent_level values if not available
 #ifndef WINEVENT_LEVEL_MIN
 #define WINEVENT_LEVEL_MIN  1
-#define WINEVENT_LEVEL_INFO 2
-#define WINEVENT_LEVEL_WARN 3
-#define WINEVENT_LEVEL_ERROR 4
-#define WINEVENT_LEVEL_MAX  5
+#define WINEVENT_LEVEL_INFO 2  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define WINEVENT_LEVEL_WARN 3  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define WINEVENT_LEVEL_ERROR 4  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define WINEVENT_LEVEL_MAX  5  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 #endif
 
 // Verbosity levels for console output
@@ -25,7 +25,7 @@ enum class VERBOSITY : DWORD
 };
 
 // Global verbosity setting (can be changed via command-line flags)
-extern VERBOSITY g_Verbosity;
+extern VERBOSITY g_Verbosity;  // NOSONAR - GLOBAL-01: mutable global assigned at runtime
 
 // Set verbosity level
 void SetVerbosity(VERBOSITY level);

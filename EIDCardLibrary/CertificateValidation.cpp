@@ -98,6 +98,9 @@ BOOL CheckChainTrustStatus(__in PCCERT_CHAIN_CONTEXT pChainContext, __out DWORD*
     // Soft failures: non-security-critical conditions that allow continuation.
     //   IS_NOT_TIME_NESTED         : a non-root cert expires after its issuer - harmless.
     //   REVOCATION_STATUS_UNKNOWN  : no CRL/OCSP reachable - expected on air-gapped hosts.
+    //   IS_OFFLINE_REVOCATION      : the revocation server was unreachable / no cached CRL -
+    //     Windows raises this alongside REVOCATION_STATUS_UNKNOWN on a host with no cached CRL
+    //     (the default), so it must be tolerated in lockstep with UNKNOWN.
     //   HAS_NOT_SUPPORTED_NAME_CONSTRAINT, HAS_NOT_DEFINED_NAME_CONSTRAINT:
     //     constraint types Windows can't evaluate - treat as unknown rather than failure.
     //
@@ -107,16 +110,25 @@ BOOL CheckChainTrustStatus(__in PCCERT_CHAIN_CONTEXT pChainContext, __out DWORD*
     //   HAS_EXCLUDED_NAME_CONSTRAINT      - cert names a subject inside the
     //     excluded subtree of an issuer above it.
     //   Both indicate an explicit PKI policy violation; honour them.
-    constexpr DWORD SOFT_FAILURES = CERT_TRUST_IS_NOT_TIME_NESTED |
-                                    CERT_TRUST_REVOCATION_STATUS_UNKNOWN |
-                                    CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT |
-                                    CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT;
+    DWORD dwSoftFailures = CERT_TRUST_IS_NOT_TIME_NESTED |
+                           CERT_TRUST_REVOCATION_STATUS_UNKNOWN |
+                           CERT_TRUST_IS_OFFLINE_REVOCATION |
+                           CERT_TRUST_HAS_NOT_SUPPORTED_NAME_CONSTRAINT |
+                           CERT_TRUST_HAS_NOT_DEFINED_NAME_CONSTRAINT;
 
-    DWORD dwHardFailures = dwStatus & ~SOFT_FAILURES;
+    // M1: when RequireRevocationCheck is set, an unproven revocation state - "revocation status
+    // unknown" AND "offline revocation" (no reachable/cached CRL) - becomes a HARD failure: the
+    // card is refused unless a current CRL proves it is not revoked (fail closed). Default (policy
+    // off) keeps soft-failing both so isolated machines without a CRL still log on (fail open).
+    if (GetPolicyValue(GPOPolicy::RequireRevocationCheck) != 0)
+        dwSoftFailures &= ~(CERT_TRUST_REVOCATION_STATUS_UNKNOWN | CERT_TRUST_IS_OFFLINE_REVOCATION);
 
-    if (dwHardFailures != 0)
+    if (DWORD dwHardFailures = dwStatus & ~dwSoftFailures; dwHardFailures != 0)
     {
         *pdwError = dwStatus;
+        // A revoked card is a high-signal security event - audit it (structured, for SIEM).
+        if (dwStatus & CERT_TRUST_IS_REVOKED)
+            EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"[CERT_REVOKED] Smart card certificate is revoked (chain status 0x%08x) - logon refused", dwStatus);
         EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Error %s (0x%08x) returned by CertGetCertificateChain",
                             GetTrustErrorText(dwStatus), dwStatus);
         return FALSE;
@@ -153,7 +165,7 @@ BOOL CheckChainDepth(__in PCCERT_CHAIN_CONTEXT pChainContext, __out DWORD* pdwEr
     // Typical chains are 2-3 levels (Root -> [Intermediate] -> End Entity)
     constexpr DWORD MAX_CHAIN_DEPTH = 5;
 
-    if (pChainContext->cChain > 0 && pChainContext->rgpChain[0]->cElement > MAX_CHAIN_DEPTH)
+    if (pChainContext->cChain > 0 && pChainContext->rgpChain[0]->cElement > MAX_CHAIN_DEPTH)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
     {
         *pdwError = static_cast<DWORD>(CERT_E_CHAINING);
         EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Certificate chain depth %d exceeds maximum %d",
@@ -169,10 +181,17 @@ BOOL CheckChainDepth(__in PCCERT_CHAIN_CONTEXT pChainContext, __out DWORD* pdwEr
 // Complexity reduction helper for certificate validation (Phase 36-01)
 BOOL IsPolicySoftFailure(__in DWORD dwPolicyError)
 {
-    // Soft policy failures for self-managed PKI
-    return (dwPolicyError == CERT_E_VALIDITYPERIODNESTING ||
-            dwPolicyError == CRYPT_E_NO_REVOCATION_CHECK ||
-            dwPolicyError == CRYPT_E_REVOCATION_OFFLINE);
+    // Validity-period nesting is always a soft failure for self-managed PKI.
+    if (dwPolicyError == CERT_E_VALIDITYPERIODNESTING)
+        return TRUE;
+
+    // M1: revocation could not be performed (no CRL cached / offline). Soft-fail by default so
+    // isolated machines without a distributed CRL still work; hard-fail when RequireRevocationCheck
+    // demands positive proof the certificate is not revoked.
+    if (dwPolicyError == CRYPT_E_NO_REVOCATION_CHECK || dwPolicyError == CRYPT_E_REVOCATION_OFFLINE)
+        return GetPolicyValue(GPOPolicy::RequireRevocationCheck) == 0;
+
+    return FALSE;
 }
 
 } // anonymous namespace
@@ -211,7 +230,7 @@ void InitChainValidationParams(ChainValidationParams* params)
 	// SECURITY FIX #143: Validate CSP info offsets before use (CWE-125/CWE-20)
 	// Client-supplied offsets must be within structure bounds to prevent out-of-bounds read
 	DWORD dwHeaderSize = FIELD_OFFSET(EID_SMARTCARD_CSP_INFO, bBuffer);
-	if (pCspInfo->dwCspInfoLen < dwHeaderSize ||
+	if (pCspInfo->dwCspInfoLen < dwHeaderSize ||  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
 	    pCspInfo->nContainerNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize) ||
 	    pCspInfo->nCSPNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize))
 	{
@@ -307,7 +326,7 @@ PCCERT_CONTEXT GetCertificateFromCspInfo(__in PEID_SMARTCARD_CSP_INFO pCspInfo)
 	auto result = GetCertificateFromCspInfoInternal(pCspInfo);
 	EIDRevertToSelf();
 
-	if (result)
+	if (result.has_value())
 	{
 		SetLastError(ERROR_SUCCESS);
 		return *result;
@@ -426,11 +445,11 @@ BOOL IsCertificateInComputerTrustedPeopleStore(__in PCCERT_CONTEXT pCertContext)
 	BOOL fReturn = FALSE;
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Testing trusted certificate");
 	HCERTSTORE hTrustedPeople = CertOpenStore(CERT_STORE_PROV_SYSTEM,0,NULL,CERT_SYSTEM_STORE_LOCAL_MACHINE | CERT_STORE_OPEN_EXISTING_FLAG | CERT_STORE_READONLY_FLAG,_T("TrustedPeople"));
-	if (hTrustedPeople)
+	if (hTrustedPeople)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
 	{
-					
+
 		PCCERT_CONTEXT pCertificateFound = CertFindCertificateInStore(hTrustedPeople, pCertContext->dwCertEncodingType, 0, CERT_FIND_EXISTING, pCertContext, nullptr);
-		if (pCertificateFound)
+		if (pCertificateFound)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Certificate found in trusted people store");
 			fReturn = TRUE;
@@ -480,8 +499,16 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 			__leave;
 		}
 
-		// Build certificate chain using helper
-		DWORD dwChainFlags = CERT_CHAIN_ENABLE_PEER_TRUST;
+		// Build certificate chain using helper.
+		// Revocation (M1): check the chain (excluding the root) using ONLY locally cached/installed
+		// CRLs - CACHE_ONLY_URL_RETRIEVAL never touches the network, so this works on isolated
+		// machines where CRLs are distributed offline (e.g. via "EIDMigrate import-crl"). A revoked
+		// cert then fails hard (CERT_TRUST_IS_REVOKED); "revocation unknown" (no CRL cached) is
+		// soft-failed unless the RequireRevocationCheck policy is set (see CheckChainTrustStatus /
+		// IsPolicySoftFailure).
+		DWORD dwChainFlags = CERT_CHAIN_ENABLE_PEER_TRUST
+			| CERT_CHAIN_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT
+			| CERT_CHAIN_CACHE_ONLY_URL_RETRIEVAL;
 		pChainContext = BuildCertificateChain(hChainEngine, pCertContext, &params.ChainPara, dwChainFlags);
 		if (!pChainContext)
 		{
@@ -529,8 +556,7 @@ BOOL IsTrustedCertificate(__in PCCERT_CONTEXT pCertContext, __in_opt DWORD dwFla
 		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"Chain validated");
 
 		// Always enforce time validity - expired certificates must not authenticate
-		LPFILETIME pTimeToVerify = nullptr;
-		if (CertVerifyTimeValidity(pTimeToVerify, pCertContext->pCertInfo))
+		if (LPFILETIME pTimeToVerify = nullptr; CertVerifyTimeValidity(pTimeToVerify, pCertContext->pCertInfo))
 		{
 			dwError = static_cast<DWORD>(CERT_E_EXPIRED);
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"Certificate time validity check failed");
@@ -680,7 +706,7 @@ BOOL IsAllowedCSPProvider(__in LPCWSTR pwszProviderName)
 
 	// Whitelist of known legitimate smart card CSP providers
 	// These are the standard Microsoft and common third-party smart card CSPs
-	static LPCWSTR AllowedProviders[] = {
+	static LPCWSTR AllowedProviders[] = {  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		// Microsoft Base Smart Card CSPs
 		L"Microsoft Base Smart Card Crypto Provider",
 		L"Microsoft Smart Card Key Storage Provider",

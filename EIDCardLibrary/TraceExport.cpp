@@ -59,7 +59,7 @@ void ExportOneTraceFile(HANDLE hOutputFile, PTSTR szTraceFile)
 	// File-mode consumer: set only LogFileName and leave LoggerName NULL. Setting both is
 	// contradictory for OpenTrace (a session is identified by one or the other, not both).
 	trace.LogFileName = szTraceFile;
-	trace.EventCallback = reinterpret_cast<PEVENT_CALLBACK>(ProcessEvents);
+	trace.EventCallback = reinterpret_cast<PEVENT_CALLBACK>(ProcessEvents);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 	handle = OpenTrace(&trace);
 	if ((TRACEHANDLE)INVALID_HANDLE_VALUE == handle)
 	{

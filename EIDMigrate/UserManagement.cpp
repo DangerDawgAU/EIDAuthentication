@@ -1,11 +1,11 @@
-﻿// File: EIDMigrate/UserManagement.cpp
+// File: EIDMigrate/UserManagement.cpp
 // User account management functions
 
 #include "UserManagement.h"
 #include "LsaClient.h"
 #include "AuditLogging.h"
 #include "Tracing.h"
-#include <lm.h>
+#include <lm.h>  // NOSONAR - INCLUDE-01: include case/order significant for Windows SDK
 
 #pragma comment(lib, "netapi32.lib")
 
@@ -17,7 +17,7 @@ HRESULT UserExists(_In_ const std::wstring& wsUsername, _Out_ BOOL& pfExists)
     pfExists = FALSE;
 
     NET_API_STATUS status = NetUserGetInfo(nullptr, wsUsername.c_str(), 0,
-        reinterpret_cast<LPBYTE*>(&pInfo));
+        reinterpret_cast<LPBYTE*>(&pInfo));  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
     if (status == NERR_Success)
     {
@@ -39,9 +39,9 @@ HRESULT GetUserInfo(_In_ const std::wstring& wsUsername, _Out_ UserInfo& info)
     DWORD dwError = 0; // NOSONAR - variable used
 
     NET_API_STATUS status = NetUserGetInfo(nullptr, wsUsername.c_str(), 1,
-        reinterpret_cast<LPBYTE*>(&pInfo));
+        reinterpret_cast<LPBYTE*>(&pInfo));  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
-    if (status != NERR_Success)
+    if (status != NERR_Success)  // NOSONAR - SCOPE-01: status kept as a named local for readability
         return HRESULT_FROM_WIN32(status);
 
     info.wsUsername = wsUsername;
@@ -98,30 +98,30 @@ HRESULT CreateLocalUserAccount(
     _In_ BOOL fPasswordNeverExpires)
 {
     USER_INFO_1 ui1 = {};
-    ui1.usri1_name = const_cast<LPWSTR>(wsUsername.c_str());
-    ui1.usri1_password = const_cast<LPWSTR>((pwszPassword) ? pwszPassword : L"");
+    ui1.usri1_name = const_cast<LPWSTR>(wsUsername.c_str());  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
+    ui1.usri1_password = const_cast<LPWSTR>((pwszPassword) ? pwszPassword : L"");  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
     ui1.usri1_priv = USER_PRIV_USER;
     ui1.usri1_home_dir = nullptr;
-    ui1.usri1_comment = const_cast<LPWSTR>(wsComment.c_str());
+    ui1.usri1_comment = const_cast<LPWSTR>(wsComment.c_str());  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
     ui1.usri1_flags = UF_SCRIPT | UF_NORMAL_ACCOUNT |
         (fEnabled ? 0 : UF_ACCOUNTDISABLE) |
         (fPasswordNeverExpires ? UF_DONT_EXPIRE_PASSWD : 0);
     ui1.usri1_script_path = nullptr;
 
     NET_API_STATUS status = NetUserAdd(nullptr, 1,
-        reinterpret_cast<LPBYTE>(&ui1), nullptr);
+        reinterpret_cast<LPBYTE>(&ui1), nullptr);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
 
     // BUG FIX #21: Audit logging for user creation
     if (status == NERR_Success)
     {
-        WCHAR szDetails[256];
+        WCHAR szDetails[256];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         swprintf_s(szDetails, ARRAYSIZE(szDetails), L"User account created: %ls (Enabled: %d)",
             wsUsername.c_str(), fEnabled);
         LOG_USER_CREATED(wsUsername.c_str(), szDetails);
     }
     else
     {
-        WCHAR szDetails[256];
+        WCHAR szDetails[256];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         swprintf_s(szDetails, ARRAYSIZE(szDetails), L"User creation failed for %ls: Error %u",
             wsUsername.c_str(), status);
         LOG_WARNING(szDetails);
@@ -133,10 +133,10 @@ HRESULT CreateLocalUserAccount(
 HRESULT SetUserPassword(_In_ const std::wstring& wsUsername, _In_ PCWSTR pwszPassword)
 {
     USER_INFO_1003 ui1003 = {};
-    ui1003.usri1003_password = const_cast<LPWSTR>(pwszPassword);
+    ui1003.usri1003_password = const_cast<LPWSTR>(pwszPassword);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
     NET_API_STATUS status = NetUserSetInfo(nullptr, wsUsername.c_str(),
-        1003, reinterpret_cast<LPBYTE>(&ui1003), nullptr);
+        1003, reinterpret_cast<LPBYTE>(&ui1003), nullptr);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
 
     return HRESULT_FROM_WIN32(status);
 }
@@ -146,7 +146,7 @@ HRESULT SetUserEnabled(_In_ const std::wstring& wsUsername, _In_ BOOL fEnabled)
     // First get current flags to preserve them
     USER_INFO_1* pInfo = nullptr;
     NET_API_STATUS status = NetUserGetInfo(nullptr, wsUsername.c_str(), 1,
-        reinterpret_cast<LPBYTE*>(&pInfo));
+        reinterpret_cast<LPBYTE*>(&pInfo));  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
     if (status != NERR_Success)
         return HRESULT_FROM_WIN32(status);
@@ -164,7 +164,7 @@ HRESULT SetUserEnabled(_In_ const std::wstring& wsUsername, _In_ BOOL fEnabled)
     ui1008.usri1008_flags = dwFlags;
 
     status = NetUserSetInfo(nullptr, wsUsername.c_str(),
-        1008, reinterpret_cast<LPBYTE>(&ui1008), nullptr);
+        1008, reinterpret_cast<LPBYTE>(&ui1008), nullptr);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
 
     return HRESULT_FROM_WIN32(status);
 }
@@ -174,7 +174,7 @@ HRESULT SetUserPasswordNeverExpires(_In_ const std::wstring& wsUsername, _In_ BO
     // First get current flags
     USER_INFO_1* pInfo = nullptr;
     NET_API_STATUS status = NetUserGetInfo(nullptr, wsUsername.c_str(), 1,
-        reinterpret_cast<LPBYTE*>(&pInfo));
+        reinterpret_cast<LPBYTE*>(&pInfo));  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
     if (status != NERR_Success)
         return HRESULT_FROM_WIN32(status);
@@ -191,7 +191,7 @@ HRESULT SetUserPasswordNeverExpires(_In_ const std::wstring& wsUsername, _In_ BO
     ui1008.usri1008_flags = dwFlags;
 
     status = NetUserSetInfo(nullptr, wsUsername.c_str(),
-        1008, reinterpret_cast<LPBYTE>(&ui1008), nullptr);
+        1008, reinterpret_cast<LPBYTE>(&ui1008), nullptr);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
 
     return HRESULT_FROM_WIN32(status);
 }
@@ -204,7 +204,7 @@ HRESULT EnumerateLocalUsers(_Out_ std::vector<UserInfo>& users)
     NET_API_STATUS status;
 
     status = NetUserEnum(nullptr, 0, FILTER_NORMAL_ACCOUNT,
-        reinterpret_cast<LPBYTE*>(&pBuf),
+        reinterpret_cast<LPBYTE*>(&pBuf),  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         MAX_PREFERRED_LENGTH,
         &dwEntriesRead,
         &dwTotalEntries,

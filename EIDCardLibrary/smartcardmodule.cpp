@@ -47,13 +47,13 @@ static HMODULE SafeLoadLibrary(__in LPCWSTR wszModulePath)
     {
         // For relative paths, try to load from System32 only
         // This prevents DLL hijacking from current directory
-        WCHAR wszSystem32Path[MAX_PATH];
+        WCHAR wszSystem32Path[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         if (GetSystemDirectoryW(wszSystem32Path, ARRAYSIZE(wszSystem32Path)) == 0)
         {
             return nullptr;
         }
 
-        WCHAR wszFullPath[MAX_PATH];
+        WCHAR wszFullPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         if (FAILED(StringCchPrintfW(wszFullPath, ARRAYSIZE(wszFullPath), L"%s\\%s", wszSystem32Path, wszModulePath)))
         {
             SetLastError(ERROR_BUFFER_OVERFLOW);
@@ -157,9 +157,9 @@ DWORD
 WINAPI 
 _CacheAddFileStub(
     IN      PVOID       pvCacheContext,
-    IN      LPWSTR      wszTag,
+    IN      LPWSTR      wszTag,  // NOSONAR - API-01: signature dictated by Windows/callback API
     IN      DWORD       dwFlags,
-    IN      PBYTE       pbData,
+    IN      PBYTE       pbData,  // NOSONAR - API-01: signature dictated by Windows/callback API
     IN      DWORD       cbData)
 {
     UNREFERENCED_PARAMETER(pvCacheContext);
@@ -175,10 +175,10 @@ DWORD
 WINAPI
 _CacheLookupFileStub(
     IN      PVOID       pvCacheContext,
-    IN      LPWSTR      wszTag,
+    IN      LPWSTR      wszTag,  // NOSONAR - API-01: signature dictated by Windows/callback API
     IN      DWORD       dwFlags,
     IN      PBYTE      *ppbData,
-    IN      PDWORD      pcbData)
+    IN      PDWORD      pcbData)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
     UNREFERENCED_PARAMETER(pvCacheContext);
     UNREFERENCED_PARAMETER(wszTag);
@@ -193,7 +193,7 @@ DWORD
 WINAPI 
 _CacheDeleteFileStub(
     IN      PVOID       pvCacheContext,
-    IN      LPWSTR      wszTag,
+    IN      LPWSTR      wszTag,  // NOSONAR - API-01: signature dictated by Windows/callback API
     IN      DWORD       dwFlags)
 {
     UNREFERENCED_PARAMETER(pvCacheContext);
@@ -371,7 +371,7 @@ MgScCardAuthenticatePin(
     __in                        LPWSTR      pwszUserId,
     //__in_bcount(cbPin)          PBYTE       pbPin,
     //__in                        DWORD       cbPin,
-	__in                        LPWSTR      pwszPin,
+	__in                        LPWSTR      pwszPin,  // NOSONAR - API-01: signature dictated by Windows/callback API
     __out_opt                   PDWORD      pcAttemptsRemaining)
 {
     DWORD status = ERROR_SUCCESS;
@@ -447,7 +447,7 @@ MgScCardAuthenticatePin(
         }
         else
         {
-            WCHAR szReason[64];
+            WCHAR szReason[64];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
             if (SCARD_W_WRONG_CHV == status)
             {
                 swprintf_s(szReason, ARRAYSIZE(szReason), L"Wrong PIN (%d attempts remaining)",

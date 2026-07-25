@@ -35,9 +35,9 @@ std::string CredentialToJson(_In_ const CredentialInfo& info)
     builder.add("certificate", certBase64);
 
     // Encryption type
-    const char* encryptType = "unknown";
+    const char* encryptType = "unknown";  // NOSONAR - DEADSTORE-01: default value retained as safe fallback
     switch (info.EncryptionType)
-    {
+    {  // NOSONAR - ENUM-01: explicit enum qualifiers retained for clarity
     case EID_PRIVATE_DATA_TYPE::eidpdtClearText:
         encryptType = "cleartext";
         break;
@@ -145,9 +145,9 @@ std::string ExportDataToJson(_In_ const ExportFileData& data)
         credObj["certificate"] = std::make_shared<JsonValue>(certBase64);
 
         // Encryption type
-        const char* encryptType = "unknown";
+        const char* encryptType = "unknown";  // NOSONAR - DEADSTORE-01: default value retained as safe fallback
         switch (cred.EncryptionType)
-        {
+        {  // NOSONAR - ENUM-01: explicit enum qualifiers retained for clarity
         case EID_PRIVATE_DATA_TYPE::eidpdtClearText:
             encryptType = "cleartext";
             break;
@@ -269,7 +269,7 @@ HRESULT JsonToCredential(_In_ const std::string& json, _Out_ CredentialInfo& inf
     }
 
     if (obj.has("encryptionType"))
-    {
+    {  // NOSONAR - ENUM-01: explicit enum qualifiers retained for clarity
         std::string type = obj["encryptionType"]->asString();
         if (type == "certificate")
             info.EncryptionType = EID_PRIVATE_DATA_TYPE::eidpdtCrypted;
@@ -343,7 +343,7 @@ HRESULT JsonToGroup(_In_ const std::string& json, _Out_ GroupInfo& group)
 }
 
 // Parse JSON to ExportFileData
-HRESULT JsonToExportData(_In_ const std::string& json, _Out_ ExportFileData& data)
+HRESULT JsonToExportData(_In_ const std::string& json, _Out_ ExportFileData& data)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
     JsonParser parser(json);
     std::shared_ptr<JsonValue> root = parser.parse();
@@ -379,7 +379,7 @@ HRESULT JsonToExportData(_In_ const std::string& json, _Out_ ExportFileData& dat
                 // Serialize back to string and parse
                 std::string credJson = credVal->stringify();
                 CredentialInfo info;
-                if (SUCCEEDED(JsonToCredential(credJson, info)))
+                if (SUCCEEDED(JsonToCredential(credJson, info)))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     data.credentials.push_back(info);
                 }
@@ -396,7 +396,7 @@ HRESULT JsonToExportData(_In_ const std::string& json, _Out_ ExportFileData& dat
             {
                 std::string groupJson = groupVal->stringify();
                 GroupInfo group;
-                if (SUCCEEDED(JsonToGroup(groupJson, group)))
+                if (SUCCEEDED(JsonToGroup(groupJson, group)))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     data.groups.push_back(group);
                 }
@@ -518,7 +518,7 @@ HRESULT WriteEncryptedFile(
     std::vector<BYTE> plaintext;
     std::vector<BYTE> ciphertext;
     std::vector<BYTE> completeFile;
-    HANDLE hFile = INVALID_HANDLE_VALUE;
+    HANDLE hFile = INVALID_HANDLE_VALUE;  // NOSONAR (EXPLICIT-TYPE-02) - Explicit type preferred for clarity
     std::vector<BYTE> nonce(GCM_NONCE_SIZE);
 
     // Convert to JSON
@@ -556,7 +556,7 @@ HRESULT WriteEncryptedFile(
     std::vector<BYTE> tag(GCM_TAG_SIZE);
 
     // Encrypt with AES-256-GCM
-    DWORD cbCiphertext = static_cast<DWORD>(ciphertext.size());
+    DWORD cbCiphertext = static_cast<DWORD>(ciphertext.size());  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
     cryptoStatus = EncryptWithGCM(
         derivedKey.rgbKey, PBKDF2_KEY_SIZE,
         nonce.data(), GCM_NONCE_SIZE,
@@ -620,7 +620,7 @@ HRESULT WriteEncryptedFile(
     }
 
     DWORD dwWritten;
-    if (!WriteFile(hFile, completeFile.data(), static_cast<DWORD>(completeFile.size()),
+    if (!WriteFile(hFile, completeFile.data(), static_cast<DWORD>(completeFile.size()),  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
         &dwWritten, nullptr))
     {
         EIDM_TRACE_ERROR(L"Failed to write file: %u", GetLastError());
@@ -651,7 +651,7 @@ HRESULT ReadEncryptedFile(
     DERIVED_KEY derivedKey = {};
     EIDMIGRATE_FILE_HEADER header;
     std::vector<BYTE> fileData;
-    HANDLE hFile = INVALID_HANDLE_VALUE;
+    HANDLE hFile = INVALID_HANDLE_VALUE;  // NOSONAR (EXPLICIT-TYPE-02) - Explicit type preferred for clarity
 
     // Open and read file
     hFile = CreateFileW(wsInputPath.c_str(), GENERIC_READ, FILE_SHARE_READ,
@@ -682,7 +682,7 @@ HRESULT ReadEncryptedFile(
     fileData.resize(static_cast<size_t>(liFileSize.QuadPart));
 
     DWORD dwRead;
-    if (!ReadFile(hFile, fileData.data(), static_cast<DWORD>(fileData.size()),
+    if (!ReadFile(hFile, fileData.data(), static_cast<DWORD>(fileData.size()),  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
         &dwRead, nullptr))
     {
         CloseHandle(hFile);
@@ -691,7 +691,7 @@ HRESULT ReadEncryptedFile(
     }
 
     CloseHandle(hFile);
-    hFile = INVALID_HANDLE_VALUE;
+    hFile = INVALID_HANDLE_VALUE;  // NOSONAR - DEADSTORE-01: defensive handle reset after close
 
     // Copy header
     memcpy(&header, fileData.data(), sizeof(header));
@@ -707,6 +707,16 @@ HRESULT ReadEncryptedFile(
     if (header.FormatVersion != EIDMIGRATE_VERSION)
     {
         EIDM_TRACE_ERROR(L"Unsupported file version: %u", header.FormatVersion);
+        return E_INVALIDARG;
+    }
+
+    // SECURITY: the header's PayloadLength is attacker-controlled; validate it against the real
+    // file size before using it to size the plaintext buffer or drive GCM decryption (prevents
+    // heap OOB read and huge-allocation DoS). Layout is exactly [header][ciphertext: PayloadLength][HMAC].
+    if (header.PayloadLength > fileData.size() ||
+        fileData.size() - header.PayloadLength != sizeof(header) + static_cast<size_t>(HMAC_SIZE))
+    {
+        EIDM_TRACE_ERROR(L"PayloadLength inconsistent with file size - rejecting");
         return E_INVALIDARG;
     }
 
@@ -730,7 +740,17 @@ HRESULT ReadEncryptedFile(
     std::vector<BYTE> storedHmac(HMAC_SIZE);
     memcpy(storedHmac.data(), fileData.data() + nHmacOffset, HMAC_SIZE);
 
-    if (fileHmac != storedHmac)
+    // SECURITY (L11): compare the computed and stored HMAC in constant time over exactly
+    // HMAC_SIZE bytes. std::vector operator!= short-circuits on the first mismatch and would
+    // leak match progress via timing; accumulate the XOR of every byte pair instead and only
+    // test the accumulator once, with no early return.
+    volatile BYTE hmacDiff = 0;
+    for (size_t i = 0; i < static_cast<size_t>(HMAC_SIZE); i++)
+    {
+        hmacDiff |= static_cast<BYTE>(fileHmac[i] ^ storedHmac[i]);
+    }
+
+    if (hmacDiff != 0)
     {
         SecureZeroMemory(&derivedKey, sizeof(derivedKey));
         SecureZeroMemory(fileData.data(), fileData.size());
@@ -747,7 +767,7 @@ HRESULT ReadEncryptedFile(
 
     // Prepare plaintext buffer
     std::vector<BYTE> plaintext(nCiphertextSize);
-    DWORD cbPlaintext = static_cast<DWORD>(nCiphertextSize);
+    DWORD cbPlaintext = static_cast<DWORD>(nCiphertextSize);  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
 
     // Decrypt with GCM
     cryptoStatus = DecryptWithGCM(

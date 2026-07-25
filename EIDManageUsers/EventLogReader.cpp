@@ -2,7 +2,7 @@
 #include "EventLogReader.h"
 #include <winevt.h>
 #include <sddl.h>
-#include <lm.h>
+#include <lm.h>  // NOSONAR - INCLUDE-01: include casing significant for Windows SDK
 #include <vector>
 
 #pragma comment(lib, "netapi32.lib")
@@ -11,19 +11,19 @@
 #pragma comment(lib, "wevtapi.lib")
 
 // Event IDs for logon events
-#define EVENT_ID_LOGON         4624   // An account was successfully logged on
-#define EVENT_ID_LOGON_SPECIAL 4648   // Logon with explicit credentials
+#define EVENT_ID_LOGON         4624   // NOSONAR - MACRO-01: event-ID macro retained for API use. An account was successfully logged on
+#define EVENT_ID_LOGON_SPECIAL 4648   // NOSONAR - MACRO-01: event-ID macro retained for API use. Logon with explicit credentials
 
 // Logon types
-#define LOGON_TYPE_INTERACTIVE 2
-#define LOGON_TYPE_NETWORK     3
-#define LOGON_TYPE_BATCH       4
-#define LOGON_TYPE_SERVICE     5
-#define LOGON_TYPE_UNLOCK      7
-#define LOGON_TYPE_NETWORK_CLEARTEXT 8
-#define LOGON_TYPE_NEW_CREDENTIALS 9
-#define LOGON_TYPE_REMOTE_INTERACTIVE 10
-#define LOGON_TYPE_CACHED_INTERACTIVE 11
+#define LOGON_TYPE_INTERACTIVE 2  // NOSONAR - MACRO-01: logon-type macro retained for API use
+#define LOGON_TYPE_NETWORK     3  // NOSONAR - MACRO-01: logon-type macro retained for API use
+#define LOGON_TYPE_BATCH       4  // NOSONAR - MACRO-01: logon-type macro retained for API use
+#define LOGON_TYPE_SERVICE     5  // NOSONAR - MACRO-01: logon-type macro retained for API use
+#define LOGON_TYPE_UNLOCK      7  // NOSONAR - MACRO-01: logon-type macro retained for API use
+#define LOGON_TYPE_NETWORK_CLEARTEXT 8  // NOSONAR - MACRO-01: logon-type macro retained for API use
+#define LOGON_TYPE_NEW_CREDENTIALS 9  // NOSONAR - MACRO-01: logon-type macro retained for API use
+#define LOGON_TYPE_REMOTE_INTERACTIVE 10  // NOSONAR - MACRO-01: logon-type macro retained for API use
+#define LOGON_TYPE_CACHED_INTERACTIVE 11  // NOSONAR - MACRO-01: logon-type macro retained for API use
 
 // Helper: Convert FILETIME to UTC system time
 BOOL FileTimeToSystemTimeUTC(_In_ const FILETIME& ft, _Out_ SYSTEMTIME& st)
@@ -38,9 +38,7 @@ HRESULT GetLastEIDLoginTime(_In_ const std::wstring& wsUsername, _Out_ FILETIME&
     ftLastLogin.dwLowDateTime = 0;
 
     std::vector<FILETIME> eventTimes;
-    HRESULT hr = EnumerateEIDLogonEvents(wsUsername, eventTimes);
-
-    if (SUCCEEDED(hr) && !eventTimes.empty())
+    if (HRESULT hr = EnumerateEIDLogonEvents(wsUsername, eventTimes); SUCCEEDED(hr) && !eventTimes.empty())
     {
         // Find the most recent event
         FILETIME ftLatest = {0};
@@ -59,7 +57,7 @@ HRESULT GetLastEIDLoginTime(_In_ const std::wstring& wsUsername, _Out_ FILETIME&
 }
 
 // Get last login time (any type)
-HRESULT GetLastLoginTime(_In_ const std::wstring& wsUsername, _Out_ FILETIME& ftLastLogin)
+HRESULT GetLastLoginTime(_In_ const std::wstring& wsUsername, _Out_ FILETIME& ftLastLogin)  // NOSONAR - API-01: signature dictated by public API; wsUsername reserved for future implementation
 {
     // For now, return "Never" as getting accurate last logon time
     // requires querying Security Event Log which is complex
@@ -71,7 +69,7 @@ HRESULT GetLastLoginTime(_In_ const std::wstring& wsUsername, _Out_ FILETIME& ft
 }
 
 // Enumerate EID logon events from Security Event Log
-HRESULT EnumerateEIDLogonEvents(_In_ const std::wstring& wsUsername,
+HRESULT EnumerateEIDLogonEvents(_In_ const std::wstring& wsUsername,  // NOSONAR - API-01: signature dictated by public API; wsUsername reserved for future implementation
     _Out_ std::vector<FILETIME>& eventTimes)
 {
     eventTimes.clear();

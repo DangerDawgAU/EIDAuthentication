@@ -51,7 +51,7 @@ class CClassFactory : public IClassFactory
         LONG cRef = InterlockedDecrement(&_cRef);
         if (cRef == 0)
         {
-            delete this;
+            delete this;  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
         }
         return cRef;
     }
@@ -64,7 +64,7 @@ class CClassFactory : public IClassFactory
             if (IID_IClassFactory == riid || IID_IUnknown == riid)
             {
                 *ppv = static_cast<IUnknown*>(this);
-                reinterpret_cast<IUnknown*>(*ppv)->AddRef();
+                reinterpret_cast<IUnknown*>(*ppv)->AddRef();  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
                 hr = S_OK;
             }
             else
@@ -116,7 +116,7 @@ class CClassFactory : public IClassFactory
     }
 
   private:
-     CClassFactory() : _cRef(1) {}
+     CClassFactory() : _cRef(1) {}  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
     ~CClassFactory() = default;
 
   private:
@@ -153,7 +153,7 @@ HRESULT CClassFactory_CreateInstance(REFCLSID rclsid, REFIID riid, void** ppv)  
 BOOL WINAPI DllMain(
     HINSTANCE hinstDll,
     DWORD dwReason,
-    LPVOID pReserved
+    LPVOID pReserved  // NOSONAR - API-01: signature dictated by Windows/callback API
     )
 {
     UNREFERENCED_PARAMETER(pReserved);

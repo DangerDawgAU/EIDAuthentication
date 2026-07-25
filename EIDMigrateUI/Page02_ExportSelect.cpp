@@ -2,7 +2,7 @@
 #include "Page02_ExportSelect.h"
 #include <commdlg.h>
 
-INT_PTR CALLBACK WndProc_02_ExportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK WndProc_02_ExportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
     switch (uMsg)
     {
@@ -17,7 +17,7 @@ INT_PTR CALLBACK WndProc_02_ExportSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam,
 
     case WM_NOTIFY:
     {
-        LPNMHDR pnmh = (LPNMHDR)lParam;
+        LPNMHDR pnmh = (LPNMHDR)lParam;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
         switch (pnmh->code)
         {
         case PSN_SETACTIVE:

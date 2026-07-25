@@ -22,12 +22,12 @@ struct IMPORT_STATS
     DWORD dwWarnings;
 
     IMPORT_STATS() :
-        dwTotalCredentials(0),
-        dwSuccessfullyImported(0),
-        dwFailed(0),
-        dwUsersCreated(0),
-        dwGroupsCreated(0),
-        dwWarnings(0)
+        dwTotalCredentials(0),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        dwSuccessfullyImported(0),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        dwFailed(0),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        dwUsersCreated(0),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        dwGroupsCreated(0),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        dwWarnings(0)  // NOSONAR - INIT-01: constructor initializer list retained for clarity
     {}
 };
 
@@ -39,16 +39,17 @@ struct IMPORT_OPTIONS
     BOOL fCreateUsers;
     BOOL fContinueOnError;
     std::vector<std::wstring> SelectedGroups;  // Specific groups to import (empty = all)
+    std::wstring wsExpectedSource;             // H4 #1: if set, refuse a file not stamped by this machine
 
     // Optional: Map of username to password to set for user accounts
     // This allows setting a fallback password for smart card users
     std::vector<std::pair<std::wstring, std::wstring>> userPasswords;
 
     IMPORT_OPTIONS() :
-        fDryRun(FALSE),
-        fForce(FALSE),
-        fCreateUsers(FALSE),
-        fContinueOnError(FALSE)
+        fDryRun(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        fForce(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        fCreateUsers(FALSE),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+        fContinueOnError(FALSE)  // NOSONAR - INIT-01: constructor initializer list retained for clarity
     {}
 };
 

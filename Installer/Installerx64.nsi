@@ -37,6 +37,7 @@
 
   !insertmacro MUI_PAGE_LICENSE "License.txt"
   !insertmacro MUI_PAGE_COMPONENTS
+  Page custom ShowSecurityOptions LeaveSecurityOptions
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
 
@@ -68,6 +69,15 @@
 ;Variables for size calculation
 
   Var /GLOBAL InstallSize
+
+;--------------------------------
+;Security option (install-time question)
+
+  Var /GLOBAL RequireCardBound
+  Var /GLOBAL RequireCardBoundCheckbox
+  ; 1 once the Security Options page has actually been presented, so an explicit
+  ; operator choice can be told apart from the silent (/S) default.
+  Var /GLOBAL SecurityPageShown
 
 ;--------------------------------
 ;Uninstaller Variables
@@ -107,10 +117,6 @@ Section "Core" SecCore
 
   FILE "..\x64\Release\EIDConfigurationWizardElevated.exe"
   Push "$INSTDIR\EIDConfigurationWizardElevated.exe"
-  Call AddFileSize
-
-  FILE "..\x64\Release\EIDLogManager.exe"
-  Push "$INSTDIR\EIDLogManager.exe"
   Call AddFileSize
 
   FILE "..\x64\Release\EIDMigrate.exe"
@@ -166,7 +172,6 @@ Section "Core" SecCore
   ; Create Start Menu folder and shortcuts for all executables
   CreateDirectory "$SMPROGRAMS\EID Authentication"
   CreateShortcut "$SMPROGRAMS\EID Authentication\Configuration Wizard.lnk" "$INSTDIR\EIDConfigurationWizard.exe" "" "$INSTDIR\EIDConfigurationWizard.exe" 0
-  CreateShortcut "$SMPROGRAMS\EID Authentication\Log Manager.lnk" "$INSTDIR\EIDLogManager.exe" "" "$INSTDIR\EIDLogManager.exe" 0
   CreateShortcut "$SMPROGRAMS\EID Authentication\Credential Migration (CLI).lnk" "$INSTDIR\EIDMigrate.exe" "" "$INSTDIR\EIDMigrate.exe" 0
   CreateShortcut "$SMPROGRAMS\EID Authentication\Credential Migration (GUI).lnk" "$INSTDIR\EIDMigrateUI.exe" "" "$INSTDIR\EIDMigrateUI.exe" 0
   CreateShortcut "$SMPROGRAMS\EID Authentication\Manage Users.lnk" "$INSTDIR\EIDManageUsers.exe" "" "$INSTDIR\EIDManageUsers.exe" 0
@@ -190,6 +195,21 @@ Section "Core" SecCore
   ; Write installation path to registry
   SetRegView 64
   WriteRegStr HKLM "Software\EIDAuthentication" "InstallPath" "$INSTDIR"
+
+  ; Security policy: RequireCardBoundCredentials (from the install-time question).
+  ; 1 = only card-wrapped (crypted) credentials may be created / used at logon / imported;
+  ; the Windows password can then never be recovered without the smart card.
+  ; Write the value when the operator actually saw the Security Options page and made a
+  ; choice there (including on upgrade/repair - otherwise ticking the box would silently
+  ; do nothing). For silent (/S) installs the page never runs, so fall back to writing
+  ; only when the policy has never been configured: that preserves an admin's prior
+  ; choice and never re-locks an existing non-card-bound enrollment out of logon.
+  ClearErrors
+  ReadRegDWORD $0 HKLM "SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider" "RequireCardBoundCredentials"
+  ${If} ${Errors}
+  ${OrIf} $SecurityPageShown == 1
+    WriteRegDWORD HKLM "SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider" "RequireCardBoundCredentials" $RequireCardBound
+  ${EndIf}
 
   ; Uninstall info
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\EIDAuthentication" "DisplayName" "EID Authentication"
@@ -223,11 +243,20 @@ Section "Core" SecCore
   nsExec::ExecToLog 'net start ScDeviceEnum'
 
   ; Install and start the ETW trace consumer service. Without this the CSV
-  ; logging configured in EIDLogManager has no consumer and never produces
-  ; files. The executable self-registers as an auto-start service via -install.
+  ; logging (configured via Group Policy / the LogManager registry key) has no
+  ; consumer and never produces files. The executable self-registers as an
+  ; auto-start service via -install.
   DetailPrint "Installing EID Trace Consumer service..."
   nsExec::ExecToLog '"$INSTDIR\EIDTraceConsumer.exe" -install'
   nsExec::ExecToLog '"$INSTDIR\EIDTraceConsumer.exe" -start'
+
+  ; Apply the (Group Policy-aware) ETW trace-session config to the WMI autologger now, and create a
+  ; boot-time scheduled task that re-applies it each boot so Group Policy changes to the logging/ETW
+  ; settings take effect without EIDLogManager. Runs as SYSTEM (needs HKLM autologger write).
+  ; $SYSDIR resolves to the real System32 here (x64 FS redirection is disabled above).
+  DetailPrint "Applying trace configuration and scheduling the GPO-apply task..."
+  nsExec::ExecToLog 'rundll32.exe "$SYSDIR\EIDAuthenticationPackage.dll",DllApplyTraceConfigW'
+  nsExec::ExecToLog 'schtasks /Create /F /RU SYSTEM /RL HIGHEST /SC ONSTART /TN "EID Authentication\Apply Trace Config" /TR "rundll32.exe $SYSDIR\EIDAuthenticationPackage.dll,DllApplyTraceConfigW"'
 
   SetPluginUnload manual
   SetRebootFlag true
@@ -375,6 +404,35 @@ SectionGroupEnd
   !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ;--------------------------------
+;Install-time Security Options page
+
+Function ShowSecurityOptions
+  !insertmacro MUI_HEADER_TEXT "Security Options" "Choose how EID Authentication protects stored credentials."
+
+  nsDialogs::Create 1018
+  Pop $0
+  ${If} $0 == error
+    Abort
+  ${EndIf}
+
+  ${NSD_CreateLabel} 0 0 100% 60u "When 'Require card-bound credentials' is enabled, each user's Windows password is only ever stored sealed to their smart card, so it cannot be recovered from this machine without the card (and PIN).$\n$\nRecommended for decrypt-capable cards such as MyEID (Aventra) and YubiKey (PIV). Leave it OFF if you use signature-only cards, which cannot use card-bound storage and would otherwise fail to enrol / log on."
+  Pop $0
+
+  ${NSD_CreateCheckbox} 10u 68u 100% 12u "Require card-bound credentials (RequireCardBoundCredentials policy)"
+  Pop $RequireCardBoundCheckbox
+  ${If} $RequireCardBound == 1
+    ${NSD_Check} $RequireCardBoundCheckbox
+  ${EndIf}
+
+  nsDialogs::Show
+FunctionEnd
+
+Function LeaveSecurityOptions
+  ${NSD_GetState} $RequireCardBoundCheckbox $RequireCardBound
+  StrCpy $SecurityPageShown 1
+FunctionEnd
+
+;--------------------------------
 ;Helper Functions for Certificate Cleanup
 
 Function un.ShowUninstallOptions
@@ -471,7 +529,6 @@ Section "Uninstall"
 
   ; Delete Start Menu shortcuts and folder
   Delete "$SMPROGRAMS\EID Authentication\Configuration Wizard.lnk"
-  Delete "$SMPROGRAMS\EID Authentication\Log Manager.lnk"
   Delete "$SMPROGRAMS\EID Authentication\Credential Migration (CLI).lnk"
   Delete "$SMPROGRAMS\EID Authentication\Credential Migration (GUI).lnk"
   Delete "$SMPROGRAMS\EID Authentication\Manage Users.lnk"
@@ -506,13 +563,14 @@ Section "Uninstall"
   ; Delete Program Files installation - Executables
   Delete "$INSTDIR\EIDConfigurationWizard.exe"
   Delete "$INSTDIR\EIDConfigurationWizardElevated.exe"
-  Delete "$INSTDIR\EIDLogManager.exe"
   Delete "$INSTDIR\EIDMigrate.exe"
   Delete "$INSTDIR\EIDMigrateUI.exe"
   Delete "$INSTDIR\EIDManageUsers.exe"
 
   ; Stop and remove the ETW trace consumer service before deleting its binary,
   ; otherwise the running service holds the file open and leaves a stale service.
+  ; Remove the trace-config GPO-apply scheduled task
+  nsExec::ExecToLog 'schtasks /Delete /F /TN "EID Authentication\Apply Trace Config"'
   nsExec::ExecToLog '"$INSTDIR\EIDTraceConsumer.exe" -stop'
   nsExec::ExecToLog '"$INSTDIR\EIDTraceConsumer.exe" -uninstall'
   Delete "$INSTDIR\EIDTraceConsumer.exe"
@@ -605,6 +663,22 @@ Function .onInit
   ${Else}
     MessageBox MB_OK "This installer is designed for 64bits only"
     Abort
+  ${EndIf}
+
+  ; Default the security option to OFF (opt-in). Defaulting to ON would silently
+  ; re-lock existing non-card-bound (signature-only) enrollments out of logon on
+  ; upgrade/repair, since silent (/S) installs never show the Security Options page.
+  ; The admin can still turn this on deliberately on that page for decrypt-capable cards.
+  StrCpy $RequireCardBound 0
+  StrCpy $SecurityPageShown 0
+
+  ; On upgrade/repair, seed the checkbox from the policy value already in force so the
+  ; page reflects reality instead of always rendering unchecked.
+  SetRegView 64
+  ClearErrors
+  ReadRegDWORD $0 HKLM "SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider" "RequireCardBoundCredentials"
+  ${IfNot} ${Errors}
+    StrCpy $RequireCardBound $0
   ${EndIf}
 
   ; Check if already installed via registry

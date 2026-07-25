@@ -33,7 +33,6 @@ on:
       - 'EIDPasswordChangeNotification/**'
       - 'EIDConfigurationWizard/**'
       - 'EIDConfigurationWizardElevated/**'
-      - 'EIDLogManager/**'
       - 'Installer/**'
       - '.github/workflows/scan-artifacts.yml'
   workflow_dispatch:  # Allow manual triggering
@@ -190,7 +189,6 @@ jobs:
             ./artifacts/EIDPasswordChangeNotification.dll
             ./artifacts/EIDConfigurationWizard.exe
             ./artifacts/EIDConfigurationWizardElevated.exe
-            ./artifacts/EIDLogManager.exe
             ./artifacts/EIDMigrate.exe
             ./artifacts/EIDMigrateUI.exe
             ./artifacts/EIDInstallx64.exe
@@ -272,7 +270,7 @@ jobs:
             }
 
             body += `\n\n---\n`;
-            body += `_Scanned 10 artifacts: 3 DLLs, 6 EXEs, 1 installer, 1 source archive_\n`;
+            body += `_Scanned 9 artifacts: 3 DLLs, 5 EXEs, 1 installer, 1 source archive_\n`;
             body += `_Note: Detections may be false positives for security software (LSASS interaction)._`;
 
             // Post comment on the commit

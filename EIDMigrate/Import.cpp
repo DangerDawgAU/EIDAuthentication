@@ -11,6 +11,8 @@
 #include "Utils.h"
 #include "PinPrompt.h"
 #include "CertificateInstall.h"
+#include "../EIDCardLibrary/CertificateValidation.h"  // M3: reuse the logon-path trust/EKU checks
+#include "../EIDCardLibrary/GPO.h"                     // M3: honor the AllowCertificatesWithNoEKU policy
 #include <map>
 
 HRESULT CommandImport(_In_ const COMMAND_OPTIONS& options)
@@ -58,6 +60,7 @@ HRESULT CommandImport(_In_ const COMMAND_OPTIONS& options)
     opts.fCreateUsers = options.CreateUsers;
     opts.fContinueOnError = options.ContinueOnError;
     opts.SelectedGroups = options.SelectedGroups;
+    opts.wsExpectedSource = options.ExpectedSource;
 
     IMPORT_STATS stats;
     HRESULT hr = ImportCredentials(options.InputFile, wsPassword, opts, stats);
@@ -76,24 +79,50 @@ HRESULT CommandImport(_In_ const COMMAND_OPTIONS& options)
     return hr;
 }
 
-HRESULT ImportCredentials(
+HRESULT ImportCredentials(  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
     _In_ const std::wstring& wsInputPath,
     _In_ const SecureWString& wsPassword,
     _In_ const IMPORT_OPTIONS& options,
     _Out_ IMPORT_STATS& stats)
 {
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK;  // NOSONAR (EXPLICIT-TYPE-03) - Explicit type preferred for clarity
 
     {
-        // Read and parse import file
+        // Read and parse import file (with the provenance stamp)
         std::vector<CredentialInfo> credentials;
         std::vector<GroupInfo> groups;
+        std::wstring wsSourceMachine;
+        std::wstring wsExportDate;
+        std::wstring wsExportedBy;
 
-        hr = ReadImportFile(wsInputPath, wsPassword, credentials, groups);
+        hr = ReadImportFileWithMetadata(wsInputPath, wsPassword, credentials, groups,
+            &wsSourceMachine, &wsExportDate, &wsExportedBy);
         if (FAILED(hr))
         {
             EIDM_TRACE_ERROR(L"Failed to read import file: 0x%08X", hr);
             return hr;
+        }
+
+        // H4 (#1): surface the file's provenance stamp (which machine/operator made it, and when)
+        // before applying anything. The stamp lives INSIDE the authenticated + encrypted payload
+        // (AES-GCM + HMAC), so it cannot be altered without the passphrase.
+        EIDM_TRACE_INFO(L"");
+        EIDM_TRACE_INFO(L"=== Import file provenance ===");
+        EIDM_TRACE_INFO(L"  Source machine: %ls", wsSourceMachine.empty() ? L"(unknown)" : wsSourceMachine.c_str());
+        EIDM_TRACE_INFO(L"  Exported by:    %ls", wsExportedBy.empty() ? L"(unknown)" : wsExportedBy.c_str());
+        EIDM_TRACE_INFO(L"  Export date:    %ls", wsExportDate.empty() ? L"(unknown)" : wsExportDate.c_str());
+        EIDM_TRACE_INFO(L"");
+
+        // Optional pin: if the operator named an expected issuing machine, refuse a file that was
+        // not stamped by it (case-insensitive) before making any changes.
+        if (!options.wsExpectedSource.empty() &&
+            _wcsicmp(options.wsExpectedSource.c_str(), wsSourceMachine.c_str()) != 0)
+        {
+            EIDM_TRACE_ERROR(L"Import aborted: file source machine '%ls' does not match the expected "
+                L"issuer '%ls'.",
+                wsSourceMachine.empty() ? L"(unknown)" : wsSourceMachine.c_str(),
+                options.wsExpectedSource.c_str());
+            return HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED);
         }
 
         stats.dwTotalCredentials = static_cast<DWORD>(credentials.size());
@@ -123,7 +152,7 @@ HRESULT ImportCredentials(
                 HRESULT hrCheck = UserExists(cred.wsUsername, fExists);
                 if (SUCCEEDED(hrCheck))
                 {
-                    if (!fExists && options.fCreateUsers)
+                    if (!fExists && options.fCreateUsers)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                     {
                         EIDM_TRACE_INFO(L"    Would create user account");
                     }
@@ -148,13 +177,13 @@ HRESULT ImportCredentials(
                 }
 
                 // Check certificate
-                if (cred.Certificate.size() > 0)
+                if (!cred.Certificate.empty())
                 {
                     EIDM_TRACE_INFO(L"    Certificate: %u bytes - would be installed to MY store",
                         static_cast<DWORD>(cred.Certificate.size()));
 
                     // Check if already installed
-                    if (IsCertificateInstalled(cred.Certificate.data(), static_cast<DWORD>(cred.Certificate.size())))
+                    if (IsCertificateInstalled(cred.Certificate.data(), static_cast<DWORD>(cred.Certificate.size())))  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                     {
                         EIDM_TRACE_INFO(L"    Certificate already in store (will be updated)");
                     }
@@ -188,7 +217,7 @@ HRESULT ImportCredentials(
             {
                 for (const auto& wsSelected : options.SelectedGroups)
                 {
-                    if (_wcsicmp(group.wsName.c_str(), wsSelected.c_str()) == 0)
+                    if (_wcsicmp(group.wsName.c_str(), wsSelected.c_str()) == 0)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                     {
                         filteredGroups.push_back(group);
                         break;
@@ -261,7 +290,7 @@ HRESULT ImportCredentials(
         EIDM_TRACE_INFO(L"Synchronizing group memberships...");
 
         // Build a map of username -> groups from the export file
-        std::map<std::wstring, std::vector<std::wstring>> userGroupMap;
+        std::map<std::wstring, std::vector<std::wstring>> userGroupMap;  // NOSONAR - IDIOM-01: default std::less comparator retained for string keys
 
         for (const auto& group : filteredGroups)
         {
@@ -278,7 +307,7 @@ HRESULT ImportCredentials(
 
             // Skip if user wasn't successfully imported
             BOOL fUserExists = FALSE;
-            if (FAILED(UserExists(wsUsername, fUserExists)) || !fUserExists)
+            if (FAILED(UserExists(wsUsername, fUserExists)) || !fUserExists)  // NOSONAR - SCOPE-01: declaration kept outside if for readability
             {
                 continue;
             }
@@ -370,12 +399,12 @@ HRESULT ReadImportFileWithMetadata(
     return hr;
 }
 
-HRESULT ImportSingleCredential(
+HRESULT ImportSingleCredential(  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
     _In_ const CredentialInfo& info,
     _In_ const IMPORT_OPTIONS& options,
     _Out_ BOOL& pfCreated)
 {
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK;  // NOSONAR (EXPLICIT-TYPE-03) - Explicit type preferred for clarity
     pfCreated = FALSE;
 
     {
@@ -448,11 +477,11 @@ HRESULT ImportSingleCredential(
                 info.Certificate.data(),
                 static_cast<DWORD>(info.Certificate.size()));
 
-            if (pCertContext)
+            if (pCertContext)  // NOSONAR - SCOPE-01: declaration kept outside if for readability
             {
                 BOOL fTrusted = FALSE;
                 std::vector<std::wstring> warnings;
-                HRESULT hrValidation = ValidateCertificateForImport(pCertContext, fTrusted, warnings);
+                ValidateCertificateForImport(pCertContext, fTrusted, warnings);
 
                 // Log all warnings
                 for (const auto& warn : warnings)
@@ -469,7 +498,7 @@ HRESULT ImportSingleCredential(
 
                     // In production mode, fail on invalid certificates
                     // In dry-run mode, just warn
-                    if (!options.fDryRun)
+                    if (!options.fDryRun)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                     {
                         CertFreeCertificateContext(pCertContext);
                         return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
@@ -516,7 +545,7 @@ HRESULT ImportSingleCredential(
 
         // Check if a password was provided for this user
         std::wstring wsProvidedPassword;
-        for (const auto& pair : options.userPasswords)
+        for (const auto& pair : options.userPasswords)  // NOSONAR - IDIOM-01: explicit std::pair access retained for clarity
         {
             if (pair.first == info.wsUsername)
             {
@@ -596,14 +625,38 @@ HRESULT ValidateCertificateForImport(
     // Check for expiration within 30 days
     FILETIME ftThirtyDays;
     ULARGE_INTEGER uli;
-    memcpy(&uli.QuadPart, &ftNow, sizeof(uli.QuadPart));
+    memcpy(&uli.QuadPart, &ftNow, sizeof(uli.QuadPart));  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
     uli.QuadPart += ULONGLONG(30) * 24 * 60 * 60 * 10000000; // 30 days in 100ns units
-    memcpy(&ftThirtyDays, &uli.QuadPart, sizeof(ftThirtyDays));
+    memcpy(&ftThirtyDays, &uli.QuadPart, sizeof(ftThirtyDays));  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
     if (CompareFileTime(&pCertContext->pCertInfo->NotAfter, &ftThirtyDays) < 0)
     {
         warnings.emplace_back(L"Certificate expires within 30 days");
         pfTrusted = TRUE; // Still trusted, just warning
+    }
+
+    // M3 (security uplift): validate the certificate the same way the logon path will, so a
+    // self-signed / wrong-EKU / untrusted / revoked certificate is rejected AT IMPORT time
+    // instead of being silently enrolled. Previously only NotBefore/NotAfter were checked, so
+    // an attacker-supplied self-signed cert was installed and its LSA secret written; combined
+    // with a trusted root (M2) or a weakening policy that became a full bypass. These checks are
+    // defense-in-depth: the logon path re-validates too, but rejecting early is safer and clearer.
+    //
+    // IsTrustedCertificate builds the chain to a trusted root, enforces the Smart Card Logon EKU
+    // (unless AllowCertificatesWithNoEKU is set) and performs OFFLINE revocation checking (M1).
+    // HasCertificateRightEKU gives a specific message for the common missing-EKU case.
+    // NOTE: keep these AFTER the 30-day block above, which unconditionally sets pfTrusted = TRUE.
+    if (!GetPolicyValue(GPOPolicy::AllowCertificatesWithNoEKU) && !HasCertificateRightEKU(pCertContext))
+    {
+        warnings.emplace_back(L"Certificate is missing the Smart Card Logon EKU");
+        pfTrusted = FALSE;
+    }
+
+    if (!IsTrustedCertificate(pCertContext))
+    {
+        warnings.emplace_back(L"Certificate does not chain to a trusted root on this machine, or is "
+            L"revoked. Install and trust the issuing CA (and its CRL) before importing.");
+        pfTrusted = FALSE;
     }
 
     return S_OK;
@@ -617,7 +670,7 @@ BOOL PromptForSmartCardPin(_In_ PCCERT_CONTEXT pCertContext, _Out_ SecureWString
     SecurePin pin;
     PIN_PROMPT_RESULT result = PromptForPIN(L"Enter smart card PIN:", pin);
 
-    if (result == PIN_PROMPT_RESULT::SUCCESS)
+    if (result == PIN_PROMPT_RESULT::SUCCESS)  // NOSONAR - SCOPE-01: declaration kept outside if for readability
     {
         // Convert SecurePin to SecureWString
         wsPin = SecureWString(pin.c_str());

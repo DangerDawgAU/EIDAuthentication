@@ -135,7 +135,7 @@ HRESULT ListImportFileCredentials(_In_ const std::wstring& wsInputPath, _In_ BOO
             if (!group.wsMembers.empty())
             {
                 EIDM_TRACE_INFO(L"    Members (%u):", group.wsMembers.size());
-                for (const auto& member : group.wsMembers)
+                for (const auto& member : group.wsMembers)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                 {
                     EIDM_TRACE_INFO(L"      - %ls", member.c_str());
                 }
@@ -156,9 +156,9 @@ HRESULT ListImportFileCredentials(_In_ const std::wstring& wsInputPath, _In_ BOO
 
 void DisplayCredentialSummary(_In_ const CredentialInfo& info, _In_ BOOL fVerbose)
 {
-    const wchar_t* wszEncryptionType = L"Unknown";
+    const wchar_t* wszEncryptionType = L"Unknown";  // NOSONAR - INIT-01: default retained for enum values without an explicit case
     switch (info.EncryptionType)
-    {
+    {  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
     case EID_PRIVATE_DATA_TYPE::eidpdtClearText:
         wszEncryptionType = L"None";
         break;

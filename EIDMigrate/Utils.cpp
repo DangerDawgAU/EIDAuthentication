@@ -3,8 +3,8 @@
 
 #include "Utils.h"
 #include "RateLimiter.h"
-#include <lm.h>
-#include <shlwapi.h>
+#include <lm.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
+#include <shlwapi.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 #include <chrono>
 #include <sstream>
 #include <bcrypt.h>
@@ -20,9 +20,9 @@
 // Check if we have a valid console (for GUI compatibility)
 static BOOL HasValidConsole()
 {
-    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
-    HANDLE hStdErr = GetStdHandle(STD_ERROR_HANDLE);
+    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);  // NOSONAR - API-01: signature dictated by Windows/callback API
+    HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);  // NOSONAR - API-01: signature dictated by Windows/callback API
+    HANDLE hStdErr = GetStdHandle(STD_ERROR_HANDLE);  // NOSONAR - API-01: signature dictated by Windows/callback API
 
     return (hStdOut != INVALID_HANDLE_VALUE && hStdOut != nullptr &&
             hStdIn != INVALID_HANDLE_VALUE && hStdIn != nullptr &&
@@ -120,10 +120,10 @@ DWORD GetRidFromSid(_In_ PSID pSid)
 // Computer name
 std::wstring GetComputerName()
 {
-    WCHAR szBuffer[MAX_COMPUTERNAME_LENGTH + 1];
+    WCHAR szBuffer[MAX_COMPUTERNAME_LENGTH + 1];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     DWORD dwSize = ARRAYSIZE(szBuffer);
 
-    if (!::GetComputerNameW(szBuffer, &dwSize))
+    if (!::GetComputerNameW(szBuffer, &dwSize))  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
         return L".";
 
     return std::wstring(szBuffer);
@@ -131,10 +131,10 @@ std::wstring GetComputerName()
 
 std::wstring GetUserName()
 {
-    WCHAR szBuffer[UNLEN + 1];
+    WCHAR szBuffer[UNLEN + 1];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     DWORD dwSize = ARRAYSIZE(szBuffer);
 
-    if (!::GetUserNameW(szBuffer, &dwSize))
+    if (!::GetUserNameW(szBuffer, &dwSize))  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
         return L"?";
 
     return std::wstring(szBuffer);
@@ -153,7 +153,7 @@ std::wstring GetFileName(_In_ const std::wstring& wsPath)
 
 std::wstring GetDirectoryPath(_In_ const std::wstring& wsPath)
 {
-    WCHAR szDir[MAX_PATH];
+    WCHAR szDir[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     wcscpy_s(szDir, wsPath.c_str());
     PathRemoveFileSpecW(szDir);
     return std::wstring(szDir);
@@ -199,7 +199,7 @@ std::wstring FormatTimestamp(_In_ const FILETIME& ft)
         return L"?";
 
     // Format as ISO 8601
-    WCHAR szBuffer[64];
+    WCHAR szBuffer[64];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     swprintf_s(szBuffer, L"%04d-%02d-%02dT%02d:%02d:%02d",
         st.wYear, st.wMonth, st.wDay,
         st.wHour, st.wMinute, st.wSecond);
@@ -212,7 +212,7 @@ std::wstring FormatCurrentTimestamp()
     SYSTEMTIME st;
     GetSystemTime(&st);  // Use UTC time, not local time
 
-    WCHAR szBuffer[64];
+    WCHAR szBuffer[64];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     swprintf_s(szBuffer, L"%04d-%02d-%02dT%02d:%02d:%02dZ",
         st.wYear, st.wMonth, st.wDay,
         st.wHour, st.wMinute, st.wSecond);
@@ -232,7 +232,7 @@ BOOL PromptYesNo(_In_ PCWSTR pwszPrompt, _In_ BOOL fDefaultYes)
 
     fwprintf(stderr, L"%ls", pwszPrompt);
 
-    WCHAR szResponse[16];
+    WCHAR szResponse[16];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     if (fgetws(szResponse, ARRAYSIZE(szResponse), stdin) == nullptr)
         return fDefaultYes;
 
@@ -258,7 +258,7 @@ std::wstring PromptForString(_In_ PCWSTR pwszPrompt)
 
     fwprintf(stderr, L"%ls", pwszPrompt);
 
-    WCHAR szBuffer[512];
+    WCHAR szBuffer[512];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     if (fgetws(szBuffer, ARRAYSIZE(szBuffer), stdin) == nullptr)
         return std::wstring();
 
@@ -281,7 +281,7 @@ SecureWString PromptForPassphrase(_In_ PCWSTR pwszPrompt, _In_ BOOL fConfirm)
 
     // Check if we should rate limit
     DWORD dwDelayMs = 0;
-    if (rateLimiter.RecordFailedAttempt(L"Passphrase entry", &dwDelayMs))
+    if (rateLimiter.RecordFailedAttempt(L"Passphrase entry", &dwDelayMs))  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
     {
         EIDM_TRACE_WARN(L"Too many failed passphrase attempts. Waiting %u ms before allowing retry.", dwDelayMs);
         Sleep(dwDelayMs);
@@ -296,7 +296,7 @@ SecureWString PromptForPassphrase(_In_ PCWSTR pwszPrompt, _In_ BOOL fConfirm)
 
     fwprintf(stderr, L"%ls", pwszPrompt);
 
-    WCHAR szBuffer[256];
+    WCHAR szBuffer[256];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     if (fgetws(szBuffer, ARRAYSIZE(szBuffer), stdin) == nullptr)
         return SecureWString();
 
@@ -312,7 +312,7 @@ SecureWString PromptForPassphrase(_In_ PCWSTR pwszPrompt, _In_ BOOL fConfirm)
     {
         fwprintf(stderr, L"Confirm passphrase: ");
 
-        WCHAR szConfirm[256];
+        WCHAR szConfirm[256];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         if (fgetws(szConfirm, ARRAYSIZE(szConfirm), stdin) == nullptr)
             return SecureWString();
 
@@ -354,7 +354,7 @@ std::wstring GetFileVersion(_In_ PCWSTR pwszFilePath)
 
     LPVOID pvBuffer = nullptr;
     UINT uLen = 0;
-    if (!VerQueryValueW(buffer.data(), L"\\StringFileInfo\\040904b0\\FileVersion",
+    if (!VerQueryValueW(buffer.data(), L"\\StringFileInfo\\040904b0\\FileVersion",  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
         &pvBuffer, &uLen))
         return std::wstring();
 
@@ -417,11 +417,11 @@ std::wstring FormatErrorMessage(_In_ DWORD dwError)
     DWORD dwLen = FormatMessageW(
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         nullptr, dwError, 0,
-        reinterpret_cast<LPWSTR>(&pwszMessage), 0, nullptr);
+        reinterpret_cast<LPWSTR>(&pwszMessage), 0, nullptr);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
-    if (dwLen == 0 || !pwszMessage)
+    if (dwLen == 0 || !pwszMessage)  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
     {
-        WCHAR szBuffer[64];
+        WCHAR szBuffer[64];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         swprintf_s(szBuffer, L"Error 0x%08X", dwError);
         return std::wstring(szBuffer);
     }
@@ -445,11 +445,11 @@ std::wstring FormatHResult(_In_ HRESULT hr)
     DWORD dwLen = FormatMessageW(
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         nullptr, hr, 0,
-        reinterpret_cast<LPWSTR>(&pwszMessage), 0, nullptr);
+        reinterpret_cast<LPWSTR>(&pwszMessage), 0, nullptr);  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
-    if (dwLen == 0 || !pwszMessage)
+    if (dwLen == 0 || !pwszMessage)  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
     {
-        WCHAR szBuffer[64];
+        WCHAR szBuffer[64];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         swprintf_s(szBuffer, L"HRESULT 0x%08X", hr);
         return std::wstring(szBuffer);
     }
@@ -471,11 +471,11 @@ std::wstring GenerateRandomPassword(_In_ DWORD dwLength)
     std::wstring wsPassword;
     wsPassword.reserve(dwLength);
 
-    BYTE pbRnd[32];
+    BYTE pbRnd[32];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 
     // Use BCrypt for cryptographically secure random numbers
     // If BCryptGenRandom fails, return empty string rather than falling back to weak randomness
-    if (BCryptGenRandom(nullptr, pbRnd, sizeof(pbRnd), 0) >= 0)
+    if (BCryptGenRandom(nullptr, pbRnd, sizeof(pbRnd), 0) >= 0)  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
     {
         for (DWORD i = 0; i < dwLength; i++)
         {

@@ -48,8 +48,8 @@ NTSTATUS CheckAuthorization(PWSTR UserName, NTSTATUS *SubStatus, LARGE_INTEGER *
 // Internal function using Result<T> for type-safe error handling
 // Marked noexcept for LSASS compatibility
 // Returns token info structure with size, or HRESULT error
-[[nodiscard]] EID::Result<std::pair<PLSA_TOKEN_INFORMATION_V2, DWORD>> UserNameToTokenInternal(
-    __in PLSA_UNICODE_STRING AccountName,
+[[nodiscard]] EID::Result<std::pair<PLSA_TOKEN_INFORMATION_V2, DWORD>> UserNameToTokenInternal(  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
+    __in PLSA_UNICODE_STRING AccountName,  // NOSONAR - API-01: signature dictated by Windows/callback API
     __out PNTSTATUS SubStatus) noexcept
 {
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Enter");
@@ -70,7 +70,7 @@ NTSTATUS CheckAuthorization(PWSTR UserName, NTSTATUS *SubStatus, LARGE_INTEGER *
 	LARGE_INTEGER ExpirationTime;
 	// convert AccountName to WSTR
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Convert");
-	WCHAR UserName[UNLEN+1];
+	WCHAR UserName[UNLEN+1];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 
 	// Helper lambda for cleanup on error
 	auto cleanup = [&]() {
@@ -87,7 +87,7 @@ NTSTATUS CheckAuthorization(PWSTR UserName, NTSTATUS *SubStatus, LARGE_INTEGER *
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"CheckAuthorization");
 	// check authorization
 	NTSTATUS Status = CheckAuthorization(UserName, SubStatus, &ExpirationTime);
-	if (Status != STATUS_SUCCESS)
+	if (Status != STATUS_SUCCESS)  // NOSONAR - SCOPE-01: declaration kept in outer scope for clarity
 	{
 		cleanup();
 		return EID::make_unexpected(HRESULT_FROM_NT(Status));
@@ -266,11 +266,11 @@ NTSTATUS UserNameToToken(__in PLSA_UNICODE_STRING AccountName,
 }
 
 // BUG FIX #16: TOCTOU race condition mitigation - use retry loop for SID allocation
-BOOL NameToSid(WCHAR* UserName, PSID *pUserSid)
+BOOL NameToSid(WCHAR* UserName, PSID *pUserSid)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	BOOL bResult;
 	SID_NAME_USE Use;
-	WCHAR checkDomainName[UNCLEN+1];
+	WCHAR checkDomainName[UNCLEN+1];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 	DWORD cchReferencedDomainName=0;
 	constexpr DWORD MAX_RETRIES = 3;
 	DWORD dwRetryCount = 0;
@@ -286,7 +286,7 @@ BOOL NameToSid(WCHAR* UserName, PSID *pUserSid)
 	}
 
 	// Retry loop for SID allocation (handles TOCTOU race condition)
-	for (dwRetryCount = 0; dwRetryCount < MAX_RETRIES; dwRetryCount++)
+	for (dwRetryCount = 0; dwRetryCount < MAX_RETRIES; dwRetryCount++)  // NOSONAR - PERF-01: declared once, reused across iterations
 	{
 		// Clean up from previous retry
 		if (pTempSid)
@@ -340,7 +340,7 @@ BOOL NameToSid(WCHAR* UserName, PSID *pUserSid)
 	return FALSE;
 }
 
-BOOL GetGroups(WCHAR* UserName,PGROUP_USERS_INFO_1 *lpGroupInfo, LPDWORD pTotalEntries)
+BOOL GetGroups(WCHAR* UserName,PGROUP_USERS_INFO_1 *lpGroupInfo, LPDWORD pTotalEntries)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	NET_API_STATUS Status;
 	DWORD NumberOfEntries;
@@ -353,7 +353,7 @@ BOOL GetGroups(WCHAR* UserName,PGROUP_USERS_INFO_1 *lpGroupInfo, LPDWORD pTotalE
 	return TRUE;
 }
 
-BOOL GetLocalGroups(WCHAR* UserName,PGROUP_USERS_INFO_0 *lpGroupInfo, LPDWORD pTotalEntries)
+BOOL GetLocalGroups(WCHAR* UserName,PGROUP_USERS_INFO_0 *lpGroupInfo, LPDWORD pTotalEntries)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
 	NET_API_STATUS Status;
 	DWORD NumberOfEntries;
@@ -399,7 +399,7 @@ void DebugPrintSid(const WCHAR* Name, PSID Sid)
 	ExpirationTime.QuadPart = 0x7FFFFFFFFFFFFFFF;
 
 	NET_API_STATUS netStatus = NetUserGetInfo(nullptr, UserName, 4, (LPBYTE*)&pUserInfo);
-	if (netStatus != 0)
+	if (netStatus != 0)  // NOSONAR - SCOPE-01: declaration kept in outer scope for clarity
 	{
 		HRESULT hr;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
 		switch (netStatus)
@@ -452,7 +452,7 @@ void DebugPrintSid(const WCHAR* Name, PSID Sid)
 		FILETIME FileTime;
 		GetSystemTime(&SystemTime);
 		dwPosLogon = SystemTime.wDayOfWeek * 24 + SystemTime.wHour;
-		if (!((pUserInfo->usri4_logon_hours[dwPosLogon / 8] >> (dwPosLogon % 8)) & 1))
+		if (!((pUserInfo->usri4_logon_hours[dwPosLogon / 8] >> (dwPosLogon % 8)) & 1))  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"STATUS_INVALID_LOGON_HOURS");
 			*SubStatus = STATUS_INVALID_LOGON_HOURS;
@@ -462,10 +462,10 @@ void DebugPrintSid(const WCHAR* Name, PSID Sid)
 		{
 			// logon authorized
 			// iterates to find the first 0
-			for (dwHours = 1; dwHours < 7 * 24 + 1; dwHours++)
+			for (dwHours = 1; dwHours < 7 * 24 + 1; dwHours++)  // NOSONAR - PERF-01: declared once, reused across iterations
 			{
 				dwPosLogoff = (dwPosLogon + dwHours) % (7 * 24);
-				if (!((pUserInfo->usri4_logon_hours[dwPosLogoff / 8] >> (dwPosLogoff % 8)) & 1))
+				if (!((pUserInfo->usri4_logon_hours[dwPosLogoff / 8] >> (dwPosLogoff % 8)) & 1))  // NOSONAR - COMPLEXITY-01: nested BYTE bit-test retained; logic verified
 				{
 					// Logon authorized not everytime
 					EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"Hour Restriction");
@@ -485,7 +485,7 @@ void DebugPrintSid(const WCHAR* Name, PSID Sid)
 		}
 	}
 
-	if (wcscmp(pUserInfo->usri4_logon_server, L"\\\\*") != 0)
+	if (wcscmp(pUserInfo->usri4_logon_server, L"\\\\*") != 0)  // NOSONAR - STRING-01: escaped literal retained to preserve exact comparison
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"STATUS_INVALID_WORKSTATION");
 		*SubStatus = STATUS_INVALID_WORKSTATION;

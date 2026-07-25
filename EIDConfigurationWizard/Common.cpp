@@ -20,9 +20,7 @@ BOOL IsElevated()
 	}
 
 	TOKEN_ELEVATION te = { 0 };
-	DWORD dwReturnLength = 0;
-
-	if ( GetTokenInformation(
+	if ( DWORD dwReturnLength = 0; GetTokenInformation(
 				hToken,
 				TokenElevation,
 				&te,

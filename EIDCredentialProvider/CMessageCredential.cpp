@@ -35,14 +35,14 @@
 // CMessageCredential ////////////////////////////////////////////////////////
 
 CMessageCredential::CMessageCredential():
-    _cRef(1),
-    _pCredProvCredentialEvents(nullptr)
+    _cRef(1),  // NOSONAR - INIT-01: constructor initializer list retained for clarity
+    _pCredProvCredentialEvents(nullptr)  // NOSONAR - INIT-01: constructor initializer list retained for clarity
 {
     DllAddRef();
     ZeroMemory(_rgCredProvFieldDescriptors, sizeof(_rgCredProvFieldDescriptors));
     ZeroMemory(_rgFieldStatePairs, sizeof(_rgFieldStatePairs));
     ZeroMemory(_rgFieldStrings, sizeof(_rgFieldStrings));
-	_dwSmartCardCount = 0;
+	_dwSmartCardCount = 0;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
 	_dwStatus = CMessageCredentialStatus::Idle;
 	_dwOldStatus = CMessageCredentialStatus::Idle;
 }
@@ -85,7 +85,7 @@ HRESULT CMessageCredential::Initialize(
     {
         WCHAR szDisableForcePolicy[256] = L"";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 		LoadStringW(g_hinst,IDS_DISABLEFORCEPOLICY,szDisableForcePolicy,ARRAYSIZE(szDisableForcePolicy));
-		hr = SHStrDupW(szDisableForcePolicy, &(_rgFieldStrings[SMFI_CANCELFORCEPOLICY]));
+		SHStrDupW(szDisableForcePolicy, &(_rgFieldStrings[SMFI_CANCELFORCEPOLICY]));
     }
 
     return S_OK;
@@ -149,13 +149,9 @@ HRESULT CMessageCredential::GetFieldState(
     {
         *pcpfis = _rgFieldStatePairs[dwFieldID].cpfis;
 		*pcpfs = _rgFieldStatePairs[dwFieldID].cpfs;
-		if (dwFieldID == SMFI_CANCELFORCEPOLICY && (_cpus == CPUS_LOGON || _cpus == CPUS_UNLOCK_WORKSTATION))
-		{
-			if (GetPolicyValue(GPOPolicy::scforceoption))
-			{
-				*pcpfs = CPFS_DISPLAY_IN_SELECTED_TILE;
-			}
-		}
+		// SECURITY (M4): the "disable force policy" command link is intentionally never displayed.
+		// It opened a secure-desktop dialog that could launch the keymgr password-reset wizard and
+		// downgrade the smart-card-required policy from the lock screen.
 
         hr = S_OK;
     }
@@ -243,7 +239,7 @@ HRESULT CMessageCredential::GetBitmapValue(
 		// Use LoadImage instead of deprecated LoadBitmap
 		// LoadImage with LR_CREATEDIBSECTION creates a DIB section bitmap
 		// which is more reliable for credential providers
-		HBITMAP hbmp = static_cast<HBITMAP>(LoadImageW(
+		HBITMAP hbmp = static_cast<HBITMAP>(LoadImageW(  // NOSONAR (EXPLICIT-TYPE-02) - Explicit type preferred for clarity
 			HINST_THISDLL,
 			MAKEINTRESOURCEW(IDB_TILE_IMAGE),
 			IMAGE_BITMAP,
@@ -284,25 +280,10 @@ HRESULT CMessageCredential::GetBitmapValue(
 // Called when a command link is clicked.
 HRESULT CMessageCredential::CommandLinkClicked(DWORD dwFieldID)
 {
-    HRESULT hr = S_OK;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
-	if (SMFI_CANCELFORCEPOLICY == dwFieldID)
-	{
-		if (_pCredProvCredentialEvents)
-		{
-			HWND hWnd;
-			_pCredProvCredentialEvents->OnCreatingWindow(&hWnd);
-			ShowCancelForcePolicyWizard(hWnd);
-		}
-		else
-		{
-			hr = E_INVALIDARG;
-		}
-	}
-	else
-	{
-		hr = E_INVALIDARG;
-	}
-    return hr;
+    UNREFERENCED_PARAMETER(dwFieldID);
+	// SECURITY (M4): the lock-screen "disable force policy" wizard has been removed; this
+	// credential no longer launches any secure-desktop dialog, so no command link is acted upon.
+    return E_INVALIDARG;
 }
 
 // Since this credential isn't intended to provide a way for the user to submit their

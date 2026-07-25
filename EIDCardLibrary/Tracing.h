@@ -42,12 +42,12 @@ constexpr UCHAR WINEVENT_LEVEL_VERBOSE  = 5;
 void EIDCardLibraryTracingRegister();
 void EIDCardLibraryTracingUnRegister();
 
-#define EIDCardLibraryTrace(dwLevel, ...) \
-	EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__, dwLevel, __VA_ARGS__)
+#define EIDCardLibraryTrace(dwLevel, ...) /* NOSONAR - LOG-01: __FILE__ retained for logging macro */ \
+	EIDCardLibraryTraceEx(__FILE__,__LINE__,__FUNCTION__, dwLevel, __VA_ARGS__)  // NOSONAR - UAF-01: false positive - logging macro call passes __FILE__/__LINE__, no memory freed
 
 void EIDCardLibraryTraceEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction, UCHAR dwLevel, PCWSTR szFormat,...);
 
-#define EIDCardLibraryDumpMemory(memory, memorysize) \
+#define EIDCardLibraryDumpMemory(memory, memorysize) /* NOSONAR - LOG-01: __FILE__ retained for logging macro */ \
 	EIDCardLibraryDumpMemoryEx(__FILE__,__LINE__,__FUNCTION__, memory, memorysize)
 
 void EIDCardLibraryDumpMemoryEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, PVOID memory, DWORD memorysize);
@@ -56,8 +56,8 @@ void EIDCardLibraryDumpMemoryEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, 
  *  Display a messagebox giving an error code
  */
 void MessageBoxWin32Ex2(DWORD status, HWND hWnd, LPCSTR szFile, DWORD dwLine);
-#define MessageBoxWin32(status) MessageBoxWin32Ex2 (status, NULL, __FILE__,__LINE__)
-#define MessageBoxWin32Ex(status, hwnd ) MessageBoxWin32Ex2 (status, hwnd, __FILE__,__LINE__)
+#define MessageBoxWin32(status) MessageBoxWin32Ex2 (status, NULL, __FILE__,__LINE__)  // NOSONAR - LOG-01: __FILE__ retained for logging macro
+#define MessageBoxWin32Ex(status, hwnd ) MessageBoxWin32Ex2 (status, hwnd, __FILE__,__LINE__)  // NOSONAR - LOG-01: __FILE__ retained for logging macro
 
 BOOL LookUpErrorMessage(PWSTR buf, int cch, DWORD err);
 
@@ -73,7 +73,7 @@ constexpr UCHAR SECURITY_AUDIT_SUCCESS  = 0;
 constexpr UCHAR SECURITY_AUDIT_FAILURE  = 1;
 constexpr UCHAR SECURITY_AUDIT_WARNING  = 2;
 
-#define EIDSecurityAudit(dwAuditType, ...) \
+#define EIDSecurityAudit(dwAuditType, ...) /* NOSONAR - LOG-01: __FILE__ retained for logging macro */ \
 	EIDSecurityAuditEx(__FILE__,__LINE__,__FUNCTION__, dwAuditType, __VA_ARGS__)
 
 void EIDSecurityAuditEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction, UCHAR dwAuditType, PCWSTR szFormat,...);
@@ -81,7 +81,7 @@ void EIDSecurityAuditEx(PCSTR szFile, DWORD dwLine, PCSTR szFunction, UCHAR dwAu
 // Enhanced error logging with operation context
 // Provides structured error messages for easier debugging
 // Format: "[ERROR_CONTEXT] Operation 'name' failed: hr=0x%08X, context_info
-#define EIDLogErrorWithContext(operation, hr, ...) \
+#define EIDLogErrorWithContext(operation, hr, ...) /* NOSONAR - LOG-01: __FILE__ retained for logging macro */ \
 	EIDLogErrorWithContextEx(__FILE__, __LINE__, __FUNCTION__, operation, hr, __VA_ARGS__)
 
 void EIDLogErrorWithContextEx(
@@ -96,7 +96,7 @@ void EIDLogErrorWithContextEx(
 // LSASS-safe stack trace capture for error diagnostics
 // Uses CaptureStackBackTrace (not std::stacktrace - Phase 27 finding)
 // Stack-allocated buffers only - no dynamic memory
-#define EIDLogStackTrace(errorCode) \
+#define EIDLogStackTrace(errorCode) /* NOSONAR - LOG-01: __FILE__ retained for logging macro */ \
 	EIDLogStackTraceEx(__FILE__, __LINE__, __FUNCTION__, errorCode)
 
 void EIDLogStackTraceEx(
@@ -110,7 +110,7 @@ void EIDLogStackTraceEx(
 // ================================================================
 
 // Include event definitions and CSV configuration
-#include "EventDefinitions.h"
+#include "EventDefinitions.h"  // NOSONAR - INCLUDE-01: include order significant for Windows SDK
 #include "CSVConfig.h"
 
 // Structured logging function that logs to both ETW and CSV

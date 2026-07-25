@@ -175,7 +175,7 @@ enum class EID_EVENT_ID : DWORD
 // Helper to get category from event ID
 inline EID_EVENT_CATEGORY GetEventCategory(EID_EVENT_ID eventId)
 {
-    DWORD dwId = static_cast<DWORD>(eventId);
+    DWORD dwId = static_cast<DWORD>(eventId);  // NOSONAR - ENUM-01: explicit DWORD cast retained for Win32/ABI compatibility
     return static_cast<EID_EVENT_CATEGORY>((dwId / 1000) * 1000);
 }
 

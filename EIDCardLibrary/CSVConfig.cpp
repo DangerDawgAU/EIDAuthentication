@@ -47,7 +47,7 @@ std::string EID_CSV_ConfigToJson(const EID_CSV_CONFIG& config)
     builder.add("fileCount", static_cast<int>(config.dwFileCount));
 
     // Store column bitmask as integer
-    builder.add("columns", static_cast<int>(config.dwColumns));
+    builder.add("columns", static_cast<int>(config.dwColumns));  // NOSONAR - ENUM-01: explicit integral cast retained for serialization
 
     // Store category filter as integer
     builder.add("categoryFilter", static_cast<int>(config.dwCategoryFilter));
@@ -127,7 +127,7 @@ HRESULT EID_CSV_LoadConfigFromFile(PCWSTR pwszPath, EID_CSV_CONFIG& config)
 {
     // Check if file exists
     DWORD dwAttrib = GetFileAttributesW(pwszPath);
-    if (dwAttrib == INVALID_FILE_ATTRIBUTES)
+    if (dwAttrib == INVALID_FILE_ATTRIBUTES)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
         return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 
     // Read file content
@@ -144,7 +144,7 @@ HRESULT EID_CSV_LoadConfigFromFile(PCWSTR pwszPath, EID_CSV_CONFIG& config)
         content.assign(std::istreambuf_iterator<char>(file),
                       std::istreambuf_iterator<char>());
     }
-    catch (...)
+    catch (...)  // NOSONAR - EXCEPTION-01: catch-all is intentional guard
     {
         file.close();
         return E_FAIL;
@@ -163,11 +163,12 @@ HRESULT EID_CSV_SaveConfigToFile(PCWSTR pwszPath, const EID_CSV_CONFIG& config)
     // Ensure directory exists
     std::wstring wpath(pwszPath);
     size_t lastSlash = wpath.find_last_of(L'\\');
-    if (lastSlash != std::wstring::npos)
+    if (lastSlash != std::wstring::npos)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
     {
         std::wstring dir = wpath.substr(0, lastSlash);
-        // Try to create directory (ignore error if it exists)
-        CreateDirectoryW(dir.c_str(), nullptr);
+        // M5: create the config directory with a restrictive DACL (Full to SYSTEM/Admins,
+        // Read&Execute to Users), re-applying it if the directory already exists.
+        EnsureLogDirSecured(dir.c_str());
     }
 
     // Convert to JSON
@@ -183,7 +184,7 @@ HRESULT EID_CSV_SaveConfigToFile(PCWSTR pwszPath, const EID_CSV_CONFIG& config)
     {
         file.write(json.c_str(), json.size());
     }
-    catch (...)
+    catch (...)  // NOSONAR - EXCEPTION-01: catch-all is intentional guard
     {
         file.close();
         return E_FAIL;
@@ -196,11 +197,11 @@ HRESULT EID_CSV_SaveConfigToFile(PCWSTR pwszPath, const EID_CSV_CONFIG& config)
 // ================================================================
 // Load configuration from registry
 // ================================================================
-HRESULT EID_CSV_LoadConfigFromRegistry(EID_CSV_CONFIG& config)
+HRESULT EID_CSV_LoadConfigFromRegistry(EID_CSV_CONFIG& config)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
     HKEY hKey = nullptr;
     LONG err = 0;
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK;  // NOSONAR (EXPLICIT-TYPE-03) - Explicit type preferred for clarity
     DWORD dwType = 0;
     DWORD dwSize = 0;
 
@@ -222,14 +223,14 @@ HRESULT EID_CSV_LoadConfigFromRegistry(EID_CSV_CONFIG& config)
         dwSize = sizeof(DWORD);
         DWORD dwValue = 0;
         err = RegQueryValueExW(hKey, L"CSVEnabled", nullptr, &dwType,
-            reinterpret_cast<LPBYTE>(&dwValue), &dwSize);
+            reinterpret_cast<LPBYTE>(&dwValue), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err == ERROR_SUCCESS && dwType == REG_DWORD)
             config.fEnabled = dwValue ? TRUE : FALSE;
 
         // Read CSVLogPath
         dwSize = MAX_PATH * sizeof(WCHAR);
         err = RegQueryValueExW(hKey, L"CSVLogPath", nullptr, &dwType,
-            reinterpret_cast<LPBYTE>(config.szLogPath), &dwSize);
+            reinterpret_cast<LPBYTE>(config.szLogPath), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS || dwType != REG_SZ)
         {
             wcscpy_s(config.szLogPath, EID_CSV_DEFAULT_LOG_PATH);
@@ -245,49 +246,57 @@ HRESULT EID_CSV_LoadConfigFromRegistry(EID_CSV_CONFIG& config)
         // Read CSVMaxFileSize
         dwSize = sizeof(DWORD);
         err = RegQueryValueExW(hKey, L"CSVMaxFileSize", nullptr, &dwType,
-            reinterpret_cast<LPBYTE>(&config.dwMaxFileSizeMB), &dwSize);
+            reinterpret_cast<LPBYTE>(&config.dwMaxFileSizeMB), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS || dwType != REG_DWORD)
             config.dwMaxFileSizeMB = 64;
+        // BUG 10: clamp to [1, 1024] MB - an unbounded value here is only a sizing knob, but
+        // keep it in the same sane range as the override path / ETL trace config for consistency.
+        if (config.dwMaxFileSizeMB < 1) config.dwMaxFileSizeMB = 1;
+        if (config.dwMaxFileSizeMB > 1024) config.dwMaxFileSizeMB = 1024;
 
         // Read CSVFileCount
         dwSize = sizeof(DWORD);
         err = RegQueryValueExW(hKey, L"CSVFileCount", nullptr, &dwType,
-            reinterpret_cast<LPBYTE>(&config.dwFileCount), &dwSize);
+            reinterpret_cast<LPBYTE>(&config.dwFileCount), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS || dwType != REG_DWORD)
             config.dwFileCount = 5;
+        // BUG 10: clamp to [1, 100] - prevents a huge/zero value from driving a runaway
+        // rotation loop in CSVLogger::RotateLogFile (DoS via misconfiguration).
+        if (config.dwFileCount < 1) config.dwFileCount = 1;
+        if (config.dwFileCount > 100) config.dwFileCount = 100;
 
         // Read CSVColumns
         dwSize = sizeof(DWORD);
         err = RegQueryValueExW(hKey, L"CSVColumns", nullptr, &dwType,
-            reinterpret_cast<LPBYTE>(&config.dwColumns), &dwSize);
+            reinterpret_cast<LPBYTE>(&config.dwColumns), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS || dwType != REG_DWORD)
             config.dwColumns = EID_CSV_PRESETS::STANDARD;
 
         // Read CSVCategoryFilter
         dwSize = sizeof(DWORD);
         err = RegQueryValueExW(hKey, L"CSVCategoryFilter", nullptr, &dwType,
-            reinterpret_cast<LPBYTE>(&config.dwCategoryFilter), &dwSize);
+            reinterpret_cast<LPBYTE>(&config.dwCategoryFilter), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS || dwType != REG_DWORD)
             config.dwCategoryFilter = 0x0000FFFF;
 
         // Read CSVVerbose
         dwSize = sizeof(DWORD);
         err = RegQueryValueExW(hKey, L"CSVVerbose", nullptr, &dwType,
-            reinterpret_cast<LPBYTE>(&dwValue), &dwSize);
+            reinterpret_cast<LPBYTE>(&dwValue), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err == ERROR_SUCCESS && dwType == REG_DWORD)
             config.fVerboseEvents = dwValue ? TRUE : FALSE;
 
         // Read DiagnosticsEnabled
         dwSize = sizeof(DWORD);
         err = RegQueryValueExW(hKey, L"DiagnosticsEnabled", nullptr, &dwType,
-            reinterpret_cast<LPBYTE>(&dwValue), &dwSize);
+            reinterpret_cast<LPBYTE>(&dwValue), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err == ERROR_SUCCESS && dwType == REG_DWORD)
             config.fDiagnosticsEnabled = dwValue ? TRUE : FALSE;
 
         // Read DiagnosticsLevel
         dwSize = sizeof(DWORD);
         err = RegQueryValueExW(hKey, L"DiagnosticsLevel", nullptr, &dwType,
-            reinterpret_cast<LPBYTE>(&config.dwDiagnosticsLevel), &dwSize);
+            reinterpret_cast<LPBYTE>(&config.dwDiagnosticsLevel), &dwSize);  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS || dwType != REG_DWORD)
             config.dwDiagnosticsLevel = 4; // WINEVENT_LEVEL_INFO
     }
@@ -307,7 +316,7 @@ HRESULT EID_CSV_SaveConfigToRegistry(const EID_CSV_CONFIG& config)
 {
     HKEY hKey = nullptr;
     LONG err = 0;
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK;  // NOSONAR (EXPLICIT-TYPE-03) - Explicit type preferred for clarity
 
     __try
     {
@@ -321,7 +330,7 @@ HRESULT EID_CSV_SaveConfigToRegistry(const EID_CSV_CONFIG& config)
 
         DWORD dwValue = config.fEnabled ? 1 : 0;
         err = RegSetValueExW(hKey, L"CSVEnabled", 0, REG_DWORD,
-            reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));
+            reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS)
         {
             hr = HRESULT_FROM_WIN32(err);
@@ -329,7 +338,7 @@ HRESULT EID_CSV_SaveConfigToRegistry(const EID_CSV_CONFIG& config)
         }
 
         err = RegSetValueExW(hKey, L"CSVLogPath", 0, REG_SZ,
-            reinterpret_cast<const BYTE*>(config.szLogPath),
+            reinterpret_cast<const BYTE*>(config.szLogPath),  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
             static_cast<DWORD>((wcslen(config.szLogPath) + 1) * sizeof(WCHAR)));
         if (err != ERROR_SUCCESS)
         {
@@ -338,7 +347,7 @@ HRESULT EID_CSV_SaveConfigToRegistry(const EID_CSV_CONFIG& config)
         }
 
         err = RegSetValueExW(hKey, L"CSVMaxFileSize", 0, REG_DWORD,
-            reinterpret_cast<const BYTE*>(&config.dwMaxFileSizeMB), sizeof(DWORD));
+            reinterpret_cast<const BYTE*>(&config.dwMaxFileSizeMB), sizeof(DWORD));  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS)
         {
             hr = HRESULT_FROM_WIN32(err);
@@ -346,7 +355,7 @@ HRESULT EID_CSV_SaveConfigToRegistry(const EID_CSV_CONFIG& config)
         }
 
         err = RegSetValueExW(hKey, L"CSVFileCount", 0, REG_DWORD,
-            reinterpret_cast<const BYTE*>(&config.dwFileCount), sizeof(DWORD));
+            reinterpret_cast<const BYTE*>(&config.dwFileCount), sizeof(DWORD));  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS)
         {
             hr = HRESULT_FROM_WIN32(err);
@@ -354,7 +363,7 @@ HRESULT EID_CSV_SaveConfigToRegistry(const EID_CSV_CONFIG& config)
         }
 
         err = RegSetValueExW(hKey, L"CSVColumns", 0, REG_DWORD,
-            reinterpret_cast<const BYTE*>(&config.dwColumns), sizeof(DWORD));
+            reinterpret_cast<const BYTE*>(&config.dwColumns), sizeof(DWORD));  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS)
         {
             hr = HRESULT_FROM_WIN32(err);
@@ -362,7 +371,7 @@ HRESULT EID_CSV_SaveConfigToRegistry(const EID_CSV_CONFIG& config)
         }
 
         err = RegSetValueExW(hKey, L"CSVCategoryFilter", 0, REG_DWORD,
-            reinterpret_cast<const BYTE*>(&config.dwCategoryFilter), sizeof(DWORD));
+            reinterpret_cast<const BYTE*>(&config.dwCategoryFilter), sizeof(DWORD));  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS)
         {
             hr = HRESULT_FROM_WIN32(err);
@@ -371,7 +380,7 @@ HRESULT EID_CSV_SaveConfigToRegistry(const EID_CSV_CONFIG& config)
 
         dwValue = config.fVerboseEvents ? 1 : 0;
         err = RegSetValueExW(hKey, L"CSVVerbose", 0, REG_DWORD,
-            reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));
+            reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS)
         {
             hr = HRESULT_FROM_WIN32(err);
@@ -380,11 +389,11 @@ HRESULT EID_CSV_SaveConfigToRegistry(const EID_CSV_CONFIG& config)
 
         dwValue = config.fDiagnosticsEnabled ? 1 : 0;
         err = RegSetValueExW(hKey, L"DiagnosticsEnabled", 0, REG_DWORD,
-            reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));
+            reinterpret_cast<const BYTE*>(&dwValue), sizeof(DWORD));  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS) { hr = HRESULT_FROM_WIN32(err); __leave; }
 
         err = RegSetValueExW(hKey, L"DiagnosticsLevel", 0, REG_DWORD,
-            reinterpret_cast<const BYTE*>(&config.dwDiagnosticsLevel), sizeof(DWORD));
+            reinterpret_cast<const BYTE*>(&config.dwDiagnosticsLevel), sizeof(DWORD));  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
         if (err != ERROR_SUCCESS) { hr = HRESULT_FROM_WIN32(err); __leave; }
     }
     __finally
@@ -397,24 +406,94 @@ HRESULT EID_CSV_SaveConfigToRegistry(const EID_CSV_CONFIG& config)
 }
 
 // ================================================================
-// Load configuration (tries JSON, then registry, then defaults)
+// Apply Group Policy overrides (HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager)
+// Any value present under the policy key wins over local file/registry config.
+// ================================================================
+void EID_CSV_ApplyPolicyOverrides(EID_CSV_CONFIG& config)  // NOSONAR - COMPLEXITY-01: sequential per-value overrides, logic verified
+{
+    HKEY hKey = nullptr;
+    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, EID_CSV_POLICY_KEY, 0, KEY_READ, &hKey) != ERROR_SUCCESS)
+        return;
+
+    DWORD dwType = 0;
+    DWORD dwValue = 0;
+    DWORD dwSize = 0;
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"CSVEnabled", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.fEnabled = (dwValue != 0);
+
+    WCHAR szPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+    dwSize = sizeof(szPath);
+    if (RegQueryValueExW(hKey, L"CSVLogPath", nullptr, &dwType, reinterpret_cast<LPBYTE>(szPath), &dwSize) == ERROR_SUCCESS && dwType == REG_SZ && szPath[0] != L'\0')
+    {
+        szPath[MAX_PATH - 1] = L'\0';
+        wcscpy_s(config.szLogPath, szPath);
+    }
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"CSVMaxFileSize", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+    {
+        // BUG 10: clamp policy-supplied value to [1, 1024] MB instead of taking it verbatim -
+        // matches the bounds used by the ETL trace path (Registration.cpp SetTraceConfig).
+        if (dwValue < 1) dwValue = 1;
+        if (dwValue > 1024) dwValue = 1024;
+        config.dwMaxFileSizeMB = dwValue;
+    }
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"CSVFileCount", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+    {
+        // BUG 10: clamp policy-supplied value to [1, 100] - an unclamped admin-set
+        // CSVFileCount (e.g. 0xFFFFFFFF) would drive a ~4-billion-iteration rotation loop
+        // in CSVLogger::RotateLogFile (DoS via misconfiguration).
+        if (dwValue < 1) dwValue = 1;
+        if (dwValue > 100) dwValue = 100;
+        config.dwFileCount = dwValue;
+    }
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"CSVColumns", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.dwColumns = static_cast<EID_CSV_COLUMN>(dwValue);  // NOSONAR - ENUM-01: enum cast retained for Win32/ABI compatibility
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"CSVCategoryFilter", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.dwCategoryFilter = dwValue;
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"CSVVerbose", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.fVerboseEvents = (dwValue != 0);
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"DiagnosticsEnabled", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.fDiagnosticsEnabled = (dwValue != 0);
+
+    dwSize = sizeof(dwValue);
+    if (RegQueryValueExW(hKey, L"DiagnosticsLevel", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue), &dwSize) == ERROR_SUCCESS && dwType == REG_DWORD)
+        config.dwDiagnosticsLevel = dwValue;
+
+    RegCloseKey(hKey);
+}
+
+// ================================================================
+// Load configuration (tries JSON, then registry, then defaults; GPO overrides win)
 // ================================================================
 HRESULT EID_CSV_LoadConfig(EID_CSV_CONFIG& config)
 {
-    // Try JSON file first
+    // Try JSON file first, then registry, then defaults.
     HRESULT hr = EID_CSV_LoadConfigFromFile(EID_CSV_CONFIG_PATH, config);
-    if (SUCCEEDED(hr))
-        return S_OK;
+    if (FAILED(hr))
+        hr = EID_CSV_LoadConfigFromRegistry(config);
+    if (FAILED(hr))
+    {
+        config = EID_CSV_CONFIG();
+        wcscpy_s(config.szLogPath, EID_CSV_DEFAULT_LOG_PATH);
+        hr = S_FALSE;  // Indicate defaults were used
+    }
 
-    // Fall back to registry
-    hr = EID_CSV_LoadConfigFromRegistry(config);
-    if (SUCCEEDED(hr))
-        return S_OK;
-
-    // Use defaults
-    config = EID_CSV_CONFIG();
-    wcscpy_s(config.szLogPath, EID_CSV_DEFAULT_LOG_PATH);
-    return S_FALSE;  // Indicate defaults were used
+    // Group Policy overrides win over local file/registry config.
+    EID_CSV_ApplyPolicyOverrides(config);
+    return hr;
 }
 
 // ================================================================

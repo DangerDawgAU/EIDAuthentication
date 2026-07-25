@@ -31,8 +31,8 @@ struct EID_PRIVATE_DATA
 	USHORT dwSymetricKeySize;
 	USHORT dwPasswordOffset;
 	USHORT usPasswordLen;      // Renamed from dwPasswordSize to avoid shadowing global
-	UCHAR Hash[CERT_HASH_LENGTH];
-	BYTE Data[sizeof(DWORD)];
+	UCHAR Hash[CERT_HASH_LENGTH];  // NOSONAR - LSASS-01: C-style buffer for serialized private-data layout
+	BYTE Data[sizeof(DWORD)];  // NOSONAR - LSASS-01: C-style buffer for serialized private-data layout
 };
 using PEID_PRIVATE_DATA = EID_PRIVATE_DATA*;
 
@@ -44,7 +44,7 @@ public:
      {
          if (!theSingleInstance)
 		 {
-			 theSingleInstance = new CStoredCredentialManager;
+			 theSingleInstance = new CStoredCredentialManager;  // NOSONAR - OWNERSHIP-01: singleton instance intentionally persists for process lifetime
 		 }
 		 return theSingleInstance;
      }

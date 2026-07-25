@@ -47,7 +47,7 @@ public:
         m_failureAttempts.push_back(ullNow);
 
         // Calculate delay with exponential backoff
-        DWORD dwFailureCount = static_cast<DWORD>(m_failureAttempts.size());
+        DWORD dwFailureCount = static_cast<DWORD>(m_failureAttempts.size());  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
         DWORD dwDelayMs = 0;
 
         if (dwFailureCount > MAX_FAILURES)
@@ -81,7 +81,7 @@ public:
     }
 
     // Get the number of recent failures
-    DWORD GetRecentFailureCount()
+    DWORD GetRecentFailureCount() const
     {
         return static_cast<DWORD>(m_failureAttempts.size());
     }

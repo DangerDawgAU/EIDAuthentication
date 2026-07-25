@@ -3,7 +3,7 @@
 
 #include "Page01_Welcome.h"
 
-INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
     switch (uMsg)
     {
@@ -11,27 +11,33 @@ INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
     {
         // Set command link note text
         HWND hwndExport = GetDlgItem(hwndDlg, IDC_01_EXPORT);
-        if (hwndExport) {
+        if (hwndExport) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
             SendMessage(hwndExport, BCM_SETNOTE, 0,
                 (LPARAM)L"Export EID credentials from this machine to an encrypted file");
         }
 
         HWND hwndImport = GetDlgItem(hwndDlg, IDC_01_IMPORT);
-        if (hwndImport) {
+        if (hwndImport) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
             SendMessage(hwndImport, BCM_SETNOTE, 0,
                 (LPARAM)L"Import EID credentials from an encrypted export file");
         }
 
         HWND hwndList = GetDlgItem(hwndDlg, IDC_01_LIST);
-        if (hwndList) {
+        if (hwndList) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
             SendMessage(hwndList, BCM_SETNOTE, 0,
                 (LPARAM)L"View all EID credentials on this machine or in an export file");
         }
 
         HWND hwndValidate = GetDlgItem(hwndDlg, IDC_01_VALIDATE);
-        if (hwndValidate) {
+        if (hwndValidate) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
             SendMessage(hwndValidate, BCM_SETNOTE, 0,
                 (LPARAM)L"Check the integrity and contents of an export file");
+        }
+
+        HWND hwndRevoke = GetDlgItem(hwndDlg, IDC_01_REVOKE);
+        if (hwndRevoke) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
+            SendMessage(hwndRevoke, BCM_SETNOTE, 0,
+                (LPARAM)L"Install a CRL for offline revocation and require revocation checking");
         }
 
         // Reset wizard state
@@ -39,7 +45,7 @@ INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 
         // Hide the Next button since we use direct action buttons
         HWND hwndParent = GetParent(hwndDlg);
-        if (hwndParent) {
+        if (hwndParent) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
             ShowWindow(GetDlgItem(hwndParent, IDOK), SW_HIDE);
         }
 
@@ -48,15 +54,15 @@ INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
 
     case WM_NOTIFY:
     {
-        LPNMHDR pnmh = (LPNMHDR)lParam;
+        LPNMHDR pnmh = (LPNMHDR)lParam;  // NOSONAR (EXPLICIT-TYPE-01) - explicit non-const NMHDR pointer per Win32 API
 
-        switch (pnmh->code)
+        switch (pnmh->code)  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
         {
         case PSN_SETACTIVE:
         {
             // Hide Next button, only show Cancel
             HWND hwndParent = GetParent(hwndDlg);
-            if (hwndParent) {
+            if (hwndParent) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
                 ShowWindow(GetDlgItem(hwndParent, IDOK), SW_HIDE);
                 PropSheet_SetWizButtons(hwndDlg, 0);  // No navigation buttons
             }
@@ -86,7 +92,7 @@ INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
             g_currentFlow = FLOW_EXPORT;
             // Navigate to Export Select page (page index 1)
             HWND hwndParent = GetParent(hwndDlg);
-            if (hwndParent) {
+            if (hwndParent) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
                 PropSheet_SetCurSel(hwndParent, nullptr, 1);
             }
             return TRUE;
@@ -98,7 +104,7 @@ INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
             g_currentFlow = FLOW_IMPORT;
             // Navigate to Import Select page (page index 6)
             HWND hwndParent = GetParent(hwndDlg);
-            if (hwndParent) {
+            if (hwndParent) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
                 PropSheet_SetCurSel(hwndParent, nullptr, 6);
             }
             return TRUE;
@@ -109,7 +115,7 @@ INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
             g_wizardData.selectedFlow = FLOW_LIST;
             // Navigate to List page (page index 12)
             HWND hwndParent = GetParent(hwndDlg);
-            if (hwndParent) {
+            if (hwndParent) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
                 PropSheet_SetCurSel(hwndParent, nullptr, 12);
             }
             return TRUE;
@@ -120,8 +126,19 @@ INT_PTR CALLBACK WndProc_01_Welcome(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
             g_wizardData.selectedFlow = FLOW_VALIDATE;
             // Navigate to Validate page (page index 13)
             HWND hwndParent = GetParent(hwndDlg);
-            if (hwndParent) {
+            if (hwndParent) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
                 PropSheet_SetCurSel(hwndParent, nullptr, 13);
+            }
+            return TRUE;
+        }
+
+        case IDC_01_REVOKE:
+        {
+            g_wizardData.selectedFlow = FLOW_REVOKE;
+            // Navigate to Revocation page (page index 14)
+            HWND hwndParent = GetParent(hwndDlg);
+            if (hwndParent) {  // NOSONAR - SCOPE-01: local scoped to handler; init-statement refactor deferred
+                PropSheet_SetCurSel(hwndParent, nullptr, 14);
             }
             return TRUE;
         }

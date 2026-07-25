@@ -58,7 +58,7 @@ public:
 	// view on every card change and never enables that path, so these are inert here.
 	BOOL IsSelected() const { return FALSE; }
 	BOOL IsDisconnected() const { return FALSE; }
-	void SetDisconnected(__in BOOL fDisconnected) { UNREFERENCED_PARAMETER(fDisconnected); }
+	void SetDisconnected(__in BOOL fDisconnected) const { UNREFERENCED_PARAMETER(fDisconnected); }
 private:
 	CContainer* _pContainer;
 	BOOL _IsTrusted;

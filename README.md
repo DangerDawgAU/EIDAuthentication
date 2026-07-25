@@ -93,9 +93,9 @@ HKLM\SYSTEM\CurrentControlSet\Control\Lsa\limitblankpassworduse = 0
 |------------|---------|
 | **EIDConfigurationWizard.exe** | Enrollment wizard for certificate creation, validation, and credential storage |
 | **EIDConfigurationWizardElevated.exe** | UAC elevation helper for policy operations requiring admin rights |
-| **EIDLogManager.exe** | ETW trace control and crash dump configuration for diagnostics |
 | **EIDMigrate.exe** | Command-line tool for bulk credential export and import |
 | **EIDMigrateUI.exe** | GUI wizard for credential backup and migration |
+| **EIDTraceConsumer.exe** | Service that consumes ETW events and writes the structured CSV audit log |
 
 | DLL | Purpose |
 |-----|---------|
@@ -235,8 +235,42 @@ Windows Password Filter API implementation:
 | `AllowCertificatesWithNoEKU` | DWORD | 0 | Accept certificates without Smart Card Logon EKU |
 | `AllowTimeInvalidCertificates` | DWORD | 0 | Accept expired certificates |
 | `EnforceCSPWhitelist` | DWORD | 0 | Block non-whitelisted CSP providers |
+| `RequireCardBoundCredentials` | DWORD | 0 | Only card-wrapped credentials may be created, used at logon, or imported |
+| `RequireRevocationCheck` | DWORD | 0 | Refuse a card whose revocation status cannot be confirmed offline |
 
 **Note:** `0` = Disabled, `1` = Enabled. These policies are **disabled by default** for security. Only enable if specifically required for your environment.
+
+Logging and ETW trace settings are managed under `HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager`
+via the bundled ADMX template (`Installer\PolicyDefinitions`). Values set there override the local
+configuration.
+
+#### `RequireCardBoundCredentials`
+
+When enabled, a user's Windows password is only ever stored sealed to their smart card, so it cannot
+be recovered from the machine without the card and its PIN. This requires a **decrypt-capable** card
+(MyEID/Aventra and YubiKey PIV qualify). Signature-only cards cannot use card-bound storage and will
+fail to enrol or log on while this is set, which is why it is opt-in and why the installer never
+changes an existing value during an upgrade. Enable it after a successful logon test.
+
+#### `RequireRevocationCheck` and offline CRLs
+
+Revocation checking in this project is **offline only** — the auth stack never reaches the network
+(`CERT_CHAIN_CACHE_ONLY_URL_RETRIEVAL`), because target machines are air-gapped. Revocation data must
+therefore be distributed to each machine explicitly:
+
+```cmd
+EIDMigrate.exe import-crl <path-to-crl>
+```
+
+The CRL's signature is verified against an already-trusted issuer before installation. The same
+operation is available from EIDMigrateUI's "Manage certificate revocation" page, which also toggles
+this policy.
+
+> **Operational warning:** with `RequireRevocationCheck=1` the stack fails **closed**. If no CRL is
+> installed — or the installed CRL's `nextUpdate` has passed — every card's revocation status is
+> "unknown" and **every logon on that machine is refused**. On air-gapped hosts a CRL expires with no
+> way to refresh itself automatically, so track CRL validity and re-import before `nextUpdate`, or
+> leave this policy disabled.
 
 ---
 
@@ -442,7 +476,7 @@ Protection.
 | `EIDCredentialProvider.dll` | Credential Provider |
 | `EIDPasswordChangeNotification.dll` | Password Filter |
 | `EIDConfigurationWizard.exe` | Enrollment wizard |
-| `EIDLogManager.exe` | ETW trace control utility |
+| `EIDTraceConsumer.exe` | ETW-to-CSV audit log service |
 | `EIDMigrate.exe` | Migration CLI tool (x64 only) |
 | `EIDMigrateUI.exe` | Migration GUI wizard (x64 only) |
 | `EIDInstallx64.exe` | NSIS installer (Release x64 only) |

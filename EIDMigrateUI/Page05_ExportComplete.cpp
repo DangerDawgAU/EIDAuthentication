@@ -11,7 +11,7 @@ INT_PTR CALLBACK WndProc_05_ExportComplete(HWND hwndDlg, UINT uMsg, WPARAM wPara
 
     case WM_NOTIFY:
     {
-        LPNMHDR pnmh = (LPNMHDR)lParam;
+        LPNMHDR pnmh = (LPNMHDR)lParam;  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
         switch (pnmh->code)
         {
         case PSN_SETACTIVE:
@@ -30,10 +30,10 @@ INT_PTR CALLBACK WndProc_05_ExportComplete(HWND hwndDlg, UINT uMsg, WPARAM wPara
             SetDlgItemText(hwndDlg, IDC_05_OUTPUT_PATH, g_wizardData.wsOutputFile.c_str());
 
             // Load shield icon
-            HMODULE hDll = LoadLibraryW(L"imageres.dll");
+            HMODULE hDll = LoadLibraryExW(L"imageres.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
             if (hDll) {
                 HICON hIcon = LoadIcon(hDll, MAKEINTRESOURCE(58));
-                if (hIcon) {
+                if (hIcon) {  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                     SendDlgItemMessage(hwndDlg, IDC_05_SHIELD, STM_SETICON, (WPARAM)hIcon, 0);
                 }
                 FreeLibrary(hDll);

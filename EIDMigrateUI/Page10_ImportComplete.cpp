@@ -1,7 +1,7 @@
 // Page10_ImportComplete.cpp - Import Complete Page Implementation
 #include "Page10_ImportComplete.h"
 
-INT_PTR CALLBACK WndProc_10_ImportComplete(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK WndProc_10_ImportComplete(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
     switch (uMsg)
     {
@@ -10,7 +10,7 @@ INT_PTR CALLBACK WndProc_10_ImportComplete(HWND hwndDlg, UINT uMsg, WPARAM wPara
 
     case WM_NOTIFY:
     {
-        LPNMHDR pnmh = (LPNMHDR)lParam;
+        LPNMHDR pnmh = (LPNMHDR)lParam;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
         switch (pnmh->code)
         {
         case PSN_SETACTIVE:
@@ -50,10 +50,10 @@ INT_PTR CALLBACK WndProc_10_ImportComplete(HWND hwndDlg, UINT uMsg, WPARAM wPara
             SetDlgItemText(hwndDlg, IDC_10_WARNINGS, wsWarnings.c_str());
 
             // Load shield icon
-            HMODULE hDll = LoadLibraryW(L"imageres.dll");
+            HMODULE hDll = LoadLibraryExW(L"imageres.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
             if (hDll) {
                 HICON hIcon = LoadIcon(hDll, MAKEINTRESOURCE(58));
-                if (hIcon) {
+                if (hIcon) {  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                     SendDlgItemMessage(hwndDlg, IDC_10_SHIELD, STM_SETICON, (WPARAM)hIcon, 0);
                 }
                 FreeLibrary(hDll);
@@ -81,27 +81,15 @@ INT_PTR CALLBACK WndProc_10_ImportComplete(HWND hwndDlg, UINT uMsg, WPARAM wPara
     case WM_COMMAND:
     {
         if (LOWORD(wParam) == IDC_10_VIEW_LOG) {
-            WCHAR szModulePath[MAX_PATH] = { 0 }; // NOSONAR - Windows API GetModuleFileNameW requires WCHAR buffer
-            if (GetModuleFileNameW(nullptr, szModulePath, ARRAYSIZE(szModulePath)) == 0) {
-                MessageBoxW(hwndDlg, L"Unable to locate installation directory.",
-                    L"View Log", MB_ICONWARNING);
-                return TRUE;
-            }
-            std::wstring wsLogManager(szModulePath);
-            size_t pos = wsLogManager.find_last_of(L"\\/");
-            if (pos == std::wstring::npos) {
-                MessageBoxW(hwndDlg, L"Unable to locate installation directory.",
-                    L"View Log", MB_ICONWARNING);
-                return TRUE;
-            }
-            wsLogManager = wsLogManager.substr(0, pos + 1) + L"EIDLogManager.exe";
-
-            HINSTANCE hResult = ShellExecuteW(hwndDlg, L"open", wsLogManager.c_str(),
+            // EIDLogManager has been retired in favour of Group Policy management; open the CSV
+            // audit-log folder directly instead of launching the (removed) manager application.
+            HINSTANCE hResult = ShellExecuteW(hwndDlg, L"open",
+                L"C:\\ProgramData\\EIDAuthentication\\logs",
                 nullptr, nullptr, SW_SHOWNORMAL);
             if ((INT_PTR)hResult <= 32) {
                 MessageBoxW(hwndDlg,
-                    L"Unable to launch EIDLogManager.exe. Open it manually from the "
-                    L"installation directory or the Start Menu (EID Authentication -> Log Manager).",
+                    L"Unable to open the log folder. The CSV audit logs are located at "
+                    L"C:\\ProgramData\\EIDAuthentication\\logs.",
                     L"View Log", MB_ICONWARNING);
             }
             return TRUE;

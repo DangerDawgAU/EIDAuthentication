@@ -58,13 +58,13 @@ HRESULT CommandExport(_In_ const COMMAND_OPTIONS& options)
     return hr;
 }
 
-HRESULT ExportCredentials(
+HRESULT ExportCredentials(  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
     _In_ const std::wstring& wsOutputPath,
     _In_ const SecureWString& wsPassword,
     _In_ const EXPORT_OPTIONS& options,
     _Out_ EXPORT_STATS& stats)
 {
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK;  // NOSONAR (EXPLICIT-TYPE-03) - Explicit type preferred for HRESULT clarity
 
     // Enumerate credentials
     std::vector<CredentialInfo> credentials;
@@ -90,7 +90,7 @@ HRESULT ExportCredentials(
                 std::vector<LocalGroupInfo> filteredGroups;
                 for (const auto& group : groups)
                 {
-                    for (const auto& wsSelected : options.SelectedGroups)
+                    for (const auto& wsSelected : options.SelectedGroups)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
                     {
                         if (_wcsicmp(group.wsName.c_str(), wsSelected.c_str()) == 0)
                         {
@@ -239,9 +239,9 @@ HRESULT ValidateCertificateForExport(
     // Check for expiration within 30 days
     FILETIME ftThirtyDays;
     ULARGE_INTEGER uli;
-    memcpy(&uli.QuadPart, &ftNow, sizeof(uli.QuadPart));
+    memcpy(&uli.QuadPart, &ftNow, sizeof(uli.QuadPart));  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
     uli.QuadPart += ULONGLONG(30) * 24 * 60 * 60 * 10000000; // 30 days in 100ns units
-    memcpy(&ftThirtyDays, &uli.QuadPart, sizeof(ftThirtyDays));
+    memcpy(&ftThirtyDays, &uli.QuadPart, sizeof(ftThirtyDays));  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
     if (CompareFileTime(&pCertContext->pCertInfo->NotAfter, &ftThirtyDays) < 0)
     {

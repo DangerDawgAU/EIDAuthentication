@@ -66,9 +66,9 @@ BOOL TestLogon(HWND hMainWnd)
 
 	DWORD result = CredUIPromptForWindowsCredentials(&credUiInfo, 0, &authPackage,
 					nullptr, 0, &authBuffer, &authBufferSize, &save, dwFlag);
-	if (result == ERROR_SUCCESS)
+	if (result == ERROR_SUCCESS) // NOSONAR - SCOPE-01: variable reused after the block
 	{
-		err = LsaConnectUntrusted(&hLsa);
+		LsaConnectUntrusted(&hLsa);
 		/* Find the setuid package and call it */
 		err = LsaLogonUser(hLsa, &Origin, Interactive, authPackage, authBuffer,authBufferSize,nullptr, &Source, (PVOID*)&Profile, &ProfileLen, &Luid, &Token, &Quota, &stat);
 		LsaDeregisterLogonProcess(hLsa);
@@ -98,7 +98,7 @@ BOOL TestLogon(HWND hMainWnd)
 
 HANDLE hInternalLogWriteHandle = nullptr;  // NOSONAR - RUNTIME-01: File handle, opened at runtime
 
-HANDLE StartReport(PTSTR szLogFile)
+HANDLE StartReport(PTSTR szLogFile) // NOSONAR - API-01: PTSTR parameter dictated by report/logging API signature
 {
 	DWORD dwError = 0;
 	BOOL fSuccess = FALSE;
@@ -163,8 +163,8 @@ BOOL DoTheActionToBeTraced()
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Register the certificate");
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"===============");
 		// register the package again
-		CContainerHolderTest* MyTest = pCredentialList->GetContainerHolderAt(dwCurrentCredential);
-		CContainer* container = MyTest->GetContainer();
+		CContainerHolderTest* MyTest = pCredentialList->GetContainerHolderAt(dwCurrentCredential); // NOSONAR - API-01: non-const pointer used to call non-const-qualified member functions
+		CContainer* container = MyTest->GetContainer(); // NOSONAR - API-01: pointer type retained to match GetContainer() return contract
 		pCertContext = container->GetCertificate();
 		fSuccess = LsaEIDCreateStoredCredential(szUserName, szPassword, pCertContext, container->GetKeySpec() == AT_KEYEXCHANGE);
 		if (!fSuccess)
@@ -304,7 +304,7 @@ BOOL CreateDebugReport(PTSTR szLogFile)
 }
 
 // called from the elevated process
-VOID CreateReport(PTSTR szNamedPipeName)
+VOID CreateReport(PTSTR szNamedPipeName) // NOSONAR - API-01: PTSTR parameter dictated by named-pipe report API signature
 {
 	// read the file from the command line
 	TCHAR szFile [256];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety

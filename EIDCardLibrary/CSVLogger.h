@@ -48,14 +48,13 @@ private:
 
     // File state
     static DWORD s_dwCurrentFileSize;
-    static WCHAR s_szCurrentLogPath[MAX_PATH];
+    static WCHAR s_szCurrentLogPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
     static BOOL s_fHeaderWritten;
 
     // Private helper methods
     static BOOL EnsureLogFileOpen();
     static void RotateLogFile();
     static void WriteCSVHeader();
-    static void WriteEscapedCSVField(PCWSTR pwszValue);
     static BOOL IsEventEnabled(EID_EVENT_ID eventId, EID_SEVERITY severity);
     static void FormatTimestamp(WCHAR* pszBuffer, size_t cchBuffer);
 

@@ -56,8 +56,16 @@ const GPOInfo MyGPOInfo[] =  // NOSONAR - Const lookup table for GPO settings
   {szMainGPOKey, L"ForceReadingAllCertificates" },
   {szForceGPOKey, L"scforceoption" },
   {szRemoveGPOKey, L"scremoveoption" },
-  {szMainGPOKey, L"EnforceCSPWhitelist" }  // Security: block CSPs not in whitelist
+  {szMainGPOKey, L"EnforceCSPWhitelist" },  // Security: block CSPs not in whitelist
+  {szMainGPOKey, L"RequireCardBoundCredentials" },  // Security (H3): only card-wrapped credentials allowed when set
+  {szMainGPOKey, L"RequireRevocationCheck" }  // Security (M1): fail-closed when revocation cannot be confirmed offline
 };
+
+// GetPolicyValue/SetPolicyValue index this table with a GPOPolicy. If a policy is added to the
+// enum without a matching row here, every subsequent policy silently reads the wrong registry
+// value - so make that a build break rather than a runtime surprise.
+static_assert(ARRAYSIZE(MyGPOInfo) == static_cast<size_t>(GPOPolicy::RequireRevocationCheck) + 1,
+	"MyGPOInfo is out of sync with the GPOPolicy enum - add the matching row");
 
 DWORD GetPolicyValue( GPOPolicy Policy)
 {
@@ -71,7 +79,7 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 	DWORD value = 0;
 	DWORD size = sizeof(DWORD);
 	DWORD type=REG_SZ;
-	wchar_t szValue[2] = L"0";
+	wchar_t szValue[2] = L"0";  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 	DWORD size2 = sizeof(szValue);
 	const int policyIndex = static_cast<int>(Policy);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,MyGPOInfo[policyIndex].Key,0, KEY_READ, &key)==ERROR_SUCCESS){
@@ -112,7 +120,7 @@ DWORD GetPolicyValue( GPOPolicy Policy)
 
 BOOL SetRemovePolicyValue(DWORD dwActivate)
 {
-	wchar_t szValue[2];
+	wchar_t szValue[2];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 	LONG lReturn;
 	DWORD dwError = 0;
 	SC_HANDLE hService = nullptr;

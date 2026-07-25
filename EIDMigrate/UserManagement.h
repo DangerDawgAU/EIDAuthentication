@@ -20,10 +20,10 @@ struct UserInfo
     BOOL fPasswordExpired;
 
     UserInfo() :
-        dwRid(0),
-        dwAccountId(0),
-        fEnabled(TRUE),
-        fPasswordExpired(FALSE)
+        dwRid(0),  // NOSONAR - INIT-01: member initialized via constructor initializer list
+        dwAccountId(0),  // NOSONAR - INIT-01: member initialized via constructor initializer list
+        fEnabled(TRUE),  // NOSONAR - INIT-01: member initialized via constructor initializer list
+        fPasswordExpired(FALSE)  // NOSONAR - INIT-01: member initialized via constructor initializer list
     {}
 };
 

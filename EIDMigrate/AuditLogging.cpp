@@ -16,23 +16,60 @@
 #undef WARNING // NOSONAR - Must undef Windows macro that conflicts with enum value
 #endif
 
-static HANDLE g_hEventLog = nullptr;
-static std::wstring g_wsLogFilePath;
+#include <evntprov.h>
+#include <winmeta.h>
+#pragma comment(lib, "advapi32")
+
+static HANDLE g_hEventLog = nullptr;  // NOSONAR - GLOBAL-01: pointer assigned at runtime
+static std::wstring g_wsLogFilePath;  // NOSONAR - GLOBAL-01: global assigned at runtime
+
+// EID authentication ETW provider {B4866A0A-DB08-4835-A26F-414B46F3244C}. EIDTraceConsumer
+// subscribes to this GUID and writes captured free-text messages to the central diagnostics log,
+// so emitting here routes migration audit events into the same pipeline / SIEM feed as the
+// auth-stack security audits (which are also EventWriteString'd to this provider).
+static const GUID EID_AUDIT_PROVIDER_GUID =
+    {0xB4866A0A, 0xDB08, 0x4835, {0xA2, 0x6F, 0x41, 0x4B, 0x46, 0xF3, 0x24, 0x4C}};
+static REGHANDLE g_hEtwAuditProvider = 0;  // NOSONAR - GLOBAL-01: ETW registration handle set at runtime
 
 HRESULT InitializeAuditLogging()
 {
     g_hEventLog = RegisterEventSourceW(nullptr, L"EIDMigrate");
+    // Register with the EID ETW provider so audit events also reach the central logging pipeline.
+    EventRegister(&EID_AUDIT_PROVIDER_GUID, nullptr, nullptr, &g_hEtwAuditProvider);
     return (g_hEventLog != nullptr) ? S_OK : E_FAIL;
 }
 
-void LogAuditEvent(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pwszUsername, _In_opt_ PCWSTR pwszDetails)
+// Emit an audit event to the EID ETW provider (captured by EIDTraceConsumer -> diagnostics log).
+// Uses a "[MIGRATE-AUDIT]" prefix (not "[EID:") so the consumer routes it to the diagnostics log.
+static void LogAuditEventToEtw(EID_AUDIT_EVENT_TYPE eventType, PCWSTR pwszUsername, PCWSTR pwszDetails)
+{
+    if (g_hEtwAuditProvider == 0)
+        return;
+
+    WCHAR szMsg[512];  // NOSONAR - LSASS-01: C-style buffer for logging
+    swprintf_s(szMsg, ARRAYSIZE(szMsg), L"[MIGRATE-AUDIT] %ls User: %ls Details: %ls",
+        GetEventTypeString(eventType),
+        pwszUsername ? pwszUsername : L"(system)",
+        pwszDetails ? pwszDetails : L"(none)");
+
+    const WORD wType = GetEventLogLevel(eventType);
+    UCHAR etwLevel = WINEVENT_LEVEL_INFO;
+    if (wType == EVENTLOG_ERROR_TYPE)
+        etwLevel = WINEVENT_LEVEL_ERROR;
+    else if (wType == EVENTLOG_WARNING_TYPE)
+        etwLevel = WINEVENT_LEVEL_WARNING;
+
+    EventWriteString(g_hEtwAuditProvider, etwLevel, 0, szMsg);
+}
+
+void LogAuditEvent(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pwszUsername, _In_opt_ PCWSTR pwszDetails)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
     if (g_hEventLog)
     {
         WORD wType = GetEventLogLevel(eventType);
-        DWORD dwEventID = static_cast<DWORD>(eventType);
+        DWORD dwEventID = static_cast<DWORD>(eventType);  // NOSONAR - static_cast used for enum to underlying type; std::to_underlying is C++23, project uses earlier standard
 
-        WCHAR szMessage[512];
+        WCHAR szMessage[512];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         SecureZeroMemory(szMessage, sizeof(szMessage));
 
         switch (static_cast<DWORD>(eventType)) // NOSONAR - static_cast used for enum to underlying type; std::to_underlying is C++23, project uses earlier standard
@@ -79,6 +116,25 @@ void LogAuditEvent(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pwszUser
     }
 }
 
+// Escape a value for a CSV field: quote it if it contains a comma, quote or newline,
+// and double any embedded quotes.
+static std::wstring CsvEscapeField(PCWSTR pwsz)
+{
+    std::wstring s = pwsz ? pwsz : L"";
+    if (s.find_first_of(L",\"\r\n") == std::wstring::npos)
+        return s;
+    std::wstring out = L"\"";
+    for (wchar_t c : s)
+    {
+        if (c == L'"') out += L"\"\"";
+        else out += c;
+    }
+    out += L"\"";
+    return out;
+}
+
+// Structured CSV audit trail (SIEM-parseable). Columns:
+//   Timestamp,EventType,Outcome,Severity,User,Details
 void LogAuditEventToFile(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pwszUsername, _In_opt_ PCWSTR pwszDetails)
 {
     if (!g_AppState.pLogFile && g_wsLogFilePath.empty())
@@ -96,21 +152,33 @@ void LogAuditEventToFile(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pw
     if (!pLogFile)
         return;
 
-    // Write timestamp
-    fwprintf(pLogFile, L"[%ls] ", FormatCurrentTimestamp().c_str());
+    // Write the CSV header once, when the file is empty.
+    fseek(pLogFile, 0, SEEK_END);
+    if (ftell(pLogFile) == 0)
+        fwprintf(pLogFile, L"Timestamp,EventType,Outcome,Severity,User,Details\n");
 
-    // Write event type
-    fwprintf(pLogFile, L"%ls ", GetEventTypeString(eventType));
+    // Derive outcome and severity from the event type.
+    PCWSTR pwszOutcome = L"Success";
+    switch (static_cast<DWORD>(eventType))  // NOSONAR - static_cast for enum underlying value
+    {
+    case 2: case 4: case 5: case 6: case 8: case 14:  // export/import failure, access denied, auth failure, validation failure, rate limit
+        pwszOutcome = L"Failure"; break;
+    case 9:  // WARNING
+        pwszOutcome = L"Warning"; break;
+    default:
+        pwszOutcome = L"Success"; break;
+    }
+    const WORD wLevel = GetEventLogLevel(eventType);
+    PCWSTR pwszSeverity = (wLevel == EVENTLOG_ERROR_TYPE) ? L"Error"
+                        : ((wLevel == EVENTLOG_WARNING_TYPE) ? L"Warning" : L"Info");
 
-    // Write username if provided
-    if (pwszUsername)
-        fwprintf(pLogFile, L"User: %ls ", pwszUsername);
-
-    // Write details if provided
-    if (pwszDetails)
-        fwprintf(pLogFile, L"Details: %ls", pwszDetails);
-
-    fwprintf(pLogFile, L"\n");
+    fwprintf(pLogFile, L"%ls,%ls,%ls,%ls,%ls,%ls\n",
+        CsvEscapeField(FormatCurrentTimestamp().c_str()).c_str(),
+        CsvEscapeField(GetEventTypeString(eventType)).c_str(),
+        pwszOutcome,
+        pwszSeverity,
+        CsvEscapeField(pwszUsername).c_str(),
+        CsvEscapeField(pwszDetails).c_str());
     fflush(pLogFile);
 }
 
@@ -118,6 +186,7 @@ void LogAuditEventBoth(_In_ EID_AUDIT_EVENT_TYPE eventType, _In_opt_ PCWSTR pwsz
 {
     LogAuditEvent(eventType, pwszUsername, pwszDetails);
     LogAuditEventToFile(eventType, pwszUsername, pwszDetails);
+    LogAuditEventToEtw(eventType, pwszUsername, pwszDetails);
 }
 
 HRESULT SetLogFile(_In_ const std::wstring& wsFilePath)

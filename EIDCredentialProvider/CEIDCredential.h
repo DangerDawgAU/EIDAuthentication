@@ -106,14 +106,14 @@ public:
     CREDENTIAL_PROVIDER_USAGE_SCENARIO    _cpus; // The usage scenario for which we were enumerated.
 	DWORD								  _dwFlags;
 
-    CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR  _rgCredProvFieldDescriptors[SFI_NUM_FIELDS];  // An array holding the type 
+    CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR  _rgCredProvFieldDescriptors[SFI_NUM_FIELDS];  // An array holding the type   // NOSONAR - LSASS-01: C-style array required by Win32/COM API
                                                                                         // and name of each field in 
                                                                                         // the tile.
 
-    FIELD_STATE_PAIR                      _rgFieldStatePairs[SFI_NUM_FIELDS];           // An array holding the state 
+    FIELD_STATE_PAIR                      _rgFieldStatePairs[SFI_NUM_FIELDS];           // An array holding the state   // NOSONAR - LSASS-01: C-style array required by Win32/COM API
                                                                                         // of each field in the tile.
 
-    PWSTR                                 _rgFieldStrings[SFI_NUM_FIELDS];              // An array holding the string 
+    PWSTR                                 _rgFieldStrings[SFI_NUM_FIELDS];              // An array holding the string   // NOSONAR - LSASS-01: C-style array required by Win32/COM API
                                                                                         // value of each field. This is 
                                                                                         // different from the name of 
                                                                                         // the field held in 

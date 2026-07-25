@@ -58,7 +58,7 @@ using ResultVoid = std::expected<void, HRESULT>;
 // Convert Result<T> to BOOL for API boundary
 // Sets GetLastError() on error, returns TRUE on success
 template<typename T>
-[[nodiscard]] inline BOOL to_bool(Result<T>&& result) noexcept {
+[[nodiscard]] inline BOOL to_bool(Result<T>&& result) noexcept {  // NOSONAR - MOVE-01: rvalue param read-only at API boundary, nothing to move
     if (result) {
         return TRUE;
     }
@@ -67,8 +67,8 @@ template<typename T>
 }
 
 // Specialization for ResultVoid (no value to extract)
-[[nodiscard]] inline BOOL to_bool(ResultVoid&& result) noexcept {
-    if (result) {
+[[nodiscard]] inline BOOL to_bool(ResultVoid&& result) noexcept {  // NOSONAR - MOVE-01: rvalue param read-only at API boundary, nothing to move
+    if (result.has_value()) {
         return TRUE;
     }
     SetLastError(static_cast<DWORD>(result.error()));

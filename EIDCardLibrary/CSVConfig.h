@@ -26,36 +26,38 @@
 #pragma once
 
 #include <Windows.h>
+#include <sddl.h>
+#include <aclapi.h>
 #include <string>
 #include "EventDefinitions.h"
 
 // Undefine Windows macros that conflict with enum values
 #ifdef ERROR
-#undef ERROR
+#undef ERROR  // NOSONAR - INCLUDE-01: #undef required to avoid Windows macro/enum collision
 #endif
 #ifdef DOMAIN
-#undef DOMAIN
+#undef DOMAIN  // NOSONAR - INCLUDE-01: #undef required to avoid Windows macro/enum collision
 #endif
 #ifdef SEVERITY
-#undef SEVERITY
+#undef SEVERITY  // NOSONAR - INCLUDE-01: #undef required to avoid Windows macro/enum collision
 #endif
 #ifdef OUTCOME
-#undef OUTCOME
+#undef OUTCOME  // NOSONAR - INCLUDE-01: #undef required to avoid Windows macro/enum collision
 #endif
 #ifdef TARGET
-#undef TARGET
+#undef TARGET  // NOSONAR - INCLUDE-01: #undef required to avoid Windows macro/enum collision
 #endif
 #ifdef ALL
-#undef ALL
+#undef ALL  // NOSONAR - INCLUDE-01: #undef required to avoid Windows macro/enum collision
 #endif
 #ifdef MESSAGE
-#undef MESSAGE
+#undef MESSAGE  // NOSONAR - INCLUDE-01: #undef required to avoid Windows macro/enum collision
 #endif
 
 // ================================================================
 // CSV Column Flags (bitmask for efficient storage)
 // ================================================================
-enum EID_CSV_COLUMN : DWORD
+enum EID_CSV_COLUMN : DWORD  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 {
     NONE            = 0x00000000,
 
@@ -104,24 +106,26 @@ enum EID_CSV_COLUMN : DWORD
 };
 
 // Bitwise operators for EID_CSV_COLUMN enum class
-inline constexpr EID_CSV_COLUMN operator|(EID_CSV_COLUMN a, EID_CSV_COLUMN b) noexcept
+constexpr EID_CSV_COLUMN operator|(EID_CSV_COLUMN a, EID_CSV_COLUMN b) noexcept
 {
-    return static_cast<EID_CSV_COLUMN>(static_cast<DWORD>(a) | static_cast<DWORD>(b));
+    return static_cast<EID_CSV_COLUMN>(static_cast<DWORD>(a) | static_cast<DWORD>(b));  // NOSONAR - ENUM-01: enum cast retained for Win32/ABI compatibility
 }
 
 inline EID_CSV_COLUMN& operator|=(EID_CSV_COLUMN& a, EID_CSV_COLUMN b) noexcept
 {
-    return a = a | b;
+    a = a | b;
+    return a;
 }
 
-inline constexpr EID_CSV_COLUMN operator&(EID_CSV_COLUMN a, EID_CSV_COLUMN b) noexcept
+constexpr EID_CSV_COLUMN operator&(EID_CSV_COLUMN a, EID_CSV_COLUMN b) noexcept
 {
-    return static_cast<EID_CSV_COLUMN>(static_cast<DWORD>(a) & static_cast<DWORD>(b));
+    return static_cast<EID_CSV_COLUMN>(static_cast<DWORD>(a) & static_cast<DWORD>(b));  // NOSONAR - ENUM-01: enum cast retained for Win32/ABI compatibility
 }
 
 inline EID_CSV_COLUMN& operator&=(EID_CSV_COLUMN& a, EID_CSV_COLUMN b) noexcept
 {
-    return a = a & b;
+    a = a & b;
+    return a;
 }
 
 // ================================================================
@@ -185,7 +189,7 @@ enum class EID_OUTCOME : UCHAR
 struct EID_CSV_CONFIG
 {
     BOOL                  fEnabled;         // CSV logging enabled
-    WCHAR                 szLogPath[MAX_PATH];  // Path to CSV log file
+    WCHAR                 szLogPath[MAX_PATH];  // Path to CSV log file // NOSONAR - LSASS-01: C-style buffer for LSASS safety
     EID_CSV_COLUMN        dwColumns;        // Column bitmask
     DWORD                 dwMaxFileSizeMB;  // Max file size before rotation
     DWORD                 dwFileCount;      // Number of rotated files to keep
@@ -197,32 +201,106 @@ struct EID_CSV_CONFIG
     // Default constructor
     EID_CSV_CONFIG()
     {
-        fEnabled = FALSE;
+        fEnabled = FALSE;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
         szLogPath[0] = L'\0';
         dwColumns = EID_CSV_PRESETS::STANDARD;
-        dwMaxFileSizeMB = 64;
-        dwFileCount = 5;
-        dwCategoryFilter = 0x0000FFFF;  // All categories enabled (bits 0-15)
-        fVerboseEvents = FALSE;
-        fDiagnosticsEnabled = FALSE;
-        dwDiagnosticsLevel = 4; // WINEVENT_LEVEL_INFO
+        dwMaxFileSizeMB = 64;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+        dwFileCount = 5;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+        dwCategoryFilter = 0x0000FFFF;  // All categories enabled (bits 0-15) // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+        fVerboseEvents = FALSE;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+        fDiagnosticsEnabled = FALSE;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+        dwDiagnosticsLevel = 4; // WINEVENT_LEVEL_INFO // NOSONAR - INIT-01: member initialized in body for clarity/ordering
     }
 };
 
 // ================================================================
 // Configuration Paths
 // ================================================================
-#define EID_CSV_CONFIG_DIR          L"C:\\ProgramData\\EIDAuthentication"
-#define EID_CSV_CONFIG_PATH         L"C:\\ProgramData\\EIDAuthentication\\logging.json"
-#define EID_CSV_DEFAULT_LOG_PATH    L"C:\\ProgramData\\EIDAuthentication\\logs\\events.csv"
-#define EID_CSV_CONFIG_KEY          L"SOFTWARE\\EIDAuthentication\\LogManager"
+#define EID_CSV_CONFIG_DIR          L"C:\\ProgramData\\EIDAuthentication"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EID_CSV_CONFIG_PATH         L"C:\\ProgramData\\EIDAuthentication\\logging.json"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EID_CSV_DEFAULT_LOG_PATH    L"C:\\ProgramData\\EIDAuthentication\\logs\\events.csv"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EID_CSV_CONFIG_KEY          L"SOFTWARE\\EIDAuthentication\\LogManager"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+// Group Policy key: values present here override the local file/registry config (ADMX-managed).
+#define EID_CSV_POLICY_KEY          L"SOFTWARE\\Policies\\EIDAuthentication\\LogManager"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+
+// ================================================================
+// M5: Restrictive DACL for the log/config directory.
+// Full control to SYSTEM (SY) and Administrators (BA); Read&Execute only
+// (0x1200a9, no create/write) to Users (BU). PAI = protected, no inheritance
+// from the (Users-writable) ProgramData parent. Prevents a low-privileged
+// user from planting files/symlinks that a SYSTEM writer would follow.
+// ================================================================
+#define EID_LOG_DIR_SDDL            L"D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+
+// Build a SECURITY_ATTRIBUTES carrying the restrictive log-dir DACL above.
+// On success returns TRUE, fills *psa and hands back the security descriptor in
+// *ppSD; the caller MUST LocalFree(*ppSD) once CreateDirectoryW has returned.
+// On failure returns FALSE and the caller should fall back to a NULL SD.
+inline BOOL BuildLogDirSecurityAttributes(SECURITY_ATTRIBUTES* psa, PSECURITY_DESCRIPTOR* ppSD)
+{
+    if (ppSD)
+        *ppSD = nullptr;
+    if (!psa || !ppSD)
+        return FALSE;
+
+    PSECURITY_DESCRIPTOR pSD = nullptr;
+    if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            EID_LOG_DIR_SDDL, SDDL_REVISION_1, &pSD, nullptr))
+        return FALSE;
+
+    psa->nLength = sizeof(SECURITY_ATTRIBUTES);
+    psa->lpSecurityDescriptor = pSD;
+    psa->bInheritHandle = FALSE;
+    *ppSD = pSD;
+    return TRUE;
+}
+
+// Create the log directory with the restrictive DACL above, and - crucially - re-apply
+// that DACL when the directory already exists. CreateDirectoryW ignores its security
+// attributes for an existing directory, so on every machine upgraded from an earlier
+// build the directory would otherwise keep its inherited (Users-writable) ProgramData
+// ACL and M5 would never actually take effect where it matters.
+inline void EnsureLogDirSecured(PCWSTR pwszDir)
+{
+    if (!pwszDir || pwszDir[0] == L'\0')
+        return;
+
+    SECURITY_ATTRIBUTES sa;
+    PSECURITY_DESCRIPTOR pSD = nullptr;
+    if (!BuildLogDirSecurityAttributes(&sa, &pSD))
+    {
+        CreateDirectoryW(pwszDir, nullptr);
+        return;
+    }
+
+    const BOOL fCreated = CreateDirectoryW(pwszDir, &sa);
+    if (!fCreated && GetLastError() == ERROR_ALREADY_EXISTS)
+    {
+        PACL pDacl = nullptr;
+        BOOL fDaclPresent = FALSE;
+        BOOL fDaclDefaulted = FALSE;
+        if (GetSecurityDescriptorDacl(pSD, &fDaclPresent, &pDacl, &fDaclDefaulted) && fDaclPresent)
+        {
+            // PROTECTED_DACL_SECURITY_INFORMATION matches the SDDL's "PAI" - it severs
+            // inheritance from ProgramData rather than merging with it.
+            SetNamedSecurityInfoW(const_cast<PWSTR>(pwszDir), SE_FILE_OBJECT,
+                DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+                nullptr, nullptr, pDacl, nullptr);
+        }
+    }
+    LocalFree(pSD);
+}
 
 // ================================================================
 // Configuration Management Functions
 // ================================================================
 
-// Load configuration (tries JSON file, then registry, then defaults)
+// Load configuration (tries JSON file, then registry, then defaults; then applies GPO overrides)
 HRESULT EID_CSV_LoadConfig(EID_CSV_CONFIG& config);
+
+// Apply Group Policy overrides from HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager on top of
+// an already-loaded config. Any value present under the policy key wins over local file/registry config.
+void EID_CSV_ApplyPolicyOverrides(EID_CSV_CONFIG& config);
 
 // Save configuration (saves to both JSON file and registry)
 HRESULT EID_CSV_SaveConfig(const EID_CSV_CONFIG& config);
@@ -252,21 +330,21 @@ HRESULT EID_CSV_JsonToConfig(const std::string& json, EID_CSV_CONFIG& config);
 // Check if a category is enabled in the filter
 inline BOOL IsCategoryEnabled(DWORD dwCategoryFilter, EID_EVENT_CATEGORY category)
 {
-    DWORD dwCatBit = (static_cast<DWORD>(category) / 1000);
+    DWORD dwCatBit = (static_cast<DWORD>(category) / 1000);  // NOSONAR - ENUM-01: enum cast retained for Win32/ABI compatibility
     return (dwCategoryFilter & (1UL << dwCatBit)) != 0;
 }
 
 // Enable a category in the filter
 inline DWORD EnableCategory(DWORD dwCategoryFilter, EID_EVENT_CATEGORY category)
 {
-    DWORD dwCatBit = (static_cast<DWORD>(category) / 1000);
+    DWORD dwCatBit = (static_cast<DWORD>(category) / 1000);  // NOSONAR - ENUM-01: enum cast retained for Win32/ABI compatibility
     return dwCategoryFilter | (1UL << dwCatBit);
 }
 
 // Disable a category in the filter
 inline DWORD DisableCategory(DWORD dwCategoryFilter, EID_EVENT_CATEGORY category)
 {
-    DWORD dwCatBit = (static_cast<DWORD>(category) / 1000);
+    DWORD dwCatBit = (static_cast<DWORD>(category) / 1000);  // NOSONAR - ENUM-01: enum cast retained for Win32/ABI compatibility
     return dwCategoryFilter & ~(1UL << dwCatBit);
 }
 

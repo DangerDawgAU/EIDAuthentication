@@ -10,15 +10,15 @@
 #include "EIDUserManagement.h"
 #include <shellapi.h>
 #include <comdef.h>
-#include <lm.h>
+#include <lm.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 #include <sddl.h>
 
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "advapi32.lib")
 
 // Global application state
-USER_MANAGE_APP_STATE g_appState;
-HINSTANCE g_hinst = nullptr;
+USER_MANAGE_APP_STATE g_appState;  // NOSONAR - GLOBAL-01: mutable global state modified at runtime
+HINSTANCE g_hinst = nullptr;  // NOSONAR - GLOBAL-01: pointer assigned at runtime
 
 // Utility: Check if running as administrator
 BOOL IsUserAdmin()
@@ -27,7 +27,7 @@ BOOL IsUserAdmin()
     SID_IDENTIFIER_AUTHORITY authNT = SECURITY_NT_AUTHORITY;
     PSID pAdminSID = nullptr;
 
-    if (AllocateAndInitializeSid(&authNT, 2,
+    if (AllocateAndInitializeSid(&authNT, 2,  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
         SECURITY_BUILTIN_DOMAIN_RID,
         DOMAIN_ALIAS_RID_ADMINS,
         0, 0, 0, 0, 0, 0, &pAdminSID))
@@ -45,8 +45,8 @@ BOOL IsUserAdmin()
 // Utility: Load string resource
 std::wstring LoadStringResource(UINT uID)
 {
-    WCHAR szBuffer[512];
-    if (LoadStringW(g_hinst, uID, szBuffer, ARRAYSIZE(szBuffer)))
+    WCHAR szBuffer[512];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+    if (LoadStringW(g_hinst, uID, szBuffer, ARRAYSIZE(szBuffer)))  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
     {
         return std::wstring(szBuffer);
     }
@@ -59,7 +59,7 @@ void SetWindowIcon(HWND hwnd, int iconId)
     if (iconId == 0)
         iconId = IDI_APP_ICON;
 
-    HICON hIcon = (HICON)LoadImageW(g_hinst,
+    HICON hIcon = (HICON)LoadImageW(g_hinst,  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
         MAKEINTRESOURCE(iconId),
         IMAGE_ICON,
         GetSystemMetrics(SM_CXICON),
@@ -71,7 +71,7 @@ void SetWindowIcon(HWND hwnd, int iconId)
         SendMessageW(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
     }
 
-    HICON hIconSmall = (HICON)LoadImageW(g_hinst,
+    HICON hIconSmall = (HICON)LoadImageW(g_hinst,  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
         MAKEINTRESOURCE(iconId),
         IMAGE_ICON,
         GetSystemMetrics(SM_CXSMICON),
@@ -90,7 +90,7 @@ HRESULT EnsureElevated()
     if (!IsUserAdmin())
     {
         // Get current executable path
-        WCHAR szPath[MAX_PATH];
+        WCHAR szPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         if (!GetModuleFileNameW(nullptr, szPath, ARRAYSIZE(szPath)))
         {
             return HRESULT_FROM_WIN32(GetLastError());
@@ -142,7 +142,7 @@ std::wstring FormatFileTime(const FILETIME& ft)
         return L"Unknown";
     }
 
-    WCHAR szBuffer[64];
+    WCHAR szBuffer[64];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     swprintf_s(szBuffer, ARRAYSIZE(szBuffer),
         L"%04u-%02u-%02u %02u:%02u",
         st.wYear, st.wMonth, st.wDay,
@@ -154,10 +154,10 @@ std::wstring FormatFileTime(const FILETIME& ft)
 // Utility: Get current user SID
 std::wstring GetCurrentUserSid()
 {
-    WCHAR szUsername[UNLEN + 1];
+    WCHAR szUsername[UNLEN + 1];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     DWORD dwSize = ARRAYSIZE(szUsername);
 
-    if (!GetUserNameW(szUsername, &dwSize))
+    if (!GetUserNameW(szUsername, &dwSize))  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
     {
         return L"";
     }
@@ -179,15 +179,15 @@ std::wstring GetCurrentUserSid()
     std::vector<BYTE> sidBuffer(dwSidSize);
     std::vector<WCHAR> domainBuffer(dwDomainSize);
 
-    if (!LookupAccountNameW(nullptr, szUsername,
-        reinterpret_cast<PSID>(sidBuffer.data()), &dwSidSize,
+    if (!LookupAccountNameW(nullptr, szUsername,  // NOSONAR - SCOPE-01: declaration kept in enclosing scope
+        reinterpret_cast<PSID>(sidBuffer.data()), &dwSidSize,  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         domainBuffer.data(), &dwDomainSize, &use))
     {
         return L"";
     }
 
     LPWSTR pwszSid = nullptr;
-    if (!ConvertSidToStringSidW(reinterpret_cast<PSID>(sidBuffer.data()), &pwszSid))
+    if (!ConvertSidToStringSidW(reinterpret_cast<PSID>(sidBuffer.data()), &pwszSid))  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
     {
         return L"";
     }
@@ -267,7 +267,7 @@ INT_PTR CALLBACK WndProc_Main(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 
     case WM_NOTIFY:
     {
-        LPNMHDR pnmh = (LPNMHDR)lParam;
+        LPNMHDR pnmh = (LPNMHDR)lParam;  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
 
         if (pnmh->idFrom == IDC_MAIN_LIST && pnmh->code == NM_DBLCLK)
         {

@@ -17,7 +17,8 @@ static INT_PTR CALLBACK ProgressDialogProc(HWND hDlg, UINT message, WPARAM wPara
             (void)lParam;
 
             // Center dialog on parent
-            RECT rcParent, rcDlg;
+            RECT rcParent;
+            RECT rcDlg;
             GetWindowRect(g_hParentWnd, &rcParent);
             GetWindowRect(hDlg, &rcDlg);
             int x = rcParent.left + (rcParent.right - rcParent.left - (rcDlg.right - rcDlg.left)) / 2;
@@ -33,6 +34,9 @@ static INT_PTR CALLBACK ProgressDialogProc(HWND hDlg, UINT message, WPARAM wPara
         // Stop marquee animation
         SendDlgItemMessage(hDlg, IDC_PROGRESSBAR, PBM_SETMARQUEE, FALSE, 0);
         g_hProgressDialog = NULL; // NOSONAR - Windows API requires NULL
+        break;
+
+    default:
         break;
     }
     return FALSE;

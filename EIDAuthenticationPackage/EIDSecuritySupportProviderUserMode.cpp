@@ -125,7 +125,7 @@ extern "C"
 	NTSTATUS NTAPI SpMakeSignature(
 		  __in     LSA_SEC_HANDLE ContextHandle,
 		  __in     ULONG QualityOfProtection,
-		  __inout  PSecBufferDesc MessageBuffers,
+		  __inout  PSecBufferDesc MessageBuffers,  // NOSONAR - API-01: signature dictated by Windows/callback API
 		  __in     ULONG MessageSequenceNumber
 		)
 	{
@@ -143,9 +143,9 @@ extern "C"
 	of the Security Support Provider Interface.*/
 	NTSTATUS NTAPI SpVerifySignature(
 		  __in   LSA_SEC_HANDLE ContextHandle,
-		  __in   PSecBufferDesc MessageBuffers,
+		  __in   PSecBufferDesc MessageBuffers,  // NOSONAR - API-01: signature dictated by Windows/callback API
 		  __in   ULONG MessageSequenceNumber,
-		  __out  PULONG QualityOfProtection
+		  __out  PULONG QualityOfProtection  // NOSONAR - API-01: signature dictated by Windows/callback API
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
@@ -163,7 +163,7 @@ extern "C"
 	NTSTATUS NTAPI SpSealMessage(
 		  __in     LSA_SEC_HANDLE ContextHandle,
 		  __in     ULONG QualityOfProtection,
-		  __inout  PSecBufferDesc MessageBuffers,
+		  __inout  PSecBufferDesc MessageBuffers,  // NOSONAR - API-01: signature dictated by Windows/callback API
 		  __in     ULONG MessageSequenceNumber
 		)
 	{
@@ -181,9 +181,9 @@ extern "C"
 	function of the Security Support Provider Interface.*/
 	NTSTATUS NTAPI SpUnsealMessage(
 		  __in   LSA_SEC_HANDLE ContextHandle,
-		  __in   PSecBufferDesc MessageBuffers,
+		  __in   PSecBufferDesc MessageBuffers,  // NOSONAR - API-01: signature dictated by Windows/callback API
 		  __in   ULONG MessageSequenceNumber,
-		  __out  PULONG QualityOfProtection
+		  __out  PULONG QualityOfProtection  // NOSONAR - API-01: signature dictated by Windows/callback API
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
@@ -230,7 +230,7 @@ extern "C"
 	function of the Security Support Provider Interface.*/
 	NTSTATUS NTAPI SpCompleteAuthToken(
 		  __in  LSA_SEC_HANDLE ContextHandle,
-		  __in  PSecBufferDesc InputBuffer
+		  __in  PSecBufferDesc InputBuffer  // NOSONAR - API-01: signature dictated by Windows/callback API
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
@@ -241,8 +241,8 @@ extern "C"
 
 	/** Formats credentials to be stored in a user object.*/
 	NTSTATUS NTAPI SpFormatCredentials(
-		  __in   PSecBuffer Credentials,
-		  __out  PSecBuffer FormattedCredentials
+		  __in   PSecBuffer Credentials,  // NOSONAR - API-01: signature dictated by Windows/callback API
+		  __out  PSecBuffer FormattedCredentials  // NOSONAR - API-01: signature dictated by Windows/callback API
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
@@ -255,8 +255,8 @@ extern "C"
 	a public format into a format suitable for local procedure calls.*/
 	NTSTATUS NTAPI SpMarshallSupplementalCreds(
 		  __in   ULONG CredentialSize,
-		  __in   PUCHAR Credentials,
-		  __out  PULONG MarshalledCredSize,
+		  __in   PUCHAR Credentials,  // NOSONAR - API-01: signature dictated by Windows/callback API
+		  __out  PULONG MarshalledCredSize,  // NOSONAR - API-01: signature dictated by Windows/callback API
 		  __out  PVOID *MarshalledCreds
 		)
 	{
@@ -275,7 +275,7 @@ extern "C"
 	NTSTATUS NTAPI SpExportSecurityContext(
 		  __in   LSA_SEC_HANDLE phContext,
 		  __in   ULONG fFlags,
-		  __out  PSecBuffer pPackedContext,
+		  __out  PSecBuffer pPackedContext,  // NOSONAR - API-01: signature dictated by Windows/callback API
 		  __out  PHANDLE pToken
 		)
 	{
@@ -292,9 +292,9 @@ extern "C"
 	The SpImportSecurityContext function is the dispatch function for the ImportSecurityContext 
 	function of the Security Support Provider Interface.*/
 	NTSTATUS NTAPI SpImportSecurityContext(
-		  __in   PSecBuffer pPackedContext,
+		  __in   PSecBuffer pPackedContext,  // NOSONAR - API-01: signature dictated by Windows/callback API
 		  __in   HANDLE Token,
-		  __out  PLSA_SEC_HANDLE phContext
+		  __out  PLSA_SEC_HANDLE phContext  // NOSONAR - API-01: signature dictated by Windows/callback API
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");

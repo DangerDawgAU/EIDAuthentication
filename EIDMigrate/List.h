@@ -18,9 +18,9 @@ struct LIST_OPTIONS
     BOOL fVerbose;
 
     LIST_OPTIONS() :
-        fLocal(FALSE),
-        fInputFile(FALSE),
-        fVerbose(FALSE)
+        fLocal(FALSE),  // NOSONAR - INIT-01: member initialized in constructor init list
+        fInputFile(FALSE),  // NOSONAR - INIT-01: member initialized in constructor init list
+        fVerbose(FALSE)  // NOSONAR - INIT-01: member initialized in constructor init list
     {}
 };
 

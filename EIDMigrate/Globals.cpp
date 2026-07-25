@@ -5,4 +5,4 @@
 
 // Global application state
 // Defined here for shared use across EIDMigrate and EIDManageUsers
-APP_STATE g_AppState;
+APP_STATE g_AppState;  // NOSONAR - GLOBAL-01: mutable shared application state

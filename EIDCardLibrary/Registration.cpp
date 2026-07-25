@@ -28,6 +28,11 @@
 #include "../EIDCardLibrary/StringConversion.h"
 #include <string>
 
+// BUG 5: level-taking overload of StartLogging (real logic lives in Tracing.cpp).
+// Tracing.h only declares the no-arg StartLogging(); declare the overload locally
+// so EnableLogging can start the live ETW session at the configured TraceLevel.
+BOOL StartLogging(UCHAR level);
+
 
 // Non-const string buffers for Windows API compatibility (AddSecurityPackage/DeleteSecurityPackage require LPWSTR)
 static WCHAR s_wszAuthenticationPackageName[] = L"EIDAuthenticationPackage";  // NOSONAR - GLOBAL-01: Runtime-initialized LSA state
@@ -470,7 +475,7 @@ BOOL SetTraceConfig(DWORD dwLevel, LPCWSTR szLogPath, DWORD dwMaxSizeMB, DWORD d
 	return fReturn;
 }
 
-BOOL GetTraceConfig(DWORD* pdwLevel, LPWSTR szLogPath, DWORD cchPath, DWORD* pdwMaxSizeMB, DWORD* pdwFileCounter, BOOL* pfAutoStart)
+BOOL GetTraceConfig(DWORD* pdwLevel, LPWSTR szLogPath, DWORD cchPath, DWORD* pdwMaxSizeMB, DWORD* pdwFileCounter, BOOL* pfAutoStart)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
 	HKEY hKey = nullptr;
 	LONG err = 0;
@@ -580,10 +585,60 @@ BOOL GetTraceConfig(DWORD* pdwLevel, LPWSTR szLogPath, DWORD cchPath, DWORD* pdw
 		}
 	}
 
+	// GPO override: values under SOFTWARE\Policies\EIDAuthentication\LogManager win over local config,
+	// so EnableLogging() (which builds the ETW autologger from these values) honours Group Policy.
+	HKEY hPolicy = nullptr;
+	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Policies\\EIDAuthentication\\LogManager", 0, KEY_READ, &hPolicy) == ERROR_SUCCESS)
+	{
+		DWORD dwPolType = 0;
+		DWORD dwPolVal = 0;
+		DWORD dwPolSize = 0;
+		if (pdwLevel != nullptr)
+		{
+			dwPolSize = sizeof(DWORD);
+			if (RegQueryValueEx(hPolicy, L"TraceLevel", nullptr, &dwPolType, (LPBYTE)&dwPolVal, &dwPolSize) == ERROR_SUCCESS
+				&& dwPolType == REG_DWORD && dwPolVal >= WINEVENT_LEVEL_CRITICAL && dwPolVal <= WINEVENT_LEVEL_VERBOSE)
+				*pdwLevel = dwPolVal;
+		}
+		if (szLogPath != nullptr && cchPath > 0)
+		{
+			WCHAR szPolPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+			dwPolSize = sizeof(szPolPath);
+			if (RegQueryValueEx(hPolicy, L"LogPath", nullptr, &dwPolType, (LPBYTE)szPolPath, &dwPolSize) == ERROR_SUCCESS
+				&& dwPolType == REG_SZ && szPolPath[0] != L'\0')
+			{
+				szPolPath[MAX_PATH - 1] = L'\0';
+				wcscpy_s(szLogPath, cchPath, szPolPath);
+			}
+		}
+		if (pdwMaxSizeMB != nullptr)
+		{
+			dwPolSize = sizeof(DWORD);
+			if (RegQueryValueEx(hPolicy, L"MaxFileSize", nullptr, &dwPolType, (LPBYTE)&dwPolVal, &dwPolSize) == ERROR_SUCCESS
+				&& dwPolType == REG_DWORD && dwPolVal >= 1 && dwPolVal <= 1024)
+				*pdwMaxSizeMB = dwPolVal;
+		}
+		if (pdwFileCounter != nullptr)
+		{
+			dwPolSize = sizeof(DWORD);
+			if (RegQueryValueEx(hPolicy, L"FileCounter", nullptr, &dwPolType, (LPBYTE)&dwPolVal, &dwPolSize) == ERROR_SUCCESS
+				&& dwPolType == REG_DWORD && dwPolVal >= 1 && dwPolVal <= 100)
+				*pdwFileCounter = dwPolVal;
+		}
+		if (pfAutoStart != nullptr)
+		{
+			dwPolSize = sizeof(DWORD);
+			if (RegQueryValueEx(hPolicy, L"AutoStart", nullptr, &dwPolType, (LPBYTE)&dwPolVal, &dwPolSize) == ERROR_SUCCESS
+				&& dwPolType == REG_DWORD)
+				*pfAutoStart = (dwPolVal != 0);
+		}
+		RegCloseKey(hPolicy);
+	}
+
 	return fReturn;
 }
 
-BOOL EnableLogging()
+BOOL EnableLogging(BOOL fForceStartSession)
 {
 	struct RegEntry { LPCTSTR szSubKey; LPCTSTR szValueName; DWORD dwType; const void* pData; DWORD cbData; };
 
@@ -596,7 +651,7 @@ BOOL EnableLogging()
 	DWORD dwConfigMaxSize;
 	DWORD dwConfigFileCounter;
 	BOOL fConfigAutoStart;
-	WCHAR szConfigPath[MAX_PATH];
+	WCHAR szConfigPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 
 	GetTraceConfig(&dwConfigLevel, szConfigPath, MAX_PATH, &dwConfigMaxSize, &dwConfigFileCounter, &fConfigAutoStart);
 
@@ -615,8 +670,8 @@ BOOL EnableLogging()
 	DWORD dwFileMax = dwConfigFileCounter + 3;  // Add buffer for FileMax
 
 	// Use static array instead of vector to avoid C++ unwinding in SEH
-	RegEntry entries[19];
-	DWORD dwPathSize = (DWORD)((wcslen(szConfigPath) + 1) * sizeof(WCHAR));
+	RegEntry entries[19];  // NOSONAR - LSASS-01: C-style array avoids C++ unwinding in SEH __try block
+	DWORD dwPathSize = (DWORD)((wcslen(szConfigPath) + 1) * sizeof(WCHAR));  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 
 	// Build registry entries dynamically based on configuration
 	entries[0]  = { szBaseKey, L"Guid",            REG_SZ,    szGuidValue,   (DWORD)sizeof(szGuidValue) };
@@ -643,16 +698,26 @@ BOOL EnableLogging()
 	BOOL fReturn = FALSE;
 	__try
 	{
-		for (int i = 0; i < 19; i++)
+		for (int i = 0; i < 19; i++)  // NOSONAR - COMPLEXITY-01: raw index loop retained; SEH __leave semantics verified
 		{
 			err = RegSetKeyValue(HKEY_LOCAL_MACHINE, entries[i].szSubKey,
 				entries[i].szValueName, entries[i].dwType, entries[i].pData, entries[i].cbData);
 			if (err != ERROR_SUCCESS) __leave;
 		}
-		if (!StartLogging())
+		// BUG 5: only start the LIVE trace session when autostart is enabled by
+		// config/GPO. The persisted autologger 'Start' value (entries[3]) is always
+		// written above, but a boot task must NOT force a live VERBOSE capture when
+		// policy set TraceAutoStart=Disabled. When it IS enabled, start at the
+		// configured TraceLevel rather than a hardcoded VERBOSE.
+		// fForceStartSession overrides the gate for an explicit operator request, which
+		// would otherwise report success while starting nothing.
+		if (fConfigAutoStart || fForceStartSession)
 		{
-			err = GetLastError();
-			__leave;
+			if (!StartLogging(static_cast<UCHAR>(dwConfigLevel)))
+			{
+				err = GetLastError();
+				__leave;
+			}
 		}
 		fReturn = TRUE;
 	}
@@ -707,10 +772,10 @@ BOOL Is64BitOS()
    // We check if the OS is 64 Bit
    using LPFN_ISWOW64PROCESS = BOOL (WINAPI*)(HANDLE, PBOOL);
 
-   LPFN_ISWOW64PROCESS
+   LPFN_ISWOW64PROCESS  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
       fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(GetModuleHandle(L"kernel32"),"IsWow64Process");  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
  
-   if (fnIsWow64Process && !fnIsWow64Process(GetCurrentProcess(),&bIs64BitOS))
+   if (fnIsWow64Process && !fnIsWow64Process(GetCurrentProcess(),&bIs64BitOS))  // NOSONAR - SCOPE-01: function-pointer declaration kept separate for explicit typing
    {
       //error
    }

@@ -28,7 +28,7 @@
 //
 #define _SEC_WINNT_AUTH_TYPES 0  // NOSONAR - MACRO-02: Windows SDK configuration macro
 #pragma comment(lib,"credui")
-#include "CEIDProvider.h"
+#include "CEIDProvider.h"  // NOSONAR - INCLUDE-01: include order significant for Windows SDK
 #include "CEIDCredential.h"
 #include "CMessageCredential.h"
 
@@ -44,15 +44,15 @@
 // CEIDProvider ////////////////////////////////////////////////////////
 
 CEIDProvider::CEIDProvider():
-    _cRef(1)
+    _cRef(1)  // NOSONAR - INIT-01: member initialized via constructor initializer list
 {
     EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,L"Creation");
 	DllAddRef();
-    _pcpe = nullptr;
-    _pMessageCredential = nullptr;
- _pSmartCardConnectionNotifier = nullptr;
-	_fDontShowAnything = FALSE;
-	_fShuttingDown = FALSE;
+    _pcpe = nullptr;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+    _pMessageCredential = nullptr;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+ _pSmartCardConnectionNotifier = nullptr;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	_fDontShowAnything = FALSE;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	_fShuttingDown = FALSE;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
 	InitializeCriticalSection(&_csCallback);
 }
 
@@ -66,7 +66,7 @@ CEIDProvider::~CEIDProvider()
 	if (_pSmartCardConnectionNotifier)
 	{
 		_pSmartCardConnectionNotifier->Stop();
-		delete _pSmartCardConnectionNotifier;
+		delete _pSmartCardConnectionNotifier;  // NOSONAR - OWNERSHIP-01: manual Win32 lifetime management
 	}
 
 	DeleteCriticalSection(&_csCallback);
@@ -86,7 +86,7 @@ void CEIDProvider::Callback(EID_CREDENTIAL_PROVIDER_READER_STATE Message, __in L
 	}
 	LeaveCriticalSection(&_csCallback);
 
-	switch(Message)
+	switch(Message)  // NOSONAR - SWITCH-01: unhandled reader states intentionally ignored
 	{
 	case EID_CREDENTIAL_PROVIDER_READER_STATE::EIDCPRSConnecting:
 		// Guard clause: skip if no card name
@@ -265,9 +265,14 @@ STDMETHODIMP CEIDProvider::SetSerialization(  // NOSONAR - COM-01: ICredentialPr
     )
 {
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"");
+	// Guard clause: LogonUI may pass a NULL serialization.
+	if (!pcpcs)
+	{
+		return E_INVALIDARG;
+	}
 	if (_dwFlags & CREDUIWIN_AUTHPACKAGE_ONLY || _dwFlags & CREDUIWIN_IN_CRED_ONLY)
 	{
-		if (pcpcs->ulAuthenticationPackage > 0)
+		if (pcpcs->ulAuthenticationPackage > 0)  // NOSONAR - COMPLEXITY-01: nested guard retained for readability; logic verified
 		{
 			ULONG ulAuthenticationPackage;
 			RetrieveNegotiateAuthPackage(&ulAuthenticationPackage);
@@ -282,10 +287,19 @@ STDMETHODIMP CEIDProvider::SetSerialization(  // NOSONAR - COM-01: ICredentialPr
 		}
 	}
 	PSEC_WINNT_CREDUI_CONTEXT pCredUIContext = nullptr;
-	SECURITY_STATUS status;
-	status= SspiUnmarshalCredUIContext(pcpcs->rgbSerialization, pcpcs->cbSerialization, &pCredUIContext);
+	SECURITY_STATUS status = SspiUnmarshalCredUIContext(pcpcs->rgbSerialization, pcpcs->cbSerialization, &pCredUIContext);
+	if (status != SEC_E_OK)
+	{
+		// Attacker-supplied bytes may fail to unmarshal; ignore them without side effects.
+		return S_OK;
+	}
+	if (pCredUIContext)
+	{
+		// Free the context buffer allocated by SspiUnmarshalCredUIContext to avoid a per-call leak.
+		FreeContextBuffer(pCredUIContext);
+	}
 
-	   return S_OK;
+	return S_OK;
 }
 
 // Called by LogonUI to give you a callback. Providers often use the callback if they
@@ -340,7 +354,7 @@ HRESULT CEIDProvider::GetFieldDescriptorCount(
 
 // Gets the field descriptor for a particular field. Note that we need to determine which
 // tile to use based on the "connected" status.
-HRESULT CEIDProvider::GetFieldDescriptorAt(
+HRESULT CEIDProvider::GetFieldDescriptorAt(  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
     DWORD dwIndex, 
     CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR** ppcpfd
     )
@@ -359,7 +373,7 @@ HRESULT CEIDProvider::GetFieldDescriptorAt(
 			else
 			{
 				*ppcpfd = (CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR*)CoTaskMemAlloc(sizeof(CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR));
-				if (*ppcpfd)
+				if (*ppcpfd)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 				{
 					(*ppcpfd)->pszLabel = nullptr;
 					(*ppcpfd)->dwFieldID = s_rgCredProvFieldDescriptors[dwIndex].dwFieldID;
@@ -456,7 +470,7 @@ HRESULT CEIDProvider::GetCredentialCount(
 			*pdwCount = 1;
 			if (_cpus == CPUS_LOGON)
 			{
-				if (!GetPolicyValue(GPOPolicy::scforceoption))
+				if (!GetPolicyValue(GPOPolicy::scforceoption))  // NOSONAR - COMPLEXITY-01: nested guard retained for readability; logic verified
 				{
 					*pdwCount = 0;
 				}

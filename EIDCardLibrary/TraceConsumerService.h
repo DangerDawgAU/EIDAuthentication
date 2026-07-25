@@ -25,9 +25,9 @@
 #include <Windows.h>
 
 // Service name
-#define EID_TRACE_CONSUMER_SERVICE_NAME    L"EIDTraceConsumer"
-#define EID_TRACE_CONSUMER_DISPLAY_NAME   L"EID Trace Consumer"
-#define EID_TRACE_CONSUMER_DESCRIPTION    L"Consumes EID authentication events and writes to CSV log files"
+#define EID_TRACE_CONSUMER_SERVICE_NAME    L"EIDTraceConsumer"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EID_TRACE_CONSUMER_DISPLAY_NAME   L"EID Trace Consumer"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
+#define EID_TRACE_CONSUMER_DESCRIPTION    L"Consumes EID authentication events and writes to CSV log files"  // NOSONAR - MACRO-01: Windows-style macro constant retained for API/preprocessor use
 
 // Service control functions
 BOOL InstallEIDTraceConsumer();

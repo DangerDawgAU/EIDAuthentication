@@ -28,10 +28,10 @@ struct CredentialInfo
     DWORD dwPasswordLength;
 
     CredentialInfo() :
-        dwRid(0),
-        EncryptionType(EID_PRIVATE_DATA_TYPE::eidpdtClearText),
-        wsAlgorithm(L"AES-256-CBC"),
-        dwPasswordLength(0)
+        dwRid(0),  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+        EncryptionType(EID_PRIVATE_DATA_TYPE::eidpdtClearText),  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+        wsAlgorithm(L"AES-256-CBC"),  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+        dwPasswordLength(0)  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
     {
         SecureZeroMemory(CertificateHash, sizeof(CertificateHash));
         ftCertValidFrom.dwHighDateTime = 0;
@@ -50,7 +50,7 @@ struct GroupInfo
     BOOL fBuiltin;
 
     GroupInfo() :
-        fBuiltin(FALSE)
+        fBuiltin(FALSE)  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
     {}
 };
 

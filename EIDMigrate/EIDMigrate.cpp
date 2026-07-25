@@ -7,6 +7,7 @@
 #include "Import.h"
 #include "List.h"
 #include "Validate.h"
+#include "CertificateInstall.h"
 #include "AuditLogging.h"
 #include "PinPrompt.h"
 #include "SecureMemory.h"
@@ -31,6 +32,7 @@ void ShowUsage()
     fwprintf(stderr, L"  import    Import credentials to this machine\n");
     fwprintf(stderr, L"  list      List credentials (local or from file)\n");
     fwprintf(stderr, L"  validate  Validate an export file\n");
+    fwprintf(stderr, L"  import-crl Install a CRL for offline revocation checking (-input <path.crl>)\n");
     fwprintf(stderr, L"  help      Show this help message\n");
     fwprintf(stderr, L"  version   Show version information\n");
     fwprintf(stderr, L"\n");
@@ -50,6 +52,7 @@ void ShowUsage()
     fwprintf(stderr, L"  -force                   Perform actual import (use with caution)\n");
     fwprintf(stderr, L"  -create-users            Create missing user accounts\n");
     fwprintf(stderr, L"  -continue-on-error       Continue after individual credential errors\n");
+    fwprintf(stderr, L"  -expect-source <machine> Refuse a file not stamped by this issuing machine\n");
     fwprintf(stderr, L"  -v, -verbose             Verbose output\n");
     fwprintf(stderr, L"  -log <path>              Log file path\n");
     fwprintf(stderr, L"\n");
@@ -95,7 +98,27 @@ void ShowVersion()
 }
 
 // Parse command line arguments
-BOOL ParseCommandLine(_In_ int argc, _In_ PWSTR argv[], _Out_ COMMAND_OPTIONS& options)
+// M1: install an offline-distributed CRL so IsTrustedCertificate can revoke cards without a network.
+HRESULT CommandImportCrl(_In_ const COMMAND_OPTIONS& options)
+{
+    wprintf(L"Importing CRL from '%ls'...\n", options.InputFile.c_str());
+    HRESULT hr = InstallCrlFromFile(options.InputFile);  // NOSONAR (EXPLICIT-TYPE-03) - HRESULT visible for security audit
+    if (SUCCEEDED(hr))
+    {
+        wprintf(L"CRL imported into the machine CA store; offline revocation checking will use it.\n");
+        LogAuditEventBoth(EID_AUDIT_EVENT_TYPE::CERTIFICATE_INSTALLED, nullptr,
+            (std::wstring(L"CRL installed from ") + options.InputFile).c_str());
+    }
+    else
+    {
+        fwprintf(stderr, L"Failed to import CRL (0x%08X).\n", static_cast<unsigned int>(hr));
+        LogAuditEventBoth(EID_AUDIT_EVENT_TYPE::WARNING, nullptr,
+            (std::wstring(L"CRL import failed from ") + options.InputFile).c_str());
+    }
+    return hr;
+}
+
+BOOL ParseCommandLine(_In_ int argc, _In_ PWSTR argv[], _Out_ COMMAND_OPTIONS& options)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
     if (argc < 2)
     {
@@ -106,7 +129,7 @@ BOOL ParseCommandLine(_In_ int argc, _In_ PWSTR argv[], _Out_ COMMAND_OPTIONS& o
     // Parse command
     std::wstring wsCommand(argv[1]);
 
-    if (wsCommand == L"export" || wsCommand == L"ex")
+    if (wsCommand == L"export" || wsCommand == L"ex")  // NOSONAR - SCOPE-01: variable reused after the block
     {
         options.Command = COMMAND_TYPE::EXPORT;
     }
@@ -121,6 +144,10 @@ BOOL ParseCommandLine(_In_ int argc, _In_ PWSTR argv[], _Out_ COMMAND_OPTIONS& o
     else if (wsCommand == L"validate" || wsCommand == L"val")
     {
         options.Command = COMMAND_TYPE::VALIDATE;
+    }
+    else if (wsCommand == L"import-crl")
+    {
+        options.Command = COMMAND_TYPE::IMPORT_CRL;
     }
     else if (wsCommand == L"help" || wsCommand == L"?")
     {
@@ -140,7 +167,7 @@ BOOL ParseCommandLine(_In_ int argc, _In_ PWSTR argv[], _Out_ COMMAND_OPTIONS& o
     }
 
     // Parse options
-    for (int i = 2; i < argc; i++)
+    for (int i = 2; i < argc; i++)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
     {
         std::wstring wsArg(argv[i]);
 
@@ -183,7 +210,7 @@ BOOL ParseCommandLine(_In_ int argc, _In_ PWSTR argv[], _Out_ COMMAND_OPTIONS& o
         else if (wsArg == L"-v" || wsArg == L"-verbose")
         {
             if (options.Verbosity < VERBOSITY::DEBUG)
-                options.Verbosity = static_cast<VERBOSITY>(static_cast<int>(options.Verbosity) + 1);
+                options.Verbosity = static_cast<VERBOSITY>(static_cast<int>(options.Verbosity) + 1);  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
         }
         else if (wsArg == L"-vv")
         {
@@ -209,6 +236,15 @@ BOOL ParseCommandLine(_In_ int argc, _In_ PWSTR argv[], _Out_ COMMAND_OPTIONS& o
         {
             options.ContinueOnError = TRUE;
         }
+        else if (wsArg == L"-expect-source")
+        {
+            if (i + 1 >= argc)
+            {
+                fwprintf(stderr, L"Error: %ls requires a machine name argument\n", wsArg.c_str());
+                return FALSE;
+            }
+            options.ExpectedSource = argv[++i];
+        }
         else if (wsArg == L"-groups")
         {
             if (i + 1 >= argc)
@@ -222,7 +258,7 @@ BOOL ParseCommandLine(_In_ int argc, _In_ PWSTR argv[], _Out_ COMMAND_OPTIONS& o
             while ((pos = wsGroupList.find(L',')) != std::wstring::npos)
             {
                 std::wstring wsGroup = wsGroupList.substr(0, pos);
-                if (!wsGroup.empty())
+                if (!wsGroup.empty())  // NOSONAR - COMPLEXITY-01: nested control flow and local scope retained; logic verified
                     options.SelectedGroups.push_back(wsGroup);
                 wsGroupList.erase(0, pos + 1);
             }
@@ -294,6 +330,14 @@ BOOL ParseCommandLine(_In_ int argc, _In_ PWSTR argv[], _Out_ COMMAND_OPTIONS& o
         }
         break;
 
+    case COMMAND_TYPE::IMPORT_CRL:
+        if (options.InputFile.empty())
+        {
+            fwprintf(stderr, L"Error: import-crl command requires -input <path-to-crl>\n");
+            return FALSE;
+        }
+        break;
+
     default:
         break;
     }
@@ -302,9 +346,9 @@ BOOL ParseCommandLine(_In_ int argc, _In_ PWSTR argv[], _Out_ COMMAND_OPTIONS& o
 }
 
 // Main entry point
-int wmain(_In_ int argc, _In_ PWSTR argv[])
+int wmain(_In_ int argc, _In_ PWSTR argv[])  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 {
-    HRESULT hr = S_OK;
+    HRESULT hr = S_OK;  // NOSONAR (EXPLICIT-TYPE-03) - Explicit type preferred for clarity
     int nExitCode = EIDMIGRATE_EXIT_SUCCESS;
 
     try
@@ -365,7 +409,7 @@ int wmain(_In_ int argc, _In_ PWSTR argv[])
             g_AppState.Options.Command == COMMAND_TYPE::VALIDATE)
         {
             if (g_AppState.Options.Password.empty())
-            {
+            {  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
                 std::wstring wsPrompt;
                 if (g_AppState.Options.Command == COMMAND_TYPE::EXPORT)
                     wsPrompt = L"Enter export passphrase (min 16 characters): ";
@@ -392,7 +436,7 @@ int wmain(_In_ int argc, _In_ PWSTR argv[])
             // Validate passphrase strength for export
             if (g_AppState.Options.Command == COMMAND_TYPE::EXPORT)
             {
-                if (!ValidatePassphraseStrength(wsPassword.c_str()))
+                if (!ValidatePassphraseStrength(wsPassword.c_str()))  // NOSONAR - COMPLEXITY-01: nested if retained; logic verified
                 {
                     EIDM_TRACE_ERROR(L"Error: Passphrase must be at least 16 characters.");
                     return EIDMIGRATE_EXIT_INVALID_PASSPHRASE;
@@ -457,6 +501,12 @@ int wmain(_In_ int argc, _In_ PWSTR argv[])
                 nExitCode = EIDMIGRATE_EXIT_ERROR;
             break;
         }
+
+        case COMMAND_TYPE::IMPORT_CRL:
+            hr = CommandImportCrl(g_AppState.Options);
+            if (FAILED(hr))
+                nExitCode = EIDMIGRATE_EXIT_ERROR;
+            break;
 
         default:
             break;

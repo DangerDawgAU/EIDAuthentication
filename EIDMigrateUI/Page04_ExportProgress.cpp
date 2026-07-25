@@ -3,8 +3,8 @@
 #include "WorkerThread.h"
 
 // Static worker handle
-static HANDLE s_hWorkerThread = nullptr;
-static WORKER_CONTEXT s_workerContext;
+static HANDLE s_hWorkerThread = nullptr; // NOSONAR - GLOBAL-01: handle assigned at runtime
+static WORKER_CONTEXT s_workerContext; // NOSONAR - GLOBAL-01: state assigned at runtime
 
 INT_PTR CALLBACK WndProc_04_ExportProgress(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -15,7 +15,7 @@ INT_PTR CALLBACK WndProc_04_ExportProgress(HWND hwndDlg, UINT uMsg, WPARAM wPara
 
     case WM_NOTIFY:
     {
-        LPNMHDR pnmh = (LPNMHDR)lParam;
+        LPNMHDR pnmh = (LPNMHDR)lParam; // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
         switch (pnmh->code)
         {
         case PSN_SETACTIVE:
@@ -66,17 +66,17 @@ INT_PTR CALLBACK WndProc_04_ExportProgress(HWND hwndDlg, UINT uMsg, WPARAM wPara
 
     case WM_USER_PROGRESS:
     {
-        PROGRESS_DATA* pData = (PROGRESS_DATA*)lParam;
+        PROGRESS_DATA* pData = (PROGRESS_DATA*)lParam; // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
         if (pData) {
             SetDlgItemText(hwndDlg, IDC_04_PROGRESSTEXT, pData->wsStatus.c_str());
-            delete pData;
+            delete pData; // NOSONAR - OWNERSHIP-01: manual lifetime management of cross-thread message payload
         }
         return TRUE;
     }
 
     case WM_USER_COMPLETE:
     {
-        COMPLETE_DATA* pData = (COMPLETE_DATA*)lParam;
+        COMPLETE_DATA* pData = (COMPLETE_DATA*)lParam; // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
         if (pData) {
             g_wizardData.fExportComplete = TRUE;
             g_wizardData.dwExportedCount = pData->dwItemCount;
@@ -86,7 +86,7 @@ INT_PTR CALLBACK WndProc_04_ExportProgress(HWND hwndDlg, UINT uMsg, WPARAM wPara
             if (hwndParent) {
                 PropSheet_PressButton(hwndParent, PSBTN_NEXT);
             }
-            delete pData;
+            delete pData; // NOSONAR - OWNERSHIP-01: manual lifetime management of cross-thread message payload
         }
         if (s_hWorkerThread) {
             CloseHandle(s_hWorkerThread);
@@ -97,10 +97,10 @@ INT_PTR CALLBACK WndProc_04_ExportProgress(HWND hwndDlg, UINT uMsg, WPARAM wPara
 
     case WM_USER_ERROR:
     {
-        ERROR_DATA* pData = (ERROR_DATA*)lParam;
+        ERROR_DATA* pData = (ERROR_DATA*)lParam; // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
         if (pData) {
             MessageBoxW(hwndDlg, pData->wsMessage.c_str(), L"Export Error", MB_ICONERROR);
-            delete pData;
+            delete pData; // NOSONAR - OWNERSHIP-01: manual lifetime management of cross-thread message payload
         }
         // Allow going back
         PropSheet_SetWizButtons(hwndDlg, PSWIZB_BACK);

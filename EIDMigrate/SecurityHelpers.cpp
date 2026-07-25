@@ -16,7 +16,7 @@ BOOL ConstantTimeEqual(
     BYTE result = 0;
     for (DWORD i = 0; i < cbData; i++)
     {
-        result |= pbData1[i] ^ pbData2[i];
+        result |= pbData1[i] ^ pbData2[i];  // NOSONAR - BYTE-01: BYTE buffer for constant-time comparison
     }
     return result == 0;
 }
@@ -33,12 +33,12 @@ BOOL ConstantTimeEqualString(
     size_t cchLen2 = wcslen(pwszString2);
 
     // Lengths must match - include in comparison to prevent length oracle
-    if (cchLen1 != cchLen2)
+    if (cchLen1 != cchLen2)  // NOSONAR - SCOPE-01: length captured before length-independent comparison
         return FALSE;
 
     // Compare all characters
     return ConstantTimeEqual(
-        reinterpret_cast<const BYTE*>(pwszString1),
-        reinterpret_cast<const BYTE*>(pwszString2),
+        reinterpret_cast<const BYTE*>(pwszString1),  // NOSONAR - BYTE-01: reinterpret to BYTE* for constant-time comparison
+        reinterpret_cast<const BYTE*>(pwszString2),  // NOSONAR - BYTE-01: reinterpret to BYTE* for constant-time comparison
         static_cast<DWORD>(cchLen1 * sizeof(WCHAR)));
 }

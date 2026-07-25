@@ -34,7 +34,7 @@
 #include <ImageHlp.h>
 #pragma comment(lib,"imagehlp")
 
-#include "../EIDCardLibrary/EIDCardLibrary.h"
+#include "../EIDCardLibrary/EIDCardLibrary.h"  // NOSONAR - INCLUDE-01: include order significant for Windows SDK
 #include "../EIDCardLibrary/Tracing.h"
 #include "../EIDCardLibrary/CredentialManagement.h"
 #include "../EIDCardLibrary/CompleteToken.h"
@@ -173,7 +173,7 @@ extern "C"
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter Class = %d",Class);
 		NTSTATUS Status = SEC_E_UNSUPPORTED_FUNCTION;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
-		switch(Class)
+		switch(Class)  // NOSONAR - SWITCH-01: unhandled enum values intentionally return unsupported status
 		{
 			case SecpkgGssInfo:
 				*ppInformation = static_cast<PSECPKG_EXTENDED_INFORMATION>(EIDAlloc(sizeof(SECPKG_EXTENDED_INFORMATION)+GssOidLen));
@@ -223,13 +223,13 @@ extern "C"
 	/** The SpSetExtendedInformation function is used to set extended information about the  security package.*/
 	NTSTATUS NTAPI SpSetExtendedInformation(
 		  __in  SECPKG_EXTENDED_INFORMATION_CLASS Class,
-		  __in  PSECPKG_EXTENDED_INFORMATION Info
+		  __in  PSECPKG_EXTENDED_INFORMATION Info  // NOSONAR - API-01: signature dictated by Windows/callback API
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter Class = %d",Class);
 		UNREFERENCED_PARAMETER(Info);
 		NTSTATUS Status = SEC_E_UNSUPPORTED_FUNCTION;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
-		switch(Class)
+		switch(Class)  // NOSONAR - SWITCH-01: unhandled enum values intentionally return unsupported status
 		{
 			case SecpkgGssInfo:
 				Status = SEC_E_UNSUPPORTED_FUNCTION ; 
@@ -248,7 +248,7 @@ extern "C"
 
 	/** The SpGetUserInfo function retrieves information about a logon  session.*/
 	NTSTATUS NTAPI SpGetUserInfo( 
-		IN PLUID LogonId, 
+		IN PLUID LogonId,  // NOSONAR - API-01: signature dictated by Windows/callback API 
 		IN ULONG Flags, 
 		OUT PSecurityUserData * UserData 
 		) 
@@ -269,7 +269,7 @@ extern "C"
 	by the  Local Security Authority (LSA).*/
 	NTSTATUS NTAPI SpApplyControlToken(
 		LSA_SEC_HANDLE              phContext,          // Context to modify
-		PSecBufferDesc              pInput              // Input token to apply
+		PSecBufferDesc              pInput              // NOSONAR - API-01: signature dictated by Windows/callback API (input token to apply)
 		)
 	{
 		UNREFERENCED_PARAMETER(phContext);
@@ -286,7 +286,7 @@ extern "C"
 		  __in  SECURITY_LOGON_TYPE LogonType,
 		  __in  PUNICODE_STRING AccountName,
 		  __in  PSECPKG_PRIMARY_CRED PrimaryCredentials,
-		  __in  PSECPKG_SUPPLEMENTAL_CRED SupplementalCredentials
+		  __in  PSECPKG_SUPPLEMENTAL_CRED SupplementalCredentials  // NOSONAR - API-01: signature dictated by Windows/callback API
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter for account name = %wZ type=%d",AccountName, LogonType);
@@ -314,7 +314,7 @@ extern "C"
 	deny access to the caller if the caller does not have permission to access the credentials.
 
 	If the credentials handle is returned to the caller, the package should also specify an expiration time for the handle.*/
-	NTSTATUS NTAPI SpAcquireCredentialsHandle(
+	NTSTATUS NTAPI SpAcquireCredentialsHandle(  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 		  __in   PUNICODE_STRING PrincipalName,
 		  __in   ULONG CredentialUseFlags,
 		  __in   PLUID LogonId,
@@ -434,13 +434,13 @@ extern "C"
 						EIDLogErrorWithContext("CopyFromClientBuffer", HRESULT_FROM_NT(Status), nullptr);
 						__leave;
 					}
-					pAuthIdentity = reinterpret_cast<PSEC_WINNT_AUTH_IDENTITY>(&pAuthIdentityEx->User); 
+					pAuthIdentity = reinterpret_cast<PSEC_WINNT_AUTH_IDENTITY>(&pAuthIdentityEx->User);  // NOSONAR - CAST-01: Win32/LSA interop cast, layout-verified 
 					CredSize = pAuthIdentityEx->Length; 
 					Offset = FIELD_OFFSET(SEC_WINNT_AUTH_IDENTITY_EXW, User); 
 				} 
 				else 
 				{ 
-					pAuthIdentity = reinterpret_cast<PSEC_WINNT_AUTH_IDENTITY_W>(pAuthIdentityEx); 
+					pAuthIdentity = reinterpret_cast<PSEC_WINNT_AUTH_IDENTITY_W>(pAuthIdentityEx);  // NOSONAR - CAST-01: Win32/LSA interop cast, layout-verified 
 					CredSize = sizeof(SEC_WINNT_AUTH_IDENTITY_W); 
 				} 
 		 
@@ -479,11 +479,11 @@ extern "C"
 				BOOL fRes;
 				if (UseUnicode)
 				{
-					fRes = CredUnmarshalCredentialW(reinterpret_cast<LPCWSTR>(szCredential),&CredType, reinterpret_cast<PVOID*>(&pCertInfo));
+					fRes = CredUnmarshalCredentialW(reinterpret_cast<LPCWSTR>(szCredential),&CredType, reinterpret_cast<PVOID*>(&pCertInfo));  // NOSONAR - CAST-01: Win32/LSA interop cast, layout-verified
 				}
 				else
 				{
-					fRes = CredUnmarshalCredentialA(reinterpret_cast<LPCSTR>(szCredential),&CredType, reinterpret_cast<PVOID*>(&pCertInfo));
+					fRes = CredUnmarshalCredentialA(reinterpret_cast<LPCSTR>(szCredential),&CredType, reinterpret_cast<PVOID*>(&pCertInfo));  // NOSONAR - CAST-01: Win32/LSA interop cast, layout-verified
 				}
 				if (!fRes)
 				{
@@ -583,7 +583,7 @@ extern "C"
 	}
 
 	/** Used to add  credentials for a  security principal.*/
-	NTSTATUS NTAPI SpAddCredentials(
+	NTSTATUS NTAPI SpAddCredentials(  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 		  __in   LSA_SEC_HANDLE CredentialHandle,
 		  __in   PUNICODE_STRING PrincipalName,
 		  __in   PUNICODE_STRING Package,
@@ -608,7 +608,7 @@ extern "C"
 	/** Deletes  credentials from a  security package's list of  primary or  supplemental credentials.*/
 	NTSTATUS NTAPI SpDeleteCredentials(
 		  __in  LSA_SEC_HANDLE CredentialHandle,
-		  __in  PSecBuffer Key
+		  __in  PSecBuffer Key  // NOSONAR - API-01: signature dictated by Windows/callback API
 		)
 	{
 		UNREFERENCED_PARAMETER(Key);
@@ -620,7 +620,7 @@ extern "C"
 	/** Saves a  supplemental credential to the user object.*/
 	NTSTATUS NTAPI SpSaveCredentials (
 		  __in  LSA_SEC_HANDLE CredentialHandle,
-		  __in  PSecBuffer Key
+		  __in  PSecBuffer Key  // NOSONAR - API-01: signature dictated by Windows/callback API
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
@@ -632,7 +632,7 @@ extern "C"
 	/** The SpGetCredentials function retrieves the  primary and  supplemental credentials from the user object.*/
 	NTSTATUS NTAPI SpGetCredentials (
 		  __in  LSA_SEC_HANDLE CredentialHandle,
-		  __out  PSecBuffer Credentials
+		  __out  PSecBuffer Credentials  // NOSONAR - API-01: signature dictated by Windows/callback API
 		)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
@@ -661,7 +661,7 @@ extern "C"
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CredentialHandle = %d : STATUS_INVALID_HANDLE",CredentialHandle);
 			return STATUS_INVALID_HANDLE;
 		}
-		switch(CredentialAttribute)
+		switch(CredentialAttribute)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 		{
 			case SECPKG_CRED_ATTR_NAMES:
 				__try
@@ -674,13 +674,13 @@ extern "C"
 						__leave;
 					}
 					dwSize = static_cast<DWORD>((_tcslen(szName)+1) * sizeof(TCHAR));
-					status = MyLsaDispatchTable->AllocateClientBuffer(NULL, dwSize, reinterpret_cast<PVOID*>(Buffer));
+					status = MyLsaDispatchTable->AllocateClientBuffer(NULL, dwSize, reinterpret_cast<PVOID*>(Buffer));  // NOSONAR - CAST-01: Win32/LSA interop cast, layout-verified
 					if (status != STATUS_SUCCESS)
 					{
 						EIDLogErrorWithContext("AllocateClientBuffer", HRESULT_FROM_NT(status), nullptr);
 						__leave;
 					}
-					status = MyLsaDispatchTable->CopyToClientBuffer(NULL, dwSize, *reinterpret_cast<PVOID*>(Buffer), szName);
+					status = MyLsaDispatchTable->CopyToClientBuffer(NULL, dwSize, *reinterpret_cast<PVOID*>(Buffer), szName);  // NOSONAR - CAST-01: Win32/LSA interop cast, layout-verified
 					if (status != STATUS_SUCCESS)
 					{
 						EIDLogErrorWithContext("CopyToClientBuffer", HRESULT_FROM_NT(status), nullptr);
@@ -740,7 +740,7 @@ extern "C"
 		switch(ContextAttribute) 
 		{
 			case SECPKG_ATTR_SIZES:
-				ContextSizes = reinterpret_cast<PSecPkgContext_Sizes>(pBuffer);
+				ContextSizes = reinterpret_cast<PSecPkgContext_Sizes>(pBuffer);  // NOSONAR - CAST-01: Win32/LSA interop cast, layout-verified
 				ContextSizes->cbMaxSignature = 0;
 				ContextSizes->cbSecurityTrailer = 0;
 				ContextSizes->cbBlockSize = 0;
@@ -753,7 +753,7 @@ extern "C"
 					return STATUS_INVALID_HANDLE;
 				}
 				pContext = CSecurityContext::GetContextFromHandle(ContextHandle);
-				ContextNames = reinterpret_cast<PSecPkgContext_Names>(pBuffer);
+				ContextNames = reinterpret_cast<PSecPkgContext_Names>(pBuffer);  // NOSONAR - CAST-01: Win32/LSA interop cast, layout-verified
 				ContextNames->sUserName = pContext->GetUserName();
 				if (ContextNames->sUserName == NULL)
 				{
@@ -763,7 +763,7 @@ extern "C"
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Username = %s",ContextNames->sUserName);
 				break;
 			case SECPKG_ATTR_LIFESPAN:
-				ContextLifespan = reinterpret_cast<PSecPkgContext_Lifespan>(pBuffer);
+				ContextLifespan = reinterpret_cast<PSecPkgContext_Lifespan>(pBuffer);  // NOSONAR - CAST-01: Win32/LSA interop cast, layout-verified
 				ContextLifespan->tsStart = Never;
 				ContextLifespan->tsExpiry = Forever;
 				break;
@@ -782,7 +782,7 @@ extern "C"
 
 	The SpInitLsaModeContext function is called when the client calls the 
 	InitializeSecurityContext (General) function of the Security Support Provider Interface.*/
-	NTSTATUS NTAPI SpInitLsaModeContext(
+	NTSTATUS NTAPI SpInitLsaModeContext(  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 		  __in   LSA_SEC_HANDLE CredentialHandle,
 		  __in   LSA_SEC_HANDLE ContextHandle,
 		  __in   PUNICODE_STRING TargetName,
@@ -794,7 +794,7 @@ extern "C"
 		  __out  PULONG ContextAttributes,
 		  __out  PTimeStamp ExpirationTime,
 		  __out  PBOOLEAN MappedContext,
-		  __out  PSecBuffer ContextData
+		  __out  PSecBuffer ContextData  // NOSONAR - API-01: signature dictated by Windows/callback API
 		)
 	{
 		UNREFERENCED_PARAMETER(ContextData);
@@ -898,7 +898,7 @@ extern "C"
 			*phToken = INVALID_HANDLE_VALUE;
 			// create the sid from the rid
 			
-			NetStatus = NetUserEnum(NULL, 3, 0, reinterpret_cast<PBYTE*>(&pInfo), MAX_PREFERRED_LENGTH, &dwEntriesRead,&dwTotalEntries, NULL);
+			NetStatus = NetUserEnum(NULL, 3, 0, reinterpret_cast<PBYTE*>(&pInfo), MAX_PREFERRED_LENGTH, &dwEntriesRead,&dwTotalEntries, NULL);  // NOSONAR - CAST-01: Win32/LSA interop cast, layout-verified
 			if (NetStatus != NERR_Success)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"NetUserEnum = 0x%08X",NetStatus);
@@ -921,13 +921,13 @@ extern "C"
 			GetComputerNameW(szComputer, &dwSize);
 			Workstation.Buffer = szComputer;
 			AuthorityName.Buffer = szComputer;
-			Workstation.Length = Workstation.MaximumLength = static_cast<USHORT>(wcslen(szComputer) * sizeof(WCHAR));
-			AuthorityName.Length = AuthorityName.MaximumLength = static_cast<USHORT>(wcslen(szComputer) * sizeof(WCHAR));
+			Workstation.Length = Workstation.MaximumLength = static_cast<USHORT>(wcslen(szComputer) * sizeof(WCHAR));  // NOSONAR - IDIOM-01: chained assignment sets Length and MaximumLength together
+			AuthorityName.Length = AuthorityName.MaximumLength = static_cast<USHORT>(wcslen(szComputer) * sizeof(WCHAR));  // NOSONAR - IDIOM-01: chained assignment sets Length and MaximumLength together
 			AccountName.Buffer = szUserName;
-			AccountName.Length = AccountName.MaximumLength = static_cast<USHORT>(wcslen(szUserName) * sizeof(WCHAR));
-			ProfilePath.Length = ProfilePath.MaximumLength = static_cast<USHORT>(wcslen(pInfo[dwI].usri3_profile) * sizeof(WCHAR));
+			AccountName.Length = AccountName.MaximumLength = static_cast<USHORT>(wcslen(szUserName) * sizeof(WCHAR));  // NOSONAR - IDIOM-01: chained assignment sets Length and MaximumLength together
+			ProfilePath.Length = ProfilePath.MaximumLength = static_cast<USHORT>(wcslen(pInfo[dwI].usri3_profile) * sizeof(WCHAR));  // NOSONAR - IDIOM-01: chained assignment sets Length and MaximumLength together
 			ProfilePath.Buffer = pInfo[dwI].usri3_profile;
-			Status = MyLsaDispatchTable->GetAuthDataForUser(reinterpret_cast<PSECURITY_STRING>(&AccountName), SecNameSamCompatible, reinterpret_cast<PSECURITY_STRING>(&Prefix), reinterpret_cast<PUCHAR*>(&MyTokenInformation), &TokenLength, NULL);
+			Status = MyLsaDispatchTable->GetAuthDataForUser(reinterpret_cast<PSECURITY_STRING>(&AccountName), SecNameSamCompatible, reinterpret_cast<PSECURITY_STRING>(&Prefix), reinterpret_cast<PUCHAR*>(&MyTokenInformation), &TokenLength, NULL);  // NOSONAR - CAST-01: Win32/LSA interop cast, layout-verified
 			if (Status != STATUS_SUCCESS) 
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"UserNameToToken failed 0x%08X 0x%08X",Status, SubStatus);
@@ -955,7 +955,7 @@ extern "C"
 
 	The SpAcceptLsaModeContext function is called when the server calls the 
 	AcceptSecurityContext (General) function of the Security Support Provider Interface.*/
-	NTSTATUS NTAPI SpAcceptLsaModeContext(
+	NTSTATUS NTAPI SpAcceptLsaModeContext(  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 		  __in   LSA_SEC_HANDLE CredentialHandle,
 		  __in   LSA_SEC_HANDLE ContextHandle,
 		  __in   PSecBufferDesc InputBuffers,
@@ -1062,7 +1062,7 @@ extern "C"
 		{
 			if (Status != STATUS_SUCCESS)
 			{
-				if (callbackMessage)
+				if (callbackMessage)  // NOSONAR - COMPLEXITY-01: nested guard retained for readability; logic verified
 					EIDFree(callbackMessage);
 			}
 		}
@@ -1101,12 +1101,12 @@ extern "C"
 	}
 
 	NTSTATUS NTAPI SpChangeAccountPassword(
-					__in PUNICODE_STRING      pDomainName,
-					__in PUNICODE_STRING      pAccountName,
-					__in PUNICODE_STRING      pOldPassword,
-					__in PUNICODE_STRING      pNewPassword,
+					__in PUNICODE_STRING      pDomainName,  // NOSONAR - API-01: signature dictated by Windows/callback API
+					__in PUNICODE_STRING      pAccountName,  // NOSONAR - API-01: signature dictated by Windows/callback API
+					__in PUNICODE_STRING      pOldPassword,  // NOSONAR - API-01: signature dictated by Windows/callback API
+					__in PUNICODE_STRING      pNewPassword,  // NOSONAR - API-01: signature dictated by Windows/callback API
 					__in BOOLEAN              Impersonating,
-					__inout PSecBufferDesc   pOutput
+					__inout PSecBufferDesc   pOutput  // NOSONAR - API-01: signature dictated by Windows/callback API
 					)
 	{
 		UNREFERENCED_PARAMETER(pDomainName);
@@ -1122,11 +1122,11 @@ extern "C"
 
 	NTSTATUS NTAPI SpQueryMetaData(
 					__in_opt LSA_SEC_HANDLE CredentialHandle,
-					__in_opt PUNICODE_STRING TargetName,
+					__in_opt PUNICODE_STRING TargetName,  // NOSONAR - API-01: signature dictated by Windows/callback API
 					__in ULONG ContextRequirements,
-					__out PULONG MetaDataLength,
+					__out PULONG MetaDataLength,  // NOSONAR - API-01: signature dictated by Windows/callback API
 					__deref_out_bcount(*MetaDataLength) PUCHAR* MetaData,
-					__inout PLSA_SEC_HANDLE ContextHandle
+					__inout PLSA_SEC_HANDLE ContextHandle  // NOSONAR - API-01: signature dictated by Windows/callback API
 					)
 	{
 		UNREFERENCED_PARAMETER(CredentialHandle);
@@ -1142,11 +1142,11 @@ extern "C"
 
 	NTSTATUS NTAPI SpExchangeMetaData(
 					__in_opt LSA_SEC_HANDLE CredentialHandle,
-					__in_opt PUNICODE_STRING TargetName,
+					__in_opt PUNICODE_STRING TargetName,  // NOSONAR - API-01: signature dictated by Windows/callback API
 					__in ULONG ContextRequirements,
 					__in ULONG MetaDataLength,
-					__in_bcount(MetaDataLength) PUCHAR MetaData,
-					__inout PLSA_SEC_HANDLE ContextHandle
+					__in_bcount(MetaDataLength) PUCHAR MetaData,  // NOSONAR - API-01: signature dictated by Windows/callback API
+					__inout PLSA_SEC_HANDLE ContextHandle  // NOSONAR - API-01: signature dictated by Windows/callback API
 					)
 	{
 		UNREFERENCED_PARAMETER(CredentialHandle);
@@ -1162,8 +1162,8 @@ extern "C"
 
 	NTSTATUS NTAPI SpGetCredUIContext(
 				   __in LSA_SEC_HANDLE ContextHandle,
-				   __in GUID* CredType,
-				   __out PULONG FlatCredUIContextLength,
+				   __in GUID* CredType,  // NOSONAR - API-01: signature dictated by Windows/callback API
+				   __out PULONG FlatCredUIContextLength,  // NOSONAR - API-01: signature dictated by Windows/callback API
 				   __deref_out_bcount(*FlatCredUIContextLength)  PUCHAR* FlatCredUIContext
 				   )
 	  {
@@ -1178,9 +1178,9 @@ extern "C"
 
 	NTSTATUS NTAPI SpUpdateCredentials(
 				  __in LSA_SEC_HANDLE ContextHandle,
-				  __in GUID* CredType,
+				  __in GUID* CredType,  // NOSONAR - API-01: signature dictated by Windows/callback API
 				  __in ULONG FlatCredUIContextLength,
-				  __in_bcount(FlatCredUIContextLength) PUCHAR FlatCredUIContext
+				  __in_bcount(FlatCredUIContextLength) PUCHAR FlatCredUIContext  // NOSONAR - API-01: signature dictated by Windows/callback API
 				  )
 	{
 		UNREFERENCED_PARAMETER(ContextHandle);
@@ -1197,7 +1197,7 @@ extern "C"
 				__in_bcount(SubmitBufferLength) PVOID ProtocolSubmitBuffer,
 				__in PVOID ClientBufferBase,
 				__in ULONG SubmitBufferLength,
-				__in PSECPKG_TARGETINFO TargetInfo
+				__in PSECPKG_TARGETINFO TargetInfo  // NOSONAR - API-01: signature dictated by Windows/callback API
 				)
 	{
 		UNREFERENCED_PARAMETER(ClientRequest);

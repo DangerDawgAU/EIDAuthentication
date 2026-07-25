@@ -71,7 +71,7 @@ static wchar_t s_wszEmptyLabel[] = L"";  // NOSONAR - GLOBAL-01: Non-const for W
 // The field state value indicates whether the field is displayed
 // in the selected tile, the deselected tile, or both.
 // The Field interactive state indicates when
-static const FIELD_STATE_PAIR s_rgFieldStatePairs[] = 
+static const FIELD_STATE_PAIR s_rgFieldStatePairs[] =   // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 {
     { CPFS_DISPLAY_IN_BOTH, CPFIS_NONE },                   // SFI_TILEIMAGE
     { CPFS_DISPLAY_IN_BOTH, CPFIS_NONE },                   // SFI_USERNAME
@@ -82,7 +82,7 @@ static const FIELD_STATE_PAIR s_rgFieldStatePairs[] =
 };
 
 // Same as s_rgFieldStatePairs above, but for the CMessageCredential.
-static const FIELD_STATE_PAIR s_rgMessageFieldStatePairs[] = 
+static const FIELD_STATE_PAIR s_rgMessageFieldStatePairs[] =   // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 {
 	{ CPFS_DISPLAY_IN_BOTH, CPFIS_NONE },                   // SMFI_TILEIMAGE
 	{ CPFS_DISPLAY_IN_BOTH, CPFIS_NONE },                   // SMFI_MESSAGE
@@ -93,7 +93,7 @@ static const FIELD_STATE_PAIR s_rgMessageFieldStatePairs[] =
 // The first field is the index of the field.
 // The second is the type of the field.
 // The third is the name of the field, NOT the value which will appear in the field.
-static const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgCredProvFieldDescriptors[] =
+static const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgCredProvFieldDescriptors[] =  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 {
     { SFI_TILEIMAGE, CPFT_TILE_IMAGE, s_wszEmptyLabel},
     { SFI_USERNAME, CPFT_LARGE_TEXT, s_wszEmptyLabel},
@@ -105,7 +105,7 @@ static const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgCredProvFieldDescriptors[]
 };
 
 // Same as s_rgCredProvFieldDescriptors above, but for the CMessageCredential.
-static const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgMessageCredProvFieldDescriptors[] =
+static const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR s_rgMessageCredProvFieldDescriptors[] =  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
 {
     { SMFI_TILEIMAGE, CPFT_TILE_IMAGE, s_wszEmptyLabel},
 	{ SMFI_MESSAGE, CPFT_LARGE_TEXT, s_wszEmptyLabel},

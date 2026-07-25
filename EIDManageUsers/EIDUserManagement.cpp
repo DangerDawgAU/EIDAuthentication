@@ -1,8 +1,8 @@
 // UserManagement.cpp - User account and profile management
 #include "UserManagement.h"
 #include "../EIDMigrate/Tracing.h"
-#include <lm.h>
-#include <userenv.h>
+#include <lm.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
+#include <userenv.h>  // NOSONAR - INCLUDE-01: include order/casing significant for Windows SDK
 #include <sddl.h>
 #include <vector>
 
@@ -45,15 +45,15 @@ HRESULT GetUserProfilePath(_In_ const std::wstring& wsUsername, _Out_ std::wstri
     std::vector<BYTE> sidBuffer(dwSidSize);
     std::vector<WCHAR> domainBuffer(dwDomainSize);
 
-    if (!LookupAccountNameW(nullptr, wsUsername.c_str(),
-        reinterpret_cast<PSID>(sidBuffer.data()), &dwSidSize,
+    if (!LookupAccountNameW(nullptr, wsUsername.c_str(),  // NOSONAR - SCOPE-01: init-statement would move multi-line Win32 call
+        reinterpret_cast<PSID>(sidBuffer.data()), &dwSidSize,  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         domainBuffer.data(), &dwDomainSize, &use))
     {
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
     // Get profile directory
-    WCHAR szProfilePath[MAX_PATH];
+    WCHAR szProfilePath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
     DWORD dwPathSize = MAX_PATH;
     HRESULT hr = GetProfilesDirectoryW(szProfilePath, &dwPathSize);
     if (FAILED(hr))
@@ -61,7 +61,7 @@ HRESULT GetUserProfilePath(_In_ const std::wstring& wsUsername, _Out_ std::wstri
 
     // Convert SID to string for folder name
     LPWSTR pwszSid = nullptr;
-    if (!ConvertSidToStringSidW(reinterpret_cast<PSID>(sidBuffer.data()), &pwszSid))
+    if (!ConvertSidToStringSidW(reinterpret_cast<PSID>(sidBuffer.data()), &pwszSid))  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         return HRESULT_FROM_WIN32(GetLastError());
 
     wsProfilePath = szProfilePath;
@@ -96,7 +96,7 @@ HRESULT DeleteUserProfile(_In_ const std::wstring& wsUsername)
 
     // Delete the profile directory and all contents
     // Use SHFileOperation for better deletion handling
-    SHFILEOPSTRUCTW fileOp = {0};
+    SHFILEOPSTRUCTW fileOp = {};
     fileOp.wFunc = FO_DELETE;
     fileOp.pFrom = wsProfilePath.c_str();
     fileOp.fFlags = FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
@@ -121,7 +121,7 @@ HRESULT RemoveUserFromGroups(_In_ const std::wstring& wsUsername,
     if (wsUsername.empty() || groupsToRemove.empty())
         return E_INVALIDARG;
 
-    HRESULT hrOverall = S_OK;
+    HRESULT hrOverall = S_OK;  // NOSONAR (EXPLICIT-TYPE-03) - Explicit type preferred for HRESULT clarity
     DWORD dwFailedCount = 0;
 
     for (const auto& wsGroup : groupsToRemove)
@@ -144,20 +144,20 @@ HRESULT RemoveUserFromGroups(_In_ const std::wstring& wsUsername,
         std::vector<BYTE> sidBuffer(dwSidSize);
         std::vector<WCHAR> domainBuffer(dwDomainSize);
 
-        if (!LookupAccountNameW(nullptr, wsUsername.c_str(),
-            reinterpret_cast<PSID>(sidBuffer.data()), &dwSidSize,
+        if (!LookupAccountNameW(nullptr, wsUsername.c_str(),  // NOSONAR - SCOPE-01: init-statement would move multi-line Win32 call
+            reinterpret_cast<PSID>(sidBuffer.data()), &dwSidSize,  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
             domainBuffer.data(), &dwDomainSize, &use))
         {
             dwFailedCount++;
             continue;
         }
 
-        memberInfo.lgrmi0_sid = reinterpret_cast<PSID>(sidBuffer.data());
+        memberInfo.lgrmi0_sid = reinterpret_cast<PSID>(sidBuffer.data());  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
 
         NET_API_STATUS status = NetLocalGroupDelMembers(nullptr,
-            const_cast<LPWSTR>(wsGroup.c_str()),
+            const_cast<LPWSTR>(wsGroup.c_str()),  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
             0,
-            reinterpret_cast<LPBYTE>(&memberInfo),
+            reinterpret_cast<LPBYTE>(&memberInfo),  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
             1);
 
         if (status != NERR_Success && status != 2314)  // 2314 = NERR_MemberNotInGroup
@@ -193,14 +193,12 @@ HRESULT GetUserGroups(_In_ const std::wstring& wsUsername,
     std::vector<BYTE> sidBuffer(dwSidSize);
     std::vector<WCHAR> domainBuffer(dwDomainSize);
 
-    if (!LookupAccountNameW(nullptr, wsUsername.c_str(),
-        reinterpret_cast<PSID>(sidBuffer.data()), &dwSidSize,
+    if (!LookupAccountNameW(nullptr, wsUsername.c_str(),  // NOSONAR - SCOPE-01: init-statement would move multi-line Win32 call
+        reinterpret_cast<PSID>(sidBuffer.data()), &dwSidSize,  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         domainBuffer.data(), &dwDomainSize, &use))
     {
         return HRESULT_FROM_WIN32(GetLastError());
     }
-
-    PSID pSid = reinterpret_cast<PSID>(sidBuffer.data());
 
     // Enumerate local groups
     DWORD dwEntriesRead = 0;
@@ -208,21 +206,21 @@ HRESULT GetUserGroups(_In_ const std::wstring& wsUsername,
     PLOCALGROUP_USERS_INFO_0 pGroups = nullptr;
 
     NET_API_STATUS status = NetUserGetLocalGroups(nullptr,
-        const_cast<LPWSTR>(wsUsername.c_str()),
+        const_cast<LPWSTR>(wsUsername.c_str()),  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         0,
         LG_INCLUDE_INDIRECT,
-        reinterpret_cast<LPBYTE*>(&pGroups),
+        reinterpret_cast<LPBYTE*>(&pGroups),  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         MAX_PREFERRED_LENGTH,
         &dwEntriesRead,
         &dwTotalEntries);
 
-    if (status == NERR_Success)
+    if (status == NERR_Success)  // NOSONAR - SCOPE-01: init-statement would move multi-line Win32 call
     {
         for (DWORD i = 0; i < dwEntriesRead; i++)
         {
             if (pGroups[i].lgrui0_name)
             {
-                groups.push_back(pGroups[i].lgrui0_name);
+                groups.emplace_back(pGroups[i].lgrui0_name);
             }
         }
         NetApiBufferFree(pGroups);
@@ -232,7 +230,7 @@ HRESULT GetUserGroups(_In_ const std::wstring& wsUsername,
 }
 
 // Check if user is logged on
-BOOL IsUserLoggedIn(_In_ const std::wstring& wsUsername)
+BOOL IsUserLoggedIn(_In_ [[maybe_unused]] const std::wstring& wsUsername)  // NOSONAR - API-01: string_view would change public signature; param intentionally unused
 {
     // Enumerate sessions to check if user is logged on
     // This is a simplified check - a full implementation would use
@@ -260,20 +258,20 @@ HRESULT EnumerateLocalUsers(_Out_ std::vector<std::wstring>& users)
     LPUSER_INFO_0 pUserInfoArray = nullptr;
 
     NET_API_STATUS status = NetUserEnum(nullptr, 0, FILTER_NORMAL_ACCOUNT,
-        reinterpret_cast<LPBYTE*>(&pUserInfoArray),
+        reinterpret_cast<LPBYTE*>(&pUserInfoArray),  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
         MAX_PREFERRED_LENGTH,
         &dwEntriesRead,
         &dwTotalEntries,
         nullptr);
 
-    if (status != NERR_Success)
+    if (status != NERR_Success)  // NOSONAR - SCOPE-01: init-statement would move multi-line Win32 call
         return HRESULT_FROM_WIN32(status);
 
     for (DWORD i = 0; i < dwEntriesRead; i++)
     {
         if (pUserInfoArray[i].usri0_name)
         {
-            users.push_back(pUserInfoArray[i].usri0_name);
+            users.emplace_back(pUserInfoArray[i].usri0_name);
         }
     }
 

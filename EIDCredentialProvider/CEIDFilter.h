@@ -35,14 +35,14 @@ public:
 	// IUnknown
     IMPL_IUNKNOWN_ADDREF_RELEASE()
 
-    STDMETHOD (QueryInterface)(REFIID riid, void** ppv) override
+    STDMETHOD (QueryInterface)(REFIID riid, void** ppv) override  // NOSONAR - CAST-01: COM QueryInterface requires void**
     {
         HRESULT hr;
         if (IID_IUnknown == riid ||
             IID_ICredentialProviderFilter == riid)
         {
             *ppv = this;
-            reinterpret_cast<IUnknown*>(*ppv)->AddRef();
+            reinterpret_cast<IUnknown*>(*ppv)->AddRef();  // NOSONAR - CAST-01: Win32/COM interop cast, layout-verified
             hr = S_OK;
         }
         else
@@ -63,7 +63,7 @@ private:
 
 
 // Boilerplate method to create an instance of our provider.
-HRESULT CEIDFilter_CreateInstance(REFIID riid, void** ppv)
+HRESULT CEIDFilter_CreateInstance(REFIID riid, void** ppv)  // NOSONAR - CAST-01: COM requires void**
 {
     HRESULT hr;
 	if (riid != IID_ICredentialProviderFilter) return E_NOINTERFACE;
