@@ -469,8 +469,12 @@ void EIDSecurityAuditEx(LPCSTR szFile, DWORD dwLine, LPCSTR szFunction, UCHAR dw
 	va_end(ap);
 	if (ret < 0) return;
 
-	// Format with security audit prefix and location info
-	swprintf_s(AuditBuffer, ARRAYSIZE(AuditBuffer), L"%s %S:%d - %s", pwszAuditPrefix, szFunction, dwLine, Buffer);
+	// Format with security audit prefix and location info.
+	// _snwprintf_s/_TRUNCATE, not swprintf_s: the prefix, function name and an already
+	// 511-char-capable message can exceed AuditBuffer, and swprintf_s overflow invokes the
+	// CRT invalid-parameter handler, which terminates LSASS. Truncating an audit line is
+	// always preferable to killing the process that writes it.
+	_snwprintf_s(AuditBuffer, ARRAYSIZE(AuditBuffer), _TRUNCATE, L"%s %S:%d - %s", pwszAuditPrefix, szFunction, dwLine, Buffer);
 
 #ifdef _DEBUG
 	OutputDebugString(AuditBuffer);

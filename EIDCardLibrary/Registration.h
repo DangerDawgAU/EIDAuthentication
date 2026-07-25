@@ -25,7 +25,11 @@ void EIDCredentialProviderDllRegister();
 void EIDCredentialProviderDllUnRegister();
 void EIDConfigurationWizardDllRegister();
 void EIDConfigurationWizardDllUnRegister();
-BOOL EnableLogging();
+// Writes the ETW autologger configuration. The live trace session is started only when
+// TraceAutoStart is enabled by config/GPO (so a boot task cannot force a VERBOSE capture
+// against policy) - unless fForceStartSession is TRUE, which is reserved for an explicit
+// operator action such as the DllEnableLogging verb.
+BOOL EnableLogging(BOOL fForceStartSession = FALSE);
 BOOL DisableLogging();
 BOOL IsLoggingEnabled();
 

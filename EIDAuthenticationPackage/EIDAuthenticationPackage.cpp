@@ -277,8 +277,9 @@ extern "C"
 
 		*AuthenticationPackageName = LsaInitializeString(AUTHENTICATIONPACKAGENAME);
 
-		// Initialize CSV logging
-		EID_CSV_Initialize();
+		// CSV logging initializes itself on first use via the INIT_ONCE inside
+		// EIDCardLibraryLogStructured; calling EID_CSV_Initialize() here as well only
+		// closed and reopened the log file.
 		EIDCardLibraryLogStructured(
 			EID_EVENT_ID::LSA_PACKAGE_INIT,
 			EID_SEVERITY::INFO,

@@ -70,6 +70,32 @@ CStoredCredentialManager *CStoredCredentialManager::theSingleInstance = nullptr;
 // Placed after header include to have access to EID_PRIVATE_DATA types.
 //=============================================================================
 
+// Every offset/size triple in EID_PRIVATE_DATA is attacker-influenced: the blob comes
+// straight out of an LSA secret that an administrator (or an imported .eidm) can write,
+// and each consumer indexes Data[] with those values inside LSASS. Validate the whole
+// layout once, at the single point where the blob is read, so no consumer has to.
+static BOOL IsPrivateDataLayoutValid(__in const EID_PRIVATE_DATA* pPrivateData, __in DWORD dwBlobSize)
+{
+	const DWORD dwHeaderSize = FIELD_OFFSET(EID_PRIVATE_DATA, Data);
+	if (!pPrivateData || dwBlobSize < dwHeaderSize)
+	{
+		return FALSE;
+	}
+	const DWORD dwDataSize = dwBlobSize - dwHeaderSize;
+	// Unsigned arithmetic: (dwDataSize - offset) cannot underflow because offset <= dwDataSize
+	// is tested first, so each check is a genuine "does this region fit" test.
+	const USHORT usOffsets[] = { pPrivateData->dwCertificatOffset, pPrivateData->dwSymetricKeyOffset, pPrivateData->dwPasswordOffset };
+	const USHORT usSizes[]   = { pPrivateData->dwCertificatSize,   pPrivateData->dwSymetricKeySize,   pPrivateData->usPasswordLen };
+	for (size_t i = 0; i < ARRAYSIZE(usOffsets); i++)
+	{
+		if (usOffsets[i] > dwDataSize || usSizes[i] > dwDataSize - usOffsets[i])
+		{
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
+
 namespace {
 
 // Calculate the total size needed for EID_PRIVATE_DATA buffer
@@ -1210,6 +1236,16 @@ BOOL CStoredCredentialManager::GetResponseFromCryptedChallenge(__in PBYTE pChall
 			dwBlockLen = 20000; 
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CryptGetKeyParam - using %d as KP_BLOCKLEN", GetLastError(), dwBlockLen);
 			dwError = 0;
+		}
+		// H2: the challenge is the stored symmetric key, whose size is a USHORT read from the
+		// LSA secret (up to 65535) while this buffer is only one cipher block. Copying it
+		// unchecked corrupts the LSASS heap, so refuse anything that does not fit.
+		if (dwChallengeSize > dwBlockLen)
+		{
+			dwError = ERROR_INVALID_PARAMETER;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"Challenge size %d exceeds key block length %d", dwChallengeSize, dwBlockLen);
+			EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"[BOUNDS_REJECT] challenge size %d exceeds key block length %d", dwChallengeSize, dwBlockLen);
+			__leave;
 		}
 		*pSymetricKey = (PBYTE) EIDAlloc(dwBlockLen);
 		if (!*pSymetricKey)
@@ -2480,6 +2516,17 @@ BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_
 			__leave;
 		}
 		memcpy(*ppPrivateData, pData->Buffer, pData->Length);
+		// Reject a truncated or self-inconsistent blob here rather than letting each
+		// consumer index Data[] out of bounds inside LSASS.
+		if (!IsPrivateDataLayoutValid(*ppPrivateData, pData->Length))
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"EID_PRIVATE_DATA layout invalid (%d bytes) for rid 0x%08x", pData->Length, dwRid);
+			EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"[BOUNDS_REJECT] EID_PRIVATE_DATA layout invalid (%d bytes) for rid 0x%x", pData->Length, dwRid);
+			EIDFree(*ppPrivateData);
+			*ppPrivateData = nullptr;
+			dwError = ERROR_INVALID_DATA;
+			__leave;
+		}
 		fReturn = TRUE;
 	}
 	__finally

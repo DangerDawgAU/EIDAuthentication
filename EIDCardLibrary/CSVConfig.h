@@ -27,6 +27,7 @@
 
 #include <Windows.h>
 #include <sddl.h>
+#include <aclapi.h>
 #include <string>
 #include "EventDefinitions.h"
 
@@ -252,6 +253,42 @@ inline BOOL BuildLogDirSecurityAttributes(SECURITY_ATTRIBUTES* psa, PSECURITY_DE
     psa->bInheritHandle = FALSE;
     *ppSD = pSD;
     return TRUE;
+}
+
+// Create the log directory with the restrictive DACL above, and - crucially - re-apply
+// that DACL when the directory already exists. CreateDirectoryW ignores its security
+// attributes for an existing directory, so on every machine upgraded from an earlier
+// build the directory would otherwise keep its inherited (Users-writable) ProgramData
+// ACL and M5 would never actually take effect where it matters.
+inline void EnsureLogDirSecured(PCWSTR pwszDir)
+{
+    if (!pwszDir || pwszDir[0] == L'\0')
+        return;
+
+    SECURITY_ATTRIBUTES sa;
+    PSECURITY_DESCRIPTOR pSD = nullptr;
+    if (!BuildLogDirSecurityAttributes(&sa, &pSD))
+    {
+        CreateDirectoryW(pwszDir, nullptr);
+        return;
+    }
+
+    const BOOL fCreated = CreateDirectoryW(pwszDir, &sa);
+    if (!fCreated && GetLastError() == ERROR_ALREADY_EXISTS)
+    {
+        PACL pDacl = nullptr;
+        BOOL fDaclPresent = FALSE;
+        BOOL fDaclDefaulted = FALSE;
+        if (GetSecurityDescriptorDacl(pSD, &fDaclPresent, &pDacl, &fDaclDefaulted) && fDaclPresent)
+        {
+            // PROTECTED_DACL_SECURITY_INFORMATION matches the SDDL's "PAI" - it severs
+            // inheritance from ProgramData rather than merging with it.
+            SetNamedSecurityInfoW(const_cast<PWSTR>(pwszDir), SE_FILE_OBJECT,
+                DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+                nullptr, nullptr, pDacl, nullptr);
+        }
+    }
+    LocalFree(pSD);
 }
 
 // ================================================================

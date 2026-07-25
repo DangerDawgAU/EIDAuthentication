@@ -55,7 +55,6 @@ private:
     static BOOL EnsureLogFileOpen();
     static void RotateLogFile();
     static void WriteCSVHeader();
-    static void WriteEscapedCSVField(PCWSTR pwszValue);
     static BOOL IsEventEnabled(EID_EVENT_ID eventId, EID_SEVERITY severity);
     static void FormatTimestamp(WCHAR* pszBuffer, size_t cchBuffer);
 

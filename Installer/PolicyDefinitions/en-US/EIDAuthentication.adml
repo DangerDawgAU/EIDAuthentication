@@ -60,12 +60,12 @@ Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!CSVEnabled (DWORD)
 Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!CSVLogPath (REG_SZ)</string>
 
       <string id="LogCSVMaxFileSize">Maximum CSV file size (MB)</string>
-      <string id="LogCSVMaxFileSize_Help">Maximum size in megabytes the CSV log may reach before it is rotated. Range 1-4096. When not configured, the local setting applies (default 64).
+      <string id="LogCSVMaxFileSize_Help">Maximum size in megabytes the CSV log may reach before it is rotated. Range 1-1024. When not configured, the local setting applies (default 64).
 
 Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!CSVMaxFileSize (DWORD)</string>
 
       <string id="LogCSVFileCount">Rotated CSV file count</string>
-      <string id="LogCSVFileCount_Help">Number of rotated CSV log files to keep. Range 1-999. When not configured, the local setting applies (default 5).
+      <string id="LogCSVFileCount_Help">Number of rotated CSV log files to keep. Range 1-100. When not configured, the local setting applies (default 5).
 
 Registry: HKLM\SOFTWARE\Policies\EIDAuthentication\LogManager!CSVFileCount (DWORD)</string>
 

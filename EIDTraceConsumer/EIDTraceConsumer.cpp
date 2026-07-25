@@ -28,7 +28,28 @@
 #include <evntprov.h>
 #include <strsafe.h>
 #include <sddl.h>
+#include <aclapi.h>
 #include <stdio.h>
+
+// ================================================================
+// BUG 10: rotation bounds. RotateDiagFile counts down from the file count, so an
+// unclamped registry/policy value (e.g. 0xFFFFFFFF) drives a ~4-billion-iteration
+// rename loop in this LocalSystem service. Ranges match EIDCardLibrary/CSVConfig.cpp;
+// duplicated here because this project intentionally has no EIDCardLibrary include path.
+// ================================================================
+static DWORD ClampFileCount(DWORD dwValue)
+{
+    if (dwValue < 1) return 1;
+    if (dwValue > 100) return 100;
+    return dwValue;
+}
+
+static DWORD ClampMaxFileSizeMB(DWORD dwValue)
+{
+    if (dwValue < 1) return 1;
+    if (dwValue > 1024) return 1024;
+    return dwValue;
+}
 
 // ================================================================
 // M5: Restrictive DACL for the log directory.
@@ -60,6 +81,40 @@ static BOOL BuildLogDirSecurityAttributes(SECURITY_ATTRIBUTES* psa, PSECURITY_DE
     psa->bInheritHandle = FALSE;
     *ppSD = pSD;
     return TRUE;
+}
+
+// Create the log directory with the DACL above, re-applying it when the directory
+// already exists. CreateDirectoryW ignores its security attributes for an existing
+// directory, so without this every machine upgraded from an earlier build would keep
+// the inherited (Users-writable) ProgramData ACL and M5 would never take effect.
+static void EnsureLogDirSecured(PCWSTR pwszDir)
+{
+    if (!pwszDir || pwszDir[0] == L'\0')
+        return;
+
+    SECURITY_ATTRIBUTES sa;
+    PSECURITY_DESCRIPTOR pSD = nullptr;
+    if (!BuildLogDirSecurityAttributes(&sa, &pSD))
+    {
+        CreateDirectoryW(pwszDir, nullptr);
+        return;
+    }
+
+    if (!CreateDirectoryW(pwszDir, &sa) && GetLastError() == ERROR_ALREADY_EXISTS)
+    {
+        PACL pDacl = nullptr;
+        BOOL fDaclPresent = FALSE;
+        BOOL fDaclDefaulted = FALSE;
+        if (GetSecurityDescriptorDacl(pSD, &fDaclPresent, &pDacl, &fDaclDefaulted) && fDaclPresent)
+        {
+            // PROTECTED_DACL_SECURITY_INFORMATION matches the SDDL's "PAI" - it severs
+            // inheritance from ProgramData rather than merging with it.
+            SetNamedSecurityInfoW(const_cast<PWSTR>(pwszDir), SE_FILE_OBJECT,
+                DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+                nullptr, nullptr, pDacl, nullptr);
+        }
+    }
+    LocalFree(pSD);
 }
 
 // Service name and display name
@@ -171,6 +226,7 @@ BOOL LoadCsvConfiguration()
     {
         g_dwMaxFileSizeMB = 64;
     }
+    g_dwMaxFileSizeMB = ClampMaxFileSizeMB(g_dwMaxFileSizeMB);
 
     // Read file count
     dwSize = sizeof(g_dwFileCount);
@@ -180,6 +236,7 @@ BOOL LoadCsvConfiguration()
     {
         g_dwFileCount = 5;
     }
+    g_dwFileCount = ClampFileCount(g_dwFileCount);
 
     // Read diagnostics settings
     DWORD dwDiag = 0;
@@ -216,11 +273,11 @@ BOOL LoadCsvConfiguration()
 
         cb = sizeof(dw);
         if (RegQueryValueExW(hPolicy, L"CSVMaxFileSize", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dw), &cb) == ERROR_SUCCESS && dwType == REG_DWORD)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
-            g_dwMaxFileSizeMB = dw;
+            g_dwMaxFileSizeMB = ClampMaxFileSizeMB(dw);
 
         cb = sizeof(dw);
         if (RegQueryValueExW(hPolicy, L"CSVFileCount", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dw), &cb) == ERROR_SUCCESS && dwType == REG_DWORD)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
-            g_dwFileCount = dw;
+            g_dwFileCount = ClampFileCount(dw);
 
         cb = sizeof(dw);
         if (RegQueryValueExW(hPolicy, L"DiagnosticsEnabled", nullptr, &dwType, reinterpret_cast<LPBYTE>(&dw), &cb) == ERROR_SUCCESS && dwType == REG_DWORD)  // NOSONAR - BYTE-01: BYTE buffer interops with Win32 API
@@ -260,19 +317,9 @@ BOOL EnsureDiagFileOpen()
     if (pLastSlash)  // NOSONAR - SCOPE-01: declaration kept outside if for readability
     {
         *pLastSlash = L'\0';
-        // M5: create the log directory with a restrictive DACL (Full to
-        // SYSTEM/Admins, Read&Execute to Users). No-op if it already exists.
-        SECURITY_ATTRIBUTES sa;
-        PSECURITY_DESCRIPTOR pSD = nullptr;
-        if (BuildLogDirSecurityAttributes(&sa, &pSD))  // NOSONAR - SCOPE-01: declaration kept outside if for readability
-        {
-            CreateDirectoryW(szDir, &sa);
-            LocalFree(pSD);
-        }
-        else
-        {
-            CreateDirectoryW(szDir, nullptr);
-        }
+        // M5: create the log directory with a restrictive DACL (Full to SYSTEM/Admins,
+        // Read&Execute to Users), re-applying it if the directory already exists.
+        EnsureLogDirSecured(szDir);
     }
 
     // M5: FILE_FLAG_OPEN_REPARSE_POINT so a pre-planted symlink/junction at the

@@ -24,9 +24,48 @@ static void LoadRequireRevocation(HWND hwndDlg)
     CheckDlgButton(hwndDlg, IDC_15_REQUIRE_REVOCATION, fChecked ? BST_CHECKED : BST_UNCHECKED);
 }
 
+// Revocation checking here is deliberately offline-only, so a machine with no CRL in its
+// CA store can never confirm revocation status. Turning the policy on in that state makes
+// the auth stack fail closed for every card - a machine-wide logon outage.
+static BOOL MachineHasInstalledCrl()
+{
+    HCERTSTORE hStore = CertOpenStore(CERT_STORE_PROV_SYSTEM_W, 0, NULL,
+        CERT_SYSTEM_STORE_LOCAL_MACHINE | CERT_STORE_READONLY_FLAG, L"CA");
+    if (!hStore)
+    {
+        return FALSE;
+    }
+    PCCRL_CONTEXT pCrl = CertEnumCRLsInStore(hStore, nullptr);
+    const BOOL fHasCrl = (pCrl != nullptr);
+    if (pCrl)
+    {
+        CertFreeCRLContext(pCrl);
+    }
+    CertCloseStore(hStore, 0);
+    return fHasCrl;
+}
+
 static void SaveRequireRevocation(HWND hwndDlg)
 {
     DWORD dwVal = (IsDlgButtonChecked(hwndDlg, IDC_15_REQUIRE_REVOCATION) == BST_CHECKED) ? 1u : 0u;
+
+    if (dwVal != 0 && !MachineHasInstalledCrl())
+    {
+        const int nAnswer = MessageBoxW(hwndDlg,
+            L"No CRL is installed on this machine.\n\n"
+            L"Revocation checking is offline-only, so with no CRL present every card's "
+            L"revocation status is unknown and EVERY logon on this machine will be refused "
+            L"while this policy is enabled.\n\n"
+            L"Install a CRL first (the button above), then enable this policy.\n\n"
+            L"Enable it anyway?",
+            L"Revocation", MB_ICONWARNING | MB_YESNO | MB_DEFBUTTON2);
+        if (nAnswer != IDYES)
+        {
+            LoadRequireRevocation(hwndDlg);
+            return;
+        }
+    }
+
     LSTATUS s = RegSetKeyValueW(HKEY_LOCAL_MACHINE, SC_POLICY_KEY, REQUIRE_REVOCATION_VALUE,
         REG_DWORD, &dwVal, sizeof(dwVal));
     if (s != ERROR_SUCCESS)
@@ -150,7 +189,12 @@ INT_PTR CALLBACK WndProc_15_Revocation(HWND hwndDlg, UINT uMsg, WPARAM wParam, L
         }
 
         case IDC_15_REQUIRE_REVOCATION:
-            SaveRequireRevocation(hwndDlg);
+            // Only act on a real click. Without the notification-code test a future
+            // BS_NOTIFY focus change would silently rewrite the policy.
+            if (HIWORD(wParam) == BN_CLICKED)
+            {
+                SaveRequireRevocation(hwndDlg);
+            }
             return TRUE;
 
         default:

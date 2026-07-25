@@ -50,7 +50,10 @@ extern "C"
 
 	void NTAPI DllEnableLogging()
 	{
-		if (!EnableLogging())
+		// Explicit operator action: start the live session too, rather than only writing the
+		// autologger config and reporting success while no trace is actually running. Since
+		// EIDLogManager was removed this verb is the only interactive way to turn tracing on.
+		if (!EnableLogging(TRUE))
 		{
 			MessageBoxWin32(GetLastError());
 		}

@@ -864,8 +864,10 @@ HRESULT CEIDCredential::ReportResult(
 		}
 		else
 		{
+			// FormatMessage's nSize is a WCHAR count, not a byte count, so the allocation
+			// must be dwLen * sizeof(WCHAR) or a long system message overflows it by 2x.
 			DWORD dwLen = 2048;
-			Error = (PWSTR) CoTaskMemAlloc(dwLen);
+			Error = (PWSTR) CoTaskMemAlloc(dwLen * sizeof(WCHAR));
 			if (Error)
 			{
 				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,nullptr,LsaNtStatusToWinError(ntsStatus),0,Error,dwLen,nullptr);

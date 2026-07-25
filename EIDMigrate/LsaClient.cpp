@@ -674,7 +674,19 @@ HRESULT ImportLsaCredential(
     if (FAILED(hrSize))
     {
         EIDM_TRACE_ERROR(L"[ERROR] Credential field(s) for RID %u exceed USHORT limits for LSA secret storage: 0x%08X", info.dwRid, hrSize);
+        LsaClose(hLsa);
         return hrSize;
+    }
+
+    // H2: the symmetric key is replayed as the decryption challenge inside LSASS, where it must
+    // fit one cipher block of the card's private key. Fitting a USHORT is not enough of a bound -
+    // reject anything larger than a 16384-bit modulus (4x the largest key any supported card holds).
+    constexpr USHORT usMaxSymmetricKeySize = 2048;
+    if (usSymmetricKeySize > usMaxSymmetricKeySize)
+    {
+        EIDM_TRACE_ERROR(L"[ERROR] Symmetric key for RID %u is %u bytes, exceeding the %u-byte maximum", info.dwRid, usSymmetricKeySize, usMaxSymmetricKeySize);
+        LsaClose(hLsa);
+        return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
     }
 
     std::vector<BYTE> buffer(dwPrivateDataSize);

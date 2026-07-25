@@ -166,19 +166,9 @@ HRESULT EID_CSV_SaveConfigToFile(PCWSTR pwszPath, const EID_CSV_CONFIG& config)
     if (lastSlash != std::wstring::npos)  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
     {
         std::wstring dir = wpath.substr(0, lastSlash);
-        // M5: create the config directory with a restrictive DACL (Full to
-        // SYSTEM/Admins, Read&Execute to Users). No-op if it already exists.
-        SECURITY_ATTRIBUTES sa;
-        PSECURITY_DESCRIPTOR pSD = nullptr;
-        if (BuildLogDirSecurityAttributes(&sa, &pSD))  // NOSONAR - SCOPE-01: declaration kept at function scope for clarity
-        {
-            CreateDirectoryW(dir.c_str(), &sa);
-            LocalFree(pSD);
-        }
-        else
-        {
-            CreateDirectoryW(dir.c_str(), nullptr);
-        }
+        // M5: create the config directory with a restrictive DACL (Full to SYSTEM/Admins,
+        // Read&Execute to Users), re-applying it if the directory already exists.
+        EnsureLogDirSecured(dir.c_str());
     }
 
     // Convert to JSON

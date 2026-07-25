@@ -75,6 +75,9 @@
 
   Var /GLOBAL RequireCardBound
   Var /GLOBAL RequireCardBoundCheckbox
+  ; 1 once the Security Options page has actually been presented, so an explicit
+  ; operator choice can be told apart from the silent (/S) default.
+  Var /GLOBAL SecurityPageShown
 
 ;--------------------------------
 ;Uninstaller Variables
@@ -196,12 +199,15 @@ Section "Core" SecCore
   ; Security policy: RequireCardBoundCredentials (from the install-time question).
   ; 1 = only card-wrapped (crypted) credentials may be created / used at logon / imported;
   ; the Windows password can then never be recovered without the smart card.
-  ; Do not clobber an existing value on upgrade/repair - only set it if it has never
-  ; been configured, so an admin's prior choice (or a prior non-card-bound enrollment)
-  ; is preserved.
+  ; Write the value when the operator actually saw the Security Options page and made a
+  ; choice there (including on upgrade/repair - otherwise ticking the box would silently
+  ; do nothing). For silent (/S) installs the page never runs, so fall back to writing
+  ; only when the policy has never been configured: that preserves an admin's prior
+  ; choice and never re-locks an existing non-card-bound enrollment out of logon.
   ClearErrors
   ReadRegDWORD $0 HKLM "SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider" "RequireCardBoundCredentials"
   ${If} ${Errors}
+  ${OrIf} $SecurityPageShown == 1
     WriteRegDWORD HKLM "SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider" "RequireCardBoundCredentials" $RequireCardBound
   ${EndIf}
 
@@ -423,6 +429,7 @@ FunctionEnd
 
 Function LeaveSecurityOptions
   ${NSD_GetState} $RequireCardBoundCheckbox $RequireCardBound
+  StrCpy $SecurityPageShown 1
 FunctionEnd
 
 ;--------------------------------
@@ -663,6 +670,16 @@ Function .onInit
   ; upgrade/repair, since silent (/S) installs never show the Security Options page.
   ; The admin can still turn this on deliberately on that page for decrypt-capable cards.
   StrCpy $RequireCardBound 0
+  StrCpy $SecurityPageShown 0
+
+  ; On upgrade/repair, seed the checkbox from the policy value already in force so the
+  ; page reflects reality instead of always rendering unchecked.
+  SetRegView 64
+  ClearErrors
+  ReadRegDWORD $0 HKLM "SOFTWARE\Policies\Microsoft\Windows\SmartCardCredentialProvider" "RequireCardBoundCredentials"
+  ${IfNot} ${Errors}
+    StrCpy $RequireCardBound $0
+  ${EndIf}
 
   ; Check if already installed via registry
   SetRegView 64

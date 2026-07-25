@@ -61,6 +61,12 @@ const GPOInfo MyGPOInfo[] =  // NOSONAR - Const lookup table for GPO settings
   {szMainGPOKey, L"RequireRevocationCheck" }  // Security (M1): fail-closed when revocation cannot be confirmed offline
 };
 
+// GetPolicyValue/SetPolicyValue index this table with a GPOPolicy. If a policy is added to the
+// enum without a matching row here, every subsequent policy silently reads the wrong registry
+// value - so make that a build break rather than a runtime surprise.
+static_assert(ARRAYSIZE(MyGPOInfo) == static_cast<size_t>(GPOPolicy::RequireRevocationCheck) + 1,
+	"MyGPOInfo is out of sync with the GPOPolicy enum - add the matching row");
+
 DWORD GetPolicyValue( GPOPolicy Policy)
 {
 	// Validate Policy enum bounds to prevent array overflow

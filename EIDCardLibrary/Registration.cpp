@@ -638,7 +638,7 @@ BOOL GetTraceConfig(DWORD* pdwLevel, LPWSTR szLogPath, DWORD cchPath, DWORD* pdw
 	return fReturn;
 }
 
-BOOL EnableLogging()
+BOOL EnableLogging(BOOL fForceStartSession)
 {
 	struct RegEntry { LPCTSTR szSubKey; LPCTSTR szValueName; DWORD dwType; const void* pData; DWORD cbData; };
 
@@ -709,7 +709,9 @@ BOOL EnableLogging()
 		// written above, but a boot task must NOT force a live VERBOSE capture when
 		// policy set TraceAutoStart=Disabled. When it IS enabled, start at the
 		// configured TraceLevel rather than a hardcoded VERBOSE.
-		if (fConfigAutoStart)
+		// fForceStartSession overrides the gate for an explicit operator request, which
+		// would otherwise report success while starting nothing.
+		if (fConfigAutoStart || fForceStartSession)
 		{
 			if (!StartLogging(static_cast<UCHAR>(dwConfigLevel)))
 			{

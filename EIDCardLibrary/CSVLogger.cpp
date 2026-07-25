@@ -139,57 +139,6 @@ void EIDCSVLogger::WriteCSVHeader()
 }
 
 // ================================================================
-// Helper: Write Escaped CSV Field
-// ================================================================
-void EIDCSVLogger::WriteEscapedCSVField(PCWSTR pwszValue)
-{
-    if (!pwszValue || !pwszValue[0])
-        return;
-
-    // Check if field needs quoting
-    BOOL fNeedsQuotes = FALSE;
-    for (PCWSTR p = pwszValue; *p; p++)
-    {
-        if (*p == L',' || *p == L'"' || *p == L'\n' || *p == L'\r')
-        {
-            fNeedsQuotes = TRUE;
-            break;
-        }
-    }
-
-    if (!fNeedsQuotes)
-    {
-        // No escaping needed, write as-is
-        DWORD dwLen = static_cast<DWORD>(wcslen(pwszValue));  // NOSONAR (EXPLICIT-TYPE-01) - Explicit type preferred for clarity
-        DWORD dwWritten = 0;
-        WriteFile(s_hLogFile, pwszValue, dwLen * sizeof(WCHAR), &dwWritten, nullptr);
-        s_dwCurrentFileSize += dwWritten;
-        return;
-    }
-
-    // Needs escaping: wrap in quotes, double inner quotes
-    DWORD dwWritten = 0;
-    WriteFile(s_hLogFile, L"\"", 1 * sizeof(WCHAR), &dwWritten, nullptr);
-    s_dwCurrentFileSize += dwWritten;
-
-    for (PCWSTR p = pwszValue; *p; p++)
-    {
-        if (*p == L'"')
-        {
-            WriteFile(s_hLogFile, L"\"\"", 2 * sizeof(WCHAR), &dwWritten, nullptr);
-        }
-        else
-        {
-            WriteFile(s_hLogFile, p, 1 * sizeof(WCHAR), &dwWritten, nullptr);
-        }
-        s_dwCurrentFileSize += dwWritten;
-    }
-
-    WriteFile(s_hLogFile, L"\"", 1 * sizeof(WCHAR), &dwWritten, nullptr);
-    s_dwCurrentFileSize += dwWritten;
-}
-
-// ================================================================
 // Helper: Rotate Log File
 // ================================================================
 void EIDCSVLogger::RotateLogFile()
@@ -238,11 +187,14 @@ void EIDCSVLogger::RotateLogFile()
 
     // Rename current file to rotated
     swprintf_s(szRotatedPath, L"%s.%03u", s_szCurrentLogPath, dwRotation);
-    MoveFileExW(s_szCurrentLogPath, szRotatedPath, MOVEFILE_REPLACE_EXISTING);
-
-    // Reset state
-    s_dwCurrentFileSize = 0;
-    s_fHeaderWritten = FALSE;
+    // Only reset the state if the rename actually happened. On failure the oversized file
+    // is still in place, so clearing s_fHeaderWritten would append a second header row to
+    // it; EnsureLogFileOpen re-reads the true size and rotation is retried on the next event.
+    if (MoveFileExW(s_szCurrentLogPath, szRotatedPath, MOVEFILE_REPLACE_EXISTING))
+    {
+        s_dwCurrentFileSize = 0;
+        s_fHeaderWritten = FALSE;
+    }
 
     // Open new file
     EnsureLogFileOpen();
@@ -263,19 +215,9 @@ BOOL EIDCSVLogger::EnsureLogFileOpen()
     if (pLastSlash)  // NOSONAR - SCOPE-01: declaration kept separate from if for readability
     {
         *pLastSlash = L'\0';
-        // M5: create the log directory with a restrictive DACL (Full to
-        // SYSTEM/Admins, Read&Execute to Users). No-op if it already exists.
-        SECURITY_ATTRIBUTES sa;
-        PSECURITY_DESCRIPTOR pSD = nullptr;
-        if (BuildLogDirSecurityAttributes(&sa, &pSD))  // NOSONAR - SCOPE-01: declaration kept separate from if for readability
-        {
-            CreateDirectoryW(szDir, &sa);
-            LocalFree(pSD);
-        }
-        else
-        {
-            CreateDirectoryW(szDir, nullptr);
-        }
+        // M5: create the log directory with a restrictive DACL (Full to SYSTEM/Admins,
+        // Read&Execute to Users), re-applying it if the directory already exists.
+        EnsureLogDirSecured(szDir);
     }
 
     // Open file for append (UTF-16 LE encoding)
@@ -289,10 +231,13 @@ BOOL EIDCSVLogger::EnsureLogFileOpen()
     // FILE_READ_ATTRIBUTES is added so GetFileSizeEx (used for rotation) still works
     // on the append-only handle without granting FILE_WRITE_DATA (which would defeat
     // the kernel's atomic-append guarantee).
+    // FILE_SHARE_DELETE is required for rotation: renaming the active log opens it for
+    // DELETE access, which fails with ERROR_SHARING_VIOLATION while the other process
+    // still holds a handle without this flag - leaving events.csv to grow unbounded.
     s_hLogFile = CreateFileW(
         s_szCurrentLogPath,
         FILE_APPEND_DATA | FILE_READ_ATTRIBUTES,
-        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
         nullptr,
         OPEN_ALWAYS,
         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OPEN_REPARSE_POINT,
@@ -529,9 +474,9 @@ void EIDCSVLogger::LogEvent(  // NOSONAR - COMPLEXITY-01: refactor deferred; log
 
         // BUG 4: append an escaped CSV field directly into szBuffer (instead of a
         // separate WriteFile per field) so the whole row can be emitted with ONE
-        // WriteFile and stays atomic across the LSASS/LogonUI processes. The escaping
-        // rules are identical to WriteEscapedCSVField; only the sink changed (buffer,
-        // not file). Bounds-checked and reserves 2 WCHAR at the tail for the CRLF.
+        // WriteFile and stays atomic across the LSASS/LogonUI processes. This replaced
+        // the old per-field writer, which interleaved rows between the two processes.
+        // Bounds-checked and reserves 2 WCHAR at the tail for the CRLF.
         auto appendEscapedField = [&szBuffer, &dwWritten, dwCap](PCWSTR pwszValue)  // NOSONAR - LSASS-01: C-style WCHAR buffer captured for LSASS safety
         {
             if (!pwszValue || !pwszValue[0])
