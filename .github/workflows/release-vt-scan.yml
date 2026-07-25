@@ -34,12 +34,20 @@ env:
   # Override per-repository with the VT_FAIL_THRESHOLD variable.
   VT_FAIL_THRESHOLD: ${{ vars.VT_FAIL_THRESHOLD || 4 }}
 
+  # Pacing for the VirusTotal public API, which allows 4 requests per minute. Raise
+  # these (or lower them, on a premium key) with the matching repository variables.
+  VT_REQUEST_INTERVAL: ${{ vars.VT_REQUEST_INTERVAL || 16 }}
+  VT_RETRY_INTERVAL: ${{ vars.VT_RETRY_INTERVAL || 30 }}
+
 # Permissions declared per-job (no workflow-level default).
 jobs:
   scan-release:
     name: Scan Release Artifacts
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Generous: a whole component set paced at 4 requests/minute, with freshly built
+    # binaries that VirusTotal has to analyse from scratch, takes far longer than the
+    # three outer assets did.
+    timeout-minutes: 90
     permissions:
       contents: write  # Required to download assets and update release notes
 
@@ -106,6 +114,62 @@ jobs:
           gh release download "$RELEASE_TAG" --dir release-assets
           ls -la release-assets
 
+      # Scanning only the three published assets says "something in a 12 MB blob is
+      # flagged" and stops there. ~92% of EIDInstallx64.exe by size is bundled
+      # third-party driver payload, so a detection on the installer says nothing about
+      # whose code caused it. Unpack the archives and scan every constituent file, so a
+      # hit names an actual component.
+      - name: Expand archives into a per-component scan set
+        run: |
+          set -euo pipefail
+
+          mkdir -p extracted scan-set
+
+          for archive in release-assets/*.zip; do
+            [ -f "$archive" ] || continue
+            echo "Expanding $(basename "$archive")"
+            unzip -o -q "$archive" -d "extracted/$(basename "$archive" .zip)" || \
+              echo "::warning::Could not expand $(basename "$archive")"
+          done
+
+          # NSIS installers are extractable with 7z, which is present on ubuntu-latest.
+          # Treated as best-effort: if the format changes, the outer assets are still
+          # scanned rather than the whole run failing.
+          for installer in release-assets/*.exe extracted/*/*.exe; do
+            [ -f "$installer" ] || continue
+            base=$(basename "$installer" .exe)
+            echo "Expanding installer $(basename "$installer")"
+            if ! 7z x -y -o"extracted/${base}_contents" "$installer" > /dev/null 2>&1; then
+              echo "::warning::Could not expand $(basename "$installer") with 7z; it is still scanned whole."
+            fi
+          done
+
+          # Deduplicate by content hash: the installer appears both as a release asset
+          # and inside the zip, and NSIS emits the same plugin DLL more than once.
+          # Scanning a hash twice wastes the public API's 4-requests-per-minute budget.
+          : > seen-hashes.txt
+          count=0
+          limit=60
+
+          while IFS= read -r -d '' found; do
+            sha=$(sha256sum "$found" | cut -d' ' -f1)
+            grep -qxF "$sha" seen-hashes.txt && continue
+            echo "$sha" >> seen-hashes.txt
+
+            if [ "$count" -ge "$limit" ]; then
+              echo "::warning::Component limit of ${limit} reached; remaining files were NOT scanned."
+              break
+            fi
+
+            # Flatten into one directory, prefixing with a short hash so that files
+            # sharing a basename across archives stay distinguishable.
+            cp "$found" "scan-set/$(basename "$found")__${sha:0:8}"
+            count=$(( count + 1 ))
+          done < <(find release-assets extracted -type f -size +0c -print0 | sort -z)
+
+          echo "Scanning ${count} unique component(s):"
+          ls -la scan-set
+
       # Uploads the files to VirusTotal. Left as continue-on-error because a transient
       # upload failure must not block the reporting below - the verdict is decided by
       # the threshold step, which queries VirusTotal by file hash regardless.
@@ -115,7 +179,7 @@ jobs:
         uses: crazy-max/ghaction-virustotal@936d8c5c00afe97d3d9a1af26d017cfdf26800a2  # v5
         with:
           vt_api_key: ${{ secrets.VT_API_KEY }}
-          files: ./release-assets/*
+          files: ./scan-set/*
           request_rate: 4
 
       # Query VirusTotal by SHA-256 for each artifact and total the engines that
@@ -146,10 +210,16 @@ jobs:
             printf '|---|---|---|---|\n'
           } > vt-table.md
 
-          for file in release-assets/*; do
+          for file in scan-set/*; do
             [ -f "$file" ] || continue
-            name=$(basename "$file")
+            # Strip the "__<short hash>" suffix added when the scan set was flattened.
+            name=$(basename "$file"); name="${name%__*}"
             sha=$(sha256sum "$file" | cut -d' ' -f1)
+
+            # Stay inside the public API's 4 requests/minute. With a whole component set
+            # rather than three assets this is the difference between a clean run and a
+            # wall of 429s that would read as "analysis incomplete".
+            sleep "$VT_REQUEST_INTERVAL"
 
             # VirusTotal may still be analysing a freshly uploaded file. A queued file
             # already has a record whose last_analysis_stats exists but is ALL ZEROS,
@@ -160,7 +230,10 @@ jobs:
             saved_response=""
             flagged=0
             total=0
-            for _ in $(seq 1 15); do
+            # Fewer attempts per file than when only three assets were scanned: the
+            # budget is now shared across the whole component set. Anything still
+            # unfinished is reported as pending and picked up by a re-run.
+            for _ in $(seq 1 6); do
               response=$(curl -sS --max-time 60 \
                 -H "x-apikey: ${VT_API_KEY}" \
                 "https://www.virustotal.com/api/v3/files/${sha}" || true)
@@ -185,7 +258,7 @@ jobs:
               fi
 
               echo "Analysis for $name not complete yet (engines reported: ${total}); waiting..."
-              sleep 30
+              sleep "$VT_RETRY_INTERVAL"
             done
 
             # Never silently downgrade "we don't know" to "clean" - say so and let the
