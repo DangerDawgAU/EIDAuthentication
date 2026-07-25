@@ -157,6 +157,7 @@ jobs:
             # would report an unscanned artifact as clean. Wait until some engine has
             # actually reported, respecting the public API's 4-requests-per-minute limit.
             stats=""
+            saved_response=""
             flagged=0
             total=0
             for _ in $(seq 1 15); do
@@ -175,6 +176,10 @@ jobs:
 
                 if [ "$total" -gt 0 ]; then
                   stats="$candidate"
+                  # Keep the whole payload: last_analysis_results (the per-engine
+                  # verdicts) rides along in the same response, so naming the engines
+                  # costs no extra API calls against the 4/minute public quota.
+                  saved_response="$response"
                   break
                 fi
               fi
@@ -207,6 +212,33 @@ jobs:
             echo "${name}: ${flagged}/${total} engines flagged (threshold ${threshold})"
             printf '| `%s` | %s / %s | %s | [report](https://www.virustotal.com/gui/file/%s) |\n' \
               "$name" "$flagged" "$total" "$verdict" "$sha" >> vt-table.md
+
+            # Name the engines that actually flagged this artifact, and what they called
+            # it. Whether a hit is generic (Trojan.Generic, ML.Attribute.HighConfidence)
+            # or a specific family is the difference between heuristic noise and a real
+            # finding, and a bare count cannot tell them apart.
+            if [ "$flagged" -gt 0 ]; then
+              engine_rows=$(printf '%s' "$saved_response" | jq -r '
+                .data.attributes.last_analysis_results // {}
+                | to_entries
+                | map(select(.value.category == "malicious" or .value.category == "suspicious"))
+                | sort_by(.key)
+                | .[]
+                | "| `\(.key)` | \(.value.category) | \(.value.result // "unnamed") |"
+              ')
+
+              if [ -n "$engine_rows" ]; then
+                {
+                  printf '\n**`%s`** — flagged by %s of %s engines:\n\n' "$name" "$flagged" "$total"
+                  printf '| Engine | Category | Detection name |\n'
+                  printf '|---|---|---|\n'
+                  printf '%s\n' "$engine_rows"
+                } >> vt-detections.md
+
+                echo "  engines flagging ${name}:"
+                printf '%s\n' "$engine_rows" | sed 's/^/    /'
+              fi
+            fi
           done
 
           echo "worst=$worst" >> "$GITHUB_OUTPUT"
@@ -279,6 +311,13 @@ jobs:
               cat vt-table.md
             fi
 
+            # Per-engine breakdown, collapsed so it does not dominate the notes.
+            if [ -s vt-detections.md ]; then
+              printf '\n<details>\n<summary>Which engines flagged what</summary>\n'
+              cat vt-detections.md
+              printf '\n</details>\n'
+            fi
+
             printf '\n_Scanned on %s_\n\n' "$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
             # Single printf: splitting this across several calls put the %s in one
             # invocation and its argument in another, so the threshold rendered blank.
@@ -313,5 +352,10 @@ jobs:
             echo ""
             if [ -f vt-table.md ]; then
               cat vt-table.md
+            fi
+            if [ -s vt-detections.md ]; then
+              echo ""
+              echo "### Which engines flagged what"
+              cat vt-detections.md
             fi
           } >> "$GITHUB_STEP_SUMMARY"
