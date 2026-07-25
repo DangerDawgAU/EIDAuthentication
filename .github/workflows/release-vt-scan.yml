@@ -1,7 +1,7 @@
 # VirusTotal Release Scan Workflow
 #
-# This workflow scans release artifacts with VirusTotal when a release is published
-# and appends the scan results to the release notes.
+# Scans release artifacts with VirusTotal when a release is published and appends a
+# results table to the release notes.
 #
 # Requirements implemented:
 # - RPT-03: Update release notes with scan links
@@ -13,12 +13,24 @@ on:
   release:
     types: [published]
 
+env:
+  # How many engines must flag a file before it counts as a real detection.
+  #
+  # This project ships an unsigned credential provider and an LSA authentication
+  # package. Code that hooks the Windows logon path looks, to a heuristic engine,
+  # exactly like a credential stealer - so one or two generic hits (Trojan.Generic,
+  # ML.Attribute.HighConfidence, and friends) are the expected baseline, not a
+  # finding. Only a cluster of independent engines agreeing is worth acting on.
+  #
+  # Override per-repository with the VT_FAIL_THRESHOLD variable.
+  VT_FAIL_THRESHOLD: ${{ vars.VT_FAIL_THRESHOLD || 4 }}
+
 # Permissions declared per-job (no workflow-level default).
 jobs:
   scan-release:
     name: Scan Release Artifacts
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: write  # Required to download assets and update release notes
 
@@ -28,6 +40,52 @@ jobs:
         with:
           persist-credentials: false  # release ops use GH_TOKEN, not git creds
 
+      # The release:published event fires the moment the release is created, but the
+      # artifacts are attached later by the release job in windows-ci.yaml, which has
+      # to build Release x64 with NSIS first. That took ~3 minutes for v1.2.00, so
+      # downloading immediately found an empty release and failed the whole run
+      # ("no assets to download") without ever scanning anything.
+      #
+      # Wait for the asset list to become non-empty AND stop changing, so we also
+      # don't scan a partially-uploaded release.
+      - name: Wait for release assets to be attached
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+
+          deadline=$(( SECONDS + 1800 ))   # 30 minutes
+          previous=-1
+          stable=0
+
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            # Tolerate a transient API failure: treat an unreadable count as "not ready"
+            # rather than letting an empty string reach the numeric comparison.
+            count=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets | length' 2>/dev/null || true)
+            case "$count" in
+              ''|*[!0-9]*) count=0 ;;
+            esac
+
+            if [ "$count" -gt 0 ] && [ "$count" -eq "$previous" ]; then
+              stable=$(( stable + 1 ))
+              # Two consecutive identical non-zero counts: the upload has settled.
+              if [ "$stable" -ge 2 ]; then
+                echo "Release assets settled at $count file(s)."
+                exit 0
+              fi
+            else
+              stable=0
+            fi
+
+            previous="$count"
+            echo "Waiting for release assets (currently $count)..."
+            sleep 20
+          done
+
+          echo "::error::Timed out after 30 minutes waiting for release assets on $RELEASE_TAG."
+          exit 1
+
       - name: Download release assets
         env:
           GH_TOKEN: ${{ github.token }}
@@ -35,9 +93,13 @@ jobs:
           # template injection — the tag name is attacker-controllable).
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          # Download all release assets
+          set -euo pipefail
           gh release download "$RELEASE_TAG" --dir release-assets
+          ls -la release-assets
 
+      # Uploads the files to VirusTotal. Left as continue-on-error because a transient
+      # upload failure must not block the reporting below - the verdict is decided by
+      # the threshold step, which queries VirusTotal by file hash regardless.
       - name: Scan release assets with VirusTotal
         id: virustotal-scan
         continue-on-error: true
@@ -46,57 +108,177 @@ jobs:
           vt_api_key: ${{ secrets.VT_API_KEY }}
           files: ./release-assets/*
           request_rate: 4
+
+      # Query VirusTotal by SHA-256 for each artifact and total the engines that
+      # actually flagged it. The upload action only returns analysis URLs, so without
+      # this step nothing ever compares detections against a threshold.
+      - name: Evaluate detections against threshold
+        id: evaluate
         env:
           VT_API_KEY: ${{ secrets.VT_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${VT_API_KEY:-}" ]; then
+            echo "::warning::VT_API_KEY is not set; skipping detection analysis."
+            echo "verdict=skipped" >> "$GITHUB_OUTPUT"
+            echo "worst=0" >> "$GITHUB_OUTPUT"
+            printf '_VirusTotal analysis skipped: no API key configured._\n' > vt-table.md
+            exit 0
+          fi
+
+          threshold="$VT_FAIL_THRESHOLD"
+          worst=0
+          exceeded=0
+
+          {
+            printf '| Artifact | Detections | Verdict | Report |\n'
+            printf '|---|---|---|---|\n'
+          } > vt-table.md
+
+          for file in release-assets/*; do
+            [ -f "$file" ] || continue
+            name=$(basename "$file")
+            sha=$(sha256sum "$file" | cut -d' ' -f1)
+
+            # VirusTotal may still be analysing a freshly uploaded file. Retry until the
+            # report exists, respecting the public API's 4-requests-per-minute limit.
+            stats=""
+            for _ in $(seq 1 10); do
+              response=$(curl -sS --max-time 60 \
+                -H "x-apikey: ${VT_API_KEY}" \
+                "https://www.virustotal.com/api/v3/files/${sha}" || true)
+
+              stats=$(printf '%s' "$response" | jq -c '.data.attributes.last_analysis_stats // empty')
+              [ -n "$stats" ] && break
+
+              echo "Report for $name not ready yet; waiting..."
+              sleep 30
+            done
+
+            if [ -z "$stats" ]; then
+              echo "::warning::No VirusTotal report available for ${name} (${sha})."
+              printf '| `%s` | _unavailable_ | ⚠️ no report | [lookup](https://www.virustotal.com/gui/file/%s) |\n' \
+                "$name" "$sha" >> vt-table.md
+              continue
+            fi
+
+            malicious=$(printf '%s' "$stats" | jq -r '.malicious // 0')
+            suspicious=$(printf '%s' "$stats" | jq -r '.suspicious // 0')
+            undetected=$(printf '%s' "$stats" | jq -r '.undetected // 0')
+            harmless=$(printf '%s' "$stats" | jq -r '.harmless // 0')
+            flagged=$(( malicious + suspicious ))
+            total=$(( flagged + undetected + harmless ))
+
+            [ "$flagged" -gt "$worst" ] && worst="$flagged"
+
+            if [ "$flagged" -ge "$threshold" ]; then
+              exceeded=1
+              verdict='❌ investigate'
+            elif [ "$flagged" -gt 0 ]; then
+              verdict='✅ below threshold'
+            else
+              verdict='✅ clean'
+            fi
+
+            echo "${name}: ${flagged}/${total} engines flagged (threshold ${threshold})"
+            printf '| `%s` | %s / %s | %s | [report](https://www.virustotal.com/gui/file/%s) |\n' \
+              "$name" "$flagged" "$total" "$verdict" "$sha" >> vt-table.md
+          done
+
+          echo "worst=$worst" >> "$GITHUB_OUTPUT"
+          if [ "$exceeded" -eq 1 ]; then
+            echo "verdict=exceeded" >> "$GITHUB_OUTPUT"
+          else
+            echo "verdict=ok" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Update release notes with scan results
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-          # Untrusted / dynamic values passed via env to avoid template injection.
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-          CURRENT_NOTES: ${{ github.event.release.body }}
-          ANALYSIS: ${{ steps.virustotal-scan.outputs.analysis }}
-          SCAN_OUTCOME: ${{ steps.virustotal-scan.outcome }}
+          VERDICT: ${{ steps.evaluate.outputs.verdict }}
+          WORST: ${{ steps.evaluate.outputs.worst }}
         run: |
+          set -euo pipefail
 
-          # Build VT section
-          VT_SECTION="\n\n---\n\n## 🔍 VirusTotal Scan Results\n\n"
-          VT_SECTION+="**Scan Status:** ${SCAN_OUTCOME}\n\n"
+          marker='## 🔍 VirusTotal Scan Results'
 
-          if [ -n "$ANALYSIS" ]; then
-            VT_SECTION+="### Analysis URLs\n"
-            while IFS= read -r url; do
-              if [ -n "$url" ]; then
-                # Extract filename from URL
-                FILENAME=$(echo "$url" | sed 's|.*/file/\([^/]*\)/.*|\1|' 2>/dev/null || basename "$url")
-                VT_SECTION+="- [${FILENAME}](${url})\n"
-              fi
-            done <<< "$ANALYSIS"
-          fi
+          # Read the CURRENT body from the API rather than the event payload: the
+          # payload is a snapshot from publish time and would silently revert any
+          # edits made since (the release job attaching assets, a manual note fix).
+          gh release view "$RELEASE_TAG" --json body --jq '.body' > current-notes.md
 
-          VT_SECTION+="\n_Scanned on $(date -u '+%Y-%m-%d %H:%M:%S UTC')_\n"
-          VT_SECTION+="_Note: Detections may be false positives for security software._"
+          # Drop any previous VT section so re-runs replace rather than accumulate.
+          # The second pass swallows trailing blank lines and the "---" separator that
+          # preceded the old section, otherwise each re-run stacks another rule.
+          awk -v marker="$marker" '
+            index($0, marker) == 1 { exit }
+            { print }
+          ' current-notes.md \
+          | awk '
+              /^[[:space:]]*$/    { blanks = blanks $0 "\n"; next }
+              /^---[[:space:]]*$/ { rule = 1; blanks = ""; next }
+              { if (!rule) printf "%s", blanks; else rule = 0; blanks = ""; print }
+              END { if (!rule) printf "%s", blanks }
+            ' > new-notes.md
 
-          # Update release notes
-          # Check if VT section already exists (avoid duplicates on re-runs)
-          if echo "$CURRENT_NOTES" | grep -q "VirusTotal Scan Results"; then
-            # Replace existing VT section
-            UPDATED_NOTES=$(echo "$CURRENT_NOTES" | sed '/## 🔍 VirusTotal Scan Results/,$d')
-            UPDATED_NOTES+="$VT_SECTION"
-          else
-            UPDATED_NOTES="${CURRENT_NOTES}${VT_SECTION}"
-          fi
+          {
+            printf '\n---\n\n%s\n\n' "$marker"
 
-          # Update the release
-          gh release edit "$RELEASE_TAG" --notes "$UPDATED_NOTES"
+            case "${VERDICT:-unknown}" in
+              exceeded)
+                printf '**%s or more engines flagged an artifact — review before deploying.**\n\n' "$VT_FAIL_THRESHOLD"
+                ;;
+              ok)
+                printf 'No artifact reached the detection threshold of %s engines.\n\n' "$VT_FAIL_THRESHOLD"
+                ;;
+              skipped)
+                printf 'Analysis was skipped.\n\n'
+                ;;
+              *)
+                printf 'Scan did not complete; see the workflow run for details.\n\n'
+                ;;
+            esac
+
+            if [ -f vt-table.md ]; then
+              cat vt-table.md
+            fi
+
+            printf '\n_Scanned on %s_\n\n' "$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            printf '_This project ships an unsigned credential provider and LSA authentication '
+            printf 'package. Code on the Windows logon path routinely trips one or two heuristic '
+            printf 'engines, so isolated hits are expected. Only %s or more independent detections '
+            printf 'are treated as a signal._\n' "$VT_FAIL_THRESHOLD"
+          } >> new-notes.md
+
+          gh release edit "$RELEASE_TAG" --notes-file new-notes.md
+
+      # Decide the job outcome last, so the release notes are always updated first.
+      - name: Enforce detection threshold
+        if: always() && steps.evaluate.outputs.verdict == 'exceeded'
+        env:
+          WORST: ${{ steps.evaluate.outputs.worst }}
+        run: |
+          echo "::error::${WORST} VirusTotal engines flagged a release artifact (threshold ${VT_FAIL_THRESHOLD})."
+          exit 1
 
       - name: Report results
         if: always()
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
+          VERDICT: ${{ steps.evaluate.outputs.verdict }}
+          WORST: ${{ steps.evaluate.outputs.worst }}
         run: |
-          echo "## Release Scan Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Release notes updated with VirusTotal scan results." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Release: $RELEASE_TAG" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Release Scan Complete"
+            echo ""
+            echo "Release: $RELEASE_TAG"
+            echo "Highest detection count: ${WORST:-unknown} (threshold ${VT_FAIL_THRESHOLD})"
+            echo "Verdict: ${VERDICT:-unknown}"
+            echo ""
+            if [ -f vt-table.md ]; then
+              cat vt-table.md
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
