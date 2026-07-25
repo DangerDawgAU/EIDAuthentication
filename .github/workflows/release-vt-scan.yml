@@ -139,6 +139,7 @@ jobs:
           threshold="$VT_FAIL_THRESHOLD"
           worst=0
           exceeded=0
+          incomplete=0
 
           {
             printf '| Artifact | Detections | Verdict | Report |\n'
@@ -150,34 +151,47 @@ jobs:
             name=$(basename "$file")
             sha=$(sha256sum "$file" | cut -d' ' -f1)
 
-            # VirusTotal may still be analysing a freshly uploaded file. Retry until the
-            # report exists, respecting the public API's 4-requests-per-minute limit.
+            # VirusTotal may still be analysing a freshly uploaded file. A queued file
+            # already has a record whose last_analysis_stats exists but is ALL ZEROS,
+            # so "stats present" is not the same as "analysis finished" - accepting it
+            # would report an unscanned artifact as clean. Wait until some engine has
+            # actually reported, respecting the public API's 4-requests-per-minute limit.
             stats=""
-            for _ in $(seq 1 10); do
+            flagged=0
+            total=0
+            for _ in $(seq 1 15); do
               response=$(curl -sS --max-time 60 \
                 -H "x-apikey: ${VT_API_KEY}" \
                 "https://www.virustotal.com/api/v3/files/${sha}" || true)
 
-              stats=$(printf '%s' "$response" | jq -c '.data.attributes.last_analysis_stats // empty')
-              [ -n "$stats" ] && break
+              candidate=$(printf '%s' "$response" | jq -c '.data.attributes.last_analysis_stats // empty')
+              if [ -n "$candidate" ]; then
+                malicious=$(printf '%s' "$candidate" | jq -r '.malicious // 0')
+                suspicious=$(printf '%s' "$candidate" | jq -r '.suspicious // 0')
+                undetected=$(printf '%s' "$candidate" | jq -r '.undetected // 0')
+                harmless=$(printf '%s' "$candidate" | jq -r '.harmless // 0')
+                flagged=$(( malicious + suspicious ))
+                total=$(( flagged + undetected + harmless ))
 
-              echo "Report for $name not ready yet; waiting..."
+                if [ "$total" -gt 0 ]; then
+                  stats="$candidate"
+                  break
+                fi
+              fi
+
+              echo "Analysis for $name not complete yet (engines reported: ${total}); waiting..."
               sleep 30
             done
 
+            # Never silently downgrade "we don't know" to "clean" - say so and let the
+            # linked report be checked by hand.
             if [ -z "$stats" ]; then
-              echo "::warning::No VirusTotal report available for ${name} (${sha})."
-              printf '| `%s` | _unavailable_ | ⚠️ no report | [lookup](https://www.virustotal.com/gui/file/%s) |\n' \
+              echo "::warning::VirusTotal analysis for ${name} (${sha}) did not complete in time."
+              printf '| `%s` | _pending_ | ⏳ analysis incomplete | [report](https://www.virustotal.com/gui/file/%s) |\n' \
                 "$name" "$sha" >> vt-table.md
+              incomplete=1
               continue
             fi
-
-            malicious=$(printf '%s' "$stats" | jq -r '.malicious // 0')
-            suspicious=$(printf '%s' "$stats" | jq -r '.suspicious // 0')
-            undetected=$(printf '%s' "$stats" | jq -r '.undetected // 0')
-            harmless=$(printf '%s' "$stats" | jq -r '.harmless // 0')
-            flagged=$(( malicious + suspicious ))
-            total=$(( flagged + undetected + harmless ))
 
             [ "$flagged" -gt "$worst" ] && worst="$flagged"
 
@@ -198,6 +212,11 @@ jobs:
           echo "worst=$worst" >> "$GITHUB_OUTPUT"
           if [ "$exceeded" -eq 1 ]; then
             echo "verdict=exceeded" >> "$GITHUB_OUTPUT"
+          elif [ "$incomplete" -eq 1 ]; then
+            # Reported distinctly from "ok" so an unfinished analysis is never mistaken
+            # for a clean result. Does not fail the job - the artifact is not suspect,
+            # VirusTotal just has not finished looking at it.
+            echo "verdict=incomplete" >> "$GITHUB_OUTPUT"
           else
             echo "verdict=ok" >> "$GITHUB_OUTPUT"
           fi
@@ -242,6 +261,11 @@ jobs:
                 ;;
               ok)
                 printf 'No artifact reached the detection threshold of %s engines.\n\n' "$VT_FAIL_THRESHOLD"
+                ;;
+              incomplete)
+                printf 'VirusTotal had not finished analysing every artifact when this ran. '
+                printf 'Rows marked _pending_ below are unknown, not clean — open the linked '
+                printf 'report to check, or re-run this workflow against the tag.\n\n'
                 ;;
               skipped)
                 printf 'Analysis was skipped.\n\n'
