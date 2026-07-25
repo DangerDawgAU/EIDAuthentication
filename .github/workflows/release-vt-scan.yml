@@ -12,6 +12,15 @@ name: "Release VirusTotal Scan"
 on:
   release:
     types: [published]
+  # Manual re-scan of an existing release. Lets the scan be re-run after a fix, or an
+  # older release re-checked, without republishing it - and makes this workflow
+  # testable at all, since a release event cannot otherwise be replayed.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to scan (e.g. v1.2.00)"
+        required: true
+        type: string
 
 env:
   # How many engines must flag a file before it counts as a real detection.
@@ -51,7 +60,7 @@ jobs:
       - name: Wait for release assets to be attached
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
           set -euo pipefail
 
@@ -91,7 +100,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           # Pass untrusted event data via env, never inline into the script (avoids
           # template injection — the tag name is attacker-controllable).
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
           set -euo pipefail
           gh release download "$RELEASE_TAG" --dir release-assets
@@ -197,7 +206,7 @@ jobs:
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
           VERDICT: ${{ steps.evaluate.outputs.verdict }}
           WORST: ${{ steps.evaluate.outputs.worst }}
         run: |
@@ -267,7 +276,7 @@ jobs:
       - name: Report results
         if: always()
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
           VERDICT: ${{ steps.evaluate.outputs.verdict }}
           WORST: ${{ steps.evaluate.outputs.worst }}
         run: |
