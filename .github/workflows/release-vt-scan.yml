@@ -280,10 +280,10 @@ jobs:
             fi
 
             printf '\n_Scanned on %s_\n\n' "$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-            printf '_This project ships an unsigned credential provider and LSA authentication '
-            printf 'package. Code on the Windows logon path routinely trips one or two heuristic '
-            printf 'engines, so isolated hits are expected. Only %s or more independent detections '
-            printf 'are treated as a signal._\n' "$VT_FAIL_THRESHOLD"
+            # Single printf: splitting this across several calls put the %s in one
+            # invocation and its argument in another, so the threshold rendered blank.
+            printf '_This project ships an unsigned credential provider and LSA authentication package. Code on the Windows logon path routinely trips one or two heuristic engines, so isolated hits are expected. Only %s or more independent detections are treated as a signal._\n' \
+              "$VT_FAIL_THRESHOLD"
           } >> new-notes.md
 
           gh release edit "$RELEASE_TAG" --notes-file new-notes.md
