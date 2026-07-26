@@ -84,7 +84,7 @@ jobs:
           persist-credentials: false  # packaging only; no git push needs the token
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: build-artifacts
           path: artifacts
@@ -167,7 +167,7 @@ jobs:
 
     steps:
       - name: Download packaged artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: packaged-artifacts
           path: artifacts
