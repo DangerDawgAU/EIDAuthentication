@@ -61,6 +61,26 @@ jobs:
             Where-Object FullName -match 'win-x64' | Select-Object -First 1
           & $exe.FullName analyze 'x64\Release\*.exe' 'x64\Release\*.dll' --output binskim.sarif
           if (-not (Test-Path binskim.sarif)) { exit 1 }
+
+          # Code scanning rejects SARIF whose results carry message.id +
+          # arguments instead of inline text ("expected a result message").
+          # BinSkim has no flag to flatten them, so expand each result's
+          # message from its rule's messageStrings template here.
+          $sarif = Get-Content binskim.sarif -Raw | ConvertFrom-Json
+          foreach ($run in $sarif.runs) {
+            $rules = $run.tool.driver.rules
+            foreach ($result in $run.results) {
+              if ($result.message.PSObject.Properties['text']) { continue }
+              $rule = if ($result.PSObject.Properties['ruleIndex']) { $rules[$result.ruleIndex] }
+                      else { $rules | Where-Object id -eq $result.ruleId | Select-Object -First 1 }
+              $template = $rule.messageStrings.($result.message.id).text
+              $arguments = @($result.message.arguments)
+              $text = [regex]::Replace($template, '\{(\d+)\}',
+                { param($m) $arguments[[int]$m.Groups[1].Value] })
+              $result.message = [pscustomobject]@{ text = $text }
+            }
+          }
+          $sarif | ConvertTo-Json -Depth 100 | Set-Content binskim.sarif -Encoding utf8
           exit 0
 
       - name: Upload BinSkim SARIF
