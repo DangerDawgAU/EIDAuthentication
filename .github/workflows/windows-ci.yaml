@@ -10,11 +10,14 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    # Least privilege: the build needs only read access. Publishing to a
-    # GitHub Release (which needs contents: write) is done by the separate
-    # release job below, on release events only.
+    # Least privilege: the build needs only read access, plus
+    # security-events: write so the BinSkim step can upload its SARIF to
+    # code scanning. Publishing to a GitHub Release (which needs
+    # contents: write) is done by the separate release job below, on
+    # release events only.
     permissions:
       contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v5
         with:
@@ -39,6 +42,32 @@ jobs:
       - name: Build (Release x64)
         shell: pwsh
         run: .\build.ps1 -Configuration Release -Platform x64
+
+      # BinSkim verifies the compiled binaries opted into the exploit
+      # mitigations (/GS, ASLR, DEP, CFG, SafeSEH, Spectre...). It ships as a
+      # plain NuGet package, not a dotnet tool, so fetch and unzip the nupkg.
+      # The step fails only if no SARIF was produced (tool breakage); rule
+      # findings surface as code scanning alerts, not CI failures. The NSIS
+      # installer stub is excluded: its PE is produced by NSIS, so findings
+      # there would not be actionable in this repo.
+      - name: BinSkim binary scan
+        shell: pwsh
+        run: |
+          $ver = '4.4.9.11'
+          $nupkg = Join-Path $env:RUNNER_TEMP 'binskim.zip'
+          Invoke-WebRequest "https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.binskim/$ver/microsoft.codeanalysis.binskim.$ver.nupkg" -OutFile $nupkg
+          Expand-Archive $nupkg (Join-Path $env:RUNNER_TEMP 'binskim') -Force
+          $exe = Get-ChildItem (Join-Path $env:RUNNER_TEMP 'binskim') -Recurse -Filter binskim.exe |
+            Where-Object FullName -match 'win-x64' | Select-Object -First 1
+          & $exe.FullName analyze 'x64\Release\*.exe' 'x64\Release\*.dll' --output binskim.sarif --force
+          if (-not (Test-Path binskim.sarif)) { exit 1 }
+          exit 0
+
+      - name: Upload BinSkim SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: binskim.sarif
+          category: binskim
 
       - name: Package release zip
         shell: pwsh
@@ -82,13 +111,27 @@ jobs:
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required to upload assets to the GitHub Release
+      contents: write     # Required to upload assets to the GitHub Release
+      id-token: write     # Required to sign the build provenance attestation
+      attestations: write # Required to store the attestation
     steps:
       - name: Download build artifacts
         uses: actions/download-artifact@v7
         with:
           name: EIDAuthentication-${{ github.sha }}
           path: dist
+
+      # Cryptographically binds each release asset to this workflow run and
+      # commit (SLSA provenance). Air-gapped operators can verify an installer
+      # before carrying it across: gh attestation verify EIDInstallx64.exe
+      #   --repo DangerDawgAU/EIDAuthentication
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            dist/EIDInstallx64.exe
+            dist/EIDAuthentication-x64.zip
+            dist/SHA256SUMS.txt
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228  # v3
