@@ -105,7 +105,7 @@ jobs:
       # are the deliverable; on release runs the release job below downloads them
       # to attach to the GitHub Release (keeps write scope out of this job).
       - name: Upload workflow artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: EIDAuthentication-${{ github.sha }}
           path: |
@@ -117,7 +117,7 @@ jobs:
 
       - name: Upload build log on failure
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: build-log-${{ github.sha }}
           path: build.log
