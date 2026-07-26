@@ -242,7 +242,7 @@ jobs:
 
     steps:
       - name: Create commit comment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         # Pass job outputs via env, not inline, to avoid template injection into the script.
         env:
           VT_ANALYSIS: ${{ needs.scan.outputs.analysis }}
