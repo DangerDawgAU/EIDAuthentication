@@ -1,0 +1,10 @@
+# Keep GitHub Actions versions current. This repo's supply-chain surface is
+# mostly its workflows (build, release, scanning), so action updates are the
+# one dependency stream worth automating; C++ dependencies are vendored and
+# hash-pinned in Installer/Stage-Minidrivers.ps1 instead.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
