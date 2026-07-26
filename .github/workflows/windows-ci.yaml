@@ -59,7 +59,7 @@ jobs:
           Expand-Archive $nupkg (Join-Path $env:RUNNER_TEMP 'binskim') -Force
           $exe = Get-ChildItem (Join-Path $env:RUNNER_TEMP 'binskim') -Recurse -Filter binskim.exe |
             Where-Object FullName -match 'win-x64' | Select-Object -First 1
-          & $exe.FullName analyze 'x64\Release\*.exe' 'x64\Release\*.dll' --output binskim.sarif --force
+          & $exe.FullName analyze 'x64\Release\*.exe' 'x64\Release\*.dll' --output binskim.sarif
           if (-not (Test-Path binskim.sarif)) { exit 1 }
           exit 0
 
