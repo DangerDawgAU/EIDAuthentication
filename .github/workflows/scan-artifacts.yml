@@ -96,7 +96,7 @@ jobs:
       # staged at build time. Cache them so we don't re-hit vendor sites every
       # run; the key tracks the manifest script so a driver change busts it.
       - name: Cache bundled minidrivers
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: Installer/drivers
           key: drivers-${{ hashFiles('Installer/Stage-Minidrivers.ps1') }}
