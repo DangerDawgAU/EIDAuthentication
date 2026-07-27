@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Repo-wide binary hardening, auto-imported by MSBuild into every project.
+  Release only: these are the mitigations BinSkim verifies on shipped
+  binaries (CI fails a PR that regresses them); Debug stays fast/debuggable.
+
+  Per-project ItemDefinitionGroup metadata overrides these — do not re-add
+  RandomizedBaseAddress=false or similar to a .vcxproj.
+
+  SpectreMitigation (/Qspectre, BinSkim BA2024) is deliberately absent: it
+  requires the "Spectre-mitigated libs" VS component on every build machine.
+  Add it here once dev machines and CI both carry that component.
+-->
+<Project>
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <RandomizedBaseAddress>true</RandomizedBaseAddress>
+      <CETCompat>true</CETCompat>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+  </ItemDefinitionGroup>
+</Project>

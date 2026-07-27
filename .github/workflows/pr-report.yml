@@ -22,7 +22,7 @@ jobs:
       actions: read          # workflow-run timing
     steps:
       - name: Build and publish report
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           SELF_CHECK_NAME: "Collate PR report"
           SONAR_PROJECT: "DangerDawgAU_EIDAuthentication"
