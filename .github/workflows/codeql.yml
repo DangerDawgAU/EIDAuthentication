@@ -27,9 +27,9 @@ jobs:
     #   - https://gh.io/supported-runners-and-hardware-resources
     #   - https://gh.io/using-larger-runners (GitHub.com only)
     # Consider using larger runners or machines with greater resources for possible analysis time improvements.
-    # c-cpp builds on windows-2025 (not windows-latest): the project needs the
+    # c-cpp builds on windows-2022 (not windows-latest): the project needs the
     # v143 Spectre-mitigated libs, absent from the vs2026 image. See windows-ci.
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || (matrix.language == 'c-cpp' && 'windows-2025') || 'ubuntu-latest' }}
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || (matrix.language == 'c-cpp' && 'windows-2022') || 'ubuntu-latest' }}
     permissions:
       # required for all workflows
       security-events: write

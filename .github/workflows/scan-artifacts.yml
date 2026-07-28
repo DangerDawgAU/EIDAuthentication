@@ -43,9 +43,9 @@ on:
 jobs:
   build:
     name: Build Solution
-    # windows-2025, not windows-latest: needs the v143 Spectre-mitigated libs,
+    # windows-2022, not windows-latest: needs the v143 Spectre-mitigated libs,
     # absent from the vs2026 image. See windows-ci.yaml for the full story.
-    runs-on: windows-2025
+    runs-on: windows-2022
     timeout-minutes: 15
     permissions:
       contents: read
