@@ -7,13 +7,14 @@
   Per-project ItemDefinitionGroup metadata overrides these — do not re-add
   RandomizedBaseAddress=false or similar to a .vcxproj.
 
-  SpectreMitigation (/Qspectre, BinSkim BA2024) is deliberately absent: it
-  requires the "Spectre-mitigated libs" VS component on every build machine.
-  Add it here once dev machines and CI both carry that component.
+  SpectreMitigation (/Qspectre, BinSkim BA2024) requires the VS component
+  "MSVC C++ Spectre-mitigated libs" (VC.Runtimes.x86.x64.Spectre) on every
+  build machine; the GitHub windows runner image ships it.
 -->
 <Project>
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <LinkIncremental>false</LinkIncremental>
+    <SpectreMitigation>Spectre</SpectreMitigation>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
