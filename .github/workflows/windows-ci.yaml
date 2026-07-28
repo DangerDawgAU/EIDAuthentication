@@ -9,7 +9,13 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    # Pinned to windows-2025, NOT windows-latest: windows-latest now resolves
+    # to the vs2026 image, whose VS 18 carries Spectre-mitigated libs only for
+    # its own v145 toolset. This project pins PlatformToolset v143 and builds
+    # with /Qspectre (Directory.Build.props), which needs the v143 (14.4x)
+    # Spectre libs — present in windows-2025's VS 2022. Revisit when the
+    # projects move to a newer toolset.
+    runs-on: windows-2025
     # Least privilege: the build needs only read access, plus
     # security-events: write so the BinSkim step can upload its SARIF to
     # code scanning. Publishing to a GitHub Release (which needs

@@ -43,7 +43,9 @@ on:
 jobs:
   build:
     name: Build Solution
-    runs-on: windows-latest
+    # windows-2025, not windows-latest: needs the v143 Spectre-mitigated libs,
+    # absent from the vs2026 image. See windows-ci.yaml for the full story.
+    runs-on: windows-2025
     timeout-minutes: 15
     permissions:
       contents: read
@@ -61,7 +63,7 @@ jobs:
         run: msbuild EIDCredentialProvider.sln /p:Configuration=Release /p:Platform=x64 /m /v:minimal
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: build-artifacts
           path: |
@@ -84,7 +86,7 @@ jobs:
           persist-credentials: false  # packaging only; no git push needs the token
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: build-artifacts
           path: artifacts
@@ -96,7 +98,7 @@ jobs:
       # staged at build time. Cache them so we don't re-hit vendor sites every
       # run; the key tracks the manifest script so a driver change busts it.
       - name: Cache bundled minidrivers
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: Installer/drivers
           key: drivers-${{ hashFiles('Installer/Stage-Minidrivers.ps1') }}
@@ -148,7 +150,7 @@ jobs:
         shell: pwsh
 
       - name: Upload packaged artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: packaged-artifacts
           path: artifacts/
@@ -167,7 +169,7 @@ jobs:
 
     steps:
       - name: Download packaged artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: packaged-artifacts
           path: artifacts
@@ -242,7 +244,7 @@ jobs:
 
     steps:
       - name: Create commit comment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         # Pass job outputs via env, not inline, to avoid template injection into the script.
         env:
           VT_ANALYSIS: ${{ needs.scan.outputs.analysis }}
