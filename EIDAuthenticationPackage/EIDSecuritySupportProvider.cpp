@@ -460,6 +460,14 @@ extern "C"
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pAuthIdentity->Flags is 0x%lx", pAuthIdentity->Flags); 
 					__leave;
 				}
+				// Client-supplied lengths feed size arithmetic on the LSASS heap:
+				// bound them before any product can wrap
+				if (pAuthIdentity->UserLength > 0xFFFF || pAuthIdentity->PasswordLength > 0xFFFF)
+				{
+					Status = STATUS_INVALID_PARAMETER;
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"AuthIdentity lengths out of range (%lu/%lu)", pAuthIdentity->UserLength, pAuthIdentity->PasswordLength);
+					__leave;
+				}
 				szCredential = EIDAlloc((pAuthIdentity->UserLength + 1) * dwCharSize);
 				if (!szCredential)
 				{
@@ -558,7 +566,7 @@ extern "C"
 			}
 			if (szPassword)
 			{
-				SecureZeroMemory(szPassword,(pAuthIdentity->PasswordLength + 1) * dwCharSize);
+				SecureZeroMemory(szPassword,((SIZE_T)pAuthIdentity->PasswordLength + 1) * dwCharSize);
 				MyLsaDispatchTable->FreeLsaHeap(szPassword);
 			}
 			if (pAuthIdentityEx)

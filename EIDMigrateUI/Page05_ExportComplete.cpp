@@ -24,7 +24,7 @@ INT_PTR CALLBACK WndProc_05_ExportComplete(HWND hwndDlg, UINT uMsg, WPARAM wPara
             SetDlgItemText(hwndDlg, IDC_05_CERT_ENCRYPTED, szTemp);
             SetDlgItemText(hwndDlg, IDC_05_DPAPI_ENCRYPTED, L"0");
 
-            swprintf_s(szTemp, ARRAYSIZE(szTemp), L"%u", g_wizardData.groups.size());
+            swprintf_s(szTemp, ARRAYSIZE(szTemp), L"%zu", g_wizardData.groups.size());
             SetDlgItemText(hwndDlg, IDC_05_GROUPS_EXPORTED, szTemp);
 
             SetDlgItemText(hwndDlg, IDC_05_OUTPUT_PATH, g_wizardData.wsOutputFile.c_str());

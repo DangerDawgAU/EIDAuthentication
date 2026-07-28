@@ -37,8 +37,9 @@ on:
       - '.github/workflows/scan-artifacts.yml'
   workflow_dispatch:  # Allow manual triggering
 
-# Least privilege: each job declares its own permissions (no workflow-level
-# default). Only the comment job needs contents: write (to post a commit comment).
+# Least privilege: default-deny at workflow level; each job declares its own.
+# Only the comment job needs contents: write (to post a commit comment).
+permissions: {}
 
 jobs:
   build:
@@ -52,7 +53,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
         with:
           persist-credentials: false  # build only; no git push needs the token
 
@@ -63,7 +64,7 @@ jobs:
         run: msbuild EIDCredentialProvider.sln /p:Configuration=Release /p:Platform=x64 /m /v:minimal
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           name: build-artifacts
           path: |
@@ -81,12 +82,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
         with:
           persist-credentials: false  # packaging only; no git push needs the token
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
         with:
           name: build-artifacts
           path: artifacts
@@ -98,7 +99,7 @@ jobs:
       # staged at build time. Cache them so we don't re-hit vendor sites every
       # run; the key tracks the manifest script so a driver change busts it.
       - name: Cache bundled minidrivers
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6
         with:
           path: Installer/drivers
           key: drivers-${{ hashFiles('Installer/Stage-Minidrivers.ps1') }}
@@ -150,7 +151,7 @@ jobs:
         shell: pwsh
 
       - name: Upload packaged artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           name: packaged-artifacts
           path: artifacts/
@@ -169,7 +170,7 @@ jobs:
 
     steps:
       - name: Download packaged artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
         with:
           name: packaged-artifacts
           path: artifacts
@@ -244,7 +245,7 @@ jobs:
 
     steps:
       - name: Create commit comment
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         # Pass job outputs via env, not inline, to avoid template injection into the script.
         env:
           VT_ANALYSIS: ${{ needs.scan.outputs.analysis }}
