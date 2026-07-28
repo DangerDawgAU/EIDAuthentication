@@ -104,6 +104,28 @@ if (-not $devEnvPath) {
 
 Write-Host "Found Visual Studio at: $devEnvPath" -ForegroundColor Gray
 
+# Release builds compile with /Qspectre (SpectreMitigation in
+# Directory.Build.props), which links against the Spectre-mitigated CRT.
+# Without that VS component the failure is a cryptic MSB8040 mid-build, so
+# check up front and explain the fix instead.
+if ($Configuration -eq "Release") {
+    $vsRoot = Split-Path (Split-Path (Split-Path $devEnvPath))
+    $spectreLib = Get-ChildItem (Join-Path $vsRoot "VC\Tools\MSVC\*\lib\spectre\x64\libcmt.lib") -ErrorAction SilentlyContinue
+    if (-not $spectreLib) {
+        Write-Host "ERROR: Spectre-mitigated libraries not found" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Release builds require the VS component 'MSVC v143 - C++ x64/x86 Spectre-mitigated libs (Latest)'." -ForegroundColor Yellow
+        Write-Host "Install it with either:" -ForegroundColor Yellow
+        Write-Host "  - Visual Studio Installer > Modify > Individual components > search 'spectre'" -ForegroundColor Yellow
+        Write-Host "  - Or run (elevated):" -ForegroundColor Yellow
+        Write-Host "    & `"`${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\setup.exe`" modify ``" -ForegroundColor Cyan
+        Write-Host "      --installPath `"$vsRoot`" ``" -ForegroundColor Cyan
+        Write-Host "      --add Microsoft.VisualStudio.Component.VC.Runtimes.x86.x64.Spectre --passive --norestart" -ForegroundColor Cyan
+        exit 1
+    }
+    Write-Host "Spectre-mitigated libs: $(Split-Path $spectreLib[0].FullName)" -ForegroundColor Gray
+}
+
 # Copy icons to project directories (if they exist)
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
