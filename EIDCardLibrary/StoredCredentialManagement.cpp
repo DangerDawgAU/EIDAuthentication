@@ -1541,6 +1541,12 @@ BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __i
 			__leave;
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwBlockLen = %d",dwBlockLen);
+		if (dwBlockLen == 0)
+		{
+			dwError = ERROR_INVALID_PARAMETER;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptGetKeyParam returned a zero block length");
+			__leave;
+		}
 		// block size = 256             100 => 1     256 => 1      257  => 2
 		dwRoundNumber = (dwPasswordSize/dwBlockLen) + ((dwPasswordSize%dwBlockLen) ? 1 : 0);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwRoundNumber = %d",dwRoundNumber);
@@ -1709,6 +1715,12 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CryptGetKeyParam", GetLastError());
+			__leave;
+		}
+		if (dwBlockLen == 0)
+		{
+			dwError = ERROR_INVALID_PARAMETER;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptGetKeyParam returned a zero block length");
 			__leave;
 		}
 		dwRoundNumber = (pEidPrivateData->usPasswordLen / dwBlockLen) +

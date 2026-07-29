@@ -109,7 +109,8 @@ Write-Host "Found Visual Studio at: $devEnvPath" -ForegroundColor Gray
 # Without that VS component the failure is a cryptic MSB8040 mid-build, so
 # check up front and explain the fix instead.
 if ($Configuration -eq "Release") {
-    $vsRoot = Split-Path (Split-Path (Split-Path $devEnvPath))
+    # devenv.com lives at <vsRoot>\Common7\IDE\devenv.com
+    $vsRoot = $devEnvPath | Split-Path -Parent | Split-Path -Parent | Split-Path -Parent
     $spectreLib = Get-ChildItem (Join-Path $vsRoot "VC\Tools\MSVC\*\lib\spectre\x64\libcmt.lib") -ErrorAction SilentlyContinue
     if (-not $spectreLib) {
         Write-Host "ERROR: Spectre-mitigated libraries not found" -ForegroundColor Red

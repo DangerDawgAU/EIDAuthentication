@@ -54,8 +54,7 @@ HRESULT GetUserProfilePath(_In_ const std::wstring& wsUsername, _Out_ std::wstri
 
     // Get profile directory
     WCHAR szProfilePath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
-    DWORD dwPathSize = MAX_PATH;
-    if (!GetProfilesDirectoryW(szProfilePath, &dwPathSize))
+    if (DWORD dwPathSize = MAX_PATH; !GetProfilesDirectoryW(szProfilePath, &dwPathSize))
         return HRESULT_FROM_WIN32(GetLastError());
 
     // Convert SID to string for folder name
