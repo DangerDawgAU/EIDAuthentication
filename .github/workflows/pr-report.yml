@@ -10,6 +10,9 @@ on:
     workflows: ["CI"]
     types: [completed]
 
+# Default-deny; the report job grants itself only what it needs.
+permissions: {}
+
 jobs:
   report:
     name: Collate PR report
@@ -22,7 +25,7 @@ jobs:
       actions: read          # workflow-run timing
     steps:
       - name: Build and publish report
-        uses: actions/github-script@v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         env:
           SELF_CHECK_NAME: "Collate PR report"
           SONAR_PROJECT: "DangerDawgAU_EIDAuthentication"

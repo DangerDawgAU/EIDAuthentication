@@ -60,7 +60,7 @@ INT_PTR CALLBACK WndProc_14_GroupSelect(HWND hwndDlg, UINT uMsg, WPARAM wParam, 
         // Update the count label
         WCHAR szCount[64];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
         swprintf_s(szCount, ARRAYSIZE(szCount), L"Selected: 0 of %d groups",
-            SendMessageW(hList, LB_GETCOUNT, 0, 0));
+            (int)SendMessageW(hList, LB_GETCOUNT, 0, 0));
         SetDlgItemText(hwndDlg, IDC_14_SELECTED_COUNT, szCount);
 
         return TRUE;

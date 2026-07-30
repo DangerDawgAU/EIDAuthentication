@@ -26,6 +26,7 @@
 #include "CertificateUtilities.h"
 #include "Tracing.h"
 #include <array>
+#include <strsafe.h>
 
 #pragma comment (lib,"Scarddlg")
 #pragma comment (lib,"Rpcrt4")
@@ -1851,4 +1852,371 @@ PCCERT_CONTEXT FindCertificateFromHash(PCRYPT_DATA_BLOB pCertInfo)
 	}
 	SetLastError(dwError);
 	return pCertContext;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Uninstall certificate cleanup
+//////////////////////////////////////////////////////////////////////////////
+
+namespace
+{
+	struct EID_CERT_CLEANUP_STATS
+	{
+		DWORD dwCertsRemoved;
+		DWORD dwKeysDeleted;
+		DWORD dwProfilesSwept;
+		DWORD dwErrors;
+	};
+
+	constexpr std::array<LPCWSTR, 4> EID_SWEEP_STORE_NAMES = { L"Root", L"CA", L"TrustedPeople", L"My" };
+
+	BOOL HasEIDPrefix(LPCWSTR szName)
+	{
+		return szName != nullptr && _wcsnicmp(szName, L"EID:", 4) == 0;
+	}
+
+	// TRUE if the certificate was created by this product. *pfSubjectMatch is set when
+	// the SUBJECT carries the EID: prefix (i.e. the certificate IS the EID root CA).
+	BOOL IsEIDOwnedCertificate(PCCERT_CONTEXT pCertContext, PBOOL pfSubjectMatch)
+	{
+		WCHAR szName[512] = L"";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+		*pfSubjectMatch = FALSE;
+		if (CertGetNameStringW(pCertContext, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, nullptr, szName, ARRAYSIZE(szName)) > 1
+			&& HasEIDPrefix(szName))
+		{
+			*pfSubjectMatch = TRUE;
+			return TRUE;
+		}
+		if (CertGetNameStringW(pCertContext, CERT_NAME_SIMPLE_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, nullptr, szName, ARRAYSIZE(szName)) > 1
+			&& HasEIDPrefix(szName))
+		{
+			return TRUE;
+		}
+		return FALSE;
+	}
+
+	// TRUE when the key container really belongs to this certificate: opens the container
+	// READ-ONLY, exports its public key and compares it against the certificate's own
+	// SubjectPublicKeyInfo. Without this, the container name - which is just an attribute
+	// stored alongside the certificate - would be taken on trust.
+	BOOL ContainerKeyMatchesCertificate(PCCERT_CONTEXT pCertContext, const CRYPT_KEY_PROV_INFO* pInfo)
+	{
+		HCRYPTPROV hProv = NULL;
+		if (!CryptAcquireContextW(&hProv, pInfo->pwszContainerName, pInfo->pwszProvName,
+			pInfo->dwProvType, CRYPT_MACHINE_KEYSET))
+		{
+			return FALSE; // container absent or not ours to read - never proceed to delete
+		}
+		BOOL fMatch = FALSE;
+		if (DWORD cbPublicKey = 0; CryptExportPublicKeyInfo(hProv, pInfo->dwKeySpec, X509_ASN_ENCODING, nullptr, &cbPublicKey))
+		{
+			auto pPublicKey = static_cast<PCERT_PUBLIC_KEY_INFO>(EIDAlloc(cbPublicKey));
+			if (pPublicKey)
+			{
+				if (CryptExportPublicKeyInfo(hProv, pInfo->dwKeySpec, X509_ASN_ENCODING, pPublicKey, &cbPublicKey))
+				{
+					fMatch = CertComparePublicKeyInfo(X509_ASN_ENCODING,
+						pPublicKey, &pCertContext->pCertInfo->SubjectPublicKeyInfo);
+				}
+				EIDFree(pPublicKey);
+			}
+		}
+		CryptReleaseContext(hProv, 0);
+		return fMatch;
+	}
+
+	// Deletes the private key container of the EID root CA.
+	//
+	// SECURITY: every input here except the store location is attacker-influenced.
+	// CRYPT_KEY_PROV_INFO is a persisted certificate property, so anyone who can write a
+	// certificate into a swept store also chooses the container name, provider and flags -
+	// including CRYPT_MACHINE_KEYSET. That flag is therefore a lure, NOT a safety rail:
+	// it cannot authorise anything. Two checks that attacker-supplied data cannot forge
+	// gate the deletion instead:
+	//   1. the caller must have found the certificate in a LocalMachine store, which only
+	//      an administrator can write to (fMachineStore, threaded down from the sweep); and
+	//   2. the container's public key must match the certificate's own public key.
+	// A legitimate EID CA satisfies both: MakeTrustedCertifcate only sets
+	// CRYPT_MACHINE_KEYSET for UI_CERTIFICATE_INFO_SAVEON_SYSTEMSTORE, which writes to
+	// LocalMachine Root. Smart-card containers remain unreachable - they never carry
+	// CRYPT_MACHINE_KEYSET and never live in a machine store.
+	void DeleteMachineKeyContainer(PCCERT_CONTEXT pCertContext, EID_CERT_CLEANUP_STATS* pStats)
+	{
+		DWORD dwSize = 0;
+		if (!CertGetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, nullptr, &dwSize))
+		{
+			return; // no private key recorded - nothing to delete
+		}
+		auto pInfo = static_cast<PCRYPT_KEY_PROV_INFO>(EIDAlloc(dwSize));
+		if (!pInfo)
+		{
+			pStats->dwErrors++;
+			return;
+		}
+		if (!CertGetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, pInfo, &dwSize))
+		{
+			pStats->dwErrors++;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"RemoveAllEIDCertificates: key prov info unreadable (0x%08x)", GetLastError());
+			EIDFree(pInfo);
+			return;
+		}
+		if ((pInfo->dwFlags & CRYPT_MACHINE_KEYSET) && ContainerKeyMatchesCertificate(pCertContext, pInfo))
+		{
+			HCRYPTPROV hProv = NULL;
+			if (CryptAcquireContextW(&hProv, pInfo->pwszContainerName, pInfo->pwszProvName,
+				pInfo->dwProvType, CRYPT_DELETEKEYSET | CRYPT_MACHINE_KEYSET))
+			{
+				// CRYPT_DELETEKEYSET returns no handle to release
+				pStats->dwKeysDeleted++;
+				EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"RemoveAllEIDCertificates: deleted CA key container %s", pInfo->pwszContainerName);
+			}
+			else if (GetLastError() == NTE_BAD_KEYSET)
+			{
+				// already deleted via another copy of the same CA certificate - expected
+				EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE, L"RemoveAllEIDCertificates: key container %s already gone", pInfo->pwszContainerName);
+			}
+			else
+			{
+				pStats->dwErrors++;
+				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"RemoveAllEIDCertificates: CryptAcquireContext(DELETEKEYSET) failed 0x%08x", GetLastError());
+			}
+		}
+		EIDFree(pInfo);
+	}
+
+	// Removes every EID-owned certificate from an open store. Restarts enumeration after
+	// each deletion (CertDeleteCertificateFromStore frees the context, which would
+	// invalidate the enumerator). Store sizes are tiny, so O(n^2) is irrelevant.
+	// fMachineStore must be TRUE only for LocalMachine stores - it authorises private key
+	// destruction, so a per-user store must never set it (see DeleteMachineKeyContainer).
+	void CleanOpenStore(HCERTSTORE hStore, LPCWSTR szLabel, BOOL fMachineStore, EID_CERT_CLEANUP_STATS* pStats)
+	{
+		BOOL fDeletedOne = TRUE;
+		while (fDeletedOne)
+		{
+			fDeletedOne = FALSE;
+			PCCERT_CONTEXT pCert = nullptr;
+			while ((pCert = CertEnumCertificatesInStore(hStore, pCert)) != nullptr)
+			{
+				BOOL fSubjectMatch = FALSE;
+				if (!IsEIDOwnedCertificate(pCert, &fSubjectMatch))
+				{
+					continue;
+				}
+				if (fSubjectMatch && fMachineStore)
+				{
+					DeleteMachineKeyContainer(pCert, pStats);
+				}
+				// CertDeleteCertificateFromStore always frees pCert (success or failure)
+				if (CertDeleteCertificateFromStore(pCert))
+				{
+					pStats->dwCertsRemoved++;
+					fDeletedOne = TRUE;
+				}
+				else
+				{
+					pStats->dwErrors++;
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"RemoveAllEIDCertificates: delete failed in %s (0x%08x)", szLabel, GetLastError());
+					// leave fDeletedOne FALSE: abandon this store instead of looping on a stuck certificate
+				}
+				break; // restart enumeration from scratch after any deletion attempt
+			}
+		}
+	}
+
+	// CertEnumSystemStore callback for CERT_SYSTEM_STORE_USERS: store names arrive as
+	// "<SID>\<StoreName>" for every loaded profile hive.
+	BOOL WINAPI CleanUserSystemStoreCallback(const void* pvSystemStore, DWORD dwFlags, PCERT_SYSTEM_STORE_INFO pStoreInfo, void* pvReserved, void* pvArg)  // NOSONAR - API-01: signature dictated by Windows/callback API
+	{
+		UNREFERENCED_PARAMETER(dwFlags);
+		UNREFERENCED_PARAMETER(pStoreInfo);
+		UNREFERENCED_PARAMETER(pvReserved);
+		auto pStats = static_cast<EID_CERT_CLEANUP_STATS*>(pvArg);
+		auto szStore = static_cast<LPCWSTR>(pvSystemStore);
+		LPCWSTR szBackslash = wcsrchr(szStore, L'\\');
+		if (!szBackslash)
+		{
+			return TRUE;
+		}
+		LPCWSTR szName = szBackslash + 1;
+		BOOL fWanted = FALSE;
+		for (LPCWSTR szWanted : EID_SWEEP_STORE_NAMES)
+		{
+			if (_wcsicmp(szName, szWanted) == 0)
+			{
+				fWanted = TRUE;
+				break;
+			}
+		}
+		if (fWanted)
+		{
+			HCERTSTORE hStore = CertOpenStore(CERT_STORE_PROV_SYSTEM_W, 0, NULL,  // NOSONAR - Windows API requires NULL
+				CERT_SYSTEM_STORE_USERS | CERT_STORE_OPEN_EXISTING_FLAG, szStore);
+			if (hStore)
+			{
+				// FALSE: a user store must never authorise private key destruction
+				CleanOpenStore(hStore, szStore, FALSE, pStats);
+				CertCloseStore(hStore, 0);
+			}
+		}
+		return TRUE; // always continue enumeration
+	}
+
+	BOOL EnablePrivilege(LPCWSTR szPrivilege)
+	{
+		HANDLE hToken = nullptr;
+		TOKEN_PRIVILEGES tp = {0};
+		if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken))
+		{
+			return FALSE;
+		}
+		tp.PrivilegeCount = 1;
+		tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+		BOOL fOk = LookupPrivilegeValueW(nullptr, szPrivilege, &tp.Privileges[0].Luid)
+			&& AdjustTokenPrivileges(hToken, FALSE, &tp, 0, nullptr, nullptr)
+			&& GetLastError() == ERROR_SUCCESS;
+		DWORD dwError = GetLastError();  // capture before CloseHandle can overwrite it
+		CloseHandle(hToken);
+		SetLastError(dwError);
+		return fOk;
+	}
+
+	// Opens a certificate store rooted at an arbitrary registry key (used on mounted
+	// NTUSER.DAT hives) and cleans it. CERT_STORE_PROV_REG persists deletions to the key.
+	void CleanRegistryStore(HKEY hHiveRoot, LPCWSTR szStoreName, EID_CERT_CLEANUP_STATS* pStats)
+	{
+		WCHAR szSubKey[MAX_PATH] = L"";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+		swprintf_s(szSubKey, ARRAYSIZE(szSubKey), L"SOFTWARE\\Microsoft\\SystemCertificates\\%s", szStoreName);
+		HKEY hKey = nullptr;
+		if (RegOpenKeyExW(hHiveRoot, szSubKey, 0, KEY_READ | KEY_WRITE, &hKey) != ERROR_SUCCESS)
+		{
+			return; // store never created for this profile - nothing to clean
+		}
+		if (HCERTSTORE hStore = CertOpenStore(CERT_STORE_PROV_REG, 0, NULL, 0, hKey))  // NOSONAR - Windows API requires NULL
+		{
+			// FALSE: a mounted user hive must never authorise private key destruction
+			CleanOpenStore(hStore, szStoreName, FALSE, pStats);
+			CertCloseStore(hStore, 0);
+		}
+		RegCloseKey(hKey);
+	}
+
+	constexpr LPCWSTR EID_CLEANUP_MOUNT_POINT = L"EID_CertCleanup_Tmp";
+
+	// Mounts one profile's NTUSER.DAT and cleans its certificate stores. The hive is
+	// always unmounted, including when it cannot be opened after a successful load.
+	void SweepOneProfile(HKEY hProfileList, LPCWSTR szSid, EID_CERT_CLEANUP_STATS* pStats)
+	{
+		WCHAR szHivePath[MAX_PATH] = L"";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+		// RRF_RT_REG_SZ alone: RegGetValue auto-expands REG_EXPAND_SZ and returns it
+		// as REG_SZ (adding RRF_RT_REG_EXPAND_SZ without RRF_NOEXPAND is an error)
+		if (DWORD cbPath = sizeof(szHivePath); RegGetValueW(hProfileList, szSid, L"ProfileImagePath", RRF_RT_REG_SZ,
+			nullptr, szHivePath, &cbPath) != ERROR_SUCCESS)
+		{
+			return;
+		}
+		if (FAILED(StringCchCatW(szHivePath, ARRAYSIZE(szHivePath), L"\\NTUSER.DAT")))
+		{
+			return;
+		}
+		if (LSTATUS lLoad = RegLoadKeyW(HKEY_USERS, EID_CLEANUP_MOUNT_POINT, szHivePath); lLoad != ERROR_SUCCESS)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"RemoveAllEIDCertificates: RegLoadKey failed for %s (0x%08x) - profile skipped", szSid, lLoad);
+			pStats->dwErrors++;
+			return;
+		}
+		HKEY hHive = nullptr;
+		if (LSTATUS lOpen = RegOpenKeyExW(HKEY_USERS, EID_CLEANUP_MOUNT_POINT, 0, KEY_READ | KEY_WRITE, &hHive); lOpen == ERROR_SUCCESS)
+		{
+			for (LPCWSTR szStoreName : EID_SWEEP_STORE_NAMES)
+			{
+				CleanRegistryStore(hHive, szStoreName, pStats);
+			}
+			RegCloseKey(hHive);
+			pStats->dwProfilesSwept++;
+		}
+		else
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"RemoveAllEIDCertificates: mounted hive unreadable for %s (0x%08x)", szSid, lOpen);
+			pStats->dwErrors++;
+		}
+		if (LSTATUS lUnload = RegUnLoadKeyW(HKEY_USERS, EID_CLEANUP_MOUNT_POINT); lUnload != ERROR_SUCCESS)
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"RemoveAllEIDCertificates: RegUnLoadKey failed for %s (0x%08x)", szSid, lUnload);
+			pStats->dwErrors++;
+		}
+	}
+
+	// Mounts each not-currently-loaded user profile hive (ProfileList enumeration,
+	// S-1-5-21-* accounts only) and cleans its certificate stores. Loaded hives are
+	// covered separately by CertEnumSystemStore(CERT_SYSTEM_STORE_USERS).
+	void SweepUnloadedProfiles(EID_CERT_CLEANUP_STATS* pStats)
+	{
+		if (!EnablePrivilege(SE_BACKUP_NAME) || !EnablePrivilege(SE_RESTORE_NAME))
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"RemoveAllEIDCertificates: backup/restore privilege unavailable (0x%08x) - unloaded profiles skipped", GetLastError());
+			pStats->dwErrors++;
+			return;
+		}
+		HKEY hProfileList = nullptr;
+		if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList",
+			0, KEY_READ, &hProfileList) != ERROR_SUCCESS)
+		{
+			pStats->dwErrors++;
+			return;
+		}
+		for (DWORD dwIndex = 0; ; dwIndex++)
+		{
+			WCHAR szSid[256] = L"";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
+			if (DWORD dwSidLen = ARRAYSIZE(szSid); RegEnumKeyExW(hProfileList, dwIndex, szSid, &dwSidLen, nullptr, nullptr, nullptr, nullptr) != ERROR_SUCCESS)
+			{
+				break;
+			}
+			if (_wcsnicmp(szSid, L"S-1-5-21-", 9) != 0)
+			{
+				continue; // only real local/domain accounts
+			}
+			if (HKEY hLoaded = nullptr; RegOpenKeyExW(HKEY_USERS, szSid, 0, KEY_READ, &hLoaded) == ERROR_SUCCESS)
+			{
+				RegCloseKey(hLoaded);
+				continue; // hive loaded - already swept via CertEnumSystemStore
+			}
+			SweepOneProfile(hProfileList, szSid, pStats);
+		}
+		RegCloseKey(hProfileList);
+	}
+}
+
+HRESULT RemoveAllEIDCertificates(VOID)
+{
+	EID_CERT_CLEANUP_STATS stats = {0};
+	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"RemoveAllEIDCertificates: starting certificate cleanup");
+
+	// 1. LocalMachine stores - everything MakeTrustedCertifcate and the wizard write to.
+	// Only these are admin-writable, so only these authorise CA key deletion (TRUE).
+	for (LPCWSTR szStoreName : EID_SWEEP_STORE_NAMES)
+	{
+		HCERTSTORE hStore = CertOpenStore(CERT_STORE_PROV_SYSTEM_W, 0, NULL,  // NOSONAR - Windows API requires NULL
+			CERT_SYSTEM_STORE_LOCAL_MACHINE | CERT_STORE_OPEN_EXISTING_FLAG, szStoreName);
+		if (hStore)
+		{
+			CleanOpenStore(hStore, szStoreName, TRUE, &stats);
+			CertCloseStore(hStore, 0);
+		}
+	}
+
+	// 2. Loaded user profiles (logged-on users, .DEFAULT)
+	if (!CertEnumSystemStore(CERT_SYSTEM_STORE_USERS, nullptr, &stats, CleanUserSystemStoreCallback))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"RemoveAllEIDCertificates: CertEnumSystemStore failed 0x%08x", GetLastError());
+		stats.dwErrors++;
+	}
+
+	// 3. Unloaded user profiles (users not logged on during uninstall - the common case)
+	SweepUnloadedProfiles(&stats);
+
+	EIDCardLibraryTrace(WINEVENT_LEVEL_INFO,
+		L"RemoveAllEIDCertificates: removed %u certificates, deleted %u key containers, swept %u offline profiles, %u errors",
+		stats.dwCertsRemoved, stats.dwKeysDeleted, stats.dwProfilesSwept, stats.dwErrors);
+	return S_OK; // partial skips never fail the uninstall
 }

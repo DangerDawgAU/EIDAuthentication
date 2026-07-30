@@ -1541,18 +1541,31 @@ BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __i
 			__leave;
 		}
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwBlockLen = %d",dwBlockLen);
+		if (dwBlockLen == 0)
+		{
+			dwError = ERROR_INVALID_PARAMETER;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptGetKeyParam returned a zero block length");
+			__leave;
+		}
 		// block size = 256             100 => 1     256 => 1      257  => 2
 		dwRoundNumber = (dwPasswordSize/dwBlockLen) + ((dwPasswordSize%dwBlockLen) ? 1 : 0);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwRoundNumber = %d",dwRoundNumber);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwPasswordSize = %d",dwPasswordSize);
-		*pEncryptedPassword = (PBYTE) EIDAlloc(dwRoundNumber * dwBlockLen);
+		if (dwRoundNumber > MAXDWORD / dwBlockLen)
+		{
+			dwError = ERROR_ARITHMETIC_OVERFLOW;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"encrypted password size overflow (%lu rounds)",dwRoundNumber);
+			__leave;
+		}
+		DWORD cbEncrypted = dwRoundNumber * dwBlockLen;
+		*pEncryptedPassword = (PBYTE) EIDAlloc(cbEncrypted);
 		if (!*pEncryptedPassword)
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc 0x%08x",GetLastError());
 			__leave;
-		}	
-		memset(*pEncryptedPassword, 0, dwRoundNumber * dwBlockLen);
+		}
+		memset(*pEncryptedPassword, 0, cbEncrypted);
 		memcpy(*pEncryptedPassword, szPassword, dwPasswordSize);
 		
 		dwEncryptedSize = 0;
@@ -1704,9 +1717,17 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Error 0x%08x returned by CryptGetKeyParam", GetLastError());
 			__leave;
 		}
+		if (dwBlockLen == 0)
+		{
+			dwError = ERROR_INVALID_PARAMETER;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CryptGetKeyParam returned a zero block length");
+			__leave;
+		}
 		dwRoundNumber = (pEidPrivateData->usPasswordLen / dwBlockLen) +
 			((pEidPrivateData->usPasswordLen % dwBlockLen) ? 1 : 0);
-		*pszPassword = (PWSTR) EIDAlloc(dwRoundNumber *  dwBlockLen + sizeof(WCHAR));
+		// usPasswordLen is USHORT, so this product always fits a DWORD
+		DWORD cbPasswordBuffer = dwRoundNumber * dwBlockLen;
+		*pszPassword = (PWSTR) EIDAlloc(cbPasswordBuffer + sizeof(WCHAR));
 		if (!*pszPassword)
 		{
 			dwError = GetLastError();

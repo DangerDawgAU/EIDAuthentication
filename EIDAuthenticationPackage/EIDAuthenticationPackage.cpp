@@ -47,6 +47,7 @@
 #include "../EIDCardLibrary/CompleteProfile.h"
 #include "../EIDCardLibrary/Package.h"
 #include "../EIDCardLibrary/CertificateValidation.h"
+#include "../EIDCardLibrary/CertificateUtilities.h"
 #include "../EIDCardLibrary/StoredCredentialManagement.h"
 #include "../EIDCardLibrary/SmartCardModule.h"
 #include "../EIDCardLibrary/CSVLogger.h"
@@ -1510,6 +1511,27 @@ extern "C"
 			hr = E_FAIL;
 		}
 
+		return hr;
+	}
+
+	// CleanupEIDCertificates - Removes the EID root CA (certificate + machine key
+	// container) and every certificate it issued, from machine stores and all user
+	// profiles. Called by the uninstaller via rundll32 before this DLL is deleted.
+	HRESULT WINAPI CleanupEIDCertificates()
+	{
+		HRESULT hr = E_FAIL;  // NOSONAR - EXPLICIT-TYPE-03: HRESULT visible for security audit
+		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"CleanupEIDCertificates: starting");
+		__try
+		{
+			hr = RemoveAllEIDCertificates();
+		}
+		__except(EIDExceptionHandler(GetExceptionInformation()))
+		{
+			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"CleanupEIDCertificates: Exception 0x%08x", GetExceptionCode());
+			EIDLogStackTrace(GetExceptionCode());
+			hr = E_FAIL;
+		}
+		EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"CleanupEIDCertificates: finished 0x%08x", hr);
 		return hr;
 	}
 

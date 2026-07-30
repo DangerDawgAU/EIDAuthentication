@@ -168,8 +168,9 @@ INT_PTR CALLBACK	WndProc_02ENABLE(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				SHELLEXECUTEINFO shExecInfo;
 				TCHAR szName[1024];  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
 				TCHAR szParameter[1024] = TEXT("NEW_USERNAME ");  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
-				DWORD dwSize = ARRAYSIZE(szParameter) - (DWORD) _tcsclen(szParameter);
-				GetUserName(szParameter + ARRAYSIZE(szParameter) - dwSize, &dwSize);
+				auto nUsed = _tcsclen(szParameter);
+				auto dwSize = (DWORD)(ARRAYSIZE(szParameter) - nUsed);
+				GetUserName(szParameter + nUsed, &dwSize);
 
 				GetModuleFileName(GetModuleHandle(nullptr),szName, ARRAYSIZE(szName));
 				shExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);

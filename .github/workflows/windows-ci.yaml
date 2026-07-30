@@ -7,9 +7,18 @@ on:
   release:
     types: [published]
 
+# Default-deny; each job grants itself only what it needs.
+permissions: {}
+
 jobs:
   build:
-    runs-on: windows-latest
+    # Pinned to windows-2022, NOT windows-latest: every windows-2025* label
+    # now serves the vs2026 image, whose VS 18 carries Spectre-mitigated libs
+    # only for its own v145 toolset. This project pins PlatformToolset v143
+    # and builds with /Qspectre (Directory.Build.props), which needs the v143
+    # (14.4x) Spectre libs — present only in windows-2022's VS 2022. Revisit
+    # when the projects move toolsets or windows-2022 retires.
+    runs-on: windows-2022
     # Least privilege: the build needs only read access, plus
     # security-events: write so the BinSkim step can upload its SARIF to
     # code scanning. Publishing to a GitHub Release (which needs
@@ -19,7 +28,7 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
         with:
           persist-credentials: false  # build only; no git push needs the token
 
@@ -27,7 +36,7 @@ jobs:
       # The key tracks Installer/Stage-Minidrivers.ps1, which carries the URL +
       # SHA-256 manifest for each driver; changing either rotates the cache.
       - name: Cache bundled minidrivers
-        uses: actions/cache@v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6
         with:
           path: Installer/drivers
           key: drivers-${{ hashFiles('Installer/Stage-Minidrivers.ps1') }}
@@ -38,6 +47,12 @@ jobs:
       - name: Stage LICENSE for NSIS
         shell: pwsh
         run: Copy-Item LICENSE Installer\License.txt -Force
+
+      # build.ps1 generates an SPDX SBOM under Installer\sbom when this tool
+      # is on PATH, and silently skips it otherwise.
+      - name: Install sbom-tool
+        shell: pwsh
+        run: dotnet tool install --global Microsoft.Sbom.DotNetTool
 
       - name: Build (Release x64)
         shell: pwsh
@@ -84,7 +99,7 @@ jobs:
           exit 0
 
       - name: Upload BinSkim SARIF
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81  # v4
         with:
           sarif_file: binskim.sarif
           category: binskim
@@ -100,24 +115,29 @@ jobs:
           }
           Compress-Archive -Path "$($zip.FullName)\*" `
             -DestinationPath Installer\EIDAuthentication-x64.zip -Force
+          if (Test-Path Installer\sbom) {
+            Compress-Archive -Path Installer\sbom\* `
+              -DestinationPath Installer\EIDAuthentication-x64.sbom.zip -Force
+          }
 
       # Always store the build outputs as workflow artifacts. On CI/PR runs these
       # are the deliverable; on release runs the release job below downloads them
       # to attach to the GitHub Release (keeps write scope out of this job).
       - name: Upload workflow artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           name: EIDAuthentication-${{ github.sha }}
           path: |
             Installer/EIDInstallx64.exe
             Installer/EIDAuthentication-x64.zip
+            Installer/EIDAuthentication-x64.sbom.zip
             Installer/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload build log on failure
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           name: build-log-${{ github.sha }}
           path: build.log
@@ -136,7 +156,7 @@ jobs:
       attestations: write # Required to store the attestation
     steps:
       - name: Download build artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
         with:
           name: EIDAuthentication-${{ github.sha }}
           path: dist
@@ -146,11 +166,12 @@ jobs:
       # before carrying it across: gh attestation verify EIDInstallx64.exe
       #   --repo DangerDawgAU/EIDAuthentication
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373  # v4
         with:
           subject-path: |
             dist/EIDInstallx64.exe
             dist/EIDAuthentication-x64.zip
+            dist/EIDAuthentication-x64.sbom.zip
             dist/SHA256SUMS.txt
 
       - name: Upload to GitHub Release
@@ -159,4 +180,5 @@ jobs:
           files: |
             dist/EIDInstallx64.exe
             dist/EIDAuthentication-x64.zip
+            dist/EIDAuthentication-x64.sbom.zip
             dist/SHA256SUMS.txt

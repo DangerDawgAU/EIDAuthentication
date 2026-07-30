@@ -152,3 +152,17 @@ Policy key: same subkey, DWORD `RequireRevocationCheck` (default 0/off, fail-clo
 - [ ] Result recorded → clear to merge `security-uplift` → `quality-fixes`.
 
 **Tester:** ____________  **Date:** ____________  **VM build:** ____________
+
+## Uninstaller certificate cleanup (PR #53)
+
+1. Install the build, enrol a user (creates root CA `CN=EID:<machine>` in
+   LocalMachine Root and a user certificate issued by it).
+2. Verify presence: `certutil -store root | findstr EID:` shows the CA;
+   the enrolled user's My store contains the issued certificate.
+3. Uninstall with "Remove EID Root Certificate Authority..." TICKED.
+4. Verify: `certutil -store root | findstr EID:` -> nothing;
+   `certutil -store ca | findstr EID:` -> nothing; enrolled user's My store
+   has no cert issued by `EID:<machine>` (log on as that user or load the
+   hive); `certutil -key | findstr /i <CA container>` -> gone.
+5. Reinstall, uninstall again with the box UNTICKED -> CA cert, user certs
+   and key container all survive.

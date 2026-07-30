@@ -23,7 +23,7 @@ jobs:
       contents: write   # force-push generated JSON to the badges branch
     steps:
       - name: Generate Aikido security badge JSON
-        uses: actions/github-script@v8
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
         env:
           AIKIDO_API_CLIENT_ID: ${{ secrets.AIKIDO_API_CLIENT_ID }}
           AIKIDO_API_CLIENT_SECRET: ${{ secrets.AIKIDO_API_CLIENT_SECRET }}
