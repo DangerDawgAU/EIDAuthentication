@@ -307,8 +307,15 @@ BOOL EIDValidateChallengeMessage(__in_opt const void* pToken, __in DWORD cbToken
 	{
 		return FALSE;
 	}
-	// A zero-length challenge would leave the responder signing nothing.
-	if (pMessage->ChallengeLen == 0)
+	// The challenge must be EXACTLY the protocol length, not merely non-zero.
+	// A short challenge is not just a weak nonce: the verifier reaches
+	// CryptSetHashParam(HP_HASHVAL, ...), which copies the hash algorithm's
+	// full digest length out of the buffer whatever its real size, so a
+	// 1-byte challenge is a heap over-read inside LSASS. Accepting any
+	// non-zero length here was enough to make that reachable from an
+	// unprivileged SSPI caller. The GINA paths have always required equality;
+	// this makes the SSP path agree with them.
+	if (pMessage->ChallengeLen != EID_CHALLENGE_LENGTH)
 	{
 		return FALSE;
 	}

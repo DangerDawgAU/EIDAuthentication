@@ -38,12 +38,17 @@
 #include "CSVConfig.h"
 #include "CSVLogger.h"
 #include "GPO.h"
+#include "InputValidation.h"
 #include <string>
 #include <span>
 #include <array>
 
 constexpr LPCTSTR CREDENTIALPROVIDER = MS_ENH_RSA_AES_PROV;
 constexpr DWORD CREDENTIALKEYLENGTH = 256;
+// The validator rejects a challenge of any other length before it reaches the
+// verifiers below, so the two constants must not drift apart.
+static_assert(CREDENTIALKEYLENGTH == EID_CHALLENGE_LENGTH,
+	"challenge length in InputValidation.h must match CREDENTIALKEYLENGTH");
 constexpr ALG_ID CREDENTIALCRYPTALG = CALG_AES_256;
 constexpr LPCWSTR CREDENTIAL_LSAPREFIX = L"L$_EID_";
 constexpr LPCWSTR CREDENTIAL_CONTAINER = L"EIDCredential";
@@ -74,7 +79,6 @@ CStoredCredentialManager *CStoredCredentialManager::theSingleInstance = nullptr;
 // straight out of an LSA secret that an administrator (or an imported .eidm) can write,
 // and each consumer indexes Data[] with those values inside LSASS. Validate the whole
 // layout once, at the single point where the blob is read, so no consumer has to.
-#include "InputValidation.h"
 
 // The layout rule now lives in InputValidation.cpp (EIDValidatePrivateDataLayout)
 // so that this file, EIDMigrate\LsaClient.cpp and the fuzz harness all share one
@@ -2125,7 +2129,6 @@ BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD 
 // Code cannot be extracted from __try blocks per LSASS safety requirements
 BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid, __in PBYTE ppChallenge, __in DWORD dwChallengeSize, __in PBYTE pResponse, __in DWORD dwResponseSize)  // NOSONAR - API-01: signature dictated by Windows/callback API
 {
-	UNREFERENCED_PARAMETER(dwChallengeSize);
 	BOOL fReturn = FALSE;
 	BOOL fStatus;
 	DWORD dwError = 0;
@@ -2143,6 +2146,20 @@ BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid
 		{
 			dwError = ERROR_NONE_MAPPED;
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"dwRid 0x%08x",dwError);
+			__leave;
+		}
+		// The challenge length MUST be checked here, not merely by the caller.
+		// Below, CryptSetHashParam(HP_HASHVAL, ppChallenge, 0) copies exactly
+		// the hash algorithm's digest length (20 bytes for CALG_SHA) out of
+		// this buffer regardless of how large it actually is, so a short
+		// challenge is a heap over-read inside LSASS. This function shipped
+		// without the check - the parameter was explicitly UNREFERENCED - while
+		// its two siblings GetPasswordFromSignatureChallengeResponse and
+		// GetPasswordFromDPAPIChallengeResponse both enforce it.
+		if (CREDENTIALKEYLENGTH != dwChallengeSize)
+		{
+			dwError = ERROR_INVALID_PARAMETER;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"dwChallengeSize = 0x%08x (expected %u)",dwChallengeSize,CREDENTIALKEYLENGTH);
 			__leave;
 		}
 		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData,&dwPrivateDataSize);

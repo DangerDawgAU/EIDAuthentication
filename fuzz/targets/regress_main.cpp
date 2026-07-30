@@ -94,7 +94,7 @@ void TestTokenMessages()
 		p->Version = EID_MESSAGE_VERSION;
 		p->UsernameLen = 0xFFFFFFFF;
 		p->UsernameOffset = sizeof(EID_CHALLENGE_MESSAGE);
-		p->ChallengeLen = 16;
+		p->ChallengeLen = EID_CHALLENGE_LENGTH;
 		p->ChallengeOffset = sizeof(EID_CHALLENGE_MESSAGE);
 		Check("challenge: UsernameLen=0xFFFFFFFF (odd length)",
 			!EIDValidateChallengeMessage(token.data(), static_cast<DWORD>(token.size())),
@@ -114,7 +114,7 @@ void TestTokenMessages()
 		p->Version = EID_MESSAGE_VERSION;
 		p->UsernameLen = 0xFFFFFFFE;        // even, so it survives the parity test
 		p->UsernameOffset = sizeof(EID_CHALLENGE_MESSAGE);
-		p->ChallengeLen = 16;
+		p->ChallengeLen = EID_CHALLENGE_LENGTH;
 		p->ChallengeOffset = sizeof(EID_CHALLENGE_MESSAGE);
 		Check("challenge: UsernameLen=0xFFFFFFFE terminator wrap",
 			!EIDValidateChallengeMessage(token.data(), static_cast<DWORD>(token.size())),
@@ -161,19 +161,43 @@ void TestTokenMessages()
 			"length outside token");
 	}
 
-	// 1e. A well-formed token must still be accepted, or we have merely
-	//     broken authentication instead of fixing it.
+	// 1f. Short challenge. The verifier reaches
+	//     CryptSetHashParam(HP_HASHVAL, pbChallenge, 0), which copies the hash
+	//     algorithm's FULL digest length (20 bytes for CALG_SHA) out of the
+	//     buffer whatever its real size. A 1-byte challenge was therefore a
+	//     19-byte heap over-read inside LSASS, reachable by any local SSPI
+	//     caller - and the validator used to allow it because it only rejected
+	//     ChallengeLen == 0. Found by adversarial review.
 	{
-		const DWORD cbPayload = 32;
-		std::vector<BYTE> token(sizeof(EID_CHALLENGE_MESSAGE) + cbPayload, 0);
+		std::vector<BYTE> token(sizeof(EID_CHALLENGE_MESSAGE) + 64, 0);
 		auto* p = reinterpret_cast<EID_CHALLENGE_MESSAGE*>(token.data());
 		memcpy(p->Signature.data(), EID_MESSAGE_SIGNATURE, p->Signature.size());
 		p->MessageType = static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTChallenge);
 		p->Version = EID_MESSAGE_VERSION;
 		p->ChallengeOffset = sizeof(EID_CHALLENGE_MESSAGE);
-		p->ChallengeLen = 16;
-		p->UsernameOffset = sizeof(EID_CHALLENGE_MESSAGE) + 16;
-		p->UsernameLen = 16;
+		p->ChallengeLen = 1;                 // fits the token, far short of the digest
+		p->UsernameOffset = sizeof(EID_CHALLENGE_MESSAGE);
+		p->UsernameLen = 0;
+		Check("challenge: 1-byte challenge (digest over-read)",
+			!EIDValidateChallengeMessage(token.data(), static_cast<DWORD>(token.size())),
+			"challenge shorter than the digest the verifier copies");
+	}
+
+	// 1e. A well-formed token must still be accepted, or we have merely
+	//     broken authentication instead of fixing it. Shaped like the token
+	//     BuildChallengeMessage actually emits: full-length challenge first,
+	//     then the username immediately after it.
+	{
+		const DWORD cbUserName = 16;
+		std::vector<BYTE> token(sizeof(EID_CHALLENGE_MESSAGE) + EID_CHALLENGE_LENGTH + cbUserName, 0);
+		auto* p = reinterpret_cast<EID_CHALLENGE_MESSAGE*>(token.data());
+		memcpy(p->Signature.data(), EID_MESSAGE_SIGNATURE, p->Signature.size());
+		p->MessageType = static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTChallenge);
+		p->Version = EID_MESSAGE_VERSION;
+		p->ChallengeOffset = sizeof(EID_CHALLENGE_MESSAGE);
+		p->ChallengeLen = EID_CHALLENGE_LENGTH;
+		p->UsernameOffset = p->ChallengeOffset + p->ChallengeLen;
+		p->UsernameLen = cbUserName;
 		CheckAccepted("challenge: well-formed token still valid",
 			EIDValidateChallengeMessage(token.data(), static_cast<DWORD>(token.size())) != FALSE);
 	}

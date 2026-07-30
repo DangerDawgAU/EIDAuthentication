@@ -88,6 +88,13 @@ PCWSTR EIDCspInfoStringAt(__in_opt const EID_SMARTCARD_CSP_INFO* pCspInfo, __in 
 // SSP token messages (SECBUFFER_TOKEN from any local SSPI caller)
 //-----------------------------------------------------------------------------
 
+// Byte length of a protocol challenge. MUST equal the CREDENTIALKEYLENGTH used
+// as a byte count in StoredCredentialManagement.cpp (a static_assert there
+// keeps the two in sync). Declared here because the validator has to reject a
+// wrong-sized challenge before it ever reaches the verifier, and that file's
+// constant is translation-unit local.
+constexpr DWORD EID_CHALLENGE_LENGTH = 256;
+
 // TRUE only when the token is large enough for the fixed header and every
 // (offset,len) pair addresses bytes inside the token. Also rejects a
 // UsernameLen whose +sizeof(WCHAR) terminator allowance would wrap a DWORD,

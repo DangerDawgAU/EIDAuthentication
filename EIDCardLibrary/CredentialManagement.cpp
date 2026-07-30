@@ -316,8 +316,34 @@ NTSTATUS CSecurityContext::AcceptSecurityContextOutput(PSecBufferDesc Buffer)
 	return Status;
 }
 
+// A SecBufferDesc arrives from whatever local process called into SSPI. LSASS
+// marshals it, but nothing guarantees cBuffers is non-zero or that pBuffers is
+// a valid pointer - a caller can submit {cBuffers = 0, pBuffers = NULL}. Every
+// entry point below indexes pBuffers[0], so each must establish the descriptor
+// first or take an access violation inside LSASS. The SSP dispatch functions
+// are wrapped in __finally only, with no __except, so that AV propagates into
+// lsasrv and terminates the process.
+//
+// This helper exists because the guard was first added to only the two
+// Receive* functions under review, on the mistaken belief that
+// ReceiveNegociateMessage already had it - it checks cbBuffer, which requires
+// dereferencing pBuffers[0] to do. That function is the only entry point
+// reachable with no established context, i.e. the easiest one to reach.
+static bool TokenBufferIsPresent(PSecBufferDesc Buffer)
+{
+	return Buffer != nullptr
+		&& Buffer->pBuffers != nullptr
+		&& Buffer->cBuffers != 0
+		&& Buffer->pBuffers[0].pvBuffer != nullptr;
+}
+
 NTSTATUS CSecurityContext::BuildNegociateMessage(PSecBufferDesc Buffer)
 {
+	if (!TokenBufferIsPresent(Buffer))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN: empty output descriptor");
+		return SEC_E_INVALID_TOKEN;
+	}
 	Buffer->pBuffers[0].BufferType = SECBUFFER_TOKEN;
 	if (Buffer->pBuffers[0].cbBuffer < 300)
 	{
@@ -339,6 +365,11 @@ NTSTATUS CSecurityContext::BuildNegociateMessage(PSecBufferDesc Buffer)
 
 NTSTATUS CSecurityContext::ReceiveNegociateMessage(PSecBufferDesc Buffer)
 {
+	if (!TokenBufferIsPresent(Buffer))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN: empty buffer descriptor");
+		return SEC_E_INVALID_TOKEN;
+	}
 	if (Buffer->pBuffers[0].cbBuffer < sizeof(EID_NEGOCIATE_MESSAGE))
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INSUFFICIENT_MEMORY");
@@ -372,6 +403,12 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 	NTSTATUS Status = STATUS_SUCCESS;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
 	__try
 	{
+		if (!TokenBufferIsPresent(Buffer))
+		{
+			Status = SEC_E_INVALID_TOKEN;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN: empty output descriptor");
+			__leave;
+		}
 		Buffer->pBuffers[0].BufferType = SECBUFFER_TOKEN;
 		if (Buffer->pBuffers[0].cbBuffer < 300)
 		{
@@ -407,6 +444,10 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 				szUserName = (PWSTR) EIDAlloc(dwLen*sizeof(WCHAR));
 				if (!szUserName)
 				{
+					// Must set Status: it is initialised to STATUS_SUCCESS and is
+					// now the return value, so an unset failure path would report
+					// success with szUserName still null.
+					Status = SEC_E_INSUFFICIENT_MEMORY;
 					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No memory");
 					__leave;
 				}
@@ -449,12 +490,20 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 		memcpy((PBYTE)message + message->UsernameOffset,szUserName,message->UsernameLen);
 		Buffer->pBuffers[0].cbBuffer = cbChallengeNeeded + cbUserName;
 		_State = EID_MESSAGE_STATE::EIDMSChallenge;
+		Status = SEC_I_CONTINUE_NEEDED;
 	}
 	__finally
 	{
 		// SEH cleanup - no action needed
 	}
-	return SEC_I_CONTINUE_NEEDED;
+	// Return Status, not a hardcoded success. Every __leave above sets a failure
+	// code and this function used to discard all of them, so an out-of-memory or
+	// undersized-buffer path reported SEC_I_CONTINUE_NEEDED. That was survivable
+	// only because _State is not advanced on those paths, so the next call falls
+	// through to STATUS_INVALID_SIGNATURE - i.e. correctness depended on a
+	// coincidence two functions away. An error path that returns success is one
+	// refactor away from being an authentication bypass.
+	return Status;
 }
 
 NTSTATUS CSecurityContext::ReceiveChallengeMessage(PSecBufferDesc Buffer)
@@ -464,7 +513,7 @@ NTSTATUS CSecurityContext::ReceiveChallengeMessage(PSecBufferDesc Buffer)
 	// below may be read until the descriptor and the declared offset/length
 	// pairs have been checked - the sibling ReceiveNegociateMessage has always
 	// done this; its absence here was an oversight, not a design choice.
-	if (!Buffer || !Buffer->pBuffers || Buffer->cBuffers == 0 || !Buffer->pBuffers[0].pvBuffer)
+	if (!TokenBufferIsPresent(Buffer))
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN: empty buffer descriptor");
 		return SEC_E_INVALID_TOKEN;
@@ -514,6 +563,11 @@ NTSTATUS CSecurityContext::ReceiveChallengeMessage(PSecBufferDesc Buffer)
 
 NTSTATUS CSecurityContext::BuildResponseMessage(PSecBufferDesc Buffer)
 {
+	if (!TokenBufferIsPresent(Buffer))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN: empty output descriptor");
+		return SEC_E_INVALID_TOKEN;
+	}
 	Buffer->pBuffers[0].BufferType = SECBUFFER_TOKEN;
 	if (Buffer->pBuffers[0].cbBuffer < 300)
 	{
@@ -555,7 +609,7 @@ NTSTATUS CSecurityContext::ReceiveResponseMessage(PSecBufferDesc Buffer)
 	// Server side of the same problem: this token arrives from whoever called
 	// AcceptSecurityContext against the package registered under
 	// HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Security Packages.
-	if (!Buffer || !Buffer->pBuffers || Buffer->cBuffers == 0 || !Buffer->pBuffers[0].pvBuffer)
+	if (!TokenBufferIsPresent(Buffer))
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN: empty buffer descriptor");
 		return SEC_E_INVALID_TOKEN;

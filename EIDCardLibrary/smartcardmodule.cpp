@@ -29,41 +29,54 @@ static HMODULE SafeLoadLibrary(__in LPCWSTR wszModulePath)
         return nullptr;
     }
 
-    // Set DLL directory to empty string to remove current directory from search path
-    // This is a defense-in-depth measure against DLL hijacking
-    SetDllDirectoryW(L"");
-
-    // Check if the path is absolute (contains drive letter or UNC path)
-    BOOL isAbsolutePath = (wszModulePath[0] != L'\0' &&
-                          ((wszModulePath[1] == L':' && (wszModulePath[2] == L'\\' || wszModulePath[2] == L'/')) ||
-                           (wszModulePath[0] == L'\\' && wszModulePath[1] == L'\\')));
-
-    if (isAbsolutePath)
+    // SECURITY: wszModulePath is the card MODULE NAME returned by
+    // SCardGetCardTypeProviderName for a card name the CLIENT supplied in its
+    // logon buffer, and this function runs inside LSASS - while impersonating
+    // that client, so the smart-card resource manager resolves the lookup under
+    // the attacker's identity and can answer from their own HKCU Calais store.
+    // Whatever comes back is about to be executed as DllMain in lsass.exe.
+    //
+    // The previous implementation classified anything without a drive letter or
+    // leading \\ as "relative" and pasted it onto System32. "..\..\Users\Public\
+    // evil.dll" therefore normalised straight back out of System32 into a
+    // user-writable directory - an arbitrary DLL load into LSASS - while the
+    // trace below cheerfully reported it as "from System32".
+    //
+    // EIDLoadSystemLibrary (Package.cpp) has always rejected separators for
+    // exactly this reason. Two loaders, one hardened; this brings them into
+    // line. A card module name is a bare filename - it is never a path.
+    if (wcschr(wszModulePath, L'\\') != nullptr ||
+        wcschr(wszModulePath, L'/')  != nullptr ||
+        wcschr(wszModulePath, L':')  != nullptr)
     {
-        // For absolute paths, use LoadLibraryExW with LOAD_WITH_ALTERED_SEARCH_PATH
-        // to ensure DLL dependencies are loaded from the same directory
-        return LoadLibraryExW(wszModulePath, nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+        EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,
+            L"SafeLoadLibrary: rejecting card module name containing a path separator: '%s'", wszModulePath);
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return nullptr;
     }
-    else
+
+    WCHAR wszSystem32Path[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+    const UINT uLen = GetSystemDirectoryW(wszSystem32Path, ARRAYSIZE(wszSystem32Path));
+    if (uLen == 0 || uLen >= ARRAYSIZE(wszSystem32Path))
     {
-        // For relative paths, try to load from System32 only
-        // This prevents DLL hijacking from current directory
-        WCHAR wszSystem32Path[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
-        if (GetSystemDirectoryW(wszSystem32Path, ARRAYSIZE(wszSystem32Path)) == 0)
-        {
-            return nullptr;
-        }
-
-        WCHAR wszFullPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
-        if (FAILED(StringCchPrintfW(wszFullPath, ARRAYSIZE(wszFullPath), L"%s\\%s", wszSystem32Path, wszModulePath)))
-        {
-            SetLastError(ERROR_BUFFER_OVERFLOW);
-            return nullptr;
-        }
-
-        EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"SafeLoadLibrary: Loading '%s' from System32", wszModulePath);
-        return LoadLibraryExW(wszFullPath, nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+        SetLastError(ERROR_BUFFER_OVERFLOW);
+        return nullptr;
     }
+
+    WCHAR wszFullPath[MAX_PATH];  // NOSONAR - LSASS-01: C-style buffer required by Win32 API
+    if (FAILED(StringCchPrintfW(wszFullPath, ARRAYSIZE(wszFullPath), L"%s\\%s", wszSystem32Path, wszModulePath)))
+    {
+        SetLastError(ERROR_BUFFER_OVERFLOW);
+        return nullptr;
+    }
+
+    // LOAD_LIBRARY_SEARCH_SYSTEM32 rather than LOAD_WITH_ALTERED_SEARCH_PATH:
+    // dependencies of the minidriver must resolve from System32 too, not from
+    // whatever directory the module itself was found in. Also avoids mutating
+    // process-global loader state (the old SetDllDirectoryW(L"") call changed
+    // it for all of lsass.exe and never restored it).
+    EIDCardLibraryTrace(WINEVENT_LEVEL_INFO, L"SafeLoadLibrary: Loading '%s' from System32", wszModulePath);
+    return LoadLibraryExW(wszFullPath, nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
 }
 
 // Non-const string buffer for card module API compatibility (cardmod.h functions require LPWSTR)
