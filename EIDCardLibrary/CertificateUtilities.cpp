@@ -1908,8 +1908,7 @@ namespace
 			return FALSE; // container absent or not ours to read - never proceed to delete
 		}
 		BOOL fMatch = FALSE;
-		DWORD cbPublicKey = 0;
-		if (CryptExportPublicKeyInfo(hProv, pInfo->dwKeySpec, X509_ASN_ENCODING, nullptr, &cbPublicKey))
+		if (DWORD cbPublicKey = 0; CryptExportPublicKeyInfo(hProv, pInfo->dwKeySpec, X509_ASN_ENCODING, nullptr, &cbPublicKey))
 		{
 			auto pPublicKey = static_cast<PCERT_PUBLIC_KEY_INFO>(EIDAlloc(cbPublicKey));
 			if (pPublicKey)
@@ -2109,10 +2108,9 @@ namespace
 	void SweepOneProfile(HKEY hProfileList, LPCWSTR szSid, EID_CERT_CLEANUP_STATS* pStats)
 	{
 		WCHAR szHivePath[MAX_PATH] = L"";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
-		DWORD cbPath = sizeof(szHivePath);
 		// RRF_RT_REG_SZ alone: RegGetValue auto-expands REG_EXPAND_SZ and returns it
 		// as REG_SZ (adding RRF_RT_REG_EXPAND_SZ without RRF_NOEXPAND is an error)
-		if (RegGetValueW(hProfileList, szSid, L"ProfileImagePath", RRF_RT_REG_SZ,
+		if (DWORD cbPath = sizeof(szHivePath); RegGetValueW(hProfileList, szSid, L"ProfileImagePath", RRF_RT_REG_SZ,
 			nullptr, szHivePath, &cbPath) != ERROR_SUCCESS)
 		{
 			return;
@@ -2170,8 +2168,7 @@ namespace
 		for (DWORD dwIndex = 0; ; dwIndex++)
 		{
 			WCHAR szSid[256] = L"";  // NOSONAR - LSASS-01: C-style buffer for LSASS safety
-			DWORD dwSidLen = ARRAYSIZE(szSid);
-			if (RegEnumKeyExW(hProfileList, dwIndex, szSid, &dwSidLen, nullptr, nullptr, nullptr, nullptr) != ERROR_SUCCESS)
+			if (DWORD dwSidLen = ARRAYSIZE(szSid); RegEnumKeyExW(hProfileList, dwIndex, szSid, &dwSidLen, nullptr, nullptr, nullptr, nullptr) != ERROR_SUCCESS)
 			{
 				break;
 			}
@@ -2179,8 +2176,7 @@ namespace
 			{
 				continue; // only real local/domain accounts
 			}
-			HKEY hLoaded = nullptr;
-			if (RegOpenKeyExW(HKEY_USERS, szSid, 0, KEY_READ, &hLoaded) == ERROR_SUCCESS)
+			if (HKEY hLoaded = nullptr; RegOpenKeyExW(HKEY_USERS, szSid, 0, KEY_READ, &hLoaded) == ERROR_SUCCESS)
 			{
 				RegCloseKey(hLoaded);
 				continue; // hive loaded - already swept via CertEnumSystemStore
