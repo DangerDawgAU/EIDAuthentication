@@ -26,13 +26,19 @@
 //        =>  EIDPrivateDataSpan() <= the allocation size, so the cleanup
 //            SecureZeroMemory cannot overrun.
 //
-// Property 2 is the interesting one. The old code zeroized
+// Property 2 needs an honest caveat. The ORIGINAL defect was that the cleanup
+// zeroized
 //     sizeof(EID_PRIVATE_DATA) + dwCertificatSize + dwSymetricKeySize
 //                              + usPasswordLen
-// while the validator only checked each region fit INDIVIDUALLY. Three
-// overlapping regions therefore produced a span up to 3x the allocation. The
-// zeroize is reproduced literally below, against an exact-size allocation, so
-// any inflated span is an immediate ASan heap-buffer-overflow WRITE.
+// - a SUM - while the validator checked each region only INDIVIDUALLY, so
+// overlapping regions inflated it to as much as 3x the allocation.
+//
+// This target does NOT reproduce that sum: it calls EIDPrivateDataSpan, which
+// takes the MAX of the region ends and is therefore bounded by construction.
+// So the assertion below cannot rediscover the original bug - it is a
+// regression detector that fires if EIDPrivateDataSpan is ever changed back to
+// something that can exceed the allocation. Do not read a clean run here as
+// evidence that a sum-based span would have been caught.
 //
 // The dwRoundNumber underflow (usPasswordLen == 0) is also modelled, since
 // that is arithmetic the validator must make impossible rather than something

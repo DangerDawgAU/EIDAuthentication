@@ -243,11 +243,15 @@ void InitChainValidationParams(ChainValidationParams* params)
 	}
 	LPCTSTR szContainerName = EIDCspInfoStringAt(pCspInfo, dwCspDataLength, pCspInfo->nContainerNameOffset);
 	LPCTSTR szProviderName = EIDCspInfoStringAt(pCspInfo, dwCspDataLength, pCspInfo->nCSPNameOffset);
-	if (!szProviderName)
+	if (!szProviderName || !szContainerName)
 	{
-		// A container name may legitimately be absent (the PIV fallback below
-		// passes nullptr), but without a provider there is nothing to open.
-		EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"GetCertificateFromCspInfoInternal: missing CSP name");
+		// Both are required. A null container name is NOT equivalent to "field
+		// absent" here: CryptAcquireContext reads nullptr as "use the provider's
+		// DEFAULT container", which is precisely the PIV fallback performed
+		// below only after the named lookup fails. Letting an absent field
+		// silently select that path would turn a malformed request into a
+		// different, weaker lookup. Every writer in this repo emits both names.
+		EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"GetCertificateFromCspInfoInternal: CSP name or container name absent");
 		return EID::make_unexpected(E_INVALIDARG);
 	}
 

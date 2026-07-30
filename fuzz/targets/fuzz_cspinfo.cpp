@@ -77,11 +77,24 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 			pCspInfo->nCSPNameOffset,
 		};
 		size_t cchTotal = 0;
+		const BYTE* pBufferStart = reinterpret_cast<const BYTE*>(pRaw) +
+			FIELD_OFFSET(EID_SMARTCARD_CSP_INFO, bBuffer);
+		const BYTE* pBufferEnd = reinterpret_cast<const BYTE*>(pRaw) + cbCspData;
 		for (size_t i = 0; i < ARRAYSIZE(rgOffsets); i++)
 		{
 			PCWSTR psz = EIDCspInfoStringAt(pCspInfo, cbCspData, rgOffsets[i]);
 			if (psz)
 			{
+				// A name offset addresses bBuffer, so the pointer must land in
+				// [bBuffer, end). Merely being inside the allocation is NOT
+				// enough: an offset whose WCHAR scaling wraps 32 bits can come
+				// back around and alias the FIXED HEADER, which is in bounds and
+				// therefore invisible to ASan. Without this check the oracle is
+				// silent on exactly the arithmetic it is meant to police.
+				const BYTE* pRet = reinterpret_cast<const BYTE*>(psz);
+				EID_ORACLE_REQUIRE(pRet >= pBufferStart && pRet < pBufferEnd,
+					"EIDCspInfoStringAt returned a pointer outside bBuffer - a "
+					"name offset wrapped and now aliases the struct header");
 				cchTotal += wcslen(psz);
 			}
 			else if (rgOffsets[i] != 0)

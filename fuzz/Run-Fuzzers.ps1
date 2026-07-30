@@ -54,15 +54,25 @@ New-Item -ItemType Directory -Force $crashDir | Out-Null
 
 # ---------------------------------------------------------------------------
 # Gotcha 1: put the ASan runtime DLL on PATH
+#
+# Every step here is best-effort and must not throw: eidregress.exe does NOT
+# need the ASan DLL, so a machine without Visual Studio should still be able to
+# run the regression gate. $ErrorActionPreference is Stop, so guard each call
+# rather than letting a missing vswhere terminate the script.
 # ---------------------------------------------------------------------------
 $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-$vsPath  = & $vsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-$asanDir = Get-ChildItem (Join-Path $vsPath "VC\Tools\MSVC\*\bin\Hostx64\x64\clang_rt.asan_dynamic-x86_64.dll") -ErrorAction SilentlyContinue |
-           Select-Object -Last 1
+$asanDir = $null
+if (Test-Path $vsWhere) {
+    $vsPath = & $vsWhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+    if ($vsPath) {
+        $asanDir = Get-ChildItem (Join-Path $vsPath "VC\Tools\MSVC\*\bin\Hostx64\x64\clang_rt.asan_dynamic-x86_64.dll") -ErrorAction SilentlyContinue |
+                   Select-Object -Last 1
+    }
+}
 if ($asanDir) {
     $env:PATH = "$(Split-Path $asanDir.FullName -Parent);$env:PATH"
 } else {
-    Write-Host "WARNING: clang_rt.asan_dynamic-x86_64.dll not found; targets may exit 0xC0000135" -ForegroundColor Yellow
+    Write-Host "WARNING: clang_rt.asan_dynamic-x86_64.dll not found; fuzz targets will exit 0xC0000135" -ForegroundColor Yellow
 }
 
 $failures = 0
@@ -82,8 +92,10 @@ if (Test-Path $regressExe) {
         Write-Host "All PoC cases rejected." -ForegroundColor Green
     }
     Write-Host ""
-} elseif ($Regress) {
-    Write-Host "ERROR: eidregress.exe not built" -ForegroundColor Red
+} else {
+    # A missing binary is a failure, never a silent pass. "Nothing ran" and
+    # "everything passed" must not produce the same exit code.
+    Write-Host "ERROR: eidregress.exe not built - run fuzz\Build-Fuzzers.ps1" -ForegroundColor Red
     exit 1
 }
 
@@ -100,7 +112,10 @@ if ($Target -ne "all") { $names = @($Target) }
 foreach ($name in $names) {
     $exe = Join-Path $outDir "eidfuzz_$name.exe"
     if (-not (Test-Path $exe)) {
-        Write-Host "SKIP $name (not built)" -ForegroundColor DarkGray
+        # Counts as a failure: a target that never ran cannot be "clean", and CI
+        # must not report success for a tree that failed to build.
+        Write-Host "  MISSING $name (not built)" -ForegroundColor Red
+        $failures++
         continue
     }
 
@@ -136,3 +151,6 @@ if ($failures -gt 0) {
     exit 1
 }
 Write-Host "All targets clean." -ForegroundColor Green
+# Explicit: without this the exit code is inherited from the last native
+# command that happened to run.
+exit 0

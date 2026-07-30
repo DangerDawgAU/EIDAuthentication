@@ -96,9 +96,13 @@ BOOL EIDValidatePrivateDataLayout(__in_opt const EID_PRIVATE_DATA* pPrivateData,
 		}
 	}
 
-	// Overlap matters because the cleanup path zeroizes a span derived from
-	// these regions. Individually-valid but overlapping regions produce a span
-	// larger than the allocation.
+	// Overlap rejection is structural sanity, NOT a memory-safety requirement:
+	// EIDPrivateDataSpan takes max(region end) rather than the sum, so the span
+	// is bounded by the blob whether regions overlap or not. (The old cleanup
+	// summed the three sizes, and THAT is what overlapping regions inflated.)
+	// Kept because a blob whose regions alias each other is malformed by
+	// construction - every writer lays them out end to end - and rejecting it
+	// early beats decrypting whatever the overlap produces.
 	for (size_t i = 0; i < ARRAYSIZE(regions); i++)
 	{
 		for (size_t j = i + 1; j < ARRAYSIZE(regions); j++)
@@ -149,11 +153,21 @@ constexpr DWORD CspInfoHeaderSize() noexcept
 	return static_cast<DWORD>(FIELD_OFFSET(EID_SMARTCARD_CSP_INFO, bBuffer));
 }
 
-// Byte offset of a WCHAR-unit name offset, or FALSE when the multiply or add
-// would leave the 32-bit range. nOffsetInChars is fully attacker-controlled.
+// Byte offset of a WCHAR-unit name offset, or FALSE when the multiply or the
+// add would leave the 32-bit range. nOffsetInChars is fully attacker-controlled.
+//
+// The headroom subtracted here MUST be the header size that is added below.
+// An earlier version subtracted a hardcoded 16 while adding 40, which left a
+// window where the scaled offset wrapped: nOffsetInChars = 0x7FFFFFF7 gives
+// 40 + 0x7FFFFFF7*2 = 0x100000016, truncated to 22. The result stayed inside
+// the buffer, so it was neither an ASan report nor an obviously wrong answer -
+// it silently aliased the fixed header (dwCspInfoLen, flags, KeySpec) and
+// handed that back as a "name string" to _tcscmp and CryptAcquireContext.
 bool CspInfoCharOffsetToByteOffset(ULONG nOffsetInChars, DWORD* pdwByteOffset) noexcept
 {
-	constexpr ULONG ulMaxChars = (MAXDWORD - 16u) / static_cast<ULONG>(sizeof(WCHAR));
+	// const, not constexpr: FIELD_OFFSET expands to a reinterpret_cast, which
+	// MSVC will not evaluate in a constant expression.
+	const ULONG ulMaxChars = (MAXDWORD - CspInfoHeaderSize()) / static_cast<ULONG>(sizeof(WCHAR));
 	if (nOffsetInChars > ulMaxChars)
 	{
 		return false;

@@ -151,8 +151,31 @@ HRESULT EID_CSV_LoadConfigFromFile(PCWSTR pwszPath, EID_CSV_CONFIG& config)
     }
     file.close();
 
-    // Parse JSON
-    return EID_CSV_JsonToConfig(content, config);
+    // Parse JSON.
+    //
+    // This MUST NOT be allowed to throw. JsonParser reports malformed input by
+    // throwing std::runtime_error, and this function is reached inside the LSA
+    // package: EIDCardLibraryLogStructured -> InitOnceExecuteOnce ->
+    // EIDCSVInitOnceCallback -> EID_CSV_Initialize -> EID_CSV_LoadConfig ->
+    // here. An exception escaping an InitOnce callback in LSASS is a process
+    // crash, and the read above was already guarded while the parse - the part
+    // that actually parses untrusted bytes - was not.
+    //
+    // Falling back to the default configuration is the right failure mode:
+    // logging configuration is not security policy, and refusing to start the
+    // logger is strictly worse than starting it with defaults.
+    try
+    {
+        return EID_CSV_JsonToConfig(content, config);
+    }
+    catch (const std::exception&)  // NOSONAR - EXCEPTION-01: must not escape into LSASS
+    {
+        return E_FAIL;
+    }
+    catch (...)  // NOSONAR - EXCEPTION-01: must not escape into LSASS
+    {
+        return E_FAIL;
+    }
 }
 
 // ================================================================

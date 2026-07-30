@@ -426,12 +426,28 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"GetSignatureChallenge 0x%08x",GetLastError());
 			__leave;
 		}
+		// The `cbBuffer < 300` test above is a floor, not a bound: what actually
+		// gets written is the header plus the challenge plus the username, and
+		// nothing checked that against the caller's buffer. Compute the real
+		// requirement and refuse rather than overflow the token.
+		const DWORD cbChallengeNeeded = static_cast<DWORD>(sizeof(EID_CHALLENGE_MESSAGE)) + dwChallengeSize;
+		const DWORD cbUserName = static_cast<DWORD>(wcslen(szUserName)) * static_cast<DWORD>(sizeof(WCHAR));
+		if (dwChallengeSize > MAXDWORD - sizeof(EID_CHALLENGE_MESSAGE) ||
+			cbUserName > MAXDWORD - cbChallengeNeeded ||
+			cbChallengeNeeded + cbUserName > Buffer->pBuffers[0].cbBuffer)
+		{
+			Status = SEC_E_INSUFFICIENT_MEMORY;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Challenge token needs %u bytes, buffer has %u",
+				cbChallengeNeeded + cbUserName, Buffer->pBuffers[0].cbBuffer);
+			__leave;
+		}
 		message->ChallengeLen = dwChallengeSize;
 		message->ChallengeOffset = sizeof(EID_CHALLENGE_MESSAGE);
 		memcpy((PBYTE)message + message->ChallengeOffset, pbChallenge, dwChallengeSize);
-		message->UsernameLen = (DWORD)wcslen(szUserName) * sizeof(WCHAR);
+		message->UsernameLen = cbUserName;
 		message->UsernameOffset = message->ChallengeOffset + message->ChallengeLen;
 		memcpy((PBYTE)message + message->UsernameOffset,szUserName,message->UsernameLen);
+		Buffer->pBuffers[0].cbBuffer = cbChallengeNeeded + cbUserName;
 		_State = EID_MESSAGE_STATE::EIDMSChallenge;
 	}
 	__finally
@@ -448,7 +464,7 @@ NTSTATUS CSecurityContext::ReceiveChallengeMessage(PSecBufferDesc Buffer)
 	// below may be read until the descriptor and the declared offset/length
 	// pairs have been checked - the sibling ReceiveNegociateMessage has always
 	// done this; its absence here was an oversight, not a design choice.
-	if (!Buffer || Buffer->cBuffers == 0 || !Buffer->pBuffers[0].pvBuffer)
+	if (!Buffer || !Buffer->pBuffers || Buffer->cBuffers == 0 || !Buffer->pBuffers[0].pvBuffer)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN: empty buffer descriptor");
 		return SEC_E_INVALID_TOKEN;
@@ -516,9 +532,20 @@ NTSTATUS CSecurityContext::BuildResponseMessage(PSecBufferDesc Buffer)
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_LOGON_DENIED");
 		return SEC_E_LOGON_DENIED;
 	}
+	// Same floor-vs-bound problem as BuildChallengeMessage: an RSA-4096 card
+	// signature is 512 bytes, so header + response is 536 - well past the 300
+	// this function used to treat as sufficient.
+	if (dwResponseSize > MAXDWORD - sizeof(EID_RESPONSE_MESSAGE) ||
+		sizeof(EID_RESPONSE_MESSAGE) + dwResponseSize > Buffer->pBuffers[0].cbBuffer)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Response token needs %u bytes, buffer has %u",
+			static_cast<DWORD>(sizeof(EID_RESPONSE_MESSAGE)) + dwResponseSize, Buffer->pBuffers[0].cbBuffer);
+		return SEC_E_INSUFFICIENT_MEMORY;
+	}
 	message->ResponseLen = dwResponseSize;
 	message->ResponseOffset = sizeof(EID_RESPONSE_MESSAGE);
 	memcpy((PBYTE)message + message->ResponseOffset, pbResponse, dwResponseSize);
+	Buffer->pBuffers[0].cbBuffer = static_cast<DWORD>(sizeof(EID_RESPONSE_MESSAGE)) + dwResponseSize;
 	_State = EID_MESSAGE_STATE::EIDMSComplete;
 	return STATUS_SUCCESS;
 }
@@ -528,7 +555,7 @@ NTSTATUS CSecurityContext::ReceiveResponseMessage(PSecBufferDesc Buffer)
 	// Server side of the same problem: this token arrives from whoever called
 	// AcceptSecurityContext against the package registered under
 	// HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Security Packages.
-	if (!Buffer || Buffer->cBuffers == 0 || !Buffer->pBuffers[0].pvBuffer)
+	if (!Buffer || !Buffer->pBuffers || Buffer->cBuffers == 0 || !Buffer->pBuffers[0].pvBuffer)
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN: empty buffer descriptor");
 		return SEC_E_INVALID_TOKEN;

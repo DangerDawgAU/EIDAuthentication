@@ -789,6 +789,7 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 	BOOL fStatus;
 	DWORD dwError = 0;
 	PEID_PRIVATE_DATA pEidPrivateData = nullptr;
+	DWORD dwPrivateDataSize = 0;   // allocation size, for the cleanup zeroize
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
 	__try
 	{
@@ -804,7 +805,7 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 			dwError = ERROR_INVALID_PARAMETER;
 			__leave;
 		}
-		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData);
+		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData,&dwPrivateDataSize);
 		if (!fStatus)
 		{
 			dwError = GetLastError();
@@ -863,7 +864,13 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 	__finally
 	{
 		if (pEidPrivateData)
+		{
+			// Holds the wrapped symmetric key; scrub before releasing, as the
+			// other blob consumers do.
+			const DWORD dwZeroizeSpan = EIDPrivateDataSpan(pEidPrivateData, dwPrivateDataSize);
+			SecureZeroMemory(pEidPrivateData, dwZeroizeSpan ? dwZeroizeSpan : dwPrivateDataSize);
 			EIDFree(pEidPrivateData);
+		}
 		if (hProv)
 		{
 			CryptReleaseContext(hProv, 0);
@@ -1538,6 +1545,20 @@ BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __i
 		dwRoundNumber = (dwPasswordSize/dwBlockLen) + ((dwPasswordSize%dwBlockLen) ? 1 : 0);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwRoundNumber = %d",dwRoundNumber);
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"dwPasswordSize = %d",dwPasswordSize);
+		// Mirror of the guard on the decrypt side. An empty password gives
+		// dwRoundNumber == 0, and *usSize below computes
+		// (dwRoundNumber - 1) * dwBlockLen + dwEncryptedSize, which underflows
+		// to ~0xFFFFFF80 and truncates to 0xFF80 in the USHORT. The caller then
+		// allocates from the truncated size but copies usPasswordLen (65408)
+		// bytes out of this much smaller buffer - a heap overread plus a ~64 KB
+		// overwrite at enrolment time. Refuse instead; a blank password has
+		// nothing to seal, and the read side rejects a zero-length blob anyway.
+		if (dwRoundNumber == 0)
+		{
+			dwError = ERROR_INVALID_PARAMETER;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"empty password cannot be sealed (dwPasswordSize=%u)",dwPasswordSize);
+			__leave;
+		}
 		if (dwRoundNumber > MAXDWORD / dwBlockLen)
 		{
 			dwError = ERROR_ARITHMETIC_OVERFLOW;
@@ -2124,14 +2145,14 @@ BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"dwRid 0x%08x",dwError);
 			__leave;
 		}
-		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData);
+		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData,&dwPrivateDataSize);
 		if (!fStatus)
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RetrievePrivateData 0x%08x",dwError);
 			__leave;
 		}
-		pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING, 
+		pCertContext = CertCreateCertificateContext(X509_ASN_ENCODING,
 			(PBYTE)pEidPrivateData->Data + pEidPrivateData->dwCertificatOffset, pEidPrivateData->dwCertificatSize);
 		if (!pCertContext)
 		{
@@ -2192,6 +2213,11 @@ BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid
 	{
 		if (pEidPrivateData)
 		{
+			// This blob holds the certificate, the wrapped symmetric key and the
+			// encrypted password, exactly like the paths that already scrub it.
+			// It was being freed without zeroizing.
+			const DWORD dwZeroizeSpan = EIDPrivateDataSpan(pEidPrivateData, dwPrivateDataSize);
+			SecureZeroMemory(pEidPrivateData, dwZeroizeSpan ? dwZeroizeSpan : dwPrivateDataSize);
 			EIDFree(pEidPrivateData);
 		}
 		if (pCertContext)

@@ -34,7 +34,13 @@ jobs:
     # sanitizer and Spectre libraries are v145-only. Same pin as the other
     # C++-building jobs.
     runs-on: windows-2022
-    timeout-minutes: 60
+    # Budget: 4 fuzz targets x SECONDS_PER_TARGET, plus ~3 min for checkout,
+    # seeding and building. The scheduled run is the binding case at
+    # 4 x 600s = 40 min, so 75 leaves real headroom. Keep this consistent with
+    # SECONDS_PER_TARGET below - an earlier version paired 4 x 1800s (120 min)
+    # with a 60-minute timeout, so every weekly run would have been cancelled
+    # part-way AND lost its crash artifacts (see the upload step's condition).
+    timeout-minutes: 75
 
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5
@@ -59,14 +65,20 @@ jobs:
         shell: pwsh
         env:
           # 60s per target on PRs keeps the job under ~6 minutes; the weekly
-          # schedule and manual dispatch go deeper.
-          SECONDS_PER_TARGET: ${{ github.event_name == 'schedule' && '1800' || github.event.inputs.seconds || '60' }}
+          # schedule goes deeper. 600 x 4 = 40 min, inside timeout-minutes: 75.
+          # Raising this REQUIRES raising timeout-minutes to match.
+          SECONDS_PER_TARGET: ${{ github.event_name == 'schedule' && '600' || github.event.inputs.seconds || '60' }}
         run: .\fuzz\Run-Fuzzers.ps1 -Seconds ([int]$env:SECONDS_PER_TARGET)
 
       # Reproducers are the whole point of a finding - without them a red run is
-      # unactionable. Runs even when the fuzz step failed.
+      # unactionable.
+      #
+      # always(), not failure(): a timeout-minutes breach CANCELS the job, and a
+      # cancelled job does not satisfy failure(). That would silently discard the
+      # artifacts of the long scheduled run - precisely the run most likely to
+      # have found something.
       - name: Upload crash reproducers
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           name: fuzz-crashes-${{ github.run_id }}

@@ -559,6 +559,16 @@ NTSTATUS RemapPointer(PEID_INTERACTIVE_UNLOCK_LOGON pUnlockLogon, PVOID ClientAu
 		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"pUnlockLogon NULL");
 		return STATUS_INVALID_PARAMETER;
 	}
+	// Every check below reads Logon.UserName / Logon.CspData / CspDataLength out
+	// of this buffer, so the fixed struct must be established as present FIRST.
+	// A submit buffer shorter than the header was read out of bounds by the
+	// very code meant to bound it.
+	if (AuthenticationInformationLength < sizeof(EID_INTERACTIVE_UNLOCK_LOGON))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"AuthenticationInformationLength %u < sizeof(EID_INTERACTIVE_UNLOCK_LOGON)",
+			AuthenticationInformationLength);
+		return STATUS_INVALID_PARAMETER_3;
+	}
 	if ((pUnlockLogon->Logon.UserName.Buffer) != nullptr)
 	{
 		ULONG_PTR offset = (ULONG_PTR)(pUnlockLogon->Logon.UserName.Buffer);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity

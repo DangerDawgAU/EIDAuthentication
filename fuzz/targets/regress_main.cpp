@@ -96,9 +96,29 @@ void TestTokenMessages()
 		p->UsernameOffset = sizeof(EID_CHALLENGE_MESSAGE);
 		p->ChallengeLen = 16;
 		p->ChallengeOffset = sizeof(EID_CHALLENGE_MESSAGE);
-		Check("challenge: UsernameLen=0xFFFFFFFF wrap",
+		Check("challenge: UsernameLen=0xFFFFFFFF (odd length)",
 			!EIDValidateChallengeMessage(token.data(), static_cast<DWORD>(token.size())),
-			"terminator allowance wraps DWORD");
+			"odd UsernameLen must be rejected");
+	}
+
+	// 1a-bis. The value above is caught by the ODD-length test, which runs
+	//     first - so on its own it gives the terminator-wrap check no coverage
+	//     at all. 0xFFFFFFFE is even, so it reaches TokenRegionFits and
+	//     exercises the "UsernameLen + sizeof(WCHAR) must not wrap" rule that
+	//     the original EIDAlloc(UsernameLen + sizeof(WCHAR)) defect depended on.
+	{
+		std::vector<BYTE> token(sizeof(EID_CHALLENGE_MESSAGE) + 64, 0);
+		auto* p = reinterpret_cast<EID_CHALLENGE_MESSAGE*>(token.data());
+		memcpy(p->Signature.data(), EID_MESSAGE_SIGNATURE, p->Signature.size());
+		p->MessageType = static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTChallenge);
+		p->Version = EID_MESSAGE_VERSION;
+		p->UsernameLen = 0xFFFFFFFE;        // even, so it survives the parity test
+		p->UsernameOffset = sizeof(EID_CHALLENGE_MESSAGE);
+		p->ChallengeLen = 16;
+		p->ChallengeOffset = sizeof(EID_CHALLENGE_MESSAGE);
+		Check("challenge: UsernameLen=0xFFFFFFFE terminator wrap",
+			!EIDValidateChallengeMessage(token.data(), static_cast<DWORD>(token.size())),
+			"UsernameLen + sizeof(WCHAR) wraps to a 1-byte allocation");
 	}
 
 	// 1b. Offset far past the end of the token, used as a raw pointer
@@ -227,19 +247,74 @@ void TestCspInfo()
 			"accessor returned a pointer into OOB memory");
 	}
 
-	// 3e. A benign CSP info with one real, terminated name must work.
+	// 3f. Offset whose WCHAR scaling wraps 32 bits and comes back around INSIDE
+	//     the buffer, aliasing the fixed header. Found by adversarial review of
+	//     the first cut of this module: the overflow guard subtracted a
+	//     hardcoded 16 while the code added the real header size of 40, so
+	//     0x7FFFFFF7 produced byte offset 22 (inside KeySpec). No ASan report,
+	//     because the wrapped pointer is still in bounds - which is exactly why
+	//     the fuzz oracle now checks the pointer lands inside bBuffer.
+	{
+		auto buf = MakeCspInfo(40);
+		auto* p = reinterpret_cast<EID_SMARTCARD_CSP_INFO*>(buf.data());
+		p->KeySpec = 1;                    // WCHAR at byte 22 is 0x0000
+		p->nCardNameOffset = 0x7FFFFFF7;   // 40 + 0x7FFFFFF7*2 wraps to 22
+		Check("cspinfo: char offset wraps back into header",
+			!EIDValidateCspInfo(p, 40),
+			"scaled offset wrapped and aliased the struct header");
+	}
+
+	// 3e. A REAL struct, laid out exactly the way CContainer.cpp builds one:
+	//     four names packed end to end starting at offset ARRAYSIZE(bBuffer)==4,
+	//     each NUL-terminated. This is the over-rejection guard for the whole
+	//     logon path, so it must mirror what production actually emits - an
+	//     earlier version of this case marked its only populated field absent
+	//     and then validated a different offset into zero-filled padding, which
+	//     would have passed no matter what the names contained.
 	{
 		const DWORD hdr = static_cast<DWORD>(FIELD_OFFSET(EID_SMARTCARD_CSP_INFO, bBuffer));
-		const DWORD cb = hdr + 8 * sizeof(WCHAR);
+		const WCHAR* rgNames[] = {
+			L"Gemalto IDPrime MD",                              // card
+			L"Microsoft Base Smart Card Crypto Provider",        // csp
+			L"eid-container",                                    // container
+			L"Reader 0",                                         // reader
+		};
+		// CContainer.cpp starts the first name at bBuffer index 4.
+		ULONG rgOffsets[ARRAYSIZE(rgNames)] = {};
+		DWORD cchTotal = 4;   // CContainer.cpp: first name at bBuffer index 4
+		for (size_t i = 0; i < ARRAYSIZE(rgNames); i++)
+		{
+			rgOffsets[i] = static_cast<ULONG>(cchTotal);
+			cchTotal += static_cast<DWORD>(wcslen(rgNames[i])) + 1;
+		}
+		const DWORD cb = hdr + cchTotal * sizeof(WCHAR);
 		auto buf = MakeCspInfo(cb);
 		auto* p = reinterpret_cast<EID_SMARTCARD_CSP_INFO*>(buf.data());
-		WCHAR* pName = reinterpret_cast<WCHAR*>(buf.data() + hdr);
-		pName[0] = L'C'; pName[1] = L'a'; pName[2] = L'r'; pName[3] = L'd'; pName[4] = L'\0';
-		p->nCardNameOffset = 0;   // 0 means absent, so use offset 1 instead
-		pName[5] = L'\0';
-		p->nContainerNameOffset = 1;
-		CheckAccepted("cspinfo: benign struct still valid",
+		WCHAR* pBuf = reinterpret_cast<WCHAR*>(buf.data() + hdr);
+		for (size_t i = 0; i < ARRAYSIZE(rgNames); i++)
+		{
+			wcscpy_s(pBuf + rgOffsets[i], wcslen(rgNames[i]) + 1, rgNames[i]);
+		}
+		p->nCardNameOffset      = rgOffsets[0];
+		p->nCSPNameOffset       = rgOffsets[1];
+		p->nContainerNameOffset = rgOffsets[2];
+		p->nReaderNameOffset    = rgOffsets[3];
+
+		CheckAccepted("cspinfo: production-shaped struct still valid",
 			EIDValidateCspInfo(p, cb) != FALSE);
+
+		// And every name must come back intact - validation that accepts the
+		// struct but hands back the wrong bytes is its own kind of failure.
+		bool fAllNamesMatch = true;
+		for (size_t i = 0; i < ARRAYSIZE(rgNames); i++)
+		{
+			PCWSTR psz = EIDCspInfoStringAt(p, cb, rgOffsets[i]);
+			if (!psz || wcscmp(psz, rgNames[i]) != 0)
+			{
+				fAllNamesMatch = false;
+			}
+		}
+		CheckAccepted("cspinfo: all four names round-trip", fAllNamesMatch);
 	}
 }
 
@@ -270,9 +345,14 @@ void TestPrivateData()
 			"zero length underflows dwRoundNumber");
 	}
 
-	// 4b. Three regions overlapping at offset 0. Each fits individually, so
-	//     the old per-region check passed; summing their sizes for
-	//     SecureZeroMemory then overran the allocation.
+	// 4b. Three regions overlapping at offset 0. Each fits individually, so the
+	//     old per-region check passed, and the old cleanup SUMMED the sizes for
+	//     SecureZeroMemory and overran the allocation.
+	//
+	//     Note what this case does and does not prove today: EIDPrivateDataSpan
+	//     now takes the MAX of the region ends, so the span would be safe here
+	//     even without the overlap rejection. This guards the structural rule
+	//     (no writer overlaps regions), not a memory-safety property.
 	{
 		const DWORD cbData = 32;
 		std::vector<BYTE> blob(hdr + cbData, 0);

@@ -59,11 +59,29 @@ consumer performs, against an exact-sized ASan allocation. A validator that
 wrongly returns TRUE therefore produces a heap-buffer-overflow report with a
 stack trace instead of passing silently.
 
-**This was verified, not assumed.** Removing the
-`dwCspInfoLen <= dwCspDataLength` check made the `cspinfo` target report a
-`heap-buffer-overflow` READ within 30 seconds and write a reproducer that
-replays deterministically. An oracle nobody has seen fail is an oracle nobody
-knows works.
+**Be precise about how much each assertion is worth.** Most of the
+`EID_ORACLE_REQUIRE` checks are, given the current validators, tautologies —
+they cannot fire unless a validator is later weakened. That makes them
+regression detectors, not bug finders, and they are worth keeping on those
+terms. Two specific claims deserve care:
+
+- Removing the `dwCspInfoLen <= dwCspDataLength` check does make the `cspinfo`
+  target die within 30 seconds — but the crash is a `heap-buffer-overflow`
+  *inside the validator itself*, so a target that merely called the validator
+  and discarded the answer would find it just as fast. That experiment
+  demonstrates the harness works; it does **not** demonstrate that the oracle
+  adds anything.
+- The assertion that **does** earn its place is the pointer-range check in
+  `fuzz_cspinfo.cpp`: `EIDCspInfoStringAt` must return a pointer inside
+  `bBuffer`. It caught a real defect in the committed validator that ASan was
+  structurally blind to — an offset whose WCHAR scaling wrapped 32 bits and
+  came back around *inside* the buffer, aliasing the fixed header. In-bounds
+  pointers produce no sanitizer report by definition, so only a semantic
+  assertion can catch that class.
+
+The lesson generalises: ASan finds out-of-bounds access; an oracle is what
+finds *wrong but in-bounds* results. Write assertions about meaning, not just
+about memory.
 
 ## Coverage
 
@@ -97,23 +115,60 @@ revisited:
   correctly and reads only typed `REG_DWORD`/`REG_SZ` configuration values.
 - **Profile enumeration during uninstall.** `NTUSER.DAT` is parsed by the
   kernel via `RegLoadKey`, not by this code, and the path is admin-only.
-- **Network and RPC.** There are none — no sockets, no MIDL, no named pipes.
+- **Network and RPC.** There are none — no sockets, and no `.idl`/MIDL
+  interfaces (the `<Midl>` blocks in the vcxproj files are empty VS defaults).
 
-## Known gap, not covered by a target
+### Named pipe: a real IPC surface, not yet covered
 
-The JSON parser reports malformed input by throwing `std::runtime_error`, and
-**nothing in the `.eidm` import path catches it** — EIDMigrate has only four
-`catch` sites and none covers `JsonToExportData`. A malformed file therefore
-terminates the process. That is a genuine availability defect, but it is an
-admin-supplied-file denial of service rather than memory corruption, and fixing
-it means adding error handling in EIDMigrate rather than changing the parser.
-The `json` target catches the exception so it can report memory faults only;
-do not widen that catch and call the gap closed.
+`EIDConfigurationWizard/DebugReport.cpp:239` creates a named pipe
+(`CreateNamedPipe`, `ConnectNamedPipe`, `WriteFile`) to talk to the elevated
+helper it launches via `ShellExecuteEx`/`runas`. The pipe name carries a
+10-character `mt19937` suffix and the security descriptor is `nullptr`, i.e. the
+default DACL.
+
+That is a low-integrity-to-high-integrity channel and therefore genuinely in
+scope for fuzzing — it is listed here as **not yet covered**, not as excluded.
+It is out of scope for this round because the wizard is a user-launched tool
+rather than LSASS-resident code, and because fuzzing it means driving the pipe
+protocol rather than a pure function. Do not read its absence from the target
+list as a judgement that it is safe.
+
+## The JSON parser reaches further than the import path
+
+`JsonParser` throws `std::runtime_error` on malformed input by design, so every
+caller must catch. Two call chains matter, and the second is the serious one:
+
+1. **`.eidm` credential import.** EIDMigrate has only four `catch` sites and
+   none covers `JsonToExportData`, so a malformed export file terminates the
+   tool. Admin-supplied file, admin-context tool: an availability bug worth
+   fixing, not a security boundary.
+
+2. **Logging configuration, inside LSASS.** `EID_CSV_LoadConfigFromFile`
+   (`EIDCardLibrary/CSVConfig.cpp`) is reached from
+   `EIDCardLibraryLogStructured` → `InitOnceExecuteOnce` →
+   `EIDCSVInitOnceCallback` → `EID_CSV_Initialize` → `EID_CSV_LoadConfig`. That
+   runs **in the LSA package**, and an exception escaping an `InitOnce` callback
+   is a process crash. The file read was already wrapped in a `try`; the parse —
+   the part that consumes untrusted bytes — was not. Now fixed: the parse is
+   guarded and falls back to the default configuration, because refusing to
+   start the logger is strictly worse than starting it with defaults.
+
+   On a correctly installed machine `C:\ProgramData\EIDAuthentication\logging.json`
+   is created with SYSTEM/Administrators full control and Users read-only, so a
+   standard user cannot rewrite it. The parent directory does carry an inherited
+   `Users: Write` ACE, so the pre-first-save window (file absent) and disk
+   corruption both remain ways to reach the parser with bad bytes.
+
+The `json` target catches the exception so it reports memory faults only. Do not
+widen that catch and call these gaps closed — they are fixed by adding handling
+at the call sites, which is what item 2 above did.
 
 ## Scorecard will not credit this
 
-The OpenSSF Scorecard Fuzzing check passes only via five probes: OSS-Fuzz,
-ClusterFuzzLite, OneFuzz, Go-native fuzzing, or Haskell property-based testing.
+The OpenSSF Scorecard Fuzzing check passes only via a fixed set of probes —
+OSS-Fuzz, ClusterFuzzLite, OneFuzz, Go-native fuzzing, and property-based
+testing for some managed languages. (The exact probe list moves between
+Scorecard releases; re-check it rather than trusting this paragraph verbatim.)
 **Custom fuzz targets earn nothing**, and all three C/C++ routes are closed here:
 
 - **OneFuzz is gone.** Microsoft ended development in August 2023 and archived
