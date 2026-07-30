@@ -443,14 +443,14 @@ Function un.ShowUninstallOptions
   ${NSD_CreateLabel} 0 0 100% 40u "Select additional cleanup options:"
 
   ; Checkbox for removing EID certificate mappings from users (LSA credentials)
+  ; Default UNCHECKED: destructive cleanup is opt-in (a temporary uninstall/upgrade
+  ; must not destroy enrollments)
   ${NSD_CreateCheckbox} 10u 50u 100% 12u "Remove EID certificate mappings from users"
   Pop $Uninstall_RemoveMappings
-  ${NSD_Check} $Uninstall_RemoveMappings
 
-  ; Checkbox for removing EID root certificates
-  ${NSD_CreateCheckbox} 10u 70u 100% 12u "Remove EID Root Certificate Authority and user certificates (only those with 'EID:' prefix)"
+  ; Checkbox for removing EID root CA + issued certificates
+  ${NSD_CreateCheckbox} 10u 70u 100% 24u "Remove EID Root Certificate Authority and all EID-issued user certificates from this machine, including the CA private key (irreversible)"
   Pop $Uninstall_RemoveCertificates
-  ${NSD_Check} $Uninstall_RemoveCertificates
 
   nsDialogs::Show
 FunctionEnd
@@ -459,35 +459,6 @@ Function un.LeaveUninstallOptions
   ; Get the state of checkboxes when leaving the page
   ${NSD_GetState} $Uninstall_RemoveMappings $Uninstall_RemoveMappings
   ${NSD_GetState} $Uninstall_RemoveCertificates $Uninstall_RemoveCertificates
-FunctionEnd
-
-Function un.RemoveEIDCertificates
-  ; This function removes certificates created by EID Authentication
-  ; Checks for "EID:" prefix in certificate subject names
-
-  DetailPrint "Removing EID certificates (those with 'EID:' prefix)..."
-
-  ; Use PowerShell inline command to avoid NSIS escaping issues
-  ; Single quotes in PowerShell preserve literal strings
-  nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ' \
-    '$ErrorActionPreference="SilentlyContinue"; ' \
-    '$count=0; ' \
-    '$stores=@(@("My","CurrentUser"),@("TrustedPeople","CurrentUser"),@("Root","CurrentUser"),@("Root","LocalMachine")); ' \
-    'foreach($s in $stores) { ' \
-    '  $store=New-Object System.Security.Cryptography.X509Certificates.X509Store($s[0],$s[1]); ' \
-    '  $store.Open("ReadWrite"); ' \
-    '  foreach($c in $store.Certificates) { ' \
-    '    if($c.Subject -like "*EID:*") { ' \
-    '      Write-Host ("Removing: " + $c.Subject + " - " + $c.Thumbprint); ' \
-    '      $store.Remove($c); ' \
-    '      $count++; ' \
-    '    } ' \
-    '  } ' \
-    '  $store.Close(); ' \
-    '}; ' \
-    'Write-Host ("Total EID certificates removed: $count")' \
-    ''
-
 FunctionEnd
 
 ;--------------------------------
@@ -505,10 +476,17 @@ Section "Uninstall"
 
   ${EnableX64FSRedirection}
 
-  ; Conditionally remove certificates created by the software (if checkbox was selected)
+  ; Conditionally remove certificates created by the software (if checkbox was selected).
+  ; Native cleanup inside the package DLL (still present - deleted later in this
+  ; section): sweeps machine stores and every user profile, deletes the CA key.
   ${If} $Uninstall_RemoveCertificates = 1
-    DetailPrint "Removing EID Root Certificates..."
-    Call un.RemoveEIDCertificates
+    DetailPrint "Removing EID certificates (machine stores and all user profiles)..."
+    ${DisableX64FSRedirection}
+    ExecWait 'rundll32.exe "$SYSDIR\EIDAuthenticationPackage.dll",CleanupEIDCertificates' $2
+    ${If} $2 != 0
+      DetailPrint "Warning: certificate cleanup returned code $2 - some certificates may remain"
+    ${EndIf}
+    ${EnableX64FSRedirection}
   ${Else}
     DetailPrint "Skipping certificate removal (not selected)"
   ${EndIf}
