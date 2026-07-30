@@ -437,10 +437,16 @@ FunctionEnd
 
 Function un.ShowUninstallOptions
   ; Create custom page with checkboxes for uninstall options
-  nsDialogs::Create /NOUNLOAD 1018
-  Pop $0
+  !insertmacro MUI_HEADER_TEXT "Cleanup Options" "Choose what to remove besides the program files."
 
-  ${NSD_CreateLabel} 0 0 100% 40u "Select additional cleanup options:"
+  nsDialogs::Create 1018
+  Pop $0
+  ${If} $0 == error
+    Abort
+  ${EndIf}
+
+  ${NSD_CreateLabel} 0 0 100% 40u "Select additional cleanup options. Both are off by default so that reinstalling keeps existing enrollments working."
+  Pop $0
 
   ; Checkbox for removing EID certificate mappings from users (LSA credentials)
   ; Default UNCHECKED: destructive cleanup is opt-in (a temporary uninstall/upgrade
@@ -482,9 +488,11 @@ Section "Uninstall"
   ${If} $Uninstall_RemoveCertificates = 1
     DetailPrint "Removing EID certificates (machine stores and all user profiles)..."
     ${DisableX64FSRedirection}
+    ; rundll32 discards the entry point's HRESULT and exits 0 unless it fails to launch,
+    ; so $2 only catches a launch failure - per-certificate results go to the ETW trace.
     ExecWait 'rundll32.exe "$SYSDIR\EIDAuthenticationPackage.dll",CleanupEIDCertificates' $2
     ${If} $2 != 0
-      DetailPrint "Warning: certificate cleanup returned code $2 - some certificates may remain"
+      DetailPrint "Warning: could not run certificate cleanup (code $2) - certificates remain"
     ${EndIf}
     ${EnableX64FSRedirection}
   ${Else}
