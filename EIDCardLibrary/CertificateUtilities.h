@@ -74,3 +74,12 @@ BOOL SetupCertificateContextWithKeyInfo(
 
 // Returns allocated string "\\.\\<readerName>\\" - caller must EIDFree
 LPTSTR BuildContainerNameFromReader(LPCTSTR szReaderName);
+
+// Uninstall cleanup: removes every certificate whose subject CN starts with "EID:"
+// (the wizard-created root CA) or whose issuer CN starts with "EID:" (certificates
+// issued by that CA) from the LocalMachine Root/CA/TrustedPeople/My stores and from
+// the same stores of every user profile (loaded hives via CertEnumSystemStore, unloaded
+// hives via temporary RegLoadKey). Deletes the CA's machine key container.
+// Never deletes smart-card key containers (machine-keyset check).
+// Returns S_OK when the sweep ran, even if individual stores/profiles were skipped.
+HRESULT RemoveAllEIDCertificates(VOID);
