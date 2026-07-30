@@ -12,6 +12,7 @@
 #include "../include/cardmod.h"
 #include "Tracing.h"
 #include "EIDCardLibrary.h"
+#include "InputValidation.h"
 #include "CSVConfig.h"
 #include "CSVLogger.h"
 
@@ -237,7 +238,7 @@ DWORD MgScCardAcquireContext(
     __inout                     PMGSC_CONTEXT pMgSc,
     __in                        SCARDCONTEXT hSCardContext,
     __in                        SCARDHANDLE hSCardHandle,
-    __in                        LPWSTR wszCardName,
+    __in                        LPCWSTR wszCardName,
     __in_bcount(cbAtr)          PBYTE pbAtr,
     __in                        DWORD cbAtr,
     __in                        DWORD dwFlags)
@@ -654,7 +655,7 @@ MgScCardWriteFile(
         cbData);
 }
 
-BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, PDWORD pdwAttempts)
+BOOL CheckPINandGetRemainingAttempts(LPCTSTR szReader, LPCTSTR szCard, PTSTR szPin, PDWORD pdwAttempts)
 {
 	MGSC_CONTEXT pContext = {};
 	SCARDCONTEXT hSCardContext = NULL;
@@ -786,26 +787,33 @@ BOOL CheckPINandGetRemainingAttempts(PTSTR szReader, PTSTR szCard, PTSTR szPin, 
 	return fReturn;
 }
 
-NTSTATUS CheckPINandGetRemainingAttemptsIfPossible(PEID_SMARTCARD_CSP_INFO pCspInfo, PTSTR szPin, NTSTATUS *pSubStatus)
+NTSTATUS CheckPINandGetRemainingAttemptsIfPossible(PEID_SMARTCARD_CSP_INFO pCspInfo, ULONG dwCspDataLength, PTSTR szPin, NTSTATUS *pSubStatus)
 {
 	DWORD dwAttempts;
 
-	// SECURITY FIX #143: Validate CSP info offsets before use (CWE-125/CWE-20)
-	// Client-supplied offsets must be within structure bounds to prevent out-of-bounds read
-	DWORD dwHeaderSize = FIELD_OFFSET(EID_SMARTCARD_CSP_INFO, bBuffer);
-	if (pCspInfo->dwCspInfoLen < dwHeaderSize ||
-	    pCspInfo->nCSPNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize) ||
-	    pCspInfo->nCardNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize) ||
-	    pCspInfo->nReaderNameOffset >= (pCspInfo->dwCspInfoLen - dwHeaderSize))
+	// Offset validation is centralised in EIDValidateCspInfo. The inline check
+	// this replaces bounded the offsets against pCspInfo->dwCspInfoLen, which
+	// is itself inside the attacker-supplied buffer, and compared byte counts
+	// against offsets used to index bBuffer (TCHAR[]) - so it permitted reads
+	// well past the declared bound. It also never required the strings to be
+	// NUL-terminated, which matters because every use below is a _tcscmp.
+	if (!EIDValidateCspInfo(pCspInfo, dwCspDataLength))
 	{
-		EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"CheckPINandGetRemainingAttemptsIfPossible: Invalid CSP info offset - dwCspInfoLen=%u, nCSPNameOffset=%u, nCardNameOffset=%u, nReaderNameOffset=%u",
-			pCspInfo->dwCspInfoLen, pCspInfo->nCSPNameOffset, pCspInfo->nCardNameOffset, pCspInfo->nReaderNameOffset);
+		EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR, L"CheckPINandGetRemainingAttemptsIfPossible: CSP info layout rejected (CspDataLength=%u)",
+			dwCspDataLength);
 		return STATUS_INVALID_PARAMETER;
 	}
 
-	LPTSTR szCSPName = pCspInfo->bBuffer + pCspInfo->nCSPNameOffset;
-	LPTSTR szCardName = pCspInfo->bBuffer + pCspInfo->nCardNameOffset;
-	LPTSTR szReaderName = pCspInfo->bBuffer + pCspInfo->nReaderNameOffset;
+	LPCTSTR szCSPName = EIDCspInfoStringAt(pCspInfo, dwCspDataLength, pCspInfo->nCSPNameOffset);
+	LPCTSTR szCardName = EIDCspInfoStringAt(pCspInfo, dwCspDataLength, pCspInfo->nCardNameOffset);
+	LPCTSTR szReaderName = EIDCspInfoStringAt(pCspInfo, dwCspDataLength, pCspInfo->nReaderNameOffset);
+	// All three are dereferenced below (two _tcscmp plus the reader lookup), so
+	// a missing field is a rejection rather than something to work around.
+	if (!szCSPName || !szCardName || !szReaderName)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING, L"CheckPINandGetRemainingAttemptsIfPossible: CSP/card/reader name absent");
+		return STATUS_INVALID_PARAMETER;
+	}
 	// do the test only if it is a mini driver
 	if (_tcscmp(MS_SCARD_PROV, szCSPName) != 0)
 	{

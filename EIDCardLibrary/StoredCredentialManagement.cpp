@@ -74,27 +74,14 @@ CStoredCredentialManager *CStoredCredentialManager::theSingleInstance = nullptr;
 // straight out of an LSA secret that an administrator (or an imported .eidm) can write,
 // and each consumer indexes Data[] with those values inside LSASS. Validate the whole
 // layout once, at the single point where the blob is read, so no consumer has to.
-static BOOL IsPrivateDataLayoutValid(__in const EID_PRIVATE_DATA* pPrivateData, __in DWORD dwBlobSize)
-{
-	const DWORD dwHeaderSize = FIELD_OFFSET(EID_PRIVATE_DATA, Data);
-	if (!pPrivateData || dwBlobSize < dwHeaderSize)
-	{
-		return FALSE;
-	}
-	const DWORD dwDataSize = dwBlobSize - dwHeaderSize;
-	// Unsigned arithmetic: (dwDataSize - offset) cannot underflow because offset <= dwDataSize
-	// is tested first, so each check is a genuine "does this region fit" test.
-	const USHORT usOffsets[] = { pPrivateData->dwCertificatOffset, pPrivateData->dwSymetricKeyOffset, pPrivateData->dwPasswordOffset };
-	const USHORT usSizes[]   = { pPrivateData->dwCertificatSize,   pPrivateData->dwSymetricKeySize,   pPrivateData->usPasswordLen };
-	for (size_t i = 0; i < ARRAYSIZE(usOffsets); i++)
-	{
-		if (usOffsets[i] > dwDataSize || usSizes[i] > dwDataSize - usOffsets[i])
-		{
-			return FALSE;
-		}
-	}
-	return TRUE;
-}
+#include "InputValidation.h"
+
+// The layout rule now lives in InputValidation.cpp (EIDValidatePrivateDataLayout)
+// so that this file, EIDMigrate\LsaClient.cpp and the fuzz harness all share one
+// implementation. The version that used to sit here checked each region
+// individually but not their sum, which is what let the cleanup zeroize below
+// overrun; it also accepted usPasswordLen == 0, which underflows dwRoundNumber
+// in GetPasswordFromCryptedChallengeResponse.
 
 namespace {
 
@@ -1643,6 +1630,7 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 	DWORD dwRoundNumber;
 	DWORD dwError = 0;
 	PEID_PRIVATE_DATA pEidPrivateData = nullptr;
+	DWORD dwPrivateDataSize = 0;   // allocation size, for the cleanup zeroize
 	__try
 	{
 		EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Enter");
@@ -1653,7 +1641,7 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"dwRid 0x%08x",dwError);
 			__leave;
 		}
-		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData);
+		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData,&dwPrivateDataSize);
 		if (!fStatus)
 		{
 			dwError = GetLastError();
@@ -1725,6 +1713,16 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 		}
 		dwRoundNumber = (pEidPrivateData->usPasswordLen / dwBlockLen) +
 			((pEidPrivateData->usPasswordLen % dwBlockLen) ? 1 : 0);
+		// EIDValidatePrivateDataLayout rejects usPasswordLen == 0, which is the
+		// only way dwRoundNumber can be zero. Re-check anyway: the terminator
+		// write below indexes with (dwRoundNumber - 1), so a zero here would
+		// underflow to ~0xFFFFFFFF and write roughly 4 GB past the allocation.
+		if (dwRoundNumber == 0)
+		{
+			dwError = ERROR_INVALID_DATA;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"dwRoundNumber zero (usPasswordLen=%u)",pEidPrivateData->usPasswordLen);
+			__leave;
+		}
 		// usPasswordLen is USHORT, so this product always fits a DWORD
 		DWORD cbPasswordBuffer = dwRoundNumber * dwBlockLen;
 		*pszPassword = (PWSTR) EIDAlloc(cbPasswordBuffer + sizeof(WCHAR));
@@ -1764,8 +1762,15 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 		}
 		if (pEidPrivateData)
 		{
-			// Zero entire structure including password data
-			SecureZeroMemory(pEidPrivateData, sizeof(EID_PRIVATE_DATA) + pEidPrivateData->dwCertificatSize + pEidPrivateData->dwSymetricKeySize + pEidPrivateData->usPasswordLen);
+			// Zero the blob, bounded by its ALLOCATION rather than by the sum of
+			// the region sizes it declares. The regions are each validated to
+			// fit, but their sum is not bounded by anything: three regions
+			// overlapping at offset 0 produced a length up to three times the
+			// allocation and this write ran off the end of the heap block.
+			// EIDPrivateDataSpan returns header + highest region end, and 0 if
+			// the blob does not validate.
+			const DWORD dwZeroizeSpan = EIDPrivateDataSpan(pEidPrivateData, dwPrivateDataSize);
+			SecureZeroMemory(pEidPrivateData, dwZeroizeSpan ? dwZeroizeSpan : dwPrivateDataSize);
 			EIDFree(pEidPrivateData);
 		}
 		if (hKey)
@@ -1790,6 +1795,7 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 	BOOL fStatus;
 	DWORD dwError = 0;
 	PEID_PRIVATE_DATA pEidPrivateData = nullptr;
+	DWORD dwPrivateDataSize = 0;   // allocation size, for the cleanup zeroize
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
 	HCRYPTKEY hKey = NULL;  // Windows handle type - keep as NULL
 	HCRYPTHASH hHash = NULL;  // Windows handle type - keep as NULL
@@ -1818,7 +1824,7 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 			__leave;
 		}
 		*pszPassword = nullptr;
-		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData);
+		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData,&dwPrivateDataSize);
 		if (!fStatus)
 		{
 			dwError = GetLastError();
@@ -1901,8 +1907,15 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 		}
 		if (pEidPrivateData)
 		{
-			// Zero entire structure including password data
-			SecureZeroMemory(pEidPrivateData, sizeof(EID_PRIVATE_DATA) + pEidPrivateData->dwCertificatSize + pEidPrivateData->dwSymetricKeySize + pEidPrivateData->usPasswordLen);
+			// Zero the blob, bounded by its ALLOCATION rather than by the sum of
+			// the region sizes it declares. The regions are each validated to
+			// fit, but their sum is not bounded by anything: three regions
+			// overlapping at offset 0 produced a length up to three times the
+			// allocation and this write ran off the end of the heap block.
+			// EIDPrivateDataSpan returns header + highest region end, and 0 if
+			// the blob does not validate.
+			const DWORD dwZeroizeSpan = EIDPrivateDataSpan(pEidPrivateData, dwPrivateDataSize);
+			SecureZeroMemory(pEidPrivateData, dwZeroizeSpan ? dwZeroizeSpan : dwPrivateDataSize);
 			EIDFree(pEidPrivateData);
 		}
 		if (pKeyProvInfo)
@@ -1930,6 +1943,7 @@ BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD 
 	BOOL fStatus;
 	DWORD dwError = 0;
 	PEID_PRIVATE_DATA pEidPrivateData = nullptr;
+	DWORD dwPrivateDataSize = 0;   // allocation size, for the cleanup zeroize
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
 	HCRYPTKEY hKey = NULL;  // Windows handle type - keep as NULL
 	HCRYPTHASH hHash = NULL;  // Windows handle type - keep as NULL
@@ -1959,7 +1973,7 @@ BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD 
 			__leave;
 		}
 		*pszPassword = nullptr;
-		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData);
+		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData,&dwPrivateDataSize);
 		if (!fStatus)
 		{
 			dwError = GetLastError();
@@ -2059,8 +2073,15 @@ BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD 
 		}
 		if (pEidPrivateData)
 		{
-			// Zero entire structure including password data
-			SecureZeroMemory(pEidPrivateData, sizeof(EID_PRIVATE_DATA) + pEidPrivateData->dwCertificatSize + pEidPrivateData->dwSymetricKeySize + pEidPrivateData->usPasswordLen);
+			// Zero the blob, bounded by its ALLOCATION rather than by the sum of
+			// the region sizes it declares. The regions are each validated to
+			// fit, but their sum is not bounded by anything: three regions
+			// overlapping at offset 0 produced a length up to three times the
+			// allocation and this write ran off the end of the heap block.
+			// EIDPrivateDataSpan returns header + highest region end, and 0 if
+			// the blob does not validate.
+			const DWORD dwZeroizeSpan = EIDPrivateDataSpan(pEidPrivateData, dwPrivateDataSize);
+			SecureZeroMemory(pEidPrivateData, dwZeroizeSpan ? dwZeroizeSpan : dwPrivateDataSize);
 			EIDFree(pEidPrivateData);
 		}
 		if (pCertContextVerif)
@@ -2088,6 +2109,7 @@ BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid
 	BOOL fStatus;
 	DWORD dwError = 0;
 	PEID_PRIVATE_DATA pEidPrivateData = nullptr;
+	DWORD dwPrivateDataSize = 0;   // allocation size, for the cleanup zeroize
 	HCRYPTPROV hProv = NULL;  // Windows handle type - keep as NULL
 	HCRYPTKEY hKey = NULL;  // Windows handle type - keep as NULL
 	HCRYPTHASH hHash = NULL;  // Windows handle type - keep as NULL
@@ -2409,8 +2431,12 @@ BOOL CStoredCredentialManager::StorePrivateDataDebug(__in DWORD dwRid, __in_opt 
 
 // SonarQube S134: Won't Fix - SEH-protected function (__try/__finally)
 // Code cannot be extracted from __try blocks per LSASS safety requirements
-BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData)
+BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData, __out_opt PDWORD pdwBlobSize)
 {
+	if (pdwBlobSize)
+	{
+		*pdwBlobSize = 0;
+	}
 	if (!EIDIsComponentInLSAContext())
  	{
 		return RetrievePrivateDataDebug(dwRid,ppPrivateData);
@@ -2539,7 +2565,7 @@ BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_
 		memcpy(*ppPrivateData, pData->Buffer, pData->Length);
 		// Reject a truncated or self-inconsistent blob here rather than letting each
 		// consumer index Data[] out of bounds inside LSASS.
-		if (!IsPrivateDataLayoutValid(*ppPrivateData, pData->Length))
+		if (!EIDValidatePrivateDataLayout(*ppPrivateData, pData->Length))
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"EID_PRIVATE_DATA layout invalid (%d bytes) for rid 0x%08x", pData->Length, dwRid);
 			EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"[BOUNDS_REJECT] EID_PRIVATE_DATA layout invalid (%d bytes) for rid 0x%x", pData->Length, dwRid);
@@ -2547,6 +2573,10 @@ BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_
 			*ppPrivateData = nullptr;
 			dwError = ERROR_INVALID_DATA;
 			__leave;
+		}
+		if (pdwBlobSize)
+		{
+			*pdwBlobSize = pData->Length;
 		}
 		fReturn = TRUE;
 	}

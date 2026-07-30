@@ -75,7 +75,11 @@ public:
 	// Internal buffer processing using std::span for bounds safety
 	void ProcessSecretBufferInternal(__in DWORD dwRid, std::span<const BYTE> secret) noexcept;
 	void ProcessSecretBufferDebugInternal(__in DWORD dwRid, std::span<const BYTE> secret) noexcept;
-	BOOL RetrievePrivateData(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData);
+	// pdwBlobSize receives the allocation size of *ppPrivateData. Cleanup paths
+	// that zeroize the blob need it: the region sizes inside the struct are
+	// individually bounded but their sum is not, so deriving a length from them
+	// can exceed the allocation. Pass nullptr if you do not zeroize.
+	BOOL RetrievePrivateData(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData, __out_opt PDWORD pdwBlobSize = nullptr);
 	BOOL StorePrivateData(__in DWORD dwRid, __in_opt PBYTE pbSecret, __in_opt USHORT usSecretSize);
 	BOOL RetrievePrivateDataDebug(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData);
 	BOOL StorePrivateDataDebug(__in DWORD dwRid, __in_opt PBYTE pbSecret, __in_opt USHORT usSecretSize);

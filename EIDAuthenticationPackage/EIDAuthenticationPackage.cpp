@@ -923,7 +923,7 @@ extern "C"
 				return Status;
 			}
 			PEID_SMARTCARD_CSP_INFO pSmartCardCspInfo = reinterpret_cast<PEID_SMARTCARD_CSP_INFO>(pUnlockLogon->Logon.CspData);  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
-			EIDDebugPrintEIDUnlockLogonStruct(WINEVENT_LEVEL_VERBOSE, pUnlockLogon);
+			EIDDebugPrintEIDUnlockLogonStruct(WINEVENT_LEVEL_VERBOSE, pUnlockLogon, pUnlockLogon->Logon.CspDataLength);
 			
 			CStoredCredentialManager* manager = CStoredCredentialManager::Instance();
 			if (!manager)
@@ -969,7 +969,7 @@ extern "C"
 			
 			// check the PIN if using the base smart card provider to get the remaining pin attempts
 			// put the result in SubStatus
-			Status = CheckPINandGetRemainingAttemptsIfPossible(pSmartCardCspInfo, pPin, SubStatus);
+			Status = CheckPINandGetRemainingAttemptsIfPossible(pSmartCardCspInfo, pUnlockLogon->Logon.CspDataLength, pPin, SubStatus);
 			if (Status != STATUS_SUCCESS)
 			{
 				EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"PIN verification failed");
@@ -1010,7 +1010,7 @@ extern "C"
 				nullptr
 			);
 
-			pCertContext = GetCertificateFromCspInfo(pSmartCardCspInfo);
+			pCertContext = GetCertificateFromCspInfo(pSmartCardCspInfo, pUnlockLogon->Logon.CspDataLength);
 			if (!pCertContext) {
 				EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"[AUTH_CERT_ERROR] Smart card logon failed: Unable to get certificate from CSP info");
 				// Log certificate read failure

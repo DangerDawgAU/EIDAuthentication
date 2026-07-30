@@ -15,6 +15,7 @@
 #include "../EIDCardLibrary/Tracing.h"
 #include "../EIDCardLibrary/StoredCredentialManagement.h"
 #include "../EIDCardLibrary/CertificateUtilities.h"
+#include "../EIDCardLibrary/InputValidation.h"
 #include "CredentialManagement.h"
 
 #pragma comment(lib,"Winscard")
@@ -442,6 +443,22 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 
 NTSTATUS CSecurityContext::ReceiveChallengeMessage(PSecBufferDesc Buffer)
 {
+	// The token comes from whoever called InitializeSecurityContext, i.e. any
+	// local process, and is marshalled into LSASS before we see it. Nothing
+	// below may be read until the descriptor and the declared offset/length
+	// pairs have been checked - the sibling ReceiveNegociateMessage has always
+	// done this; its absence here was an oversight, not a design choice.
+	if (!Buffer || Buffer->cBuffers == 0 || !Buffer->pBuffers[0].pvBuffer)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN: empty buffer descriptor");
+		return SEC_E_INVALID_TOKEN;
+	}
+	if (!EIDValidateChallengeMessage(Buffer->pBuffers[0].pvBuffer, Buffer->pBuffers[0].cbBuffer))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN: challenge layout rejected (cbBuffer=%u)",
+			Buffer->pBuffers[0].cbBuffer);
+		return SEC_E_INVALID_TOKEN;
+	}
 	PEID_CHALLENGE_MESSAGE message = (PEID_CHALLENGE_MESSAGE) Buffer->pBuffers[0].pvBuffer;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (message->MessageType != static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTChallenge))  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 	{
@@ -455,10 +472,24 @@ NTSTATUS CSecurityContext::ReceiveChallengeMessage(PSecBufferDesc Buffer)
 		return STATUS_INVALID_SIGNATURE;
 	}
 
+	// EIDValidateChallengeMessage guarantees UsernameLen + sizeof(WCHAR) cannot
+	// wrap and that both regions lie inside the token.
 	szUserName = (PWSTR) EIDAlloc(message->UsernameLen + sizeof(WCHAR));
+	if (!szUserName)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No memory for szUserName");
+		return SEC_E_INSUFFICIENT_MEMORY;
+	}
 	memcpy(szUserName, (PBYTE) message + message->UsernameOffset, message->UsernameLen);
 	memset((PBYTE) szUserName + message->UsernameLen,0,sizeof(WCHAR));
 	pbChallenge = (PBYTE) EIDAlloc(message->ChallengeLen);
+	if (!pbChallenge)
+	{
+		EIDFree(szUserName);
+		szUserName = nullptr;
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No memory for pbChallenge");
+		return SEC_E_INSUFFICIENT_MEMORY;
+	}
 	memcpy(pbChallenge, (PBYTE)message + message->ChallengeOffset, message->ChallengeLen);
 	dwChallengeSize = message->ChallengeLen;
 	_State = EID_MESSAGE_STATE::EIDMSChallenge;
@@ -494,6 +525,20 @@ NTSTATUS CSecurityContext::BuildResponseMessage(PSecBufferDesc Buffer)
 
 NTSTATUS CSecurityContext::ReceiveResponseMessage(PSecBufferDesc Buffer)
 {
+	// Server side of the same problem: this token arrives from whoever called
+	// AcceptSecurityContext against the package registered under
+	// HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Security Packages.
+	if (!Buffer || Buffer->cBuffers == 0 || !Buffer->pBuffers[0].pvBuffer)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN: empty buffer descriptor");
+		return SEC_E_INVALID_TOKEN;
+	}
+	if (!EIDValidateResponseMessage(Buffer->pBuffers[0].pvBuffer, Buffer->pBuffers[0].cbBuffer))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN: response layout rejected (cbBuffer=%u)",
+			Buffer->pBuffers[0].cbBuffer);
+		return SEC_E_INVALID_TOKEN;
+	}
 	PEID_RESPONSE_MESSAGE message = (PEID_RESPONSE_MESSAGE) Buffer->pBuffers[0].pvBuffer;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
 	if (message->MessageType != static_cast<DWORD>(EID_MESSAGE_TYPE::EIDMTResponse))  // NOSONAR - ENUM-01: enum kept for Win32/ABI compatibility
 	{
@@ -508,6 +553,11 @@ NTSTATUS CSecurityContext::ReceiveResponseMessage(PSecBufferDesc Buffer)
 	}
 
 	pbResponse = (PBYTE) EIDAlloc(message->ResponseLen);
+	if (!pbResponse)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"No memory for pbResponse");
+		return SEC_E_INSUFFICIENT_MEMORY;
+	}
 	dwResponseSize = message->ResponseLen;
 	memcpy(pbResponse, (PBYTE)message + message->ResponseOffset, dwResponseSize);
 	_State = EID_MESSAGE_STATE::EIDMSComplete;
