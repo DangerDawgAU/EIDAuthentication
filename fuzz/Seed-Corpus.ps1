@@ -133,6 +133,63 @@ $pdBad += (1..48 | ForEach-Object { [byte]0x43 })
 Write-Seed -Target privatedata -Name "poc-zero-password-len" -Bytes ([byte[]]$pdBad)
 
 # ---------------------------------------------------------------------------
+# remappointer - EID_INTERACTIVE_UNLOCK_LOGON submit buffer
+#
+# Layout (x64): EID_INTERACTIVE_LOGON { MessageType(4) +pad(4),
+#   3 x UNICODE_STRING{Length(2),MaximumLength(2),pad(4),Buffer(8)},
+#   Flags(4), CspDataLength(4), CspData(8) } then LUID LogonId(8).
+# Buffer/CspData hold CLIENT-SPACE OFFSETS, not pointers - that is the whole
+# point of RemapPointer, and what makes this the richest attacker surface.
+# ---------------------------------------------------------------------------
+function U64 { param([uint64]$v) [BitConverter]::GetBytes($v) }
+
+$hdr = 8 + (3 * 16) + 4 + 4 + 8 + 8   # 80 bytes
+$nameChars = 8
+$cspHeader = 40
+$cspNames  = 16
+
+$userOff = $hdr
+$domOff  = $userOff + $nameChars * 2
+$pinOff  = $domOff  + $nameChars * 2
+$cspOff  = $pinOff  + $nameChars * 2
+$cspLen  = $cspHeader + $cspNames * 2
+$total   = $cspOff + $cspLen
+
+$b = New-Object byte[] $total
+# MessageType
+[Array]::Copy((U32 2), 0, $b, 0, 4)
+# UserName / LogonDomainName / Pin: Length, MaximumLength, then offset
+$i = 8
+foreach ($off in @($userOff, $domOff, $pinOff)) {
+    [Array]::Copy((U16 ($nameChars * 2)), 0, $b, $i, 2)      # Length
+    [Array]::Copy((U16 ($nameChars * 2)), 0, $b, $i + 2, 2)  # MaximumLength
+    [Array]::Copy((U64 $off),             0, $b, $i + 8, 8)  # Buffer = offset
+    $i += 16
+}
+[Array]::Copy((U32 0),       0, $b, 56, 4)   # Flags
+[Array]::Copy((U32 $cspLen), 0, $b, 60, 4)   # CspDataLength
+[Array]::Copy((U64 $cspOff), 0, $b, 64, 8)   # CspData = offset
+
+# Three plausible UTF-16 names in the string area
+$names = @('operator', 'WORKGRP\', 'A1B2C3D4')
+$o = $userOff
+foreach ($n in $names) {
+    [Array]::Copy([Text.Encoding]::Unicode.GetBytes($n), 0, $b, $o, $nameChars * 2)
+    $o += $nameChars * 2
+}
+
+# CSP info at $cspOff: dwCspInfoLen then the four WCHAR-unit name offsets
+[Array]::Copy((U32 $cspLen), 0, $b, $cspOff, 4)
+[Array]::Copy((U32 1),       0, $b, $cspOff + 4, 4)    # MessageType
+[Array]::Copy((U32 1),       0, $b, $cspOff + 20, 4)   # KeySpec
+[Array]::Copy((U32 0),       0, $b, $cspOff + 24, 4)   # nCardNameOffset (absent)
+[Array]::Copy((U32 1),       0, $b, $cspOff + 28, 4)   # nReaderNameOffset
+[Array]::Copy((U32 0),       0, $b, $cspOff + 32, 4)   # nContainerNameOffset
+[Array]::Copy((U32 0),       0, $b, $cspOff + 36, 4)   # nCSPNameOffset
+[Array]::Copy([Text.Encoding]::Unicode.GetBytes("Rdr0`0"), 0, $b, $cspOff + $cspHeader + 2, 10)
+Write-Seed -Target remappointer -Name "valid-submit-buffer" -Bytes $b
+
+# ---------------------------------------------------------------------------
 # json - shapes drawn from the real .eidm schema plus the escape edge cases
 # ---------------------------------------------------------------------------
 $jsonSeeds = @{

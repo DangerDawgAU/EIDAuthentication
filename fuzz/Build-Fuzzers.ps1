@@ -32,7 +32,7 @@
 #>
 
 param(
-    [ValidateSet("cspinfo", "tokenmessage", "privatedata", "json", "regress", "all")]
+    [ValidateSet("cspinfo", "tokenmessage", "privatedata", "json", "remappointer", "regress", "all")]
     [string]$Target = "all"
 )
 
@@ -97,6 +97,7 @@ $targets = @(
     @{ Name = "tokenmessage"; Sources = @("fuzz_tokenmessage.cpp"); Fuzzer = $true  }
     @{ Name = "privatedata";  Sources = @("fuzz_privatedata.cpp");  Fuzzer = $true  }
     @{ Name = "json";         Sources = @("fuzz_json.cpp");         Fuzzer = $true  }
+    @{ Name = "remappointer"; Sources = @("fuzz_remappointer.cpp"); Fuzzer = $true  }
     @{ Name = "regress";      Sources = @("regress_main.cpp");      Fuzzer = $false }
 )
 

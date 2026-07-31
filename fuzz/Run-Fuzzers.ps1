@@ -33,7 +33,7 @@
 #>
 
 param(
-    [ValidateSet("cspinfo", "tokenmessage", "privatedata", "json", "all")]
+    [ValidateSet("cspinfo", "tokenmessage", "privatedata", "json", "remappointer", "all")]
     [string]$Target = "all",
     [int]$Seconds = 60,
     [switch]$Regress
@@ -106,7 +106,7 @@ if ($Regress) {
 # ---------------------------------------------------------------------------
 # Fuzz targets
 # ---------------------------------------------------------------------------
-$names = @("cspinfo", "tokenmessage", "privatedata", "json")
+$names = @("cspinfo", "tokenmessage", "privatedata", "json", "remappointer")
 if ($Target -ne "all") { $names = @($Target) }
 
 foreach ($name in $names) {
