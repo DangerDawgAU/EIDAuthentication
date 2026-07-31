@@ -73,6 +73,14 @@ CCredential::CCredential(PLUID LogonIdToUse, PCERT_CREDENTIAL_INFO pCertInfo,PWS
 	}
 	_LogonId = *LogonIdToUse;
 	Use = CredentialUseFlags;
+	// Zero unconditionally. SpAcquireCredentialsHandle explicitly supports
+	// AuthorizationData == NULL, and this array was previously left
+	// indeterminate on that path - then copied straight into the negotiate
+	// token that BuildNegociateMessage hands back to the caller. That gave any
+	// local process 32 fresh bytes of LSASS heap per credential handle: a
+	// useful layout oracle for weaponising anything else. A zeroed hash simply
+	// matches no stored credential, which is the intended outcome anyway.
+	memset(_rgbHashOfCert, 0, sizeof(_rgbHashOfCert));
 	// certinfo
 	if (pCertInfo)
 	{
@@ -188,6 +196,8 @@ CSecurityContext::CSecurityContext(CCredential* pCredential)
 	dwRid = 0;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
 	pCertContext = nullptr;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
 	szUserName = nullptr;  // NOSONAR - INIT-01: member initialized in body for clarity/ordering
+	_Role = EID_CONTEXT_ROLE::EIDCRUnbound;
+	_fChallengeIsOurs = FALSE;
 	if (pCredential && pCredential->_pCertInfo)
 	{
 		CRYPT_DATA_BLOB blob;
@@ -243,9 +253,35 @@ CSecurityContext* CSecurityContext::GetContextFromHandle(ULONG_PTR context)
 	return result;
 }
 
+// A context belongs to exactly one side of the handshake. The first dispatcher
+// to touch it claims the role; any later attempt to drive it from the other
+// side is refused.
+//
+// Without this, the two dispatchers share one global context list and one
+// _State, so an attacker could: AcceptSecurityContext with a negotiate message
+// carrying a victim's certificate hash (binding dwRid and generating a server
+// challenge), then call InitializeSecurityContext on the SAME handle so
+// ReceiveChallengeMessage overwrites that server-generated challenge with
+// attacker-chosen bytes - and the verifier would later check a signature over a
+// value the attacker picked.
+BOOL CSecurityContext::ClaimRole(EID_CONTEXT_ROLE role)
+{
+	if (_Role == EID_CONTEXT_ROLE::EIDCRUnbound)
+	{
+		_Role = role;
+		return TRUE;
+	}
+	return _Role == role;
+}
+
 NTSTATUS CSecurityContext::InitializeSecurityContextInput(PSecBufferDesc Buffer)
 {
 	NTSTATUS Status = STATUS_INVALID_SIGNATURE;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
+	if (!ClaimRole(EID_CONTEXT_ROLE::EIDCRInitiate))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Init   Input  wrong role for this context");
+		return SEC_E_INVALID_HANDLE;
+	}
 	switch (_State)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 	{
 		case EID_MESSAGE_STATE::EIDMSNegociate:
@@ -261,6 +297,11 @@ NTSTATUS CSecurityContext::InitializeSecurityContextInput(PSecBufferDesc Buffer)
 NTSTATUS CSecurityContext::InitializeSecurityContextOutput(PSecBufferDesc Buffer)
 {
 	NTSTATUS Status = STATUS_INVALID_SIGNATURE;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
+	if (!ClaimRole(EID_CONTEXT_ROLE::EIDCRInitiate))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Init   Output wrong role for this context");
+		return SEC_E_INVALID_HANDLE;
+	}
 	switch (_State)
 	{
 		case EID_MESSAGE_STATE::EIDMSNone:
@@ -280,6 +321,11 @@ NTSTATUS CSecurityContext::InitializeSecurityContextOutput(PSecBufferDesc Buffer
 NTSTATUS CSecurityContext::AcceptSecurityContextInput(PSecBufferDesc Buffer)
 {
 	NTSTATUS Status = STATUS_INVALID_SIGNATURE;  // NOSONAR - EXPLICIT-TYPE-01: NTSTATUS visible for security audit
+	if (!ClaimRole(EID_CONTEXT_ROLE::EIDCRAccept))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Accept Input  wrong role for this context");
+		return SEC_E_INVALID_HANDLE;
+	}
 	switch (_State)
 	{
 		case EID_MESSAGE_STATE::EIDMSNone:
@@ -299,6 +345,11 @@ NTSTATUS CSecurityContext::AcceptSecurityContextInput(PSecBufferDesc Buffer)
 NTSTATUS CSecurityContext::AcceptSecurityContextOutput(PSecBufferDesc Buffer)
 {
 	NTSTATUS Status = STATUS_INVALID_SIGNATURE;  // NOSONAR (EXPLICIT-TYPE-04) - Explicit type preferred for code clarity
+	if (!ClaimRole(EID_CONTEXT_ROLE::EIDCRAccept))
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"Accept Output wrong role for this context");
+		return SEC_E_INVALID_HANDLE;
+	}
 	switch (_State)
 	{
 		case EID_MESSAGE_STATE::EIDMSNegociate:
@@ -490,6 +541,9 @@ NTSTATUS CSecurityContext::BuildChallengeMessage(PSecBufferDesc Buffer)
 		memcpy((PBYTE)message + message->UsernameOffset,szUserName,message->UsernameLen);
 		Buffer->pBuffers[0].cbBuffer = cbChallengeNeeded + cbUserName;
 		_State = EID_MESSAGE_STATE::EIDMSChallenge;
+		// This nonce came from GetSignatureChallenge on this context, so it is
+		// safe to verify a signature against it later.
+		_fChallengeIsOurs = TRUE;
 		Status = SEC_I_CONTINUE_NEEDED;
 	}
 	__finally
@@ -557,6 +611,10 @@ NTSTATUS CSecurityContext::ReceiveChallengeMessage(PSecBufferDesc Buffer)
 	}
 	memcpy(pbChallenge, (PBYTE)message + message->ChallengeOffset, message->ChallengeLen);
 	dwChallengeSize = message->ChallengeLen;
+	// This challenge arrived over the wire. We are the CLIENT here and will sign
+	// it, which is fine - but it must never be handed to
+	// VerifySignatureChallengeResponse, so mark it as not ours.
+	_fChallengeIsOurs = FALSE;
 	_State = EID_MESSAGE_STATE::EIDMSChallenge;
 	return STATUS_SUCCESS;
 }
@@ -649,6 +707,15 @@ NTSTATUS CSecurityContext::BuildCompleteMessage(PSecBufferDesc Buffer)  // NOSON
 {
 	// v�rification du challenge
 	UNREFERENCED_PARAMETER(Buffer);
+	// Only ever verify a signature over a nonce THIS context generated. If the
+	// challenge came from the peer, an attacker chose it, and verifying against
+	// it turns any captured (challenge, response) pair into a permanent bearer
+	// token for that RID - replayable forever, from any process, on any session.
+	if (!_fChallengeIsOurs)
+	{
+		EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"SEC_E_INVALID_TOKEN: challenge was not generated by this context");
+		return SEC_E_INVALID_TOKEN;
+	}
 	CStoredCredentialManager* manager = CStoredCredentialManager::Instance();
 	if (!manager->VerifySignatureChallengeResponse(dwRid, pbChallenge, dwChallengeSize, pbResponse, dwResponseSize))  // NOSONAR - SCOPE-01: local scoped to block; init-statement refactor deferred
 	{
