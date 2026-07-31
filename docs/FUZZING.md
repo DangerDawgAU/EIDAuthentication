@@ -91,7 +91,15 @@ about memory.
 | `tokenmessage` | SSP challenge and response tokens: header size, offset/length pairs, the `+ sizeof(WCHAR)` allocation wrap |
 | `privatedata` | Stored-credential blob: per-region bounds, region overlap, the zeroize span, the round-counter underflow |
 | `json` | The hand-rolled `JsonParser` reached from `.eidm` import — memory safety only |
-| `regress` | Deterministic replay of all four defects' PoC inputs, plus benign inputs that must still be accepted |
+| `remappointer` | The interactive-logon submit buffer: three `UNICODE_STRING` offset/length pairs plus the `CspData` block, all inside one caller-supplied length |
+| `regress` | Deterministic replay of every defect's PoC input, plus benign inputs that must still be accepted |
+
+`remappointer` covers the entry point an unprivileged caller actually reaches
+through `LsaLogonUser`. `RemapPointer` itself needs the LSA dispatch table and
+cannot be linked standalone, so the target exercises the rules it depends on —
+the `SafeCheckBufferOverflow` bounds rule per pair, and the real
+`EIDValidateCspInfo` over the same buffer's interior — and asserts that a buffer
+passing every check rebases entirely inside itself.
 
 The regression binary also asserts **benign inputs are still accepted**. Over-
 rejection in this code path does not fail safe — it locks users out of the
@@ -118,7 +126,7 @@ revisited:
 - **Network and RPC.** There are none — no sockets, and no `.idl`/MIDL
   interfaces (the `<Midl>` blocks in the vcxproj files are empty VS defaults).
 
-### Named pipe: a real IPC surface, not yet covered
+### Named pipe: a real IPC surface, hardened but not fuzzed
 
 `EIDConfigurationWizard/DebugReport.cpp:239` creates a named pipe
 (`CreateNamedPipe`, `ConnectNamedPipe`, `WriteFile`) to talk to the elevated
@@ -126,12 +134,13 @@ helper it launches via `ShellExecuteEx`/`runas`. The pipe name carries a
 10-character `mt19937` suffix and the security descriptor is `nullptr`, i.e. the
 default DACL.
 
-That is a low-integrity-to-high-integrity channel and therefore genuinely in
-scope for fuzzing — it is listed here as **not yet covered**, not as excluded.
-It is out of scope for this round because the wizard is a user-launched tool
-rather than LSASS-resident code, and because fuzzing it means driving the pipe
-protocol rather than a pure function. Do not read its absence from the target
-list as a judgement that it is safe.
+That is a low-integrity-to-high-integrity channel. It has since been hardened —
+single-instance creation with `FILE_FLAG_FIRST_PIPE_INSTANCE`,
+`SECURITY_IDENTIFICATION` on both client opens, a bounded and NUL-terminated
+read, path validation, and `FILE_FLAG_OPEN_REPARSE_POINT` on the elevated
+`CreateFile` — but it is **still not fuzzed**, because doing so means driving a
+pipe protocol rather than calling a pure function. Do not read its absence from
+the target list as a judgement that it is now safe.
 
 ## The JSON parser reaches further than the import path
 
