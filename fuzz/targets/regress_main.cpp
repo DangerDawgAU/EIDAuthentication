@@ -410,6 +410,40 @@ void TestPrivateData()
 			"header read would be OOB");
 	}
 
+	// 4f. Block-length arithmetic. CryptGetKeyParam(KP_BLOCKLEN) returns the
+	//     block size in BITS (128 for AES) but the encrypt/decrypt loops used it
+	//     as a BYTE count. Whenever a length is an exact multiple of that value
+	//     the final round was computed as zero-length, which silently truncated
+	//     the stored password on the way in and failed outright with NTE_BAD_LEN
+	//     on the way out. Both were confirmed against live CryptoAPI: a
+	//     63-character password enrolled fine and could never be decrypted.
+	//
+	//     This asserts the corrected rule directly: a zero remainder means a
+	//     FULL final block.
+	{
+		const DWORD dwBlockLen = 128;   // KP_BLOCKLEN as reported for AES
+		const struct { DWORD cbInput; DWORD cbExpectedFinal; const char* pszWhy; } cases[] = {
+			{  2, 2,           "1 char" },
+			{126, 126,         "63 chars - ciphertext lands on the boundary" },
+			{128, dwBlockLen,  "64 chars - exact multiple, was 0" },
+			{130, 2,           "65 chars" },
+			{256, dwBlockLen,  "128 chars - exact multiple, was 0" },
+		};
+		bool fAllCorrect = true;
+		for (size_t i = 0; i < ARRAYSIZE(cases); i++)
+		{
+			const DWORD dwRemainder = cases[i].cbInput % dwBlockLen;
+			const DWORD dwFinal = dwRemainder ? dwRemainder : dwBlockLen;
+			if (dwFinal != cases[i].cbExpectedFinal || dwFinal == 0)
+			{
+				printf("  FAIL  final-block length for %-46s got %u want %u\n",
+					cases[i].pszWhy, dwFinal, cases[i].cbExpectedFinal);
+				fAllCorrect = false;
+			}
+		}
+		CheckAccepted("blob: final block is never zero-length", fAllCorrect);
+	}
+
 	// 4e. Well-formed blob accepted, and its zeroize span must be inside the
 	//     allocation - the property the fix depends on.
 	{

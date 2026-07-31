@@ -62,6 +62,10 @@ BOOL EIDValidatePrivateDataLayout(__in_opt const EID_PRIVATE_DATA* pPrivateData,
 // not, so summing overruns the allocation whenever regions overlap.
 // Returns 0 for a blob that does not validate.
 DWORD EIDPrivateDataSpan(__in_opt const EID_PRIVATE_DATA* pPrivateData, __in DWORD dwBlobSize);
+// NOTE: the scrub-and-free helper deliberately lives in
+// StoredCredentialManagement.cpp, not here. It needs EIDFree, and this
+// translation unit must stay free of LSA/allocator dependencies so the fuzz
+// targets can link it on its own.
 
 //-----------------------------------------------------------------------------
 // EID_SMARTCARD_CSP_INFO (inside the interactive-logon submit buffer)

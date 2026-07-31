@@ -80,6 +80,26 @@ CStoredCredentialManager *CStoredCredentialManager::theSingleInstance = nullptr;
 // and each consumer indexes Data[] with those values inside LSASS. Validate the whole
 // layout once, at the single point where the blob is read, so no consumer has to.
 
+// Scrub-and-free for a stored-credential blob. Every release of one of these
+// must go through here: it carries the certificate, the RSA-wrapped symmetric
+// key and the encrypted password, and four call sites previously freed it
+// unscrubbed - two of them on every authentication - leaving that material in
+// LSASS heap. Kept in this file rather than InputValidation.cpp because it
+// needs EIDFree, and that translation unit must stay dependency-free so the
+// fuzz targets can link it standalone.
+static void EIDFreePrivateData(__in_opt PEID_PRIVATE_DATA pPrivateData, __in DWORD dwBlobSize)
+{
+	if (!pPrivateData)
+	{
+		return;
+	}
+	const DWORD dwSpan = EIDPrivateDataSpan(pPrivateData, dwBlobSize);
+	// Fall back to the raw allocation size if the layout does not validate -
+	// a malformed blob still holds whatever was read out of the LSA secret.
+	SecureZeroMemory(pPrivateData, dwSpan ? dwSpan : dwBlobSize);
+	EIDFree(pPrivateData);
+}
+
 // The layout rule now lives in InputValidation.cpp (EIDValidatePrivateDataLayout)
 // so that this file, EIDMigrate\LsaClient.cpp and the fuzz harness all share one
 // implementation. The version that used to sit here checked each region
@@ -231,37 +251,41 @@ BOOL CStoredCredentialManager::GetUsernameFromCertContext(__in PCCERT_CONTEXT pC
 		for (DWORD dwI = 0; dwI < dwEntriesRead; dwI++)
 		{
 			// for each credential
-			if (RetrievePrivateData(pUserInfo[dwI].usri3_user_id, &pPrivateData))
+			DWORD dwPrivateDataSize = 0;
+			if (RetrievePrivateData(pUserInfo[dwI].usri3_user_id, &pPrivateData, &dwPrivateDataSize))
 			{
-				if (pPrivateData->dwCertificatSize == pContext->cbCertEncoded)
+				BOOL fMatched = FALSE;
+				if (pPrivateData->dwCertificatSize == pContext->cbCertEncoded &&
+					memcmp(pPrivateData->Data + pPrivateData->dwCertificatOffset, pContext->pbCertEncoded, pContext->cbCertEncoded) == 0)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
 				{
-					if (memcmp(pPrivateData->Data + pPrivateData->dwCertificatOffset, pContext->pbCertEncoded, pContext->cbCertEncoded) == 0)  // NOSONAR - COMPLEXITY-01: refactor deferred; logic verified
+					// found
+					fMatched = TRUE;
+					*pdwRid = pUserInfo[dwI].usri3_user_id;
+					PCWSTR Username = pUserInfo[dwI].usri3_name;
+					*pszUsername = (PWSTR) EIDAlloc((DWORD)(wcslen(Username) +1) * sizeof(WCHAR));
+
+					if (*pszUsername)
 					{
-						// found
-						*pdwRid = pUserInfo[dwI].usri3_user_id;
-						PCWSTR Username = pUserInfo[dwI].usri3_name;
-						*pszUsername = (PWSTR) EIDAlloc((DWORD)(wcslen(Username) +1) * sizeof(WCHAR));
-						
-						if (*pszUsername)
-						{
-							wcscpy_s(*pszUsername, wcslen(Username) +1, Username);
-							EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Found 0x%x %s",*pdwRid, *pszUsername);
-							fReturn = TRUE;
-						}
-						else
-						{
-							dwError = GetLastError();
-							EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertCreateCertificateContext 0x%08x",dwError);
-						}
-						EIDFree(pPrivateData);
-						break;
+						wcscpy_s(*pszUsername, wcslen(Username) +1, Username);
+						EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"Found 0x%x %s",*pdwRid, *pszUsername);
+						fReturn = TRUE;
 					}
 					else
 					{
-						EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"%d don't match", pUserInfo[dwI].usri3_user_id);
+						dwError = GetLastError();
+						EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertCreateCertificateContext 0x%08x",dwError);
 					}
 				}
-				EIDFree(pPrivateData);
+				else if (pPrivateData->dwCertificatSize == pContext->cbCertEncoded)
+				{
+					EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"%d don't match", pUserInfo[dwI].usri3_user_id);
+				}
+				EIDFreePrivateData(pPrivateData, dwPrivateDataSize);
+				pPrivateData = nullptr;
+				if (fMatched)
+				{
+					break;
+				}
 			}
 		}
 		if (!fReturn)
@@ -325,9 +349,11 @@ BOOL CStoredCredentialManager::GetCertContextFromHash(__in PBYTE pbHash, __out P
 		for (DWORD dwI = 0; dwI < dwEntriesRead; dwI++)
 		{
 			// for each credential
-			if (RetrievePrivateData(pUserInfo[dwI].usri3_user_id, &pPrivateData))
+			DWORD dwPrivateDataSize = 0;
+			if (RetrievePrivateData(pUserInfo[dwI].usri3_user_id, &pPrivateData, &dwPrivateDataSize))
 			{
-				if (memcmp(pPrivateData->Hash, pbHash, CERT_HASH_LENGTH) == 0)
+				const BOOL fMatched = (memcmp(pPrivateData->Hash, pbHash, CERT_HASH_LENGTH) == 0);
+				if (fMatched)
 				{
 					// found
 					*pdwRid = pUserInfo[dwI].usri3_user_id;
@@ -342,10 +368,15 @@ BOOL CStoredCredentialManager::GetCertContextFromHash(__in PBYTE pbHash, __out P
 						dwError = GetLastError();
 						EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"CertCreateCertificateContext 0x%08x",dwError);
 					}
-					EIDFree(pPrivateData);
+				}
+				// CertCreateCertificateContext copies the encoded certificate,
+				// so scrubbing the blob here does not disturb *ppContext.
+				EIDFreePrivateData(pPrivateData, dwPrivateDataSize);
+				pPrivateData = nullptr;
+				if (fMatched)
+				{
 					break;
 				}
-				EIDFree(pPrivateData);
 			}
 		}
 	}
@@ -365,6 +396,7 @@ BOOL CStoredCredentialManager::GetCertContextFromRid(__in DWORD dwRid, __out PCC
 	BOOL fReturn = FALSE;
 	BOOL fStatus;
 	PEID_PRIVATE_DATA pEidPrivateData = nullptr;
+	DWORD dwPrivateDataSize = 0;
 	DWORD dwError = 0;
 	__try
 	{
@@ -386,14 +418,14 @@ BOOL CStoredCredentialManager::GetCertContextFromRid(__in DWORD dwRid, __out PCC
 			dwError = ERROR_INVALID_PARAMETER;
 			__leave;
 		}
-		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData);
+		fStatus = RetrievePrivateData(dwRid,&pEidPrivateData,&dwPrivateDataSize);
 		if (!fStatus)
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"RetrievePrivateData 0x%08x",dwError);
 			__leave;
 		}
-		*ppContext = CertCreateCertificateContext(X509_ASN_ENCODING, 
+		*ppContext = CertCreateCertificateContext(X509_ASN_ENCODING,
 						pEidPrivateData->Data + pEidPrivateData->dwCertificatOffset,
 						pEidPrivateData->dwCertificatSize);
 		if (!*ppContext) 
@@ -412,10 +444,8 @@ BOOL CStoredCredentialManager::GetCertContextFromRid(__in DWORD dwRid, __out PCC
 			CertFreeCertificateContext(*ppContext);
 			*ppContext = nullptr;
 		}
-		if (pEidPrivateData)
-		{
-			EIDFree(pEidPrivateData);
-		}
+		EIDFreePrivateData(pEidPrivateData, dwPrivateDataSize);
+		pEidPrivateData = nullptr;
 	}
 	SetLastError(dwError);
 	return fReturn;
@@ -871,9 +901,8 @@ BOOL CStoredCredentialManager::GetChallenge(__in DWORD dwRid, __out PBYTE* ppCha
 		{
 			// Holds the wrapped symmetric key; scrub before releasing, as the
 			// other blob consumers do.
-			const DWORD dwZeroizeSpan = EIDPrivateDataSpan(pEidPrivateData, dwPrivateDataSize);
-			SecureZeroMemory(pEidPrivateData, dwZeroizeSpan ? dwZeroizeSpan : dwPrivateDataSize);
-			EIDFree(pEidPrivateData);
+			EIDFreePrivateData(pEidPrivateData, dwPrivateDataSize);
+			pEidPrivateData = nullptr;
 		}
 		if (hProv)
 		{
@@ -1569,24 +1598,44 @@ BOOL CStoredCredentialManager::EncryptPasswordAndSaveIt(__in HCRYPTKEY hKey, __i
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"encrypted password size overflow (%lu rounds)",dwRoundNumber);
 			__leave;
 		}
+		// One extra dwBlockLen of headroom. CBC with PKCS padding always emits a
+		// trailing pad block, so when the final round encrypts a FULL block (the
+		// exact-multiple case fixed below) the output is longer than the input
+		// and CryptEncrypt would otherwise fail with ERROR_MORE_DATA.
 		DWORD cbEncrypted = dwRoundNumber * dwBlockLen;
-		*pEncryptedPassword = (PBYTE) EIDAlloc(cbEncrypted);
+		if (cbEncrypted > MAXDWORD - dwBlockLen)
+		{
+			dwError = ERROR_ARITHMETIC_OVERFLOW;
+			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"encrypted password size overflow");
+			__leave;
+		}
+		const DWORD cbEncryptedBuffer = cbEncrypted + dwBlockLen;
+		*pEncryptedPassword = (PBYTE) EIDAlloc(cbEncryptedBuffer);
 		if (!*pEncryptedPassword)
 		{
 			dwError = GetLastError();
 			EIDCardLibraryTrace(WINEVENT_LEVEL_WARNING,L"EIDAlloc 0x%08x",GetLastError());
 			__leave;
 		}
-		memset(*pEncryptedPassword, 0, cbEncrypted);
+		memset(*pEncryptedPassword, 0, cbEncryptedBuffer);
 		memcpy(*pEncryptedPassword, szPassword, dwPasswordSize);
 		
 		dwEncryptedSize = 0;
 		for (DWORD dwI = 0; dwI < dwRoundNumber; dwI++)
 		{
-			dwEncryptedSize = (dwI == dwRoundNumber-1 ? dwPasswordSize%dwBlockLen : dwBlockLen);
-			fStatus = CryptEncrypt(hKey, NULL,(dwI == dwRoundNumber-1 ? TRUE:FALSE),0,
+			const BOOL fLastRound = (dwI == dwRoundNumber - 1);
+			// A remainder of zero means the password exactly fills the last
+			// round - the final block is FULL, not empty. Passing 0 here made
+			// CryptEncrypt emit nothing but a pad block, so a 64- or
+			// 128-character password was silently stored truncated while
+			// enrolment still reported success. Verified against CryptoAPI:
+			// KP_BLOCKLEN reports 128 (BITS) for AES, so "exact multiple" means
+			// a 128-byte plaintext, i.e. exactly 64 WCHARs.
+			const DWORD dwRemainder = dwPasswordSize % dwBlockLen;
+			dwEncryptedSize = fLastRound ? (dwRemainder ? dwRemainder : dwBlockLen) : dwBlockLen;
+			fStatus = CryptEncrypt(hKey, NULL, fLastRound, 0,
 						*pEncryptedPassword + dwI * dwBlockLen,
-						&dwEncryptedSize, dwBlockLen);
+						&dwEncryptedSize, cbEncryptedBuffer - dwI * dwBlockLen);
 			if(!fStatus)
 			{
 				dwError = GetLastError();
@@ -1761,8 +1810,17 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 
 		for (DWORD dwI = 0; dwI < dwRoundNumber ; dwI++)
 		{
-			dwSize = (dwI == dwRoundNumber -1 ? pEidPrivateData->usPasswordLen%dwBlockLen : dwBlockLen);
-			fStatus = CryptDecrypt(hKey, NULL,(dwI == dwRoundNumber -1 ?TRUE:FALSE),0,
+			const BOOL fLastRound = (dwI == dwRoundNumber - 1);
+			// Mirror of the encrypt-side fix, and the more damaging half of the
+			// bug: a stored length that is an exact multiple of dwBlockLen gave
+			// a final round of length 0, and CryptDecrypt rejects that outright
+			// with NTE_BAD_LEN. Since the ciphertext is the padded plaintext,
+			// that happens for any password whose padded length lands on the
+			// boundary - 57 to 63 characters, a thoroughly ordinary length.
+			// Such an account enrolled successfully and could then NEVER log in.
+			const DWORD dwRemainder = pEidPrivateData->usPasswordLen % dwBlockLen;
+			dwSize = fLastRound ? (dwRemainder ? dwRemainder : dwBlockLen) : dwBlockLen;
+			fStatus = CryptDecrypt(hKey, NULL, fLastRound, 0,
 				((PBYTE) *pszPassword) + dwI * dwBlockLen,&dwSize);
 			if(!fStatus)
 			{
@@ -1794,9 +1852,8 @@ BOOL CStoredCredentialManager::GetPasswordFromCryptedChallengeResponse(__in DWOR
 			// allocation and this write ran off the end of the heap block.
 			// EIDPrivateDataSpan returns header + highest region end, and 0 if
 			// the blob does not validate.
-			const DWORD dwZeroizeSpan = EIDPrivateDataSpan(pEidPrivateData, dwPrivateDataSize);
-			SecureZeroMemory(pEidPrivateData, dwZeroizeSpan ? dwZeroizeSpan : dwPrivateDataSize);
-			EIDFree(pEidPrivateData);
+			EIDFreePrivateData(pEidPrivateData, dwPrivateDataSize);
+			pEidPrivateData = nullptr;
 		}
 		if (hKey)
 			CryptDestroyKey(hKey);
@@ -1939,9 +1996,8 @@ BOOL CStoredCredentialManager::GetPasswordFromSignatureChallengeResponse(__in DW
 			// allocation and this write ran off the end of the heap block.
 			// EIDPrivateDataSpan returns header + highest region end, and 0 if
 			// the blob does not validate.
-			const DWORD dwZeroizeSpan = EIDPrivateDataSpan(pEidPrivateData, dwPrivateDataSize);
-			SecureZeroMemory(pEidPrivateData, dwZeroizeSpan ? dwZeroizeSpan : dwPrivateDataSize);
-			EIDFree(pEidPrivateData);
+			EIDFreePrivateData(pEidPrivateData, dwPrivateDataSize);
+			pEidPrivateData = nullptr;
 		}
 		if (pKeyProvInfo)
 			EIDFree(pKeyProvInfo);
@@ -2105,9 +2161,8 @@ BOOL CStoredCredentialManager::GetPasswordFromDPAPIChallengeResponse(__in DWORD 
 			// allocation and this write ran off the end of the heap block.
 			// EIDPrivateDataSpan returns header + highest region end, and 0 if
 			// the blob does not validate.
-			const DWORD dwZeroizeSpan = EIDPrivateDataSpan(pEidPrivateData, dwPrivateDataSize);
-			SecureZeroMemory(pEidPrivateData, dwZeroizeSpan ? dwZeroizeSpan : dwPrivateDataSize);
-			EIDFree(pEidPrivateData);
+			EIDFreePrivateData(pEidPrivateData, dwPrivateDataSize);
+			pEidPrivateData = nullptr;
 		}
 		if (pCertContextVerif)
 			CertFreeCertificateContext(pCertContextVerif);
@@ -2233,9 +2288,8 @@ BOOL CStoredCredentialManager::VerifySignatureChallengeResponse(__in DWORD dwRid
 			// This blob holds the certificate, the wrapped symmetric key and the
 			// encrypted password, exactly like the paths that already scrub it.
 			// It was being freed without zeroizing.
-			const DWORD dwZeroizeSpan = EIDPrivateDataSpan(pEidPrivateData, dwPrivateDataSize);
-			SecureZeroMemory(pEidPrivateData, dwZeroizeSpan ? dwZeroizeSpan : dwPrivateDataSize);
-			EIDFree(pEidPrivateData);
+			EIDFreePrivateData(pEidPrivateData, dwPrivateDataSize);
+			pEidPrivateData = nullptr;
 		}
 		if (pCertContext)
 			CertFreeCertificateContext(pCertContext);
@@ -2612,7 +2666,11 @@ BOOL CStoredCredentialManager::RetrievePrivateData(__in DWORD dwRid, __out PEID_
 		{
 			EIDCardLibraryTrace(WINEVENT_LEVEL_ERROR,L"EID_PRIVATE_DATA layout invalid (%d bytes) for rid 0x%08x", pData->Length, dwRid);
 			EIDSecurityAudit(SECURITY_AUDIT_FAILURE, L"[BOUNDS_REJECT] EID_PRIVATE_DATA layout invalid (%d bytes) for rid 0x%x", pData->Length, dwRid);
-			EIDFree(*ppPrivateData);
+			// The full LSA secret was already memcpy'd in above, so this buffer
+			// holds real key material even though its layout is malformed.
+			// EIDPrivateDataSpan returns 0 for it, so the helper falls back to
+			// the raw allocation size.
+			EIDFreePrivateData(*ppPrivateData, pData->Length);
 			*ppPrivateData = nullptr;
 			dwError = ERROR_INVALID_DATA;
 			__leave;
@@ -2653,12 +2711,14 @@ BOOL CStoredCredentialManager::HasStoredCredential(__in DWORD dwRid)
 {
 	BOOL fReturn = FALSE;
 	PEID_PRIVATE_DATA pSecret;
+	DWORD dwSecretSize = 0;
 	DWORD dwError = 0;
-	if (RetrievePrivateData(dwRid, &pSecret))
+	if (RetrievePrivateData(dwRid, &pSecret, &dwSecretSize))
 	{
 		dwError = GetLastError();
 		fReturn = TRUE;
-		EIDFree(pSecret);
+		EIDFreePrivateData(pSecret, dwSecretSize);
+		pSecret = nullptr;
 	}
 	EIDCardLibraryTrace(WINEVENT_LEVEL_VERBOSE,L"%s",(fReturn?L"TRUE":L"FALSE"));
 	SetLastError(dwError);

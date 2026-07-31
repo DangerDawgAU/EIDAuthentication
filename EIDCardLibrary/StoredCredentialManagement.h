@@ -75,11 +75,14 @@ public:
 	// Internal buffer processing using std::span for bounds safety
 	void ProcessSecretBufferInternal(__in DWORD dwRid, std::span<const BYTE> secret) noexcept;
 	void ProcessSecretBufferDebugInternal(__in DWORD dwRid, std::span<const BYTE> secret) noexcept;
-	// pdwBlobSize receives the allocation size of *ppPrivateData. Cleanup paths
-	// that zeroize the blob need it: the region sizes inside the struct are
-	// individually bounded but their sum is not, so deriving a length from them
-	// can exceed the allocation. Pass nullptr if you do not zeroize.
-	BOOL RetrievePrivateData(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData, __out_opt PDWORD pdwBlobSize = nullptr);
+	// pdwBlobSize receives the allocation size of *ppPrivateData, and is
+	// MANDATORY: the blob holds the certificate, the wrapped symmetric key and
+	// the encrypted password, so every caller must scrub it before freeing, and
+	// scrubbing needs the allocation size (the region sizes inside the struct
+	// are individually bounded but their sum is not). This deliberately has no
+	// default argument - four callers previously omitted it and freed the blob
+	// unscrubbed, two of them on every authentication. Use EIDFreePrivateData.
+	BOOL RetrievePrivateData(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData, __out PDWORD pdwBlobSize);
 	BOOL StorePrivateData(__in DWORD dwRid, __in_opt PBYTE pbSecret, __in_opt USHORT usSecretSize);
 	BOOL RetrievePrivateDataDebug(__in DWORD dwRid, __out PEID_PRIVATE_DATA *ppPrivateData);
 	BOOL StorePrivateDataDebug(__in DWORD dwRid, __in_opt PBYTE pbSecret, __in_opt USHORT usSecretSize);
