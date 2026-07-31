@@ -37,6 +37,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <vector>
+#include <string>
 
 #include "EIDCardLibrary.h"
 #include "StoredCredentialManagement.h"
@@ -471,6 +472,93 @@ void TestPrivateData()
 	}
 }
 
+//-------------------------------------------------------------------------
+// Config loader hardening (CSVConfig.cpp).
+//
+// The rotation values and the log path both come from logging.json - the only
+// config source that parses untrusted bytes, and the only one that was missing
+// the clamps the registry/GPO/trace-consumer loaders all apply. The log path
+// additionally drives EnsureLogDirSecured, which rewrites a directory's DACL
+// as SYSTEM, so an unconstrained path there is an arbitrary-ACL rewrite.
+//
+// Reimplemented here rather than linked: CSVConfig.cpp pulls in the tracing and
+// JSON machinery, which the standalone harness cannot host. These assert the
+// RULES, so a future divergence in the real loader shows up as a review
+// mismatch rather than passing silently.
+//-------------------------------------------------------------------------
+DWORD ClampRotation(long long llValue)
+{
+	return (llValue < 1) ? 1 : (llValue > 100 ? 100 : static_cast<DWORD>(llValue));
+}
+
+// Mirror of EID_CSV_IsAcceptableLogPath in CSVConfig.cpp. Keep in step with it.
+bool IsAcceptableLogPathRule(const std::wstring& wsPath)
+{
+	if (wsPath.empty() || wsPath.length() >= MAX_PATH) return false;
+	if (wsPath.compare(0, 2, L"\\\\") == 0) return false;
+	if (wsPath.find(L"..") != std::wstring::npos || wsPath.find(L'/') != std::wstring::npos) return false;
+	if (wsPath.length() < 4 || wsPath[1] != L':' || wsPath[2] != L'\\') return false;
+	if (wsPath.find(L':', 2) != std::wstring::npos) return false;
+	const std::wstring wsRoot = L"C:\\ProgramData\\EIDAuthentication\\";
+	if (wsPath.length() <= wsRoot.length() ||
+		_wcsnicmp(wsPath.c_str(), wsRoot.c_str(), wsRoot.length()) != 0) return false;
+	return true;
+}
+
+void TestConfigLoader()
+{
+	printf("\nConfig loader: rotation clamps and logPath (CSVConfig.cpp)\n");
+
+	// The reported case: a negative count truncated to DWORD became 0xFFFFFFFF
+	// and drove ~4.29 billion GetFileAttributesW calls holding s_csLogger.
+	const struct { long long llIn; DWORD dwWant; const char* pszWhy; } rgClamp[] = {
+		{        -1, 1,   "negative (was 0xFFFFFFFF)" },
+		{         0, 1,   "zero" },
+		{         5, 5,   "typical value passes through" },
+		{       100, 100, "upper bound" },
+		{      1000, 100, "above upper bound" },
+		{ 4294967295LL, 100, "0xFFFFFFFF" },
+	};
+	bool fClampsOk = true;
+	for (size_t i = 0; i < ARRAYSIZE(rgClamp); i++)
+	{
+		const DWORD dwGot = ClampRotation(rgClamp[i].llIn);
+		if (dwGot != rgClamp[i].dwWant)
+		{
+			printf("  FAIL  clamp %-44s got %u want %u\n", rgClamp[i].pszWhy, dwGot, rgClamp[i].dwWant);
+			fClampsOk = false;
+		}
+	}
+	CheckAccepted("config: rotation values clamped to [1,100]", fClampsOk);
+
+	// Paths that must be refused before any DACL work happens.
+	const wchar_t* rgBad[] = {
+		L"",                                                  // empty
+		L"\\\\server\\share\\evil.csv",                       // UNC
+		L"\\\\?\\C:\\ProgramData\\EIDAuthentication\\x.csv",   // device namespace
+		L"C:\\ProgramData\\EIDAuthentication\\..\\..\\x.csv",  // traversal
+		L"C:/ProgramData/EIDAuthentication/x.csv",             // forward slashes
+		L"C:\\Windows\\System32\\x.csv",                       // outside the product dir
+		L"C:\\ProgramData\\EIDAuthenticationEvil\\x.csv",      // prefix look-alike
+		L"x.csv",                                              // relative
+		L"C:\\ProgramData\\EIDAuthentication\\x.csv:ads",      // alternate data stream
+	};
+	bool fRejectsOk = true;
+	for (size_t i = 0; i < ARRAYSIZE(rgBad); i++)
+	{
+		if (IsAcceptableLogPathRule(rgBad[i]))
+		{
+			printf("  FAIL  logPath accepted but should be refused: '%ls'\n", rgBad[i]);
+			fRejectsOk = false;
+		}
+	}
+	CheckAccepted("config: hostile logPath values refused", fRejectsOk);
+
+	// And the legitimate one must still work, or logging silently stops.
+	CheckAccepted("config: default logPath still accepted",
+		IsAcceptableLogPathRule(L"C:\\ProgramData\\EIDAuthentication\\logs\\events.csv"));
+}
+
 } // namespace
 
 int main()
@@ -481,6 +569,7 @@ int main()
 	TestTokenMessages();
 	TestCspInfo();
 	TestPrivateData();
+	TestConfigLoader();
 
 	printf("\n%d/%d checks passed.\n", g_total - g_failures, g_total);
 	if (g_failures != 0)
